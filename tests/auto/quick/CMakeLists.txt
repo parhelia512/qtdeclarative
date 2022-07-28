@@ -6,6 +6,7 @@
 add_subdirectory(geometry)
 add_subdirectory(nodes)
 add_subdirectory(qquickpixmapcache)
+add_subdirectory(qquicktransform)
 
 # Limit set of tests to run for static Qt builds.
 if(QT_BUILD_MINIMAL_STATIC_TESTS)

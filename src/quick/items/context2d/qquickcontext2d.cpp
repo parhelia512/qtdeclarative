@@ -1404,6 +1404,21 @@ QV4::ReturnedValue QQuickJSContext2D::method_set_globalCompositeOperation(const 
     RETURN_UNDEFINED();
 }
 
+static QString makeColorString(QColor color)
+{
+    if (color.isValid()) {
+        if (color.alpha() == 255)
+            return color.name();
+        QString alphaString = QString::number(color.alphaF(), 'f');
+        while (alphaString.endsWith(QLatin1Char('0')))
+            alphaString.chop(1);
+        if (alphaString.endsWith(QLatin1Char('.')))
+            alphaString += QLatin1Char('0');
+        return QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
+    }
+    return {};
+}
+
 // colors and styles
 /*!
     \qmlproperty variant QtQuick::Context2D::fillStyle
@@ -1433,18 +1448,8 @@ QV4::ReturnedValue QQuickJSContext2D::method_get_fillStyle(const QV4::FunctionOb
     QV4::Scoped<QQuickJSContext2D> r(scope, thisObject->as<QQuickJSContext2D>());
     CHECK_CONTEXT(r)
 
-    const QColor color = r->d()->context()->state.fillStyle.color().toRgb();
-    if (color.isValid()) {
-        if (color.alpha() == 255)
-            RETURN_RESULT(scope.engine->newString(color.name()));
-        QString alphaString = QString::number(color.alphaF(), 'f');
-        while (alphaString.endsWith(QLatin1Char('0')))
-            alphaString.chop(1);
-        if (alphaString.endsWith(QLatin1Char('.')))
-            alphaString += QLatin1Char('0');
-        QString str = QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
-        RETURN_RESULT(scope.engine->newString(str));
-    }
+    if (auto str = makeColorString(r->d()->context()->state.fillStyle.color().toRgb()); !str.isEmpty())
+        RETURN_RESULT(scope.engine->newString(std::move(str)));
     RETURN_RESULT(r->d()->context()->m_fillStyle.value());
 }
 
@@ -1543,18 +1548,8 @@ QV4::ReturnedValue QQuickJSContext2D::method_get_strokeStyle(const QV4::Function
     QV4::Scoped<QQuickJSContext2D> r(scope, thisObject->as<QQuickJSContext2D>());
     CHECK_CONTEXT(r)
 
-    const QColor color = r->d()->context()->state.strokeStyle.color().toRgb();
-    if (color.isValid()) {
-        if (color.alpha() == 255)
-            RETURN_RESULT(scope.engine->newString(color.name()));
-        QString alphaString = QString::number(color.alphaF(), 'f');
-        while (alphaString.endsWith(QLatin1Char('0')))
-            alphaString.chop(1);
-        if (alphaString.endsWith(QLatin1Char('.')))
-            alphaString += QLatin1Char('0');
-        QString str = QString::fromLatin1("rgba(%1, %2, %3, %4)").arg(color.red()).arg(color.green()).arg(color.blue()).arg(alphaString);
-        RETURN_RESULT(scope.engine->newString(str));
-    }
+    if (auto str = makeColorString(r->d()->context()->state.strokeStyle.color().toRgb()); !str.isEmpty())
+        RETURN_RESULT(scope.engine->newString(std::move(str)));
     RETURN_RESULT(r->d()->context()->m_strokeStyle.value());
 }
 

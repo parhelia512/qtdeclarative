@@ -1868,7 +1868,7 @@ QQmlError QQmlComponentPrivate::unsetRequiredPropertyToQQmlError(const RequiredP
     return  error;
 }
 
-#if QT_DEPRECATED_SINCE(6, 3)
+#if QT_DEPRECATED_SINCE(6, 3) && 0
 /*!
     \internal
 */

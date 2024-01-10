@@ -33,6 +33,7 @@ qt_internal_add_module(QmlDebugPrivate
         qqmlprofilereventtype.cpp qqmlprofilereventtype_p.h
         qqmlprofilerqtdwriter.cpp qqmlprofilerqtdwriter_p.h
         qqmlprofilertypedevent.cpp qqmlprofilertypedevent_p.h
+        qquickeventreplayclient.cpp qquickeventreplayclient_p.h
         qv4debugclient.cpp qv4debugclient_p.h
         qv4debugclient_p_p.h
     PUBLIC_LIBRARIES

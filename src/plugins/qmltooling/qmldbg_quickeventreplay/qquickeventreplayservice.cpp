@@ -64,9 +64,11 @@ void QQuickEventReplayServiceImpl::messageReceived(const QByteArray &message)
 
 static QWindow *targetWindow()
 {
-    // If we have a focus window, that's the one to receive events.
-    if (QWindow *focusWindow = QGuiApplication::focusWindow())
-        return focusWindow;
+    // If we have an exposed focus window, that's the one to receive events.
+    if (QWindow *focusWindow = QGuiApplication::focusWindow()) {
+        if (focusWindow->isExposed() && focusWindow->width() != 0 && focusWindow->height() != 0)
+            return focusWindow;
+    }
 
     // Otherwise, if we have exactly one QQuickWindow, use that.
     // Otherwise, we don't know what to do.
@@ -74,6 +76,8 @@ static QWindow *targetWindow()
     const QWindowList windowList = QGuiApplication::allWindows();
     for (QWindow *window : windowList) {
         if (!qobject_cast<QQuickWindow *>(window))
+            continue;
+        if (!window->isExposed() || window->width() == 0 || window->height() == 0)
             continue;
         if (found)
             return nullptr;
@@ -88,10 +92,10 @@ void QQuickEventReplayServiceImpl::start()
     if (!targetWindow()) {
         qWarning() << "Cannot determine target window for event replay. "
                       "Focus a window to use it.";
-        QObject::connect(
-                qApp, &QGuiApplication::focusWindowChanged,
-                this, &QQuickEventReplayServiceImpl::start,
-                Qt::SingleShotConnection);
+
+        // Poll on a timer since focusing the window is not the only way to
+        // produce a unique target. Having exactly one window also works.
+        QTimer::singleShot(16, this, &QQuickEventReplayServiceImpl::start);
         return;
     }
 

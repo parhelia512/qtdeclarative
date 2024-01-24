@@ -2661,8 +2661,12 @@ QQuickItem* QQuickItemPrivate::nextPrevItemInTabFocusChain(QQuickItem *item, boo
             // Wrap around after checking all items forward
             if (forward) {
                 current = firstChild;
+                qCDebug(lcFocus) << "QQuickItemPrivate::nextPrevItemInTabFocusChain:"
+                                 << "wrapping from last to first:" << current;
             } else {
                 current = lastChild;
+                qCDebug(lcFocus) << "QQuickItemPrivate::nextPrevItemInTabFocusChain:"
+                                 << "wrapping from first to last:" << current;
                 if (!current->childItems().isEmpty())
                     skip = true;
             }

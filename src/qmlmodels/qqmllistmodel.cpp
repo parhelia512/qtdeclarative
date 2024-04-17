@@ -2322,10 +2322,14 @@ QHash<int, QByteArray> QQmlListModel::roleNames() const
     QHash<int, QByteArray> roleNames;
 
     if (m_dynamicRoles) {
-        for (int i = 0 ; i < m_roles.size() ; ++i)
+        const auto size = m_roles.size();
+        roleNames.reserve(size);
+        for (int i = 0 ; i < size ; ++i)
             roleNames.insert(i, m_roles.at(i).toUtf8());
     } else {
-        for (int i = 0 ; i < m_listModel->roleCount() ; ++i) {
+        const auto size = m_listModel->roleCount();
+        roleNames.reserve(size);
+        for (int i = 0 ; i < size; ++i) {
             const ListLayout::Role &r = m_listModel->getExistingRole(i);
             roleNames.insert(i, r.name.toUtf8());
         }

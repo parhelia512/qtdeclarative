@@ -3017,11 +3017,11 @@ void QQmlListModelParser::applyBindings(
         qmlWarning(obj) << "All ListElement declarations are empty, no roles can be created unless dynamicRoles is set.";
 }
 
-bool QQmlListModelParser::definesEmptyList(const QString &s)
+bool QQmlListModelParser::definesEmptyList(QStringView s)
 {
     if (s.startsWith(QLatin1Char('[')) && s.endsWith(QLatin1Char(']'))) {
-        for (int i=1; i<s.size()-1; i++) {
-            if (!s[i].isSpace())
+        for (auto c : s.sliced(1).chopped(1)) {
+            if (!c.isSpace())
                 return false;
         }
         return true;

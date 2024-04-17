@@ -2460,7 +2460,7 @@ void QQmlListModel::removeElements(int index, int removeCount)
         endRemoveRows();
         emit countChanged();
     }
-    for (const auto &destroyer : toDestroy)
+    for (const auto &destroyer : std::as_const(toDestroy))
         destroyer();
 }
 

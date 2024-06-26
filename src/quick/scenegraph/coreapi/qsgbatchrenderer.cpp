@@ -873,6 +873,7 @@ Renderer::Renderer(QSGDefaultRenderContext *ctx, QSGRendererInterface::RenderMod
     , m_renderOrderRebuildLower(-1)
     , m_renderOrderRebuildUpper(-1)
 #endif
+    , m_minimumOrderPadding(4)
     , m_currentMaterial(nullptr)
     , m_currentShader(nullptr)
     , m_vertexUploadPool(256)
@@ -886,6 +887,11 @@ Renderer::Renderer(QSGDefaultRenderContext *ctx, QSGRendererInterface::RenderMod
     m_uint32IndexForRhi = !m_rhi->isFeatureSupported(QRhi::NonFourAlignedEffectiveIndexBufferOffset);
     if (qEnvironmentVariableIntValue("QSG_RHI_UINT32_INDEX"))
         m_uint32IndexForRhi = true;
+
+    bool ok = false;
+    int padding = qEnvironmentVariableIntValue("QSG_BATCHRENDERER_MINIMUM_ORDER_PADDING", &ok);
+    if (ok)
+        m_minimumOrderPadding = padding;
 
     m_visualizer = new RhiVisualizer(this);
 
@@ -1550,7 +1556,7 @@ void Renderer::buildRenderLists(QSGNode *node)
             int currentOrder = m_nextRenderOrder;
             QSGNODE_TRAVERSE(node)
                 buildRenderLists(child);
-            int padding = (m_nextRenderOrder - currentOrder) >> 2;
+            int padding = qMax((m_nextRenderOrder - currentOrder) >> 2, m_minimumOrderPadding);
             info->firstOrder = currentOrder;
             info->availableOrders = padding;
             info->lastOrder = m_nextRenderOrder + padding;

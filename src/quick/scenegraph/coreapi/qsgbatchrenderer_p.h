@@ -895,6 +895,7 @@ private:
     int m_batchVertexThreshold;
     int m_srbPoolThreshold;
     int m_bufferPoolSizeLimit;
+    int m_minimumOrderPadding;
 
     Visualizer *m_visualizer;
 

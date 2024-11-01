@@ -1260,9 +1260,9 @@ bool QQuickTextInput::hasAcceptableInput() const
 Qt::InputMethodHints QQuickTextInputPrivate::effectiveInputMethodHints() const
 {
     Qt::InputMethodHints hints = inputMethodHints;
-    if (m_echoMode == QQuickTextInput::Password || m_echoMode == QQuickTextInput::NoEcho)
+    if (m_echoMode == QQuickTextInput::NoEcho)
         hints |= Qt::ImhHiddenText;
-    else if (m_echoMode == QQuickTextInput::PasswordEchoOnEdit)
+    else if (m_echoMode == QQuickTextInput::Password || m_echoMode == QQuickTextInput::PasswordEchoOnEdit)
         hints &= ~Qt::ImhHiddenText;
     if (m_echoMode != QQuickTextInput::Normal)
         hints |= (Qt::ImhNoAutoUppercase | Qt::ImhNoPredictiveText | Qt::ImhSensitiveData);

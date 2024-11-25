@@ -1859,6 +1859,11 @@ bool QQmlPropertyPrivate::write(
     } else {
         Q_ASSERT(variantMetaType != propertyMetaType);
 
+        if (property.isResettable() && !value.isValid()) {
+            property.resetProperty(object, flags);
+            return true;
+        }
+
         bool ok = false;
         QVariant v;
         if (variantMetaType == QMetaType::fromType<QString>())

@@ -59,6 +59,7 @@ set(qml_resource_files
     "linearGradient.qml"
     "quadraticCurve.qml"
     "radialGradient.qml"
+    "regularAndCosmeticStrokes.qml"
     "strokeOrFill.qml"
     "text.qml"
     "tiger.qml"

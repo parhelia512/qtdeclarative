@@ -40,6 +40,7 @@ public:
     void setPath(int index, const QPainterPath &path, QQuickShapePath::PathHints pathHints = {}) override;
     void setStrokeColor(int index, const QColor &color) override;
     void setStrokeWidth(int index, qreal w) override;
+    void setCosmeticStroke(int index, bool c) override;
     void setFillColor(int index, const QColor &color) override;
     void setFillRule(int index, QQuickShapePath::FillRule fillRule) override;
     void setJoinStyle(int index, QQuickShapePath::JoinStyle joinStyle, int miterLimit) override;
@@ -49,6 +50,7 @@ public:
     void setFillGradient(int index, QQuickShapeGradient *gradient) override;
     void setFillTextureProvider(int index, QQuickItem *textureProviderItem) override;
     void setFillTransform(int index, const QSGTransform &transform) override;
+    void setTriangulationScale(qreal scale) override;
     void endSync(bool async) override;
     void handleSceneChange(QQuickWindow *window) override;
 
@@ -69,6 +71,7 @@ private:
         Qt::FillRule fillRule;
     };
     QVector<ShapePathGuiData> m_sp;
+    float m_triangulationScale = 1.0f;
 };
 
 class QQuickShapeSoftwareRenderNode : public QSGRenderNode

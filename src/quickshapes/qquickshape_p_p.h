@@ -51,6 +51,7 @@ public:
     virtual void setPath(int index, const QPainterPath &path, QQuickShapePath::PathHints pathHints = {}) = 0;
     virtual void setStrokeColor(int index, const QColor &color) = 0;
     virtual void setStrokeWidth(int index, qreal w) = 0;
+    virtual void setCosmeticStroke(int index, bool c) = 0;
     virtual void setFillColor(int index, const QColor &color) = 0;
     virtual void setFillRule(int index, QQuickShapePath::FillRule fillRule) = 0;
     virtual void setJoinStyle(int index, QQuickShapePath::JoinStyle joinStyle, int miterLimit) = 0;
@@ -95,6 +96,7 @@ struct QQuickShapeStrokeFillParams
     int miterLimit;
     QQuickShapePath::CapStyle capStyle;
     QQuickShapePath::StrokeStyle strokeStyle;
+    bool cosmeticStroke = false;
     qreal dashOffset;
     QVector<qreal> dashPattern;
     QQuickShapeGradient *fillGradient;

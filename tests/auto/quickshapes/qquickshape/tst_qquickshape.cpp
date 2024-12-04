@@ -147,6 +147,7 @@ void tst_QQuickShape::vpInitValues()
     QCOMPARE(pathList.count(), 0);
     QCOMPARE(vp->strokeColor(), QColor(Qt::white));
     QCOMPARE(vp->strokeWidth(), 1.0f);
+    QCOMPARE(vp->cosmeticStroke(), false);
     QCOMPARE(vp->fillColor(), QColor(Qt::white));
     QCOMPARE(vp->fillRule(), QQuickShapePath::OddEvenFill);
     QCOMPARE(vp->joinStyle(), QQuickShapePath::BevelJoin);
@@ -174,11 +175,22 @@ void tst_QQuickShape::basicShape()
     QQuickShapePath *vp = qobject_cast<QQuickShapePath *>(list.at(0));
     QVERIFY(vp != nullptr);
     QCOMPARE(vp->strokeWidth(), 4.0f);
+    QCOMPARE(vp->cosmeticStroke(), false);
     QVERIFY(vp->fillGradient() != nullptr);
     QCOMPARE(vp->strokeStyle(), QQuickShapePath::DashLine);
 
     vp->setStrokeWidth(5.0f);
     QCOMPARE(vp->strokeWidth(), 5.0f);
+    vp->setStrokeWidth(-5.0f);
+    QCOMPARE(vp->strokeWidth(), -5.0f); // but it won't render
+    QCOMPARE(vp->cosmeticStroke(), false);
+    vp->setCosmeticStroke(true);
+    QCOMPARE(vp->cosmeticStroke(), true);
+    QCOMPARE(vp->strokeWidth(), -5.0f);
+    vp->setStrokeWidth(5.0f);
+    QCOMPARE(vp->strokeWidth(), 5.0f);
+    QCOMPARE(vp->strokeWidth(), 5.0f);
+    QCOMPARE(vp->cosmeticStroke(), true);
 
     QQuickShapeLinearGradient *lgrad = qobject_cast<QQuickShapeLinearGradient *>(vp->fillGradient());
     QVERIFY(lgrad != nullptr);

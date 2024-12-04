@@ -232,6 +232,7 @@ class Q_QUICKSHAPES_EXPORT QQuickShapePath : public QQuickPath
     Q_PROPERTY(QMatrix4x4 fillTransform READ fillTransform WRITE setFillTransform NOTIFY fillTransformChanged REVISION(6, 8) FINAL)
     Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged REVISION(6, 8) FINAL)
     Q_PROPERTY(QQuickShapeTrim *trim READ trim CONSTANT REVISION(6, 10) FINAL)
+    Q_PROPERTY(bool cosmeticStroke READ cosmeticStroke WRITE setCosmeticStroke NOTIFY cosmeticStrokeChanged REVISION(6, 11) FINAL)
     QML_NAMED_ELEMENT(ShapePath)
     QML_ADDED_IN_VERSION(1, 0)
 
@@ -323,6 +324,9 @@ public:
     QQuickShapeTrim *trim();
     bool hasTrim() const;
 
+    bool cosmeticStroke() const;
+    void setCosmeticStroke(bool c);
+
 Q_SIGNALS:
     void shapePathChanged();
     void strokeColorChanged();
@@ -339,6 +343,7 @@ Q_SIGNALS:
     Q_REVISION(6, 7) void pathHintsChanged();
     Q_REVISION(6, 8) void fillTransformChanged();
     Q_REVISION(6, 8) void fillItemChanged();
+    Q_REVISION(6, 11) void cosmeticStrokeChanged();
 
 private:
     Q_DISABLE_COPY(QQuickShapePath)

@@ -54,6 +54,7 @@ struct StrokeStyle
     Qt::PenCapStyle lineCapStyle = Qt::SquareCap;
     Qt::PenJoinStyle lineJoinStyle = Qt::MiterJoin;
     int miterLimit = 4;
+    bool cosmetic = false;
     qreal dashOffset = 0;
     QList<qreal> dashArray;
     QQuickAnimatedProperty color = QQuickAnimatedProperty(QVariant::fromValue(QColorConstants::Transparent));
@@ -66,6 +67,7 @@ struct StrokeStyle
         style.lineCapStyle = p.capStyle();
         style.lineJoinStyle = p.joinStyle() == Qt::SvgMiterJoin ? Qt::MiterJoin : p.joinStyle(); //TODO support SvgMiterJoin
         style.miterLimit = qRound(p.miterLimit());
+        style.cosmetic = p.isCosmetic();
         style.dashOffset = p.dashOffset();
         style.dashArray = p.dashPattern();
         style.width = p.widthF();

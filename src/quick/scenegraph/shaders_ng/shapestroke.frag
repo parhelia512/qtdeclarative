@@ -4,8 +4,7 @@ layout(location = 0) in vec4 P;
 layout(location = 1) in vec2 A;
 layout(location = 2) in vec2 B;
 layout(location = 3) in vec2 C;
-layout(location = 4) in vec2 HG;
-layout(location = 5) in float offset;
+layout(location = 4) in vec4 HGOW; // H and G: args to solveDepressedCubic(); O: offset; W: strokeWidth
 
 layout(location = 0) out vec4 fragColor;
 
@@ -18,15 +17,15 @@ layout(std140, binding = 0) uniform buf {
 
     float matrixScale;
     float opacity;
-    float reserved2;
-    float reserved3;
+    float devicePixelRatio;
+    float strokeWidth;
 
     vec4 strokeColor;
 
-    float strokeWidth;
     float debug;
     float reserved5;
     float reserved6;
+    float reserved7;
 } ubuf;
 
 float cuberoot(float x)
@@ -78,7 +77,8 @@ mat2 qInverse(mat2 matrix) {
 
 void main()
 {
-    vec3 s = solveDepressedCubic(HG.x, HG.y) - vec3(offset, offset, offset);
+    float offset = HGOW.z;
+    vec3 s = solveDepressedCubic(HGOW.x, HGOW.y) - vec3(offset, offset, offset);
 
     // choose the value of s that minimizes the distance from our pixel to the point on the curve
     // stay in the logical coordinate system for now
@@ -93,8 +93,8 @@ void main()
         Qmin = foundNewMin * Q + (1. - foundNewMin) * Qmin;
     }
     vec2 n = (P.xy - Qmin) / dmin;
-    vec2 Q1 = (Qmin + ubuf.strokeWidth / 2. * n);
-    vec2 Q2 = (Qmin - ubuf.strokeWidth / 2. * n);
+    vec2 Q1 = (Qmin + HGOW.w / 2. * n);
+    vec2 Q2 = (Qmin - HGOW.w / 2. * n);
 
     // Converting to screen coordinates:
 #if defined(USE_DERIVATIVES)
@@ -136,9 +136,9 @@ void main()
     float fillCoverage = fillCoverageDia;
 
     // The center line is sometimes not filled because of numerical issues. This fixes this.
-    float centerline = step(ubuf.strokeWidth * 0.01, dmin);
-    fillCoverage = fillCoverage * centerline + min(1., ubuf.strokeWidth * ubuf.matrixScale) * (1. - centerline);
+    float centerline = step(HGOW.w * 0.01, dmin);
+    fillCoverage = fillCoverage * centerline + min(1., HGOW.w * ubuf.matrixScale) * (1. - centerline);
 
-    fragColor = vec4(ubuf.strokeColor.rgb, 1.0) *ubuf.strokeColor.a * fillCoverage * ubuf.opacity
+    fragColor = vec4(ubuf.strokeColor.rgb, 1.0) * ubuf.strokeColor.a * fillCoverage * ubuf.opacity
                 + ubuf.debug * vec4(0.0, 0.5, 1.0, 1.0) * (1.0 - fillCoverage) * ubuf.opacity;
 }

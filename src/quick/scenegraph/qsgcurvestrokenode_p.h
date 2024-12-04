@@ -39,6 +39,12 @@ public:
         return m_color;
     }
 
+    void setCosmeticStroke(bool c)
+    {
+        m_cosmetic = c;
+        markDirty(DirtyMaterial);
+    }
+
     void setStrokeWidth(float width)
     {
         m_strokeWidth = width;
@@ -47,25 +53,33 @@ public:
 
     float strokeWidth() const
     {
-        return m_strokeWidth;
+        // Negative stroke width would not normally mean anything;
+        // here we use it to mean that the stroke is cosmetic.
+        return (m_cosmetic ? -1.0 : 1.0) * qAbs(m_strokeWidth);
     }
 
     enum class TriangleFlag {
+        None = 0,
         Line = 1 << 0,
     };
     Q_DECLARE_FLAGS(TriangleFlags, TriangleFlag)
 
+    static constexpr std::array<float, 3> defaultExtrusions() { return {1.0f, 1.0f, 1.0f}; }
+
     void appendTriangle(const std::array<QVector2D, 3> &vtx,    // triangle vertices
                         const std::array<QVector2D, 3> &ctl,    // curve points
-                        const std::array<QVector2D, 3> &normal); // vertex normals
+                        const std::array<QVector2D, 3> &normal, // vertex normals
+                        const std::array<float, 3> &extrusions = defaultExtrusions());
     void appendTriangle(const std::array<QVector2D, 3> &vtx,    // triangle vertices
                         const std::array<QVector2D, 2> &ctl,    // line points
                         const std::array<QVector2D, 3> &normal, // vertex normals
-                        QSGCurveStrokeNode::TriangleFlags = {});
+                        const std::array<float, 3> &extrusions = defaultExtrusions());
 
     void cookGeometry() override;
 
     static const QSGGeometry::AttributeSet &attributes();
+
+    static bool expandingStrokeEnabled();
 
     QVector<quint32> uncookedIndexes() const
     {
@@ -100,14 +114,17 @@ private:
         float ax, ay;
         float bx, by;
         float cx, cy;
-        float nx, ny; //normal vector: direction to move vertext to account for AA
+        float nx, ny;       // normal vector: direction to move vertex to account for AA
+        float extrusion;    // stroke width multiplier (* uniform strokeWidth)
     };
 
     void updateMaterial();
 
     static std::array<QVector2D, 3> curveABC(const std::array<QVector2D, 3> &p);
 
+    static const bool envStrokeExpanding;
     QColor m_color;
+    ushort m_cosmetic = false; // packs alongside QColor; could be turned into flags if needed
     float m_strokeWidth = 0.0f;
     float m_debug = 0.0f;
     float m_localScale = 1.0f;

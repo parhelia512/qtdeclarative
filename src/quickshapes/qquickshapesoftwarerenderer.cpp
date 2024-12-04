@@ -43,6 +43,14 @@ void QQuickShapeSoftwareRenderer::setStrokeWidth(int index, qreal w)
     m_accDirty |= DirtyPen;
 }
 
+void QQuickShapeSoftwareRenderer::setCosmeticStroke(int index, bool c)
+{
+    ShapePathGuiData &d(m_sp[index]);
+    d.pen.setCosmetic(c);
+    d.dirty |= DirtyPen;
+    m_accDirty |= DirtyPen;
+}
+
 void QQuickShapeSoftwareRenderer::setFillColor(int index, const QColor &color)
 {
     ShapePathGuiData &d(m_sp[index]);
@@ -159,6 +167,11 @@ void QQuickShapeSoftwareRenderer::setFillTransform(int index, const QSGTransform
     m_accDirty |= DirtyBrush;
 }
 
+void QQuickShapeSoftwareRenderer::setTriangulationScale(qreal scale)
+{
+    m_triangulationScale = scale;
+}
+
 void QQuickShapeSoftwareRenderer::endSync(bool)
 {
 }
@@ -204,7 +217,9 @@ void QQuickShapeSoftwareRenderer::updateNode()
         src.dirty = 0;
 
         QRectF br = dst.path.boundingRect();
-        const float sw = qMax(1.0f, dst.strokeWidth);
+        float sw = qMax(1.0f, dst.strokeWidth);
+        if (dst.pen.isCosmetic())
+            sw *= 2.0f / m_triangulationScale;
         br.adjust(-sw, -sw, sw, sw);
         m_node->m_boundingRect |= br;
     }

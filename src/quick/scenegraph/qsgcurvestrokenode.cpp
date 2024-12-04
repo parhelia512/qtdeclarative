@@ -11,12 +11,13 @@ QSGCurveStrokeNode::QSGCurveStrokeNode()
     setFlag(OwnsGeometry, true);
     qsgnode_set_description(this, QLatin1StringView("curve stroke"));
     setGeometry(new QSGGeometry(attributes(), 0, 0));
-    updateMaterial();
+    // defer updateMaterial() until later
 }
 
 void QSGCurveStrokeNode::QSGCurveStrokeNode::updateMaterial()
 {
-    m_material.reset(new QSGCurveStrokeMaterial(this));
+    const bool expandingInVertexShader = m_cosmetic || expandingStrokeEnabled();
+    m_material.reset(new QSGCurveStrokeMaterial(this, expandingInVertexShader));
     setMaterial(m_material.data());
 }
 
@@ -35,10 +36,17 @@ std::array<QVector2D, 3> QSGCurveStrokeNode::curveABC(const std::array<QVector2D
     Append a triangle with \a vtx corners within which the fragment shader will
     draw the visible part of a quadratic curve from ctl[0] to ctl[2] with
     control point ctl[1] (AKA a quadratic Bézier curve with 3 control points).
+    The \a normal vectors are used in the vertex shader to expand the triangle
+    according to its stroke width: therefore, it's ok for the triangle to be
+    degenerate, and get expanded to size in the vertex shader. Normals are
+    usually unit vectors, but it's also ok for some to have larger magnitudes,
+    to handle the case when miter corners need to be extended proportionally
+    farther as stroke width increases.
 */
 void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
                                         const std::array<QVector2D, 3> &ctl,
-                                        const std::array<QVector2D, 3> &normal)
+                                        const std::array<QVector2D, 3> &normal,
+                                        const std::array<float, 3> &extrusions)
 {
     auto abc = curveABC(ctl);
 
@@ -47,7 +55,7 @@ void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
     for (int i = 0; i < 3; ++i) {
         m_uncookedVertexes.append( { vtx[i].x(), vtx[i].y(),
                                    abc[0].x(), abc[0].y(), abc[1].x(), abc[1].y(), abc[2].x(), abc[2].y(),
-                                   normal[i].x(), normal[i].y() } );
+                                   normal[i].x(), normal[i].y(), extrusions[i] } );
     }
     m_uncookedIndexes << currentVertex << currentVertex + 1 << currentVertex + 2;
 }
@@ -55,13 +63,18 @@ void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
 /*!
     Append a triangle with \a vtx corners within which the fragment shader will
     draw the visible part of a line from ctl[0] to ctl[2].
+    The \a normal vectors are used in the vertex shader to expand the triangle
+    according to its stroke width: therefore, it's ok for the triangle to be
+    degenerate, and get expanded to size in the vertex shader. Normals are
+    usually unit vectors, but it's also ok for some to have larger magnitudes,
+    to handle the case when miter corners need to be extended proportionally
+    farther as stroke width increases.
 */
 void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
                                         const std::array<QVector2D, 2> &ctl,
                                         const std::array<QVector2D, 3> &normal,
-                                        QSGCurveStrokeNode::TriangleFlags flags)
+                                        const std::array<float, 3> &extrusions)
 {
-    Q_UNUSED(flags)
     // We could reduce this to a linear equation by setting A to (0,0).
     // However, then we cannot use the cubic solution and need an additional
     // code path in the shader. The following formulation looks more complicated
@@ -75,13 +88,14 @@ void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
     for (int i = 0; i < 3; ++i) {
         m_uncookedVertexes.append( { vtx[i].x(), vtx[i].y(),
                                     A.x(), A.y(), B.x(), B.y(), C.x(), C.y(),
-                                    normal[i].x(), normal[i].y() } );
+                                    normal[i].x(), normal[i].y(), extrusions[i] } );
     }
     m_uncookedIndexes << currentVertex << currentVertex + 1 << currentVertex + 2;
 }
 
 void QSGCurveStrokeNode::cookGeometry()
 {
+    updateMaterial(); // by now, setCosmeticStroke has been called if necessary
     QSGGeometry *g = geometry();
     if (g->indexType() != QSGGeometry::UnsignedIntType) {
         g = new QSGGeometry(attributes(),
@@ -114,10 +128,17 @@ const QSGGeometry::AttributeSet &QSGCurveStrokeNode::attributes()
         QSGGeometry::Attribute::createWithAttributeType(1, 2, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute), //A
         QSGGeometry::Attribute::createWithAttributeType(2, 2, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute), //B
         QSGGeometry::Attribute::createWithAttributeType(3, 2, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute), //C
-        QSGGeometry::Attribute::createWithAttributeType(4, 2, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute), //normalVector
+        QSGGeometry::Attribute::createWithAttributeType(4, 3, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute), //normalExt
     };
     static QSGGeometry::AttributeSet attrs = { 5, sizeof(StrokeVertex), data };
     return attrs;
+}
+
+// TODO remove when we consider the expanding-stroke shader to be stable for full-time use
+bool QSGCurveStrokeNode::expandingStrokeEnabled()
+{
+    static const bool ret = qEnvironmentVariableIntValue("QT_QUICKSHAPES_STROKE_EXPANDING");
+    return ret;
 }
 
 QT_END_NAMESPACE

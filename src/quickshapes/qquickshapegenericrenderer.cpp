@@ -156,6 +156,15 @@ void QQuickShapeGenericRenderer::setStrokeWidth(int index, qreal w)
     d.syncDirty |= DirtyStrokeGeom;
 }
 
+void QQuickShapeGenericRenderer::setCosmeticStroke(int index, bool c)
+{
+    ShapePathData &d(m_sp[index]);
+    d.pen.setCosmetic(c);
+    d.syncDirty |= DirtyStrokeGeom;
+    // as long as the stroke is cosmetic,
+    // QQuickShape::itemChange triggers re-triangulation whenever scale changes
+}
+
 void QQuickShapeGenericRenderer::setFillColor(int index, const QColor &color)
 {
     ShapePathData &d(m_sp[index]);

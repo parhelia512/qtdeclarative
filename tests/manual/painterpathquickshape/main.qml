@@ -134,6 +134,11 @@ Window {
         }
 
         ListElement {
+            text: "Regular and cosmetic strokes"
+            source: "regularAndCosmeticStrokes.qml"
+        }
+
+        ListElement {
             text: "Qt! text"
             source: "text.qml"
         }

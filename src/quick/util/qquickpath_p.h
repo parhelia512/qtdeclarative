@@ -656,6 +656,11 @@ public:
     bool isAsynchronous() const;
     void setAsynchronous(bool a);
 
+public Q_SLOTS:
+    // This is public in order to allow types from DesignHelpers to create and add path
+    // elements and process the path once at the end rather than after each element.
+    void processPath();
+
 Q_SIGNALS:
     void changed();
     void startXChanged();
@@ -680,9 +685,6 @@ protected:
     static void pathElements_replace(
             QQmlListProperty<QQuickPathElement> *, qsizetype, QQuickPathElement *);
     static void pathElements_removeLast(QQmlListProperty<QQuickPathElement> *);
-
-private Q_SLOTS:
-    void processPath();
 
 private:
     struct AttributePoint {

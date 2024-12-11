@@ -317,15 +317,7 @@ qsizetype QQuickPath::pathElements_count(QQmlListProperty<QQuickPathElement> *pr
 void QQuickPath::pathElements_clear(QQmlListProperty<QQuickPathElement> *property)
 {
     QQuickPathPrivate *d = privatePath(property->object);
-    QQuickPath *path = static_cast<QQuickPath*>(property->object);
-
-    path->disconnectPathElements();
-    d->_pathElements.clear();
-    d->_pathCurves.clear();
-    d->_pointCache.clear();
-    d->_pathTexts.clear();
-    d->_path.clear();
-    emit path->changed();
+    d->clearPathElements();
 }
 
 void QQuickPath::pathElements_replace(
@@ -1185,6 +1177,8 @@ QDebug operator<<(QDebug debug, const QQuickCurve *curve)
 {
     QDebugStateSaver saver(debug);
     debug.nospace() << curve->metaObject()->className() << '(' << (const void *)curve;
+    if (!curve->objectName().isEmpty())
+        debug << " name=" << curve->objectName();
     debug << " x=" << curve->x();
     debug << " y=" << curve->y();
     debug << " relativeX=" << curve->relativeX();

@@ -21,6 +21,7 @@
 #include <QMatrix4x4>
 #include <QQuickItem>
 #include <QtGui/private/qfixed_p.h>
+#include <QtCore/qmap.h>
 
 #include "qquickanimatedproperty_p.h"
 

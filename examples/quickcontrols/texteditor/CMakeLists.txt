@@ -32,10 +32,12 @@ target_link_libraries(texteditorexample PUBLIC
     Qt6::QuickControls2
 )
 
-if(CMAKE_CROSSCOMPILING)
-    target_compile_definitions(texteditorexample PUBLIC
-        QT_EXTRA_FILE_SELECTOR="touch"
-    )
+if (NOT EMSCRIPTEN)
+    if(CMAKE_CROSSCOMPILING)
+        target_compile_definitions(texteditorexample PUBLIC
+            QT_EXTRA_FILE_SELECTOR="touch"
+        )
+    endif()
 endif()
 
 install(TARGETS texteditorexample

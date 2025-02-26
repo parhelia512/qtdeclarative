@@ -10,6 +10,9 @@ qt_internal_add_qml_module(QuickShapesDesignHelpersPrivate
         QtQuick/auto
     INTERNAL_MODULE
     SOURCES
+        qquickellipseshape.cpp
+        qquickellipseshape_p.h
+        qquickellipseshape_p_p.h
         qquickrectangleshape.cpp
         qquickrectangleshape_p.h
         qquickrectangleshape_p_p.h

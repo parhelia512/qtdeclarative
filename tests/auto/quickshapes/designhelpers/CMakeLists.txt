@@ -7,5 +7,6 @@ if(QT_BUILD_MINIMAL_STATIC_TESTS)
 endif()
 
 if(QT_FEATURE_private_tests)
+    add_subdirectory(qquickellipseshape)
     add_subdirectory(qquickrectangleshape)
 endif()

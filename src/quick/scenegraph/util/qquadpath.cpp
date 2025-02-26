@@ -957,6 +957,7 @@ static void printElement(QDebug stream, const QQuadPath::Element &element)
            << (element.isSubpathStart() ? "S" : element.isSubpathEnd() ? "E" : "");
 }
 
+#ifndef QT_NO_DEBUG_STREAM
 QDebug operator<<(QDebug stream, const QQuadPath::Element &element)
 {
     QDebugStateSaver saver(stream);
@@ -984,5 +985,6 @@ QDebug operator<<(QDebug stream, const QQuadPath &path)
     stream << ")";
     return stream;
 }
+#endif
 
 QT_END_NAMESPACE

@@ -326,7 +326,31 @@ struct TriangleData
     TrianglePoints points;
     int pathElementIndex = std::numeric_limits<int>::min();
     TrianglePoints normals;
+
+private:
+#ifndef QT_NO_DEBUG_STREAM
+    friend QDebug operator<<(QDebug, const TriangleData &);
+#endif
 };
+
+#ifndef QT_NO_DEBUG_STREAM
+QDebug operator<<(QDebug stream, const TriangleData &td)
+{
+    QDebugStateSaver saver(stream);
+    stream.nospace();
+    stream << "TriangleData(";
+    if (td.pathElementIndex != std::numeric_limits<int>::min())
+        stream << "idx " << td.pathElementIndex;
+    stream << " [" << td.points.at(0).x() << ", " << td.points.at(0).y()
+           << "; " << td.points.at(1).x() << ", " << td.points.at(1).y()
+           << "; " << td.points.at(2).x() << ", " << td.points.at(2).y()
+           << "] normals [" << td.normals.at(0).x() << ", " << td.points.at(0).y()
+           << "; " << td.normals.at(1).x() << ", " << td.normals.at(1).y()
+           << "; " << td.normals.at(2).x() << ", " << td.normals.at(2).y()
+           << "])";
+    return stream;
+}
+#endif
 
 // Returns a normalized vector that is perpendicular to baseLine, pointing to the right
 inline QVector2D normalVector(QVector2D baseLine)
@@ -1549,6 +1573,7 @@ void QSGCurveProcessor::processStroke(const QQuadPath &strokePath,
 {
     auto thePath = subdivide(strokePath, subdivisions).flattened(); // TODO: don't flatten, but handle it in the triangulator
     auto triangles = customTriangulator2(thePath, penWidth, joinStyle, capStyle, miterLimit);
+    qCDebug(lcSGCurveProcessor) << thePath << "->" << triangles;
 
     auto addCurveTriangle = [&](const QQuadPath::Element &element, const TriangleData &t) {
         QSGCurveStrokeNode::TriangleFlags flags;

@@ -758,6 +758,11 @@ void QQuickShapeCurveRenderer::setDebugVisualization(int options)
     debugVisualizationFlags = options;
 }
 
+/*! \internal
+    Convert \a path to QSGCurveAbstractNodes with vertices ready to send to the GPU.
+    The given \a path is assumed to be a stroke centerline: it may be continuous or dashed.
+    Also create the wireframe node if enabled.
+*/
 QQuickShapeCurveRenderer::NodeList QQuickShapeCurveRenderer::addCurveStrokeNodes(const QQuadPath &path, const QPen &pen)
 {
     NodeList ret;
@@ -777,28 +782,29 @@ QQuickShapeCurveRenderer::NodeList QQuickShapeCurveRenderer::addCurveStrokeNodes
                                      penWidth,
                                      pen.joinStyle(),
                                      pen.capStyle(),
-                                     [&wfVertices, &node, &wireFrame](const std::array<QVector2D, 3> &s,
-                                                          const std::array<QVector2D, 3> &p,
-                                                          const std::array<QVector2D, 3> &n,
+                                     // addStrokeTriangleCallback (see qsgcurveprocessor_p.h):
+                                     [&wfVertices, &node, &wireFrame](const std::array<QVector2D, 3> &vtx,  // triangle corners
+                                                          const std::array<QVector2D, 3> &ctl,  // curve control points
+                                                          const std::array<QVector2D, 3> &n,    // normals
                                                           QSGCurveStrokeNode::TriangleFlags flags)
                                     {
-                                         const QVector2D &p0 = s.at(0);
-                                         const QVector2D &p1 = s.at(1);
-                                         const QVector2D &p2 = s.at(2);
-                                         if (flags.testFlag(QSGCurveStrokeNode::TriangleFlag::Line))
-                                             node->appendTriangle(s, std::array<QVector2D, 2>{p.at(0), p.at(2)}, n, flags);
-                                         else
-                                             node->appendTriangle(s, p, n);
+                                        const QVector2D &v0 = vtx.at(0);
+                                        const QVector2D &v1 = vtx.at(1);
+                                        const QVector2D &v2 = vtx.at(2);
+                                        if (flags.testFlag(QSGCurveStrokeNode::TriangleFlag::Line))
+                                            node->appendTriangle(vtx, std::array<QVector2D, 2>{ctl.at(0), ctl.at(2)}, n, flags);
+                                        else
+                                            node->appendTriangle(vtx, ctl, n);
 
                                          if (Q_UNLIKELY(wireFrame)) {
-                                             wfVertices.append({p0.x(), p0.y(), 1.0f, 0.0f, 0.0f});
-                                             wfVertices.append({p1.x(), p1.y(), 0.0f, 1.0f, 0.0f});
-                                             wfVertices.append({p2.x(), p2.y(), 0.0f, 0.0f, 1.0f});
+                                            wfVertices.append({v0.x(), v0.y(), 1.0f, 0.0f, 0.0f});
+                                            wfVertices.append({v1.x(), v1.y(), 0.0f, 1.0f, 0.0f});
+                                            wfVertices.append({v2.x(), v2.y(), 0.0f, 0.0f, 1.0f});
                                          }
                                     },
                                     subdivisions);
 
-    auto indexCopy = node->uncookedIndexes(); // uncookedIndexes get delete on cooking
+    auto indexCopy = node->uncookedIndexes(); // uncookedIndexes get deleted on cooking
 
     node->setColor(pen.color());
     node->setStrokeWidth(penWidth);

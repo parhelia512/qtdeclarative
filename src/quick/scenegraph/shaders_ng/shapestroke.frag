@@ -36,19 +36,27 @@ float cuberoot(float x)
 
 #define PI 3.1415926538
 
-vec3 solveDepressedCubic(float p, float q)
+// Cardano's formula for the solution of
+// t^3 + G(x,y)t + H(x,y) = 0
+// H and G are interpolated from hull positions
+// returns 3 possible values of t (roots)
+vec3 solveDepressedCubic(float H, float G)
 {
-    float D = q * q / 4. + p * p * p / 27.;
+    // discriminant
+    float D = G * G / 4. + H * H * H / 27.;
 
-    float u1 = cuberoot(-q / 2. - sqrt(D));
-    float u2 = cuberoot(-q / 2. + sqrt(D));
-    vec3 rootsD1 = vec3(u1 - p / (3. * u1), u2 - p / (3. * u2), 0);
+    float u1 = cuberoot(-G / 2. - sqrt(D));
+    float u2 = cuberoot(-G / 2. + sqrt(D));
+    vec3 rootsD1 = vec3(u1 - H / (3. * u1), u2 - H / (3. * u2), 0);
 
-    float v = 2.*sqrt(-p / 3.);
-    float t = acos(3. * q / p / v) / 3.;
+    float v = 2.*sqrt(-H / 3.);
+    float t = acos(3. * G / H / v) / 3.;
     float k = 2. * PI / 3.;
     vec3 rootsD2 = vec3(v * cos(t), v * cos(t - k), v * cos(t - 2. * k));
 
+    // D > 0 : one real root (and two complex conjugate roots)
+    // D < 0 : three real roots, trigonometric solution
+    // D == 0: two of the real roots are equal
     return D > 0 ? rootsD1 : rootsD2;
 }
 
@@ -72,6 +80,8 @@ void main()
 {
     vec3 s = solveDepressedCubic(HG.x, HG.y) - vec3(offset, offset, offset);
 
+    // choose the value of s that minimizes the distance from our pixel to the point on the curve
+    // stay in the logical coordinate system for now
     vec2 Qmin = vec2(1e10, 1e10);
     float dmin = 1e4;
     for (int i = 0; i < 3; i++) {

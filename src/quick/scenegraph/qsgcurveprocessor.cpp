@@ -324,7 +324,7 @@ static bool isIntersecting(const QQuadPath &path, int e1, int e2, QList<std::pai
 struct TriangleData
 {
     TrianglePoints points;
-    int pathElementIndex;
+    int pathElementIndex = std::numeric_limits<int>::min();
     TrianglePoints normals;
 };
 
@@ -335,8 +335,11 @@ inline QVector2D normalVector(QVector2D baseLine)
     return normal;
 }
 
-// Returns a vector that is normal to the path and pointing to the right. If endSide is false
-// the vector is normal to the start point, otherwise to the end point
+/*! \internal
+    Returns a vector that is normal to the path and pointing to the right. If \a endSide
+    is \c false, the vector is normal to the start point;
+    if \c true,  the vector is normal to the end point.
+*/
 QVector2D normalVector(const QQuadPath::Element &element, bool endSide = false)
 {
     if (element.isLine())
@@ -347,9 +350,11 @@ QVector2D normalVector(const QQuadPath::Element &element, bool endSide = false)
         return normalVector(element.endPoint() - element.controlPoint());
 }
 
-// Returns a vector that is parallel to the path. If endSide is false
-// the vector starts at the start point and points forward,
-// otherwise it starts at the end point and points backward
+/*! \internal
+    Returns a vector that is parallel to the path and pointing inward. If \a endSide
+    is \c false, it starts at the start point and points forward;
+    if \c true,  it starts at the end point and points backward.
+*/
 QVector2D tangentVector(const QQuadPath::Element &element, bool endSide = false)
 {
     if (element.isLine()) {
@@ -459,6 +464,98 @@ static QQuadPath subdivide(const QQuadPath &path, int subdivisions)
     return newPath;
 }
 
+/*! \internal
+    Returns {inner1, inner2, outer1, outer2, outerMiter}
+    where inner1 and outer1 are for the end of \a element1,
+    where inner2 and outer2 are for the start of \a element2,
+    and inner1 == inner2 unless we had to give up finding a decent point.
+*/
+static std::array<QVector2D, 5> calculateJoin(const QQuadPath::Element *element1, const QQuadPath::Element *element2,
+                                       float penFactor, float inverseMiterLimit, bool simpleMiter,
+                                       bool &outerBisectorWithinMiterLimit, bool &innerIsRight, bool &giveUp)
+{
+    outerBisectorWithinMiterLimit = true;
+    innerIsRight = true;
+    giveUp = false;
+    if (!element1) {
+        Q_ASSERT(element2);
+        QVector2D n = normalVector(*element2);
+        return {n, n, -n, -n, -n};
+    }
+    if (!element2) {
+        Q_ASSERT(element1);
+        QVector2D n = normalVector(*element1, true);
+        return {n, n, -n, -n, -n};
+    }
+
+    Q_ASSERT(element1->endPoint() == element2->startPoint());
+
+    const auto p1 = element1->isLine() ? element1->startPoint() : element1->controlPoint();
+    const auto p2 = element1->endPoint();
+    const auto p3 = element2->isLine() ? element2->endPoint() : element2->controlPoint();
+
+    const auto v1 = (p1 - p2).normalized();
+    const auto v2 = (p3 - p2).normalized();
+    const auto b = (v1 + v2);
+
+    constexpr float epsilon = 1.0f / 32.0f;
+    const bool smoothJoin = qAbs(b.x()) < epsilon && qAbs(b.y()) < epsilon;
+
+    if (smoothJoin) {
+        // v1 and v2 are almost parallel and pointing in opposite directions
+        // angle bisector formula will give an almost null vector: use normal of bisector of normals instead
+        QVector2D n1(-v1.y(), v1.x());
+        QVector2D n2(-v2.y(), v2.x());
+        QVector2D n = (n2 - n1).normalized();
+        return {n, n, -n, -n, -n};
+    }
+
+    // Calculate the length of the bisector, so it will cover the entire miter.
+    // Using the identity sin(x/2) == sqrt((1 - cos(x)) / 2), and the fact that the
+    // dot product of two unit vectors is the cosine of the angle between them
+    // The length of the miter is w/sin(x/2) where x is the angle between the two elements
+    const auto bisector = b.normalized();
+    const float cos2x = qMin(1.0f, QVector2D::dotProduct(v1, v2)); // Allow for float inaccuracy
+    const float sine = qMax(sqrt((1.0f - cos2x) / 2), 0.01f); // Avoid divide by zero
+    const float length = penFactor / sine;
+    innerIsRight = determinant(p1, p2, p3) > 0;
+
+    // Check if bisector is longer than one of the lines it's trying to bisect
+    auto tooLong = [penFactor, length](QVector2D p1, QVector2D p2, QVector2D n) -> bool {
+        auto v = p2 - p1;
+        // It's too long if the projection onto the bisector is longer than the bisector
+        // and the projection onto the normal to the bisector is shorter
+        // than the pen margin (that projection is just v - proj)
+        // (We're also adding a 10% safety margin to length to make room for AA: not exact.)
+        auto projLen = QVector2D::dotProduct(v, n);
+        return projLen * 0.9f < length && (v - n * projLen).length() * 0.9 < penFactor;
+    };
+
+    // The angle bisector of the tangent lines is not correct for curved lines. We could fix this by calculating
+    // the exact intersection point, but for now just give up and use the normals.
+    giveUp = !element1->isLine() || !element2->isLine() || tooLong(p1, p2, bisector) || tooLong(p3, p2, bisector);
+    outerBisectorWithinMiterLimit = sine >= inverseMiterLimit / 2.0f;
+    bool simpleJoin = simpleMiter && outerBisectorWithinMiterLimit && !giveUp;
+    const QVector2D bn = bisector / sine;
+
+    if (simpleJoin)
+        return {bn, bn, -bn, -bn, -bn}; // We only have one inner and one outer point TODO: change inner point when conflict/curve
+    const QVector2D n1 = normalVector(*element1, true);
+    const QVector2D n2 = normalVector(*element2);
+    if (giveUp) {
+        if (innerIsRight)
+            return {n1, n2, -n1, -n2, -bn};
+        else
+            return {-n1, -n2, n1, n2, -bn};
+
+    } else {
+        if (innerIsRight)
+            return {bn, bn, -n1, -n2, -bn};
+        else
+            return {bn, bn, n1, n2, -bn};
+    }
+};
+
 static QList<TriangleData> customTriangulator2(const QQuadPath &path, float penWidth, Qt::PenJoinStyle joinStyle, Qt::PenCapStyle capStyle, float miterLimit)
 {
     const bool bevelJoin = joinStyle == Qt::BevelJoin;
@@ -475,105 +572,11 @@ static QList<TriangleData> customTriangulator2(const QQuadPath &path, float penW
 
     const float penFactor = penWidth / 2;
 
-    // Returns {inner1, inner2, outer1, outer2, outerMiter}
-    // where foo1 is for the end of element1 and foo2 is for the start of element2
-    // and inner1 == inner2 unless we had to give up finding a decent point
-    auto calculateJoin = [&](const QQuadPath::Element *element1, const QQuadPath::Element *element2,
-                             bool &outerBisectorWithinMiterLimit, bool &innerIsRight, bool &giveUp) -> std::array<QVector2D, 5>
-    {
-        outerBisectorWithinMiterLimit = true;
-        innerIsRight = true;
-        giveUp = false;
-        if (!element1) {
-            Q_ASSERT(element2);
-            QVector2D n = normalVector(*element2);
-            return {n, n, -n, -n, -n};
-        }
-        if (!element2) {
-            Q_ASSERT(element1);
-            QVector2D n = normalVector(*element1, true);
-            return {n, n, -n, -n, -n};
-        }
-
-        Q_ASSERT(element1->endPoint() == element2->startPoint());
-
-        const auto p1 = element1->isLine() ? element1->startPoint() : element1->controlPoint();
-        const auto p2 = element1->endPoint();
-        const auto p3 = element2->isLine() ? element2->endPoint() : element2->controlPoint();
-
-        const auto v1 = (p1 - p2).normalized();
-        const auto v2 = (p3 - p2).normalized();
-        const auto b = (v1 + v2);
-
-        constexpr float epsilon = 1.0f / 32.0f;
-        bool smoothJoin = qAbs(b.x()) < epsilon && qAbs(b.y()) < epsilon;
-
-        if (smoothJoin) {
-            // v1 and v2 are almost parallel and pointing in opposite directions
-            // angle bisector formula will give an almost null vector: use normal of bisector of normals instead
-            QVector2D n1(-v1.y(), v1.x());
-            QVector2D n2(-v2.y(), v2.x());
-            QVector2D n = (n2 - n1).normalized();
-            return {n, n, -n, -n, -n};
-        }
-        // Calculate the length of the bisector, so it will cover the entire miter.
-        // Using the identity sin(x/2) == sqrt((1 - cos(x)) / 2), and the fact that the
-        // dot product of two unit vectors is the cosine of the angle between them
-        // The length of the miter is w/sin(x/2) where x is the angle between the two elements
-
-        const auto bisector = b.normalized();
-        float cos2x = QVector2D::dotProduct(v1, v2);
-        cos2x = qMin(1.0f, cos2x); // Allow for float inaccuracy
-        float sine = sqrt((1.0f - cos2x) / 2);
-        innerIsRight = determinant(p1, p2, p3) > 0;
-        sine = qMax(sine, 0.01f); // Avoid divide by zero
-        float length = penFactor / sine;
-
-        // Check if bisector is longer than one of the lines it's trying to bisect
-
-        auto tooLong = [](QVector2D p1, QVector2D p2, QVector2D n, float length, float margin) -> bool {
-            auto v = p2 - p1;
-            // It's too long if the projection onto the bisector is longer than the bisector
-            // and the projection onto the normal to the bisector is shorter
-            // than the pen margin (that projection is just v - proj)
-            // (we're adding a 10% safety margin to make room for AA -- not exact)
-            auto projLen = QVector2D::dotProduct(v, n);
-            return projLen * 0.9f < length && (v - n * projLen).length() * 0.9 < margin;
-        };
-
-
-        // The angle bisector of the tangent lines is not correct for curved lines. We could fix this by calculating
-        // the exact intersection point, but for now just give up and use the normals.
-
-        giveUp = !element1->isLine() || !element2->isLine()
-                 || tooLong(p1, p2, bisector, length, penFactor)
-                 || tooLong(p3, p2, bisector, length, penFactor);
-        outerBisectorWithinMiterLimit = sine >= inverseMiterLimit / 2.0f;
-        bool simpleJoin = simpleMiter && outerBisectorWithinMiterLimit && !giveUp;
-        const QVector2D bn = bisector / sine;
-
-        if (simpleJoin)
-            return {bn, bn, -bn, -bn, -bn}; // We only have one inner and one outer point TODO: change inner point when conflict/curve
-        const QVector2D n1 = normalVector(*element1, true);
-        const QVector2D n2 = normalVector(*element2);
-        if (giveUp) {
-            if (innerIsRight)
-                return {n1, n2, -n1, -n2, -bn};
-            else
-                return {-n1, -n2, n1, n2, -bn};
-
-        } else {
-            if (innerIsRight)
-                return {bn, bn, -n1, -n2, -bn};
-            else
-                return {bn, bn, n1, n2, -bn};
-        }
-    };
-
     QList<TriangleData> ret;
 
-    auto triangulateCurve = [&](int idx, const QVector2D &p1, const QVector2D &p2, const QVector2D &p3, const QVector2D &p4,
-                                const QVector2D &n1, const QVector2D &n2, const QVector2D &n3, const QVector2D &n4)
+    auto triangulateCurve = [&ret, &path, penFactor]
+            (int idx, const QVector2D &p1, const QVector2D &p2, const QVector2D &p3, const QVector2D &p4,
+             const QVector2D &n1, const QVector2D &n2, const QVector2D &n3, const QVector2D &n4)
     {
         const auto &element = path.elementAt(idx);
         Q_ASSERT(!element.isLine());
@@ -659,6 +662,7 @@ static QList<TriangleData> customTriangulator2(const QQuadPath &path, float penW
             bool startBisectorWithinMiterLimit; // Not used
             bool giveUpOnStartJoin; // Not used
             auto startJoin = calculateJoin(prevElement, &element,
+                                           penFactor, inverseMiterLimit, simpleMiter,
                                            startBisectorWithinMiterLimit, startInnerIsRight,
                                            giveUpOnStartJoin);
             const QVector2D &startInner = startJoin[1];
@@ -668,6 +672,7 @@ static QList<TriangleData> customTriangulator2(const QQuadPath &path, float penW
             bool endBisectorWithinMiterLimit;
             bool giveUpOnEndJoin;
             auto endJoin = calculateJoin(&element, nextElement,
+                                         penFactor, inverseMiterLimit, simpleMiter,
                                          endBisectorWithinMiterLimit, endInnerIsRight,
                                          giveUpOnEndJoin);
             QVector2D endInner = endJoin[0];
@@ -1457,7 +1462,7 @@ bool QSGCurveProcessor::solveIntersections(QQuadPath &path, bool removeNestedPat
             for (int i = 0; i < subPathHandled.size(); i++) {
                 if (!subPathHandled.at(i)) {
 
-                    // Not nesesarrily handled (if findStart return false) but if we find no starting
+                    // Not necessarily handled (if findStart() returns false); but if we find no starting
                     // point, we cannot/don't need to handle it anyway. So just mark it as handled.
                     subPathHandled[i] = true;
 

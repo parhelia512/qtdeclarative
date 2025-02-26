@@ -9,6 +9,7 @@ QT_BEGIN_NAMESPACE
 QSGCurveStrokeNode::QSGCurveStrokeNode()
 {
     setFlag(OwnsGeometry, true);
+    qsgnode_set_description(this, QLatin1StringView("curve stroke"));
     setGeometry(new QSGGeometry(attributes(), 0, 0));
     updateMaterial();
 }
@@ -30,27 +31,34 @@ std::array<QVector2D, 3> QSGCurveStrokeNode::curveABC(const std::array<QVector2D
     return {a, b, c};
 }
 
-// Curve from p[0] to p[2] with control point p[1]
-void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &v,
-                                           const std::array<QVector2D, 3> &p,
-                                           const std::array<QVector2D, 3> &n)
+/*!
+    Append a triangle with \a vtx corners within which the fragment shader will
+    draw the visible part of a quadratic curve from ctl[0] to ctl[2] with
+    control point ctl[1] (AKA a quadratic Bézier curve with 3 control points).
+*/
+void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
+                                        const std::array<QVector2D, 3> &ctl,
+                                        const std::array<QVector2D, 3> &normal)
 {
-    auto abc = curveABC(p);
+    auto abc = curveABC(ctl);
 
     int currentVertex = m_uncookedVertexes.count();
 
     for (int i = 0; i < 3; ++i) {
-        m_uncookedVertexes.append( { v[i].x(), v[i].y(),
+        m_uncookedVertexes.append( { vtx[i].x(), vtx[i].y(),
                                    abc[0].x(), abc[0].y(), abc[1].x(), abc[1].y(), abc[2].x(), abc[2].y(),
-                                   n[i].x(), n[i].y() } );
+                                   normal[i].x(), normal[i].y() } );
     }
     m_uncookedIndexes << currentVertex << currentVertex + 1 << currentVertex + 2;
 }
 
-// Straight line from p[0] to p[1]
-void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &v,
-                                        const std::array<QVector2D, 2> &p,
-                                        const std::array<QVector2D, 3> &n,
+/*!
+    Append a triangle with \a vtx corners within which the fragment shader will
+    draw the visible part of a line from ctl[0] to ctl[2].
+*/
+void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &vtx,
+                                        const std::array<QVector2D, 2> &ctl,
+                                        const std::array<QVector2D, 3> &normal,
                                         QSGCurveStrokeNode::TriangleFlags flags)
 {
     Q_UNUSED(flags)
@@ -58,17 +66,16 @@ void QSGCurveStrokeNode::appendTriangle(const std::array<QVector2D, 3> &v,
     // However, then we cannot use the cubic solution and need an additional
     // code path in the shader. The following formulation looks more complicated
     // but allows to always use the cubic solution.
-    auto A = p[1] - p[0];
+    auto A = ctl[1] - ctl[0];
     auto B = QVector2D(0., 0.);
-    auto C = p[0];
+    auto C = ctl[0];
 
     int currentVertex = m_uncookedVertexes.count();
 
-//    for (auto v : QList<std::pair<QVector2D, QVector2D>>({{v0, n0}, {v1, n1}, {v2, n2}})) {
     for (int i = 0; i < 3; ++i) {
-        m_uncookedVertexes.append( { v[i].x(), v[i].y(),
-                                   A.x(), A.y(), B.x(), B.y(), C.x(), C.y(),
-                                   n[i].x(), n[i].y() } );
+        m_uncookedVertexes.append( { vtx[i].x(), vtx[i].y(),
+                                    A.x(), A.y(), B.x(), B.y(), C.x(), C.y(),
+                                    normal[i].x(), normal[i].y() } );
     }
     m_uncookedIndexes << currentVertex << currentVertex + 1 << currentVertex + 2;
 }

@@ -55,12 +55,12 @@ public:
     };
     Q_DECLARE_FLAGS(TriangleFlags, TriangleFlag)
 
-    void appendTriangle(const std::array<QVector2D, 3> &v, // triangle vertices
-                        const std::array<QVector2D, 3> &p, // curve points
-                        const std::array<QVector2D, 3> &n); // vertex normals
-    void appendTriangle(const std::array<QVector2D, 3> &v, // triangle vertices
-                        const std::array<QVector2D, 2> &p, // line points
-                        const std::array<QVector2D, 3> &n, // vertex normals
+    void appendTriangle(const std::array<QVector2D, 3> &vtx,    // triangle vertices
+                        const std::array<QVector2D, 3> &ctl,    // curve points
+                        const std::array<QVector2D, 3> &normal); // vertex normals
+    void appendTriangle(const std::array<QVector2D, 3> &vtx,    // triangle vertices
+                        const std::array<QVector2D, 2> &ctl,    // line points
+                        const std::array<QVector2D, 3> &normal, // vertex normals
                         QSGCurveStrokeNode::TriangleFlags = {});
 
     void cookGeometry() override;

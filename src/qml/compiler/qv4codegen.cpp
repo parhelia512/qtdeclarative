@@ -671,7 +671,10 @@ void Codegen::initializeAndDestructureBindingElement(AST::PatternElement *e, con
     if (hasError())
         return;
 
-    accept(e->typeAnnotation);
+    if (e->typeAnnotation) {
+        throwSyntaxError(e->firstSourceLocation(),
+                         QLatin1String("Type annotations on default parameters are not supported."));
+    }
 
     if (e->initializer) {
         if (!baseRef.isValid()) {

@@ -1,0 +1,16 @@
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+\page qtqml-tooling-qmlcontextpropertydump.html
+\title qmlcontextpropertydump
+\brief A tool that searches for context property definitions in C++ code.
+\ingroup qtqml-tooling
+\ingroup qtqml-tooling-devtools
+
+\e qmlcontextpropertydump is a tool that searches a C++ directory for potential
+context property definitions, and saves them in a format readable by qmlformat
+and qmlls.
+
+\e qmlcontextpropertydump is best used via the CMake API.
+*/

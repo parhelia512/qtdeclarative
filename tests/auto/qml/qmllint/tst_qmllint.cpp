@@ -15,6 +15,10 @@
 #include <QtCore/qdiriterator.h>
 #include <QtCore/qlibraryinfo.h>
 
+#if QT_CONFIG(settings)
+#  include <QtCore/qsettings.h>
+#endif
+
 Q_IMPORT_PLUGIN(LintPlugin)
 
 using namespace Qt::StringLiterals;
@@ -91,6 +95,10 @@ private Q_SLOTS:
     void contextPropertiesFromRootUrls_data();
     void contextPropertiesFromRootUrls();
     void contextPropertiesFromUser();
+#if QT_CONFIG(settings)
+    void contextPropertiesFromHeuristicWrite();
+    void contextPropertiesFromHeuristicRead();
+#endif
 
     void compilerWarnings_data();
     void compilerWarnings();
@@ -1999,6 +2007,89 @@ void TestQmllint::contextPropertiesFromUser()
     QVERIFY(!properties.isUnqualifiedAccessDisabled("doesNotExist"_L1));
     QVERIFY(!properties.isOnUsageWarned("doesNotExist"_L1));
 }
+
+#if QT_CONFIG(settings)
+void TestQmllint::contextPropertiesFromHeuristicWrite()
+{
+    using namespace QQmlJS;
+    HeuristicContextProperties properties;
+    properties.add("myCP1",
+                   HeuristicContextProperty{ "myPath1/myFile1.cpp", SourceLocation{ 1, 2, 3, 4 } });
+    properties.add(
+            "myCP2",
+            HeuristicContextProperty{ "myPath2/myFile2.cpp", SourceLocation{ 10, 20, 30, 40 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 100, 200, 300, 400 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 101, 202, 303, 404 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 111, 222, 333, 444 } });
+
+    QTemporaryDir myBuild;
+    QVERIFY(myBuild.isValid());
+    properties.writeCache(myBuild.path());
+
+    QFile f(myBuild.filePath(".qt/contextPropertyDump.ini"_L1));
+    QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
+    const QString fileContent = f.readAll();
+    QCOMPARE(fileContent, R"([cachedHeuristicList]
+1\name=myCP1
+2\name=myCP2
+3\name=my_cp_3
+size=3
+
+[property_myCP1]
+1\fileName=myPath1/myFile1.cpp
+1\sourceLocation="1,2,3,4"
+size=1
+
+[property_myCP2]
+1\fileName=myPath2/myFile2.cpp
+1\sourceLocation="10,20,30,40"
+size=1
+
+[property_my_cp_3]
+1\fileName=myPath3/myFile3.cpp
+1\sourceLocation="100,200,300,400"
+2\fileName=myPath3/myFile3.cpp
+2\sourceLocation="101,202,303,404"
+3\fileName=myPath3/myFile3.cpp
+3\sourceLocation="111,222,333,444"
+size=3
+)"_L1);
+}
+
+void TestQmllint::contextPropertiesFromHeuristicRead()
+{
+    using namespace QQmlJS;
+
+    HeuristicContextProperties properties;
+    properties.add("myCP1",
+                   HeuristicContextProperty{ "myPath1/myFile1.cpp", SourceLocation{ 1, 2, 3, 4 } });
+    properties.add(
+            "myCP2",
+            HeuristicContextProperty{ "myPath2/myFile2.cpp", SourceLocation{ 10, 20, 30, 40 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 100, 200, 300, 400 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 101, 202, 303, 404 } });
+    properties.add("my_cp_3",
+                   HeuristicContextProperty{ "myPath3/myFile3.cpp",
+                                             SourceLocation{ 111, 222, 333, 444 } });
+
+    QTemporaryDir myBuild;
+    QVERIFY(myBuild.isValid());
+    properties.writeCache(myBuild.path());
+    QSettings settings(myBuild.filePath(".qt/contextPropertyDump.ini"_L1), QSettings::IniFormat);
+    const auto readBack = QQmlJS::HeuristicContextProperties::collectFrom(&settings);
+    QCOMPARE(readBack, properties);
+}
+#endif
 
 void TestQmllint::cleanQmlCode_data()
 {

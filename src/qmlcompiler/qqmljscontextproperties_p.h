@@ -23,7 +23,11 @@
 
 #include <QtQml/private/qqmljssourcelocation_p.h>
 
+#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
+
 QT_BEGIN_NAMESPACE
+
+class QSettings;
 
 namespace QQmlJS {
 class LoggerCategory;
@@ -32,6 +36,13 @@ struct Q_QMLCOMPILER_EXPORT HeuristicContextProperty
 {
     QString filename = {};
     SourceLocation location = SourceLocation{};
+
+    friend bool comparesEqual(const HeuristicContextProperty &a,
+                              const HeuristicContextProperty &b) noexcept
+    {
+        return a.filename == b.filename && a.location == b.location;
+    }
+    Q_DECLARE_EQUALITY_COMPARABLE(HeuristicContextProperty);
 };
 
 class Q_QMLCOMPILER_EXPORT HeuristicContextProperties
@@ -39,18 +50,36 @@ class Q_QMLCOMPILER_EXPORT HeuristicContextProperties
 public:
     bool contains(const QString &name) const { return m_properties.contains(name); }
     qsizetype size() const { return m_properties.size(); }
+    bool isValid() const { return !m_properties.isEmpty(); }
     QList<HeuristicContextProperty> definitionsForName(const QString &name) const;
+    void writeCache(const QString &folder) const;
+
+    void add(const QString &name, const HeuristicContextProperty &property);
 
     static HeuristicContextProperties collectFromCppSourceDirs(const QList<QString> &cppSourceDirs);
+    static HeuristicContextProperties collectFrom(QSettings *settings);
+
+    friend bool comparesEqual(const HeuristicContextProperties &a,
+                              const HeuristicContextProperties &b) noexcept
+    {
+        return std::equal(a.m_properties.begin(), a.m_properties.end(), b.m_properties.begin(),
+                          b.m_properties.end());
+    }
+    Q_DECLARE_EQUALITY_COMPARABLE(HeuristicContextProperties);
 
 private:
     struct Entry
     {
         QString name;
         QList<HeuristicContextProperty> definitions;
+
+        friend bool comparesEqual(const Entry &a, const Entry &b) noexcept
+        {
+            return a.name == b.name && a.definitions == b.definitions;
+        }
+        Q_DECLARE_EQUALITY_COMPARABLE(Entry);
     };
 
-    void add(const QString &name, const HeuristicContextProperty &property);
     void collectFromDirs(const QList<QString> &dirs);
     void collectFromFile(const QString &file);
     void grepFallback(const QList<QString> &rootUrls);

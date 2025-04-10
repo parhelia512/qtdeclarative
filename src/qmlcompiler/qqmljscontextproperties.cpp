@@ -7,6 +7,10 @@
 #include <QtCore/qdirlisting.h>
 #include <QtCore/qfile.h>
 
+#if QT_CONFIG(settings)
+#  include <QtCore/qsettings.h>
+#endif
+
 #if QT_CONFIG(process)
 #  include <QtCore/qprocess.h>
 #endif
@@ -145,6 +149,102 @@ void HeuristicContextProperties::collectFromDirs(const QList<QString> &dirs)
     grepFallback(dirs);
 }
 
+#if QT_CONFIG(settings)
+static SourceLocation deserializeSourceLocation(const QString &string)
+{
+    constexpr int size = 4;
+    const QStringList bits = string.split(u',', Qt::SkipEmptyParts);
+    if (bits.length() != size)
+        return SourceLocation{};
+
+    SourceLocation result;
+    quint32 *destination[size] = { &result.offset, &result.length, &result.startLine,
+                                   &result.startColumn };
+
+    bool everythingOk = true;
+    for (int i = 0; i < size; ++i) {
+        bool ok = false;
+        *destination[i] = bits[i].toInt(&ok);
+        everythingOk &= ok;
+    }
+
+    if (everythingOk)
+        return result;
+    return SourceLocation{};
+}
+
+static QString serializeSourceLocation(const SourceLocation &location)
+{
+    QString result;
+    result.append(QString::number(location.offset)).append(u',');
+    result.append(QString::number(location.length)).append(u',');
+    result.append(QString::number(location.startLine)).append(u',');
+    result.append(QString::number(location.startColumn));
+    return result;
+}
+#endif
+
+static constexpr auto cachedHeuristicListKey = "cachedHeuristicList"_L1;
+
+HeuristicContextProperties HeuristicContextProperties::collectFrom(QSettings *settings)
+{
+#if QT_CONFIG(settings)
+    HeuristicContextProperties result;
+    std::vector<QString> names;
+
+    const int size = settings->beginReadArray(cachedHeuristicListKey);
+    for (int i = 0; i < size; ++i) {
+        settings->setArrayIndex(i);
+        names.push_back(settings->value("name").toString());
+    }
+    settings->endArray();
+
+    for (const auto &name : names) {
+        const int size = settings->beginReadArray(u"property_"_s.append(name));
+        for (int i = 0; i < size; ++i) {
+            settings->setArrayIndex(i);
+            result.add(
+                    name,
+                    HeuristicContextProperty{
+                            settings->value("fileName").toString(),
+                            deserializeSourceLocation(settings->value("sourceLocation").toString()),
+                    });
+        }
+        settings->endArray();
+    }
+    return result;
+#else
+    Q_UNUSED(settings);
+    return HeuristicContextProperties{};
+#endif
+}
+
+void HeuristicContextProperties::writeCache(const QString &folder) const
+{
+#if QT_CONFIG(settings)
+    QSettings settings(folder + "/.qt/contextPropertyDump.ini"_L1, QSettings::IniFormat);
+
+    settings.beginWriteArray(cachedHeuristicListKey);
+    int index = 0;
+    for (const auto &[name, _] : m_properties) {
+        settings.setArrayIndex(index++);
+        settings.setValue("name", name);
+    }
+    settings.endArray();
+
+    for (const auto &[name, definitions] : m_properties) {
+        settings.beginWriteArray(u"property_"_s.append(name));
+        for (int i = 0; i < definitions.size(); ++i) {
+            settings.setArrayIndex(i);
+            settings.setValue("fileName", definitions[i].filename);
+            settings.setValue("sourceLocation", serializeSourceLocation(definitions[i].location));
+        }
+        settings.endArray();
+    }
+#else
+    Q_UNUSED(folder);
+#endif
+}
 } // namespace QQmlJS
 
 QT_END_NAMESPACE

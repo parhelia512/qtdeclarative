@@ -1270,9 +1270,9 @@ void DomEnvironment::loadModuleDependency(
         loadModuleDependency(envItem, uri, version, nullptr, callback, errorHandler);
 }
 
-void DomEnvironment::loadModuleDependency(const DomItem &self, const QString &uri, Version v,
-                                          Callback loadCallback, Callback endCallback,
-                                          const ErrorHandler &errorHandler)
+void DomEnvironment::loadModuleDependency(
+        const DomItem &self, const QString &uri, Version v, const Callback &loadCallback,
+        const Callback &endCallback, const ErrorHandler &errorHandler)
 {
     Q_ASSERT(!uri.contains(u'/'));
     Path p = Paths::moduleIndexPath(uri, v.majorVersion);

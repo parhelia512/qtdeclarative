@@ -37,8 +37,9 @@ class Q_QMLCOMPILER_EXPORT LoggerCategory
 
 public:
     LoggerCategory();
-    LoggerCategory(QString name, QString settingsName, QString description, QtMsgType level,
-                   bool ignored = false, bool isDefault = false);
+    LoggerCategory(
+            const QString &name, const QString &settingsName, const QString &description,
+            QtMsgType level, bool ignored = false, bool isDefault = false);
     LoggerCategory(const LoggerCategory &);
     LoggerCategory(LoggerCategory &&) noexcept;
     LoggerCategory &operator=(const LoggerCategory &);

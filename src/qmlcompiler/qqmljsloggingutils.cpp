@@ -32,8 +32,9 @@ namespace QQmlJS {
 
 LoggerCategory::LoggerCategory() : d_ptr{ new LoggerCategoryPrivate } { }
 
-LoggerCategory::LoggerCategory(QString name, QString settingsName, QString description,
-                               QtMsgType level, bool ignored, bool isDefault)
+LoggerCategory::LoggerCategory(
+        const QString &name, const QString &settingsName, const QString &description, QtMsgType level,
+        bool ignored, bool isDefault)
     : d_ptr{ new LoggerCategoryPrivate }
 {
     Q_D(LoggerCategory);

@@ -1336,8 +1336,9 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
         Q_ASSERT(typeRef);
         installPropertyCache = !typeRef->isFullyDynamicType();
         const QQmlType type = typeRef->type();
-        if (type.isValid() && !type.isInlineComponentType()) {
-            typeName = type.qmlTypeName();
+        Q_ASSERT(type.isValid());
+        typeName = type.qmlTypeName();
+        if (!type.isComposite() && !type.isInlineComponentType()) {
 
             instance = type.createWithQQmlData();
             if (!instance) {
@@ -1366,20 +1367,22 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
             instanceIndex = sharedState->allCreatedObjects.size();
             sharedState->allCreatedObjects.push_back(instance);
         } else {
-            auto compilationUnit = typeRef->compilationUnit();
-            Q_ASSERT(compilationUnit);
-            typeName = compilationUnit->fileName();
-            // compilation unit is shared between root type and its inline component types
-            // so isSingleton errorneously returns true for inline components
-            if (compilationUnit->unitData()->isSingleton() && !type.isInlineComponentType()) {
-                recordError(obj->location, tr("Composite Singleton Type %1 is not creatable").arg(stringAt(obj->inheritedTypeNameIndex)));
+            if (type.isSingleton()) {
+                recordError(
+                        obj->location,
+                        tr("Composite Singleton Type %1 is not creatable")
+                                .arg(stringAt(obj->inheritedTypeNameIndex)));
                 return nullptr;
             }
 
+            QQmlRefPointer<QV4::ExecutableCompilationUnit> executableCu = typeRef->isSelfReference()
+                    ? compilationUnit
+                    : engine->handle()->executableCompilationUnit(typeRef->compilationUnit());
+            Q_ASSERT(executableCu);
+
             if (!type.isInlineComponentType()) {
                 QQmlObjectCreator subCreator(
-                        context, engine->handle()->executableCompilationUnit(
-                                         std::move(compilationUnit)),
+                        context, executableCu,
                         QString(), // not an inline component
                         sharedState.data(), isContextObject);
                 instance = subCreator.create();
@@ -1390,15 +1393,9 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
             } else {
                 const QString inlineComponentName = type.elementName();
 
-                const int inlineComponentId
-                        = compilationUnit->inlineComponentId(inlineComponentName);
+                const int inlineComponentId = executableCu->inlineComponentId(inlineComponentName);
                 QQmlObjectCreator subCreator(
-                        context,
-                        engine->handle()->executableCompilationUnit(
-                                QQmlRefPointer<QV4::CompiledData::CompilationUnit>(
-                                        compilationUnit)),
-                        inlineComponentName,
-                        sharedState.data(),
+                        context, executableCu, inlineComponentName, sharedState.data(),
                         isContextObject);
                 instance = subCreator.create(
                         inlineComponentId, nullptr, nullptr, CreationFlags::InlineComponent);
@@ -1759,11 +1756,9 @@ bool QQmlObjectCreator::populateInstance(int index, QObject *instance, QObject *
         }
         Q_ASSERT(!_compiledObject->hasFlag(QV4::CompiledData::Object::IsComponent));
         QQmlType type = typeRef->type();
-        if (type.isValid() && !type.isInlineComponentType()) {
-            return { 0, _propertyCache->propertyCount() }; // 1.
-        }
-        // Q_ASSERT(type.isComposite());
-        return { _propertyCache->propertyOffset(), _propertyCache->propertyCount() }; // 2.
+        if (type.isComposite() || type.isInlineComponentType())
+            return { _propertyCache->propertyOffset(), _propertyCache->propertyCount() }; // 2.
+        return { 0, _propertyCache->propertyCount() }; // 1.
     };
     const auto [offset, count] = getPropertyCacheRange();
     for (int i = offset; i < count; ++i) {

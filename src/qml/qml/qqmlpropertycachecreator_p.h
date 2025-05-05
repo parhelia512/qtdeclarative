@@ -756,29 +756,14 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
                 return qQmlCompileError(p->location, typeName + u' ' + errors[0].description());
             }
 
-            // inline components are not necessarily valid yet
             Q_ASSERT(qmltype.isValid());
-            if (qmltype.isComposite() || qmltype.isInlineComponentType()) {
-                QQmlType compositeType;
-                if (qmltype.isInlineComponentType() || !selfReference)
-                    compositeType = qmltype;
-                else
-                    compositeType = objectContainer->qmlTypeForComponent();
+            if (p->isList())
+                propertyType = qmltype.qListTypeId();
+            else
+                propertyType = qmltype.typeId();
 
-                Q_ASSERT(compositeType.isValid());
-
-                if (p->isList()) {
-                    propertyType = compositeType.qListTypeId();
-                } else {
-                    propertyType = compositeType.typeId();
-                }
-            } else {
-                if (p->isList())
-                    propertyType = qmltype.qListTypeId();
-                else
-                    propertyType = qmltype.typeId();
+            if (!qmltype.isComposite() && !qmltype.isInlineComponentType())
                 propertyTypeVersion = qmltype.version();
-            }
 
             if (p->isList())
                 propertyFlags.setType(QQmlPropertyData::Flags::QListType);
@@ -945,14 +930,11 @@ inline QQmlError QQmlPropertyCacheAliasCreator<ObjectContainer>::propertyDataFor
         }
 
         const auto referencedType = typeRef->type();
-        if (referencedType.isValid()) {
-            *type = referencedType.typeId();
-            if (!type->isValid() && referencedType.isInlineComponentType()) {
-                *type = objectContainer->qmlTypeForComponent(referencedType.elementName()).typeId();
-                Q_ASSERT(type->isValid());
-            }
-        } else {
-            *type = typeRef->compilationUnit()->metaType();
+        Q_ASSERT(referencedType.isValid());
+        *type = referencedType.typeId();
+        if (!type->isValid() && referencedType.isInlineComponentType()) {
+            *type = objectContainer->qmlTypeForComponent(referencedType.elementName()).typeId();
+            Q_ASSERT(type->isValid());
         }
 
         *version = typeRef->version();

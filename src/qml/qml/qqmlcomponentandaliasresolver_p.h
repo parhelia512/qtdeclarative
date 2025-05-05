@@ -169,11 +169,8 @@ QQmlError QQmlComponentAndAliasResolver<ObjectContainer>::findAndRegisterImplici
         Q_ASSERT(typeReference);
 
         const QMetaObject *firstMetaObject = nullptr;
-        const auto type = typeReference->type();
-        if (type.isValid())
-            firstMetaObject = type.metaObject();
-        else if (const auto compilationUnit = typeReference->compilationUnit())
-            firstMetaObject = compilationUnit->rootPropertyCache()->firstCppMetaObject();
+        if (const auto propCache = typeReference->typePropertyCache())
+            firstMetaObject = propCache->firstCppMetaObject();
         if (isUsableComponent(firstMetaObject))
             continue;
 

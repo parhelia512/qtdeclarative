@@ -404,27 +404,6 @@ void setupICs(
 };
 }
 
-template<typename Container>
-void QQmlTypeData::setCompileUnit(const Container &container)
-{
-    assertTypeLoaderThread();
-
-    for (int i = 0; i != container->objectCount(); ++i) {
-        auto const root = container->objectAt(i);
-        for (auto it = root->inlineComponentsBegin(); it != root->inlineComponentsEnd(); ++it) {
-            auto *typeRef = m_compiledData->resolvedType(it->nameIndex);
-
-            // We don't want the type reference to keep a strong reference to the compilation unit
-            // here. The compilation unit owns the type reference, and having a strong reference
-            // would prevent the compilation unit from ever getting deleted. We can still be sure
-            // that the compilation unit outlives the type reference, due to ownership.
-            typeRef->setReferencesCompilationUnit(false);
-
-            typeRef->setCompilationUnit(m_compiledData); // share compilation unit
-        }
-    }
-}
-
 bool QQmlTypeData::checkScripts()
 {
     // Check all script dependencies for errors
@@ -618,9 +597,7 @@ void QQmlTypeData::done()
     // verify if any dependencies changed if we're using a cache
     if (m_document.isNull() && verifyCaches) {
         const QQmlError error = createTypeAndPropertyCaches(typeNameCache, resolvedTypeCache);
-        if (!error.isValid() && m_compiledData->verifyChecksum(dependencyHasher)) {
-            setCompileUnit(m_compiledData);
-        } else {
+        if (error.isValid() || !m_compiledData->verifyChecksum(dependencyHasher)) {
 
             if (error.isValid()) {
                 qCDebug(DBG_DISK_CACHE)
@@ -654,8 +631,6 @@ void QQmlTypeData::done()
         compile(typeNameCache, &resolvedTypeCache, dependencyHasher);
         if (isError())
             return;
-        else
-            setCompileUnit(m_document);
     }
 
     {
@@ -1153,40 +1128,40 @@ QQmlError QQmlTypeData::buildTypeResolutionCaches(
     for (auto resolvedType = m_resolvedTypes.constBegin(), end = m_resolvedTypes.constEnd(); resolvedType != end; ++resolvedType) {
         auto ref = std::make_unique<QV4::ResolvedTypeReference>();
         QQmlType qmlType = resolvedType->type;
+        ref->setType(qmlType);
+        ref->setIsSelfReference(resolvedType->selfReference);
         if (resolvedType->typeData) {
             if (resolvedType->needsCreation && qmlType.isCompositeSingleton()) {
                 return qQmlCompileError(resolvedType->location, tr("Composite Singleton Type %1 is not creatable.").arg(qmlType.qmlTypeName()));
             }
-            ref->setCompilationUnit(resolvedType->typeData->compilationUnit());
-            if (resolvedType->type.isInlineComponentType()) {
+            const auto compilationUnit = resolvedType->typeData->compilationUnit();
+            if (qmlType.isInlineComponentType()) {
                 // Inline component which is part of an already resolved type
                 QString icName = qmlType.elementName();
                 Q_ASSERT(!icName.isEmpty());
 
-                const auto compilationUnit = resolvedType->typeData->compilationUnit();
                 ref->setTypePropertyCache(compilationUnit->propertyCaches.at(
                     compilationUnit->inlineComponentId(icName)));
-                ref->setType(std::move(qmlType));
                 Q_ASSERT(ref->type().isInlineComponentType());
+            } else {
+                ref->setTypePropertyCache(compilationUnit->rootPropertyCache());
             }
-        } else if (resolvedType->type.isInlineComponentType()) {
-            ref->setType(qmlType);
-
+            if (!resolvedType->selfReference && resolvedType->needsCreation)
+                ref->setCompilationUnit(compilationUnit);
+        } else if (qmlType.isInlineComponentType()) {
             // Inline component
             // If it's defined in the same file we're currently compiling, we don't want to use it.
             // We're going to fill in the property caches later after all.
-            if (qmlType.isValid()
-                    && !QQmlMetaType::equalBaseUrls(finalUrl(), qmlType.sourceUrl())) {
-
+            if (QQmlMetaType::equalBaseUrls(finalUrl(), qmlType.sourceUrl())) {
+                ref->setIsSelfReference(true);
+            } else {
                 // this is required for inline components in singletons
                 const QMetaType type = qmlType.typeId();
-                if (auto unit = QQmlMetaType::obtainCompilationUnit(type)) {
-                    ref->setCompilationUnit(std::move(unit));
-                    ref->setTypePropertyCache(QQmlMetaType::propertyCacheForType(type));
-                }
+                ref->setTypePropertyCache(QQmlMetaType::propertyCacheForType(type));
+                if (resolvedType->needsCreation)
+                    ref->setCompilationUnit(QQmlMetaType::obtainCompilationUnit(type));
             }
         } else if (qmlType.isValid() && !resolvedType->selfReference) {
-            ref->setType(qmlType);
             Q_ASSERT(ref->type().isValid());
 
             if (resolvedType->needsCreation && !qmlType.isCreatable()) {

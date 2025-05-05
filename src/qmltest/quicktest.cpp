@@ -374,13 +374,20 @@ private:
         if (object->hasFlag(QV4::CompiledData::Object::IsInlineComponentRoot))
             return result;
 
-        if (const auto superTypeUnit = compilationUnit->resolvedType(object->inheritedTypeNameIndex)
-                                               ->compilationUnit()) {
+        if (const auto superType
+                = compilationUnit->resolvedType(object->inheritedTypeNameIndex)->type();
+                    superType.isComposite() || superType.isInlineComponentType()) {
+
+            // Reset fragment, so that we don't run into problems with inline components
+            QUrl baseUrl = superType.sourceUrl();
+            baseUrl.setFragment(QString());
+
             // We have a non-C++ super type, which could indicate we're a subtype of a TestCase
-            if (testCaseType.isValid() && superTypeUnit->url() == testCaseType.sourceUrl())
+            if (testCaseType.isValid() && baseUrl == testCaseType.sourceUrl()) {
                 result.isTestCase = true;
-            else if (superTypeUnit->url() != compilationUnit->url()) { // urls are the same for inline component, avoid infinite recursion
-                result = enumerateTestCases(superTypeUnit);
+            } else if (baseUrl != compilationUnit->url()) {
+                // base urls are the same for inline component, avoid infinite recursion
+                result = enumerateTestCases(QQmlMetaType::obtainCompilationUnit(baseUrl));
             }
 
             if (result.isTestCase) {

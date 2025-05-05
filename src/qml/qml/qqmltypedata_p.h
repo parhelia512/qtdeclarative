@@ -52,9 +52,6 @@ public:
 private:
     friend class QQmlTypeLoader;
 
-    template<typename Container>
-    void setCompileUnit(const Container &container);
-
 public:
     QQmlTypeData(const QUrl &, QQmlTypeLoader *);
     ~QQmlTypeData() override;

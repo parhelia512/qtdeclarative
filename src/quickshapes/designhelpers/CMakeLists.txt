@@ -16,6 +16,9 @@ qt_internal_add_qml_module(QuickShapesDesignHelpersPrivate
         qquickrectangleshape.cpp
         qquickrectangleshape_p.h
         qquickrectangleshape_p_p.h
+        qquickregularpolygonshape.cpp
+        qquickregularpolygonshape_p.h
+        qquickregularpolygonshape_p_p.h
         qquickshapesdesignhelpersglobal_p.h
         qquickstarshape.cpp
         qquickstarshape_p.h

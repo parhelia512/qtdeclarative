@@ -98,9 +98,9 @@ public:
                                                   const QString &uri, const QString &typeNamespace,
                                                   QTypeRevision version, QList<QQmlError> *errors);
 
-    static QQmlType typeForUrl(const QString &urlString, const QHashedStringRef& typeName,
-                               CompositeTypeLookupMode mode, QList<QQmlError> *errors,
-                               QTypeRevision version = QTypeRevision());
+    static QQmlType typeForUrl(
+            const QUrl &url, const QHashedStringRef &typeName, CompositeTypeLookupMode mode,
+            QList<QQmlError> *errors, QTypeRevision version = QTypeRevision());
 
     static QQmlType fetchOrCreateInlineComponentTypeForUrl(const QUrl &url);
     static QQmlType inlineComponentType(const QQmlType &outerType, const QString &name)

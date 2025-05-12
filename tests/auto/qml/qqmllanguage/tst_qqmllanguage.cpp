@@ -518,6 +518,7 @@ private slots:
     void argumentsUsageInBindings();
 
     void aliasToLargeRevision();
+    void propertyCycle();
 
     void urlWithFragment();
 
@@ -6330,12 +6331,12 @@ void tst_qqmllanguage::nonExistingInlineComponent_data()
     QTest::addColumn<int>("line");
     QTest::addColumn<int>("column");
 
-    QTest::newRow("Property type")  << testFileUrl("nonExistingICUser1.qml") << QString("Type InlineComponentProvider has no inline component type called NonExisting") << 4 << 5;
+    QTest::newRow("Property type")  << testFileUrl("nonExistingICUser1.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 4 << 58;
     QTest::newRow("Instantiation")  << testFileUrl("nonExistingICUser2.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 4 << 5;
     QTest::newRow("Inheritance")    << testFileUrl("nonExistingICUser3.qml") << QString("Type InlineComponentProvider has no inline component type called NotExisting") << 3 << 1;
-    QTest::newRow("From singleton") << testFileUrl("nonExistingICUser4.qml") << QString("Type MySingleton.SingletonTypeWithIC has no inline component type called NonExisting") << 5 << 5;
+    QTest::newRow("From singleton") << testFileUrl("nonExistingICUser4.qml") << QString("Type MySingleton.SingletonTypeWithIC has no inline component type called NonExisting") << 5 << 71;
 
-    QTest::newRow("Cannot access parent inline components from child")  << testFileUrl("nonExistingICUser5.qml") << QString("Type InlineComponentProviderChild has no inline component type called StyledRectangle") << 4 << 5;
+    QTest::newRow("Cannot access parent inline components from child")  << testFileUrl("nonExistingICUser5.qml") << QString("Type InlineComponentProviderChild has no inline component type called StyledRectangle") << 4 << 67;
 }
 
 void tst_qqmllanguage::nonExistingInlineComponent()
@@ -9948,6 +9949,55 @@ void tst_qqmllanguage::enumValueToStrings()
     l = QList({ QVariant("A") });
     QCOMPARE(o->property("p13").toList(), l);
     QCOMPARE(o->property("p14"), QVariant());
+}
+
+void tst_qqmllanguage::propertyCycle()
+{
+    QQmlEngine engine;
+
+
+    QQmlComponent c1(&engine, testFileUrl("PropertyCycle1.qml"));
+    QVERIFY2(c1.isReady(), qPrintable(c1.errorString()));
+    QScopedPointer<QObject> o1(c1.create());
+    QVERIFY(!o1.isNull());
+
+    const QVariant self1 = o1->property("self");
+    QVERIFY(QByteArray(self1.metaType().name()).startsWith("PropertyCycle1_QMLTYPE_"));
+    QCOMPARE(self1.value<QObject *>(), nullptr);
+    o1->setProperty("self", QVariant::fromValue(o1.data()));
+    QCOMPARE(o1->property("self").value<QObject *>(), o1.data());
+
+    const QVariant cycle1 = o1->property("cycle");
+    QVERIFY(QByteArray(cycle1.metaType().name()).startsWith("PropertyCycle2_QMLTYPE_"));
+    QCOMPARE(cycle1.value<QObject *>(), nullptr);
+    o1->setProperty("cycle", QVariant::fromValue(o1.data()));
+    QCOMPARE(o1->property("cycle").value<QObject *>(), nullptr);
+
+
+    QQmlComponent c2(&engine, testFileUrl("PropertyCycle2.qml"));
+    QVERIFY2(c2.isReady(), qPrintable(c2.errorString()));
+    QScopedPointer<QObject> o2(c2.create());
+    QVERIFY(!o2.isNull());
+
+    const QVariant self2 = o2->property("self");
+    QVERIFY(QByteArray(self2.metaType().name()).startsWith("PropertyCycle2_QMLTYPE_"));
+    QCOMPARE(self2.value<QObject *>(), nullptr);
+    o2->setProperty("self", QVariant::fromValue(o2.data()));
+    QCOMPARE(o2->property("self").value<QObject *>(), o2.data());
+
+    const QVariant cycle2 = o2->property("cycle");
+    QVERIFY(QByteArray(cycle2.metaType().name()).startsWith("PropertyCycle1_QMLTYPE_"));
+    QCOMPARE(cycle2.value<QObject *>(), nullptr);
+    o2->setProperty("cycle", QVariant::fromValue(o2.data()));
+    QCOMPARE(o2->property("cycle").value<QObject *>(), nullptr);
+
+
+
+    o1->setProperty("cycle", QVariant::fromValue(o2.data()));
+    QCOMPARE(o1->property("cycle").value<QObject *>(), o2.data());
+
+    o2->setProperty("cycle", QVariant::fromValue(o1.data()));
+    QCOMPARE(o2->property("cycle").value<QObject *>(), o1.data());
 }
 
 QTEST_MAIN(tst_qqmllanguage)

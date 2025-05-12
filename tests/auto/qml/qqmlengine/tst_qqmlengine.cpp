@@ -942,29 +942,41 @@ public:
     CustomSelector(const QUrl &base):m_base(base){}
     QUrl intercept(const QUrl &url, QQmlAbstractUrlInterceptor::DataType d) override
     {
+        QString path = url.path();
+
         if ((url.scheme() != QStringLiteral("file") && url.scheme() != QStringLiteral("qrc"))
-            || url.path().contains("QtQml"))
+                || path.contains("QtQml")) {
             return url;
+        }
+
         if (!m_interceptionPoints.contains(d))
             return url;
 
-        if (url.path().endsWith("Test.2/qmldir")) {//Special case
+        if (path.endsWith("Test.2/qmldir")) {
+            // Special case
             QUrl url = m_base;
             url.setPath(m_base.path() + "interception/module/intercepted/qmldir");
             return url;
         }
-        // Special case: with 5.10 we always add the implicit import, so we need to explicitly handle this case now
-        if (url.path().endsWith("intercepted/qmldir"))
-            return url;
 
-        QString alteredPath = url.path();
-        int a = alteredPath.lastIndexOf('/');
-        if (a < 0)
-            a = 0;
-        alteredPath.insert(a, QStringLiteral("/intercepted"));
+        qsizetype lastSlash = path.lastIndexOf('/');
+        if (lastSlash < 0)
+            lastSlash = 0;
+
+        if (QStringView(path).mid(lastSlash) == u"/included.js") {
+            // Special case: We want this one to be double-intercepted
+        } else if (QStringView(path).left(lastSlash).endsWith(u"/intercepted")) {
+            // Already intercepted. Don't do it again.
+            // In real applications this routinely happens when new URLs are constructed relative to
+            // components loaded from intercepted URLs. Any sensible URL interceptor has to filter
+            // for this.
+            return url;
+        }
+
+        path.insert(lastSlash, QStringLiteral("/intercepted"));
 
         QUrl ret = url;
-        ret.setPath(alteredPath);
+        ret.setPath(path);
         return ret;
     }
     QList<QQmlAbstractUrlInterceptor::DataType> m_interceptionPoints;

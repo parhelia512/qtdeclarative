@@ -1411,15 +1411,6 @@ struct TypeReferenceMap : QHash<int, TypeReference>
             r.errorWhenNotFound = true;
         }
 
-        auto prop = obj->propertiesBegin();
-        auto const propEnd = obj->propertiesEnd();
-        for ( ; prop != propEnd; ++prop) {
-            if (!prop->isCommonType()) {
-                TypeReference &r = this->add(prop->commonTypeOrTypeNameIndex(), prop->location);
-                r.errorWhenNotFound = true;
-            }
-        }
-
         auto binding = obj->bindingsBegin();
         auto const bindingEnd = obj->bindingsEnd();
         for ( ; binding != bindingEnd; ++binding) {

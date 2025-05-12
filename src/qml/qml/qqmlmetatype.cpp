@@ -1023,24 +1023,23 @@ QQmlMetaType::RegistrationResult QQmlMetaType::registerPluginTypes(
     Errors (if there are any) are placed into \a errors, if it is nonzero.
     Otherwise errors are printed as warnings.
 */
-QQmlType QQmlMetaType::typeForUrl(const QString &urlString,
-                                  const QHashedStringRef &qualifiedType,
-                                  CompositeTypeLookupMode mode, QList<QQmlError> *errors,
-                                  QTypeRevision version)
+QQmlType QQmlMetaType::typeForUrl(
+        const QUrl &url, const QHashedStringRef &qualifiedType, CompositeTypeLookupMode mode,
+        QList<QQmlError> *errors, QTypeRevision version)
 {
     // ### unfortunate (costly) conversion
-    const QUrl url = QQmlTypeLoader::normalize(QUrl(urlString));
+    const QUrl normalized = QQmlTypeLoader::normalize(url);
 
     QQmlMetaTypeDataPtr data;
     {
-        QQmlType ret(data->urlToType.value(url));
-        if (ret.isValid() && ret.sourceUrl() == url)
+        QQmlType ret(data->urlToType.value(normalized));
+        if (ret.isValid() && ret.sourceUrl() == normalized)
             return ret;
     }
 
     const QQmlType type = createTypeForUrl(
-        data, url, qualifiedType, mode, errors, version);
-    data->urlToType.insert(url, type.priv());
+        data, normalized, qualifiedType, mode, errors, version);
+    data->urlToType.insert(normalized, type.priv());
     return type;
 }
 

@@ -619,8 +619,9 @@ bool QQmlImportInstance::resolveType(QQmlTypeLoader *typeLoader, const QHashedSt
         if (candidate != end) {
             if (!base) // ensure we have a componentUrl
                 componentUrl = resolveLocalUrl(QString(url + candidate->typeName + dotqml_string), candidate->fileName);
-            QQmlType returnType = QQmlMetaType::typeForUrl(componentUrl, type, lookupMode,
-                                                           nullptr, candidate->version);
+            QQmlType returnType = QQmlMetaType::typeForUrl(
+                    typeLoader->interceptUrl(QUrl(componentUrl), QQmlAbstractUrlInterceptor::QmlFile),
+                    type, lookupMode, nullptr, candidate->version);
             if (version_return)
                 *version_return = candidate->version;
             if (type_return)
@@ -668,7 +669,8 @@ bool QQmlImportInstance::resolveType(QQmlTypeLoader *typeLoader, const QHashedSt
                 *typeRecursionDetected = recursion;
             if (recursionRestriction == QQmlImport::AllowRecursion || !recursion) {
                 QQmlType returnType = QQmlMetaType::typeForUrl(
-                        qmlUrl, type, registrationType == QQmlType::CompositeSingletonType
+                        typeLoader->interceptUrl(QUrl(qmlUrl), QQmlAbstractUrlInterceptor::QmlFile),
+                        type, registrationType == QQmlType::CompositeSingletonType
                                 ? QQmlMetaType::Singleton
                                 : QQmlMetaType::NonSingleton,
                         errors);
@@ -700,9 +702,10 @@ bool QQmlImports::resolveType(
                 && type_return
                 && nameSpace != &m_unqualifiedset) {
             // qualified, and only 1 url
+            const QString urlString = resolveLocalUrl(
+                    nameSpace->imports.at(0)->url, unqualifiedtype.toString() + dotqml_string);
             *type_return = QQmlMetaType::typeForUrl(
-                    resolveLocalUrl(nameSpace->imports.at(0)->url,
-                                    unqualifiedtype.toString() + QLatin1String(".qml")),
+                    typeLoader->interceptUrl(QUrl(urlString), QQmlAbstractUrlInterceptor::QmlFile),
                     type, QQmlMetaType::NonSingleton, errors);
             return type_return->isValid();
         }

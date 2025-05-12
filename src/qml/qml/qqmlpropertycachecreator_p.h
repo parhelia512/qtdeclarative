@@ -747,31 +747,25 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
 
             QQmlType qmltype;
             bool selfReference = false;
+            QList<QQmlError> errors;
+            const QString typeName = stringAt(p->commonTypeOrTypeNameIndex());
             if (!imports->resolveType(
-                        typeLoader,
-                        stringAt(p->commonTypeOrTypeNameIndex()), &qmltype, nullptr, nullptr,
-                        nullptr, QQmlType::AnyRegistrationType, &selfReference)) {
-                return qQmlCompileError(p->location, QQmlPropertyCacheCreatorBase::tr("Invalid property type"));
+                        typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
+                        QQmlType::AnyRegistrationType, &selfReference)) {
+                Q_ASSERT(!errors.isEmpty());
+                return qQmlCompileError(p->location, typeName + u' ' + errors[0].description());
             }
 
             // inline components are not necessarily valid yet
             Q_ASSERT(qmltype.isValid());
             if (qmltype.isComposite() || qmltype.isInlineComponentType()) {
                 QQmlType compositeType;
-                if (qmltype.isInlineComponentType()) {
+                if (qmltype.isInlineComponentType() || !selfReference)
                     compositeType = qmltype;
-                    Q_ASSERT(compositeType.isValid());
-                } else if (selfReference) {
+                else
                     compositeType = objectContainer->qmlTypeForComponent();
-                } else {
-                    // compositeType may not be the same type as qmlType because multiple engines
-                    // may load different types for the same document. Therefore we have to ask
-                    // our engine's type loader here.
-                    QQmlRefPointer<QQmlTypeData> tdata = typeLoader->getType(qmltype.sourceUrl());
-                    Q_ASSERT(tdata);
-                    Q_ASSERT(tdata->isComplete());
-                    compositeType = tdata->compilationUnit()->qmlTypeForComponent();
-                }
+
+                Q_ASSERT(compositeType.isValid());
 
                 if (p->isList()) {
                     propertyType = compositeType.qListTypeId();

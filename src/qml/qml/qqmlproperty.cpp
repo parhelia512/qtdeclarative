@@ -1510,9 +1510,10 @@ static bool assignToListProperty(const QQmlPropertyData &property, QQmlPropertyD
 {
     if (propertyMetaType.flags() & QMetaType::IsQmlList) {
         QMetaType listValueType = QQmlMetaType::listValueType(propertyMetaType);
+
+        // valueMetaObject may be null. That means we haven't loaded the type, and the given value
+        // can't be of this type. That's what the warning in doAppend below is for.
         QQmlMetaObject valueMetaObject = QQmlMetaType::rawMetaObjectForType(listValueType);
-        if (valueMetaObject.isNull())
-            return false;
 
         QQmlListProperty<QObject> prop;
         property.readProperty(object, &prop);
@@ -1531,7 +1532,8 @@ static bool assignToListProperty(const QQmlPropertyData &property, QQmlPropertyD
         propClear(&prop);
 
         const auto doAppend = [&](QObject *o) {
-            if (Q_UNLIKELY(o && !QQmlMetaObject::canConvert(o, valueMetaObject))) {
+            if (Q_UNLIKELY(o && (valueMetaObject.isNull()
+                                 || !QQmlMetaObject::canConvert(o, valueMetaObject)))) {
                 qCWarning(lcIncompatibleElement)
                 << "Cannot append" << o << "to a QML list of" << listValueType.name();
                 o = nullptr;

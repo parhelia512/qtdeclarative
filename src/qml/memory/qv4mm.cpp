@@ -781,9 +781,95 @@ GCState markDrain(GCStateMachine *that, ExtraData &)
             : GCState::MarkDrain;
 }
 
-GCState markReady(GCStateMachine *, ExtraData &)
+GCState markReady(GCStateMachine *that, ExtraData &)
 {
-    //Possibility to do some clean up, stat printing, etc...
+    auto isIncrementalRun = [](GCStateMachine* that){
+        return !that->mm->aggressiveGC && that->timeLimit.count() > 0;
+    };
+
+    if (that->mm->crossValidateIncrementalGC && isIncrementalRun(that))
+        return GCState::CrossValidateIncrementalMarkPhase;
+    return GCState::InitCallDestroyObjects;
+}
+
+GCState crossValidateIncrementalMarkPhase(GCStateMachine *that, ExtraData &)
+{
+    struct {
+        Chunk* operator()(Chunk* chunk) { return chunk; }
+        Chunk* operator()(const HugeItemAllocator::HugeChunk& chunk) { return chunk.chunk; }
+    } getChunk{};
+
+    auto takeBlackBitmap = [&getChunk](auto& allocator, std::vector<quintptr>& storage){
+        for (auto chunk : allocator.chunks) {
+            for (auto& bitmap : getChunk(chunk)->blackBitmap) {
+                storage.push_back(bitmap);
+            }
+            getChunk(chunk)->resetBlackBits();
+        }
+    };
+
+    auto runMarkPhase = [](GCStateMachine* that) {
+        that->reset();
+        that->mm->m_markStack.reset();
+
+        while (that->state != GCStateMachine::MarkReady) {
+            GCStateInfo& stateInfo = that->stateInfoMap[int(that->state)];
+            that->state = stateInfo.execute(that, that->stateData);
+        }
+    };
+
+    auto checkBlackBitmap = [&that, &getChunk](auto& allocator, const std::vector<quintptr>& storedBitmap) {
+        auto reportError = [&allocator, &getChunk, &that](std::size_t chunk_index, std::size_t bitmap_index, uint bit_index){
+            Q_UNUSED(that);
+            auto object = reinterpret_cast<Heap::Base*>(getChunk(allocator.chunks[chunk_index])->realBase() + (bit_index + (bitmap_index*Chunk::Bits)));
+            qDebug() << "Cross Validation Error on chunk" << chunk_index
+                        << "on bitmap piece" << bitmap_index << "and bit" << bit_index
+                        << ((object->internalClass) ? "With type" : "")
+                        << ((object->internalClass) ?
+                            Managed::typeToString(Managed::Type(object->internalClass->vtable->type)) : QString());
+
+            #ifdef QT_BUILD_INTERNAL
+            that->bitmapErrors.emplace_back(chunk_index, bitmap_index, bit_index);
+            #endif
+        };
+
+        auto original = storedBitmap.begin();
+        for (std::size_t chunk_index = 0; original != storedBitmap.end() && chunk_index < allocator.chunks.size(); ++chunk_index) {
+            for (std::size_t bitmap_index = 0;  bitmap_index < Chunk::EntriesInBitmap; ++bitmap_index) {
+                if (auto differences = (~(*original)) & getChunk(allocator.chunks[chunk_index])->blackBitmap[bitmap_index]) {
+                    while (differences != 0) {
+                        uint bit_index = qCountTrailingZeroBits(differences);
+                        reportError(chunk_index, bitmap_index, bit_index);
+                        differences ^=  quintptr{1} << bit_index;
+                    }
+                }
+                ++original;
+            }
+        }
+    };
+
+    #ifdef QT_BUILD_INTERNAL
+    that->bitmapErrors.clear();
+    #endif
+
+    std::vector<quintptr> blockBitmap{};
+    blockBitmap.reserve(Chunk::EntriesInBitmap * that->mm->blockAllocator.chunks.size());
+    takeBlackBitmap(that->mm->blockAllocator, blockBitmap);
+
+    std::vector<quintptr> hugeItemBitmap{};
+    hugeItemBitmap.reserve(Chunk::EntriesInBitmap * that->mm->hugeItemAllocator.chunks.size());
+    takeBlackBitmap(that->mm->hugeItemAllocator, hugeItemBitmap);
+
+    std::vector<quintptr> internalClassBitmap{};
+    internalClassBitmap.reserve(Chunk::EntriesInBitmap * that->mm->icAllocator.chunks.size());
+    takeBlackBitmap(that->mm->icAllocator, internalClassBitmap);
+
+    runMarkPhase(that);
+
+    checkBlackBitmap(that->mm->blockAllocator, blockBitmap);
+    checkBlackBitmap(that->mm->hugeItemAllocator, hugeItemBitmap);
+    checkBlackBitmap(that->mm->icAllocator, internalClassBitmap);
+
     return GCState::InitCallDestroyObjects;
 }
 
@@ -907,6 +993,7 @@ MemoryManager::MemoryManager(ExecutionEngine *engine)
     , m_weakValues(new PersistentValueStorage(engine))
     , unmanagedHeapSizeGCLimit(MinUnmanagedHeapSizeGCLimit)
     , aggressiveGC(!qEnvironmentVariableIsEmpty("QV4_MM_AGGRESSIVE_GC"))
+    , crossValidateIncrementalGC(qEnvironmentVariableIsSet("QV4_MM_CROSS_VALIDATE_INCREMENTAL_GC"))
     , gcStats(lcGcStats().isDebugEnabled())
     , gcCollectorStats(lcGcAllocatorStats().isDebugEnabled())
 {
@@ -954,6 +1041,10 @@ MemoryManager::MemoryManager(ExecutionEngine *engine)
     };
     gcStateMachine->stateInfoMap[GCState::MarkReady] = {
         markReady,
+        false,
+    };
+    gcStateMachine->stateInfoMap[GCState::CrossValidateIncrementalMarkPhase] = {
+        crossValidateIncrementalMarkPhase,
         false,
     };
     gcStateMachine->stateInfoMap[GCState::InitCallDestroyObjects] = {

@@ -129,6 +129,8 @@ public:
     };
     Q_MANAGED_TYPE(Invalid)
 
+    static QString typeToString(Type);
+
     Heap::InternalClass *internalClass() const { return d()->internalClass; }
     const VTable *vtable() const { return d()->internalClass->vtable; }
     inline ExecutionEngine *engine() const { return internalClass()->engine; }

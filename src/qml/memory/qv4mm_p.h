@@ -49,6 +49,11 @@ public:
         MarkDrain,
         MarkReady,
         InitCallDestroyObjects,
+        // The following needs to be after InitCallDestroyObjects,
+        // even if it normally would run before it, to ensure that in
+        // a normal incremental run the stack is redrained before this
+        // is run as we make use of that knowledge in a test.
+        CrossValidateIncrementalMarkPhase,
         CallDestroyObjects,
         FreeWeakMaps,
         FreeWeakSets,
@@ -79,6 +84,11 @@ public:
     MemoryManager *mm = nullptr;
     ExtraData stateData; // extra date for specific states
     bool collectTimings = false;
+    #ifdef QT_BUILD_INTERNAL
+    // This is used only to simplify testing.
+    using BitmapError = std::tuple<std::size_t, std::size_t, quintptr>;
+    std::vector<BitmapError> bitmapErrors;
+    #endif
 
     GCStateMachine();
 
@@ -433,6 +443,7 @@ public:
     enum Blockness : quint8 {Unblocked, NormalBlocked, InCriticalSection };
     Blockness gcBlocked = Unblocked;
     bool aggressiveGC = false;
+    bool crossValidateIncrementalGC = false;
     bool gcStats = false;
     bool gcCollectorStats = false;
 

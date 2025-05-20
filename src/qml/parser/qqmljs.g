@@ -69,6 +69,7 @@
 %token T_PRAGMA "pragma"
 %token T_AS "as"
 %token T_OF "of"
+%token T_ON "on"
 %token T_GET "get"
 %token T_SET "set"
 

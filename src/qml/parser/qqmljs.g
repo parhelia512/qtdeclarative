@@ -1643,35 +1643,65 @@ EnumMemberList: EnumMemberList T_COMMA T_IDENTIFIER T_EQ T_MINUS T_NUMERIC_LITER
     }
 ./
 
+--------------------------------------------------------------------------------------------------------
+-- Keywords & Identifiers
+--------------------------------------------------------------------------------------------------------
+ECMAContextualKeyword: T_GET | T_SET | T_FROM | T_OF;
+QMLContextualKeyword: T_PROPERTY | T_SIGNAL | T_READONLY | T_ON | T_REQUIRED | T_COMPONENT;
+
+--- QMLReserved means can't be used as QmlIdentifier
+--- todo: consider making all QMLContextualKeyword-s reserved ones or the other way around
+QMLReservedWord: T_STATIC | T_AS | T_REQUIRED | T_FINAL;
+
+--- 262 ES 7 11.6.2.1
+ECMAKeyword: T_BREAK | T_DO | T_IN | T_TYPEOF | T_CASE | T_ELSE | T_INSTANCEOF
+            | T_VAR | T_CATCH | T_EXPORT | T_NEW | T_VOID | T_CLASS | T_EXTENDS
+            | T_RETURN | T_WHILE | T_CONST | T_FINALLY | T_SUPER | T_WITH | T_CONTINUE
+            | T_FOR | T_SWITCH | T_DEBUGGER | T_FUNCTION | T_THIS | T_DEFAULT
+            | T_IF | T_THROW | T_DELETE | T_IMPORT | T_TRY;
+
+--- 262 ES 7 11.6.2.2
+--- Note await token is missing
+ECMAFutureReservedWord: T_ENUM;
+
+--- 262 ES 7 11.8.1
+ECMANullLiteral: T_NULL;
+
+--- 262 ES 7 11.8.2
+ECMABooleanLiteral: T_TRUE | T_FALSE;
+
+--- 262 ES 7 11.6.2
+ECMAReservedWord: ECMAKeyword
+                | ECMAFutureReservedWord
+                | ECMANullLiteral
+                | ECMABooleanLiteral;
+
+--- Preserving older ones, which should probably be part of ECMAContextualKeyword
+--- both static and let are treated as reserved through semantic restrictions
+--- rather than the lexical grammar (see NOTE 262 ES 7 11.6.2.1)
+ECMAReservedWord: T_LET;
+ECMAReservedWord: T_RESERVED_WORD;
+
+--- QML Identifiers
+--- note: some of the ECMAKeyword could probably be added as qml identifiers
 QmlIdentifier: T_IDENTIFIER
-             | T_PROPERTY
-             | T_SIGNAL
-             | T_READONLY
-             | T_ON
-             | T_GET
-             | T_SET
-             | T_FROM
-             | T_OF
-             | T_REQUIRED
-             | T_COMPONENT;
+            | ECMAContextualKeyword
+            | QMLContextualKeyword;
 
+--- ECMA Identifiers (262 ES 7 12.1)
+--- since qlarl doesn't support "NOT" we can't define a set IdentifierName \ ECMAReservedWord
+--- introducing JsIdentifier as a workaround,
+--- so that IdentifierName = JsIdentifier U ECMAReservedWord
 JsIdentifier: T_IDENTIFIER
-            | T_PROPERTY
-            | T_SIGNAL
-            | T_READONLY
-            | T_ON
-            | T_GET
-            | T_SET
-            | T_FROM
-            | T_STATIC
-            | T_OF
-            | T_AS
-            | T_REQUIRED
-            | T_COMPONENT;
+            | ECMAContextualKeyword
+            | QMLContextualKeyword
+            | QMLReservedWord;
 
+--- Note yield token is missing (262 ES 7 11.6.2.2)
 IdentifierReference: JsIdentifier;
-BindingIdentifier: IdentifierReference;
+BindingIdentifier: JsIdentifier;
 
+IdentifierName: JsIdentifier | ECMAReservedWord;
 --------------------------------------------------------------------------------------------------------
 -- Types
 --------------------------------------------------------------------------------------------------------
@@ -2169,49 +2199,6 @@ LiteralPropertyName: T_NUMERIC_LITERAL;
         sym(1).Node = node;
     } break;
 ./
-
-IdentifierName: IdentifierReference;
-IdentifierName: ReservedIdentifier;
-
-ReservedIdentifier: T_BREAK;
-ReservedIdentifier: T_CASE;
-ReservedIdentifier: T_CATCH;
-ReservedIdentifier: T_CONTINUE;
-ReservedIdentifier: T_DEFAULT;
-ReservedIdentifier: T_DELETE;
-ReservedIdentifier: T_DO;
-ReservedIdentifier: T_ELSE;
-ReservedIdentifier: T_ENUM;
-ReservedIdentifier: T_FALSE;
-ReservedIdentifier: T_FINALLY;
-ReservedIdentifier: T_FOR;
-ReservedIdentifier: T_FUNCTION;
-ReservedIdentifier: T_IF;
-ReservedIdentifier: T_IN;
-ReservedIdentifier: T_INSTANCEOF;
-ReservedIdentifier: T_NEW;
-ReservedIdentifier: T_NULL;
-ReservedIdentifier: T_RETURN;
-ReservedIdentifier: T_SWITCH;
-ReservedIdentifier: T_THIS;
-ReservedIdentifier: T_THROW;
-ReservedIdentifier: T_TRUE;
-ReservedIdentifier: T_TRY;
-ReservedIdentifier: T_TYPEOF;
-ReservedIdentifier: T_VAR;
-ReservedIdentifier: T_VOID;
-ReservedIdentifier: T_WHILE;
-ReservedIdentifier: T_CONST;
-ReservedIdentifier: T_LET;
-ReservedIdentifier: T_DEBUGGER;
-ReservedIdentifier: T_RESERVED_WORD;
-ReservedIdentifier: T_FINAL;
-ReservedIdentifier: T_SUPER;
-ReservedIdentifier: T_WITH;
-ReservedIdentifier: T_CLASS;
-ReservedIdentifier: T_EXTENDS;
-ReservedIdentifier: T_EXPORT;
-ReservedIdentifier: T_IMPORT;
 
 ComputedPropertyName: T_LBRACKET AssignmentExpression_In T_RBRACKET;
 /.

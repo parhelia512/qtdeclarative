@@ -106,6 +106,7 @@ static inline int classify3(QStringView s, int parseModeFlags) {
 }
 
 static inline int classify4(QStringView s, int parseModeFlags) {
+    Q_UNUSED(parseModeFlags);
   if (s[0].unicode() == 'c') {
     if (s[1].unicode() == 'a') {
       if (s[2].unicode() == 's') {
@@ -126,7 +127,7 @@ static inline int classify4(QStringView s, int parseModeFlags) {
     else if (s[1].unicode() == 'n') {
       if (s[2].unicode() == 'u') {
         if (s[3].unicode() == 'm') {
-          return (parseModeFlags & Lexer::QmlMode) ? int(Lexer::T_ENUM) : int(Lexer::T_RESERVED_WORD);
+          return int(Lexer::T_ENUM);
         }
       }
     }

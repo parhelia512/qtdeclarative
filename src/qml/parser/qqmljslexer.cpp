@@ -1640,7 +1640,7 @@ static const int uriTokens[] = {
     QQmlJSGrammar::T_WHILE,
     QQmlJSGrammar::T_CONST,
     QQmlJSGrammar::T_DEBUGGER,
-    QQmlJSGrammar::T_RESERVED_WORD,
+    QQmlJSGrammar::T_ENUM,
     QQmlJSGrammar::T_PACKAGE,
     QQmlJSGrammar::T_ABSTRACT,
     QQmlJSGrammar::T_INTERFACE,

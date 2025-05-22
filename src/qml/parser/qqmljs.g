@@ -38,7 +38,6 @@
 %token T_NULL "null"            T_TRUE "true"               T_FALSE "false"
 %token T_CONST "const"          T_LET "let"                 T_AT "@"
 %token T_DEBUGGER "debugger"
-%token T_RESERVED_WORD "reserved word"
 %token T_MULTILINE_STRING_LITERAL "multiline string literal"
 %token T_COMMENT "comment"
 %token T_COMPATIBILITY_SEMICOLON
@@ -1193,8 +1192,6 @@ UiObjectMember: UiQualifiedId Semicolon;
 
 UiPropertyType: T_VAR;
 /.  case $rule_number: Q_FALLTHROUGH(); ./
-UiPropertyType: T_RESERVED_WORD;
-/.  case $rule_number: Q_FALLTHROUGH(); ./
 UiPropertyType: T_FINAL;
 /.  case $rule_number: Q_FALLTHROUGH(); ./
 UiPropertyType: T_IDENTIFIER;
@@ -1700,7 +1697,6 @@ ECMAReservedWord: ECMAKeyword
 --- both static and let are treated as reserved through semantic restrictions
 --- rather than the lexical grammar (see NOTE 262 ES 7 11.6.2.1)
 ECMAReservedWord: T_LET;
-ECMAReservedWord: T_RESERVED_WORD;
 
 --- QML Identifiers
 --- note: some of the ECMAKeyword could probably be added as qml identifiers
@@ -1740,8 +1736,6 @@ SimpleType: T_VAR;
 SimpleType: T_VOID;
 /.  case $rule_number: Q_FALLTHROUGH(); ./
 SimpleType: T_FINAL;
-/.  case $rule_number: Q_FALLTHROUGH(); ./
-SimpleType: T_RESERVED_WORD;
 /.
     case $rule_number: {
         AST::UiQualifiedId *id = new (pool) AST::UiQualifiedId(stringRef(1));

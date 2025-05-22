@@ -319,7 +319,7 @@ bool Token::lexKindIsIdentifier(int kind)
     case QQmlJSGrammar::T_AS:
     case QQmlJSGrammar::T_PRAGMA:
     case QQmlJSGrammar::T_IMPORT:
-    case QQmlJSGrammar::T_RESERVED_WORD:
+    case QQmlJSGrammar::T_ENUM:
     case QQmlJSGrammar::T_PACKAGE:
     case QQmlJSGrammar::T_ABSTRACT:
     case QQmlJSGrammar::T_INTERFACE:

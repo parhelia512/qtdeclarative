@@ -2955,12 +2955,9 @@ void tst_qqmllanguage::reservedWords_data()
 
     QTest::newRow("abstract") << QByteArray("abstract");
     QTest::newRow("as") << QByteArray("as");
-    QTest::newRow("boolean") << QByteArray("boolean");
     QTest::newRow("break") << QByteArray("break");
-    QTest::newRow("byte") << QByteArray("byte");
     QTest::newRow("case") << QByteArray("case");
     QTest::newRow("catch") << QByteArray("catch");
-    QTest::newRow("char") << QByteArray("char");
     QTest::newRow("class") << QByteArray("class");
     QTest::newRow("continue") << QByteArray("continue");
     QTest::newRow("const") << QByteArray("const");
@@ -2968,7 +2965,6 @@ void tst_qqmllanguage::reservedWords_data()
     QTest::newRow("default") << QByteArray("default");
     QTest::newRow("delete") << QByteArray("delete");
     QTest::newRow("do") << QByteArray("do");
-    QTest::newRow("double") << QByteArray("double");
     QTest::newRow("else") << QByteArray("else");
     QTest::newRow("enum") << QByteArray("enum");
     QTest::newRow("export") << QByteArray("export");
@@ -2976,19 +2972,15 @@ void tst_qqmllanguage::reservedWords_data()
     QTest::newRow("false") << QByteArray("false");
     QTest::newRow("final") << QByteArray("final");
     QTest::newRow("finally") << QByteArray("finally");
-    QTest::newRow("float") << QByteArray("float");
     QTest::newRow("for") << QByteArray("for");
     QTest::newRow("function") << QByteArray("function");
-    QTest::newRow("goto") << QByteArray("goto");
     QTest::newRow("if") << QByteArray("if");
     QTest::newRow("implements") << QByteArray("implements");
     QTest::newRow("import") << QByteArray("import");
     QTest::newRow("pragma") << QByteArray("pragma");
     QTest::newRow("in") << QByteArray("in");
     QTest::newRow("instanceof") << QByteArray("instanceof");
-    QTest::newRow("int") << QByteArray("int");
     QTest::newRow("interface") << QByteArray("interface");
-    QTest::newRow("long") << QByteArray("long");
     QTest::newRow("native") << QByteArray("native");
     QTest::newRow("new") << QByteArray("new");
     QTest::newRow("null") << QByteArray("null");
@@ -2997,7 +2989,6 @@ void tst_qqmllanguage::reservedWords_data()
     QTest::newRow("protected") << QByteArray("protected");
     QTest::newRow("public") << QByteArray("public");
     QTest::newRow("return") << QByteArray("return");
-    QTest::newRow("short") << QByteArray("short");
     QTest::newRow("static") << QByteArray("static");
     QTest::newRow("super") << QByteArray("super");
     QTest::newRow("switch") << QByteArray("switch");

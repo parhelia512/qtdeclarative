@@ -64,14 +64,28 @@
 %token T_TEMPLATE_TAIL "(template tail)"
 
 --- context keywords.
-%token T_PUBLIC "public"
+%token T_PACKAGE "package"
 %token T_IMPORT "import"
 %token T_PRAGMA "pragma"
+
+%token T_ABSTRACT "abstract"
+%token T_INTERFACE "interface"
+%token T_IMPLEMENTS "implements"
+%token T_PUBLIC "public"
+%token T_PROTECTED "protected"
+%token T_PRIVATE "private"
+
+%token T_NATIVE "native"
+%token T_VOLATILE "volatile"
+%token T_TRANSIENT "transient"
+%token T_SYNCHRONIZED "synchronized"
+
 %token T_AS "as"
 %token T_OF "of"
 %token T_ON "on"
 %token T_GET "get"
 %token T_SET "set"
+%token T_THROWS "throws"
 
 -- token representing no token
 %token T_NONE
@@ -1649,9 +1663,15 @@ EnumMemberList: EnumMemberList T_COMMA T_IDENTIFIER T_EQ T_MINUS T_NUMERIC_LITER
 ECMAContextualKeyword: T_GET | T_SET | T_FROM | T_OF;
 QMLContextualKeyword: T_PROPERTY | T_SIGNAL | T_READONLY | T_ON | T_REQUIRED | T_COMPONENT;
 
+--- as per ES7 these words are no longer reserved, however we might be interested in
+--- keeping them reserved for future usage in QML
+QMLFutureReservedWord: T_PACKAGE | T_ABSTRACT | T_INTERFACE | T_IMPLEMENTS | T_PUBLIC | T_PROTECTED
+                    | T_PRIVATE | T_NATIVE | T_VOLATILE | T_TRANSIENT | T_SYNCHRONIZED | T_THROWS;
+
 --- QMLReserved means can't be used as QmlIdentifier
 --- todo: consider making all QMLContextualKeyword-s reserved ones or the other way around
-QMLReservedWord: T_STATIC | T_AS | T_REQUIRED | T_FINAL;
+QMLReservedWord: T_STATIC | T_AS | T_REQUIRED | T_FINAL
+                | QMLFutureReservedWord;
 
 --- 262 ES 7 11.6.2.1
 ECMAKeyword: T_BREAK | T_DO | T_IN | T_TYPEOF | T_CASE | T_ELSE | T_INSTANCEOF

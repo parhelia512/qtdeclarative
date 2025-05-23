@@ -923,7 +923,7 @@ void tst_qqmljsscope::attachedTypeResolution()
     const auto &implicitImportDirectory = QQmlJSImportVisitor::implicitImportDirectory(
             logger->filePath(), importer.resourceFileMapper());
     QQmlJSImportVisitor v{
-        QQmlJSScope::create(), &importer, logger.get(), implicitImportDirectory, {}
+        &importer, logger.get(), implicitImportDirectory, {}
     };
 
     PassManagerPtr manager(
@@ -981,7 +981,7 @@ void tst_qqmljsscope::builtinTypeResolution()
     const auto &implicitImportDirectory = QQmlJSImportVisitor::implicitImportDirectory({}, nullptr);
     QQmlJSLogger logger;
     QQmlJSImportVisitor v{
-        QQmlJSScope::create(), &importer, &logger, implicitImportDirectory, {}
+        &importer, &logger, implicitImportDirectory, {}
     };
 
     PassManagerPtr manager(
@@ -1029,7 +1029,6 @@ void tst_qqmljsscope::modulePrefixes()
     logger.setFilePath(url);
     logger.setCode(sourceCode);
 
-    QQmlJSScope::Ptr target = QQmlJSScope::create();
     QmlIR::Document document(url, url, false);
     QQmlJSSaveFunction noop([](auto &&...) { return true; });
     QQmlJSCompileError error;
@@ -1039,7 +1038,7 @@ void tst_qqmljsscope::modulePrefixes()
     if (!error.message.isEmpty())
         return;
 
-    QQmlJSImportVisitor visitor(target, &m_importer, &logger, dataDirectory());
+    QQmlJSImportVisitor visitor(&m_importer, &logger, dataDirectory());
     QQmlJSTypeResolver typeResolver{ &m_importer };
     typeResolver.init(&visitor, document.program);
 
@@ -1056,7 +1055,6 @@ void tst_qqmljsscope::javaScriptBuiltinFlag()
     logger.setFilePath(url);
     logger.setCode(loadFile(url));
 
-    QQmlJSScope::Ptr target = QQmlJSScope::create();
     QmlIR::Document document(url, url, false);
     QQmlJSSaveFunction noop([](auto &&...) { return true; });
     QQmlJSCompileError error;
@@ -1066,7 +1064,7 @@ void tst_qqmljsscope::javaScriptBuiltinFlag()
     if (!error.message.isEmpty())
         return;
 
-    QQmlJSImportVisitor visitor(target, &m_importer, &logger, dataDirectory());
+    QQmlJSImportVisitor visitor( &m_importer, &logger, dataDirectory());
     QQmlJSTypeResolver typeResolver{ &m_importer };
     typeResolver.init(&visitor, document.program);
 

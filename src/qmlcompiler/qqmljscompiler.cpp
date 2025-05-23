@@ -629,8 +629,7 @@ void QQmlJSAotCompiler::setDocument(
         m_logger->setFilePath(resourcePathInfo.fileName());
     m_logger->setCode(irDocument->code);
     m_unitGenerator = &irDocument->jsGenerator;
-    QQmlJSScope::Ptr target = QQmlJSScope::create();
-    QQmlJSImportVisitor visitor(target, m_importer, m_logger,
+    QQmlJSImportVisitor visitor(m_importer, m_logger,
                                 resourcePathInfo.canonicalPath() + u'/',
                                 m_qmldirFiles);
     m_typeResolver.init(&visitor, irDocument->program);

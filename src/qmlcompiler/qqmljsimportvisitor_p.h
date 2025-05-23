@@ -42,11 +42,16 @@ struct QQmlJSResourceFileMapper;
 class Q_QMLCOMPILER_EXPORT QQmlJSImportVisitor : public QQmlJS::AST::Visitor
 {
 public:
-    QQmlJSImportVisitor();
     QQmlJSImportVisitor(const QQmlJSScope::Ptr &target,
                         QQmlJSImporter *importer, QQmlJSLogger *logger,
                         const QString &implicitImportDirectory,
                         const QStringList &qmldirFiles = QStringList());
+    QQmlJSImportVisitor(QQmlJSImporter *importer, QQmlJSLogger *logger,
+                        const QString &implicitImportDirectory,
+                        const QStringList &qmldirFiles = QStringList())
+        : QQmlJSImportVisitor(QQmlJSScope::create(), importer, logger,
+                              implicitImportDirectory, qmldirFiles)
+    {}
     ~QQmlJSImportVisitor();
 
     using QQmlJS::AST::Visitor::endVisit;

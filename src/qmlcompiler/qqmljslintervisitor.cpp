@@ -18,10 +18,10 @@ namespace QQmlJS {
  */
 
 LinterVisitor::LinterVisitor(
-        const QQmlJSScope::Ptr &target, QQmlJSImporter *importer, QQmlJSLogger *logger,
+        QQmlJSImporter *importer, QQmlJSLogger *logger,
         const QString &implicitImportDirectory, const QStringList &qmldirFiles,
         QQmlJS::Engine *engine)
-    : QQmlJSImportVisitor(target, importer, logger, implicitImportDirectory, qmldirFiles)
+    : QQmlJSImportVisitor(importer, logger, implicitImportDirectory, qmldirFiles)
     , m_engine(engine)
 {
 }

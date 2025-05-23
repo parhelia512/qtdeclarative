@@ -605,8 +605,7 @@ QQmlJSLinter::LintResult QQmlJSLinter::lintFile(const QString &filename,
     m_logger->setCode(code);
     m_logger->setSilent(silent || json);
 
-    QQmlJSScope::Ptr target = QQmlJSScope::create();
-    QQmlJS::LinterVisitor v{ target, &m_importer, m_logger.get(),
+    QQmlJS::LinterVisitor v{ &m_importer, m_logger.get(),
                              QQmlJSImportVisitor::implicitImportDirectory(
                                      m_logger->filePath(), m_importer.resourceFileMapper()),
                              qmldirFiles, &engine };

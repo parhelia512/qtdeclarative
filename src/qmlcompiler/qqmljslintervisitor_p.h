@@ -31,7 +31,7 @@ namespace QQmlJS {
 class LinterVisitor final : public QQmlJSImportVisitor
 {
 public:
-    LinterVisitor(const QQmlJSScope::Ptr &target, QQmlJSImporter *importer, QQmlJSLogger *logger,
+    LinterVisitor(QQmlJSImporter *importer, QQmlJSLogger *logger,
                   const QString &implicitImportDirectory,
                   const QStringList &qmldirFiles = QStringList(), QQmlJS::Engine *engine = nullptr);
 

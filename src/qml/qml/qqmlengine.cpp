@@ -311,29 +311,28 @@ void QQmlData::signalEmitted(QAbstractDeclarativeData *, QObject *object, int in
         QMetaMethod m = QMetaObjectPrivate::signal(object->metaObject(), index);
         QList<QByteArray> parameterTypes = m.parameterTypes();
 
-        auto ev = std::make_unique<QMetaCallEvent>(m.methodIndex(), 0, nullptr,
-                                                   object, index,
-                                                   parameterTypes.size() + 1);
-
-        void **args = ev->args();
-        QMetaType *types = ev->types();
-
-        for (int ii = 0; ii < parameterTypes.size(); ++ii) {
-            const QByteArray &typeName = parameterTypes.at(ii);
+        QVarLengthArray<const QtPrivate::QMetaTypeInterface *, 16> argTypes;
+        argTypes.reserve(1 + parameterTypes.size());
+        argTypes.emplace_back(nullptr); // return type
+        for (const QByteArray &typeName: parameterTypes) {
+            QMetaType type;
             if (typeName.endsWith('*'))
-                types[ii + 1] = QMetaType(QMetaType::VoidStar);
+                type = QMetaType(QMetaType::VoidStar);
             else
-                types[ii + 1] = QMetaType::fromName(typeName);
+                type = QMetaType::fromName(typeName);
 
-            if (!types[ii + 1].isValid()) {
+            if (!type.isValid()) {
                 qWarning("QObject::connect: Cannot queue arguments of type '%s'\n"
                          "(Make sure '%s' is registered using qRegisterMetaType().)",
                          typeName.constData(), typeName.constData());
                 return;
             }
 
-            args[ii + 1] = types[ii + 1].create(a[ii + 1]);
+            argTypes.emplace_back(type.iface());
         }
+
+        auto ev = std::make_unique<QQueuedMetaCallEvent>(m.methodIndex(), 0, nullptr, object, index,
+                                                         argTypes.size(), argTypes.data(), a);
 
         QQmlThreadNotifierProxyObject *mpo = new QQmlThreadNotifierProxyObject;
         mpo->target = object;

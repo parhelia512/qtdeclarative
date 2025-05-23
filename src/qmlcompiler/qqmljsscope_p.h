@@ -81,10 +81,6 @@ class Q_QMLCOMPILER_EXPORT QQmlJSScope
     friend QQmlSA::Element;
 
 public:
-    explicit QQmlJSScope(const QString &internalName);
-    QQmlJSScope(QQmlJSScope &&) = default;
-    QQmlJSScope &operator=(QQmlJSScope &&) = default;
-
     using Ptr = QDeferredSharedPointer<QQmlJSScope>;
     using WeakPtr = QDeferredWeakPointer<QQmlJSScope>;
     using ConstPtr = QDeferredSharedPointer<const QQmlJSScope>;
@@ -158,6 +154,19 @@ public:
     static QQmlJSScope::Ptr create() { return QSharedPointer<QQmlJSScope>(new QQmlJSScope); }
     static QQmlJSScope::Ptr create(const QString &internalName);
     static QQmlJSScope::Ptr clone(const QQmlJSScope::ConstPtr &origin);
+
+    static void cloneInto(QQmlJSScope::Ptr &origin,
+                          const QQmlJSScope::Ptr &target)
+    {
+        *target = std::move(*clone(origin));
+    }
+
+    //! \internal This should probably restricted, only needed in prepareTargetForVisit
+    void resetForReparse() {
+        const QString moduleName = this->moduleName();
+        *this = QQmlJSScope { this->internalName() };
+        setOwnModuleName(moduleName);
+    }
 
     static QQmlJSScope::ConstPtr findCurrentQMLScope(const QQmlJSScope::ConstPtr &scope);
 
@@ -441,6 +450,10 @@ public:
     static constexpr qsizetype sizeofQQmlSAElement() { return QQmlSA::Element::sizeofElement; }
 
 private:
+    // the way to construct a QQmlJSScope is via create
+    explicit QQmlJSScope(const QString &internalName);
+    QQmlJSScope(QQmlJSScope &&) = default;
+    QQmlJSScope &operator=(QQmlJSScope &&) = default;
     /*! \internal
 
          Minimal information about a QQmlJSMetaPropertyBinding that allows it to

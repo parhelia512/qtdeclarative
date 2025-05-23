@@ -149,9 +149,7 @@ static void prepareTargetForVisit(const QQmlJSScope::Ptr &target)
 {
     // rootScopeIsValid() assumes target to be a scope that only contains an internal name and a
     // moduleName
-    const QString moduleName = target->moduleName();
-    *target = QQmlJSScope{ target->internalName() };
-    target->setOwnModuleName(moduleName);
+    target->resetForReparse();
 }
 
 QQmlJSImportVisitor::QQmlJSImportVisitor(
@@ -3082,7 +3080,7 @@ bool QQmlJSImportVisitor::visit(Program *)
     Q_ASSERT(m_globalScope == m_currentScope);
     Q_ASSERT(!rootScopeIsValid());
     m_currentScope->setFilePath(m_logger->filePath());
-    *m_exportedRootScope = std::move(*QQmlJSScope::clone(m_currentScope));
+    QQmlJSScope::cloneInto(m_currentScope, m_exportedRootScope);
     m_exportedRootScope->setIsScript(true);
     m_currentScope = m_exportedRootScope;
     importBaseModules();

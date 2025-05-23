@@ -319,12 +319,78 @@ Item {
         }
     }
 
+    TestCase {
+        name: "registerUnregister"
+        when: windowShown
+
+        function init() {
+            communicator.registerSignals()
+            root.wipeSpies()
+        }
+
+        function test_reconnection() {
+            communicator.unregisterSignals()
+
+            root.basicSignal()
+            root.intSignal(123)
+            root.boolSignal(false)
+            root.doubleSignal(123.123)
+            root.stringSignal("Testing testing, is this thing on?")
+
+            wait(1000);
+
+            compare(basicSpy.count, 0)
+            compare(intSpy.count, 0)
+            compare(boolSpy.count, 0)
+            compare(doubleSpy.count, 0)
+            compare(stringSpy.count, 0)
+
+            communicator.registerSignals()
+
+            root.basicSignal()
+            basicSpy.wait(root.signalWaitTime)
+            compare(basicSpy.count, 1)
+
+            const testInt = 123123123
+            root.intSignal(testInt)
+            intSpy.wait(root.signalWaitTime)
+            compare(intSpy.count, 1)
+            compare(intSpy.signalArguments.length, 1)
+            compare(intSpy.signalArguments[0][0], testInt)
+
+            const testBool = true
+            root.boolSignal(testBool)
+            boolSpy.wait(root.signalWaitTime)
+            compare(boolSpy.count, 1)
+            compare(boolSpy.signalArguments.length, 1)
+            compare(boolSpy.signalArguments[0][0], testBool)
+
+            const testDouble = 123.123
+            root.doubleSignal(testDouble)
+            doubleSpy.wait(root.signalWaitTime)
+            compare(doubleSpy.count, 1)
+            compare(doubleSpy.signalArguments.length, 1)
+            compare(doubleSpy.signalArguments[0][0], testDouble)
+
+            const testString = "Testing testing, is this thing on?"
+            root.stringSignal(testString)
+            stringSpy.wait(root.signalWaitTime)
+            compare(stringSpy.count, 1)
+            compare(stringSpy.signalArguments.length, 1)
+            compare(stringSpy.signalArguments[0][0], testString)
+        }
+
+        function cleanup() {
+            communicator.registerSignals()
+        }
+    }
+
     // Workaround for QTBUG-137025, allow the Android UI thread to loop.
     TestCase {
         name: "aDelayToAllowProcessing"
         when: windowShown
         function test_a() {
-            wait(1000)
+            wait(2500)
             verify(true)
         }
     }

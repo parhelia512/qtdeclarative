@@ -23,6 +23,10 @@ public:
 
     static TestActivityCommunicator *instance();
 
+public slots:
+    void registerSignals() const;
+    void unregisterSignals() const;
+
 signals:
     void basicSignal();
     void intSignal(int value);

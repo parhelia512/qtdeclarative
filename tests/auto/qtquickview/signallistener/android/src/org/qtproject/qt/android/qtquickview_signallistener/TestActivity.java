@@ -6,6 +6,8 @@ package org.qtproject.qt.android.qtquickview_signallistener;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import java.util.List;
+import java.util.ArrayList;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -26,6 +28,7 @@ public class TestActivity extends Activity implements QtQmlStatusChangeListener
     private final TestView m_testView = new TestView();
     private QtQuickView m_quickView;
     private static TestActivity m_instance;
+    private List<Integer> m_signalListenerIds = new ArrayList<>();
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -45,26 +48,35 @@ public class TestActivity extends Activity implements QtQmlStatusChangeListener
 
     @Override public void onStatusChanged(QtQmlStatus qtQmlStatus)
     {
-        if (qtQmlStatus == QtQmlStatus.READY) {
-            m_testView.connectBasicSignalListener((String unused, Void _unused) -> onBasicSignal());
-            m_testView.connectIntSignalListener(
-                    (String unused, Integer value) -> onIntSignal(value));
-            m_testView.connectBoolSignalListener(
-                    (String unused, Boolean value) -> onBoolSignal(value));
-            m_testView.connectDoubleSignalListener(
-                    (String unused, Double value) -> onDoubleSignal(value));
-            m_testView.connectStringSignalListener(
-                    (String unused, String value) -> onStringSignal(value));
-            m_testView.connectManyTypeArgSignalListener((Integer i,
-                                                        Boolean b,
-                                                        Double d,
-                                                        String s) -> onManyTypeSignal(i, b, d, s));
-        } else if (qtQmlStatus == QtQmlStatus.ERROR) {
+        if (qtQmlStatus == QtQmlStatus.READY)
+            registerSignals();
+        else if (qtQmlStatus == QtQmlStatus.ERROR)
             finish(); // Error loading QML tests, just exit the app
-        }
     }
 
     public TestView testView() { return m_testView; }
 
     public static TestActivity instance() { return m_instance; }
+
+    public void registerSignals()
+    {
+        m_signalListenerIds.add(m_testView.connectBasicSignalListener(
+                (String unused, Void _unused) -> onBasicSignal()));
+        m_signalListenerIds.add(m_testView.connectIntSignalListener(
+                (String unused, Integer value) -> onIntSignal(value)));
+        m_signalListenerIds.add(m_testView.connectBoolSignalListener(
+                (String unused, Boolean value) -> onBoolSignal(value)));
+        m_signalListenerIds.add(m_testView.connectDoubleSignalListener(
+                (String unused, Double value) -> onDoubleSignal(value)));
+        m_signalListenerIds.add(m_testView.connectStringSignalListener(
+                (String unused, String value) -> onStringSignal(value)));
+        m_signalListenerIds.add(m_testView.connectManyTypeArgSignalListener(
+                (Integer i, Boolean b, Double d, String s) -> onManyTypeSignal(i, b, d, s)));
+    }
+
+    public void unregisterSignals()
+    {
+        for (Integer id : m_signalListenerIds)
+            m_testView.disconnectSignalListener(id.intValue());
+    }
 }

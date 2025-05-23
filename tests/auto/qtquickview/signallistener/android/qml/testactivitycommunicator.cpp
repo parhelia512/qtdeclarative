@@ -76,3 +76,13 @@ void TestActivityCommunicator::onManyTypeSignal(JNIEnv *, jclass,
             doubleValue.callMethod<jdouble>("doubleValue"),
             stringValue.toString());
 }
+
+void TestActivityCommunicator::registerSignals() const
+{
+    m_activity.callMethod<void>("registerSignals");
+}
+
+void TestActivityCommunicator::unregisterSignals() const
+{
+    m_activity.callMethod<void>("unregisterSignals");
+}

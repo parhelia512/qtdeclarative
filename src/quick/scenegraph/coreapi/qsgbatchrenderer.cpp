@@ -65,7 +65,6 @@ static inline int size_of_type(int type)
 
 bool qsg_sort_element_increasing_order(Element *a, Element *b) { return a->order < b->order; }
 bool qsg_sort_element_decreasing_order(Element *a, Element *b) { return a->order > b->order; }
-bool qsg_sort_batch_is_valid(Batch *a, Batch *b) { return a->first && !b->first; }
 bool qsg_sort_batch_increasing_order(Batch *a, Batch *b) { return a->first->order < b->first->order; }
 bool qsg_sort_batch_decreasing_order(Batch *a, Batch *b) { return a->first->order > b->first->order; }
 
@@ -1738,15 +1737,19 @@ void Renderer::invalidateBatchAndOverlappingRenderOrders(Batch *batch)
  * batches and moving all invalidated batches to the batches pool.
  */
 void Renderer::cleanupBatches(QDataBuffer<Batch *> *batches) {
-    if (batches->size()) {
-        std::stable_sort(&batches->first(), &batches->last() + 1, qsg_sort_batch_is_valid);
-        int count = 0;
-        while (count < batches->size() && batches->at(count)->first)
-            ++count;
-        for (int i=count; i<batches->size(); ++i)
-            invalidateAndRecycleBatch(batches->at(i));
-        batches->resize(count);
+    qsizetype n = batches->size();
+    if (n == 0)
+        return;
+
+    qsizetype writeIndex = 0;
+    for (qsizetype i = 0; i < n; ++i) {
+        Batch *b = batches->at(i);
+        if (b->first)
+            (*batches).data()[writeIndex++] = b;
+        else
+            invalidateAndRecycleBatch(b);
     }
+    batches->resize(writeIndex);
 }
 
 void Renderer::prepareOpaqueBatches()

@@ -55,9 +55,10 @@ To avoid that values that were on the heap during the start of the gc cycle, the
 
 To avoid that unmarked heap-items are moved from one heap item (or the stack) to an already marked heap-item (and consequently end up hidden from the gc), we employ a Dijkstra style write barrier: Any item that becomes reachable from another heap-item is marked grey (unless already black).
 
-While a gc cycle is ongoing, allocations are black, meaning every allocated object is considered to be live (until the next gc cycle is started).
-This is currently required as compilation units linked to the engine while the gc is running are not protected by the write barrier or another mechanism. It also helps to reduce the amount of work to be done when rescanning the JS stack (as it helps to ensure that most items are already black at that point).
-
+While a gc cycle is ongoing, allocations are white. To ensure a correct behavior
+and that newly allocated objects that needs marking are correctly marked, we
+employ the above mentioned write barriers and we make use of stack scanning
+in-between phases.
 
 The gc state machine
 --------------------
@@ -113,7 +114,10 @@ Some parts of the engine have to deviate from the general scheme described in th
 Motivation for using a Dijkstra style barrier:
 ----------------------------------------------
 - Deletion barriers are hard to support with the current PropertyKey design
-- Steele style barriers cause more work (have to revisit more objects), and as long as we have black allocations it doesn't make much sense to optimize for a minimal amount  of floating garbage.
+- Steele style barriers cause more work (have to revisit more
+  objects). Furthermore, allocations were initially black, albeit that
+  was later changed, such that it wouldn't have made sense to optimize for
+  a minimal amount of floating garbage.
 
 Sweep Phase and finalizers:
 ---------------------------

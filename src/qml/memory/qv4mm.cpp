@@ -111,13 +111,11 @@ struct MemorySegment {
     void setBit(size_t index) {
         Q_ASSERT(index < nChunks);
         quint64 bit = static_cast<quint64>(1) << index;
-//        qDebug() << "    setBit" << hex << index << (index & (Bits - 1)) << bit;
         allocatedMap |= bit;
     }
     void clearBit(size_t index) {
         Q_ASSERT(index < nChunks);
         quint64 bit = static_cast<quint64>(1) << index;
-//        qDebug() << "    setBit" << hex << index << (index & (Bits - 1)) << bit;
         allocatedMap &= ~bit;
     }
     bool testBit(size_t index) const {
@@ -288,7 +286,6 @@ bool Chunk::sweep(ExecutionEngine *engine)
             quintptr bit = (static_cast<quintptr>(1) << index);
 
             toFree ^= bit; // mask out freed slot
-            //            DEBUG << "       index" << hex << index << toFree;
 
             // remove all extends slots that have been freed
             // this is a bit of bit trickery.
@@ -324,24 +321,20 @@ bool Chunk::sweep(ExecutionEngine *engine)
         Q_ASSERT((objectBitmap[i] & extendsBitmap[i]) == 0);
         o += Chunk::Bits;
     }
-    //    DEBUG << "swept chunk" << this << "freed" << slotsFreed << "slots.";
     return hasUsedSlots;
 }
 
 void Chunk::freeAll(ExecutionEngine *engine)
 {
-    //    DEBUG << "sweeping chunk" << this << (*freeList);
     HeapItem *o = realBase();
     for (uint i = 0; i < Chunk::EntriesInBitmap; ++i) {
         quintptr toFree = objectBitmap[i];
         quintptr e = extendsBitmap[i];
-        //        DEBUG << hex << "   index=" << i << toFree;
         while (toFree) {
             uint index = qCountTrailingZeroBits(toFree);
             quintptr bit = (static_cast<quintptr>(1) << index);
 
             toFree ^= bit; // mask out freed slot
-            //            DEBUG << "       index" << hex << index << toFree;
 
             // remove all extends slots that have been freed
             // this is a bit of bit trickery.
@@ -368,7 +361,6 @@ void Chunk::freeAll(ExecutionEngine *engine)
         extendsBitmap[i] = e;
         o += Chunk::Bits;
     }
-    //    DEBUG << "swept chunk" << this << "freed" << slotsFreed << "slots.";
 }
 
 void Chunk::resetBlackBits()
@@ -378,7 +370,6 @@ void Chunk::resetBlackBits()
 
 void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
 {
-//    qDebug() << "sortIntoBins:";
     HeapItem *base = realBase();
 #if QT_POINTER_SIZE == 8
     const int start = 0;
@@ -397,7 +388,6 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
 #endif
 #ifndef QT_NO_DEBUG
         allocatedSlots += qPopulationCount(usedSlots);
-//        qDebug() << hex << "   i=" << i << "used=" << usedSlots;
 #endif
         while (1) {
             uint index = qCountTrailingZeroBits(usedSlots + 1);
@@ -417,7 +407,6 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
                 }
 #ifndef QT_NO_DEBUG
                 allocatedSlots += qPopulationCount(usedSlots);
-//                qDebug() << hex << "   i=" << i << "used=" << usedSlots;
 #endif
             }
             HeapItem *freeItem = base + freeStart;
@@ -427,7 +416,6 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
             uint freeEnd = i*Bits + index;
             uint nSlots = freeEnd - freeStart;
 #ifndef QT_NO_DEBUG
-//            qDebug() << hex << "   got free slots from" << freeStart << "to" << freeEnd << "n=" << nSlots << "usedSlots=" << usedSlots;
             freeSlots += nSlots;
 #endif
             Q_ASSERT(freeEnd > freeStart && freeEnd <= NumSlots);
@@ -470,7 +458,6 @@ HeapItem *BlockAllocator::allocate(size_t size, bool forceAllocation) {
         goto done;
     }
 
-    //        DEBUG << "No matching bin found for item" << size << bin;
     // search last bin for a large enough item
     last = &freeBins[NumBins - 1];
     while ((m = *last)) {
@@ -478,7 +465,6 @@ HeapItem *BlockAllocator::allocate(size_t size, bool forceAllocation) {
             *last = m->freeData.next; // take it out of the list
 
             size_t remainingSlots = m->freeData.availableSlots - slotsRequired;
-            //                DEBUG << "found large free slots of size" << m->freeData.availableSlots << m << "remaining" << remainingSlots;
             if (remainingSlots == 0)
                 goto done;
 
@@ -509,7 +495,6 @@ HeapItem *BlockAllocator::allocate(size_t size, bool forceAllocation) {
             m = freeBins[i];
             if (m) {
                 freeBins[i] = m->freeData.next; // take it out of the list
-//                qDebug() << "got item" << slotsRequired << "from slot" << i;
                 size_t remainingSlots = i - slotsRequired;
                 Q_ASSERT(remainingSlots < NumBins - 1);
                 HeapItem *remainder = m + slotsRequired;
@@ -548,7 +533,6 @@ done:
 #ifdef V4_USE_HEAPTRACK
     heaptrack_report_alloc(m, slotsRequired * Chunk::SlotSize);
 #endif
-    //        DEBUG << "   " << hex << m->chunk() << m->chunk()->objectBitmap[0] << m->chunk()->extendsBitmap[0] << (m - m->chunk()->realBase());
     return m;
 }
 
@@ -558,7 +542,6 @@ void BlockAllocator::sweep()
     nFree = 0;
     memset(freeBins, 0, sizeof(freeBins));
 
-//    qDebug() << "BlockAlloc: sweep";
     usedSlotsAfterLastSweep = 0;
 
     auto firstEmptyChunk = std::partition(chunks.begin(), chunks.end(), [this](Chunk *c) {
@@ -1136,9 +1119,8 @@ Heap::Object *MemoryManager::allocObjectWithMemberData(const QV4::VTable *vtable
         m->values.alloc = static_cast<uint>((memberSize - sizeof(Heap::MemberData) + sizeof(Value))/sizeof(Value));
         m->values.size = o->memberData->values.alloc;
         m->init();
-//        qDebug() << "    got" << o->memberData << o->memberData->size;
     }
-//    qDebug() << "allocating object with memberData" << o << o->memberData.operator->();
+
     return o;
 }
 

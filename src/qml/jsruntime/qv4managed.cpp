@@ -116,6 +116,15 @@ QString Managed::typeToString(Type t) {
     case Type_QMLValueTypeWrapper:
         s = "QMLValueTypeWrapper";
         break;
+    case Type_MemberData:
+        s = "__MemberData";
+        break;
+    case Type_ArrayData:
+        s = "__ArrayData";
+        break;
+    case Type_StringOrSymbol:
+        s = "__StringOrSymbol";
+        break;
     }
     return QString::fromLatin1(s);
 

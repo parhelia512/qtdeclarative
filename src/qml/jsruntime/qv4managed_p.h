@@ -126,6 +126,9 @@ public:
         Type_QMLTypeWrapper,
         Type_V4ReferenceObject,
         Type_QMLValueTypeWrapper,
+        Type_MemberData,
+        Type_ArrayData,
+        Type_StringOrSymbol,
     };
     Q_MANAGED_TYPE(Invalid)
 

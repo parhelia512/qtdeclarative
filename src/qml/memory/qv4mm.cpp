@@ -376,19 +376,16 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
 #else
     const int start = 1;
 #endif
-#ifndef QT_NO_DEBUG
     uint freeSlots = 0;
     uint allocatedSlots = 0;
-#endif
+
     for (int i = start; i < EntriesInBitmap; ++i) {
         quintptr usedSlots = (objectBitmap[i]|extendsBitmap[i]);
 #if QT_POINTER_SIZE == 8
         if (!i)
             usedSlots |= (static_cast<quintptr>(1) << (HeaderSize/SlotSize)) - 1;
 #endif
-#ifndef QT_NO_DEBUG
         allocatedSlots += qPopulationCount(usedSlots);
-#endif
         while (1) {
             uint index = qCountTrailingZeroBits(usedSlots + 1);
             if (index == Bits)
@@ -405,9 +402,7 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
                     usedSlots = std::numeric_limits<quintptr>::max();
                     break;
                 }
-#ifndef QT_NO_DEBUG
                 allocatedSlots += qPopulationCount(usedSlots);
-#endif
             }
             HeapItem *freeItem = base + freeStart;
 
@@ -415,9 +410,7 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
             usedSlots |= (quintptr(1) << index) - 1;
             uint freeEnd = i*Bits + index;
             uint nSlots = freeEnd - freeStart;
-#ifndef QT_NO_DEBUG
             freeSlots += nSlots;
-#endif
             Q_ASSERT(freeEnd > freeStart && freeEnd <= NumSlots);
             freeItem->freeData.availableSlots = nSlots;
             uint bin = qMin(nBins - 1, nSlots);
@@ -425,9 +418,7 @@ void Chunk::sortIntoBins(HeapItem **bins, uint nBins)
             bins[bin] = freeItem;
         }
     }
-#ifndef QT_NO_DEBUG
     Q_ASSERT(freeSlots + allocatedSlots == (EntriesInBitmap - start) * 8 * sizeof(quintptr));
-#endif
 }
 
 HeapItem *BlockAllocator::allocate(size_t size, bool forceAllocation) {

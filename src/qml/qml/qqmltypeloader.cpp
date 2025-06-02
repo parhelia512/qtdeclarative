@@ -1295,6 +1295,32 @@ QQmlTypeLoader::~QQmlTypeLoader()
     clearQmldirInfo();
 }
 
+template<typename Blob>
+QQmlRefPointer<Blob> handleExisting(
+        const QQmlTypeLoaderSharedDataPtr &data, QQmlRefPointer<Blob> &&blob,
+        QQmlTypeLoader::Mode mode)
+{
+    if ((mode == QQmlTypeLoader::PreferSynchronous && QQmlFile::isSynchronous(blob->finalUrl()))
+            || mode == QQmlTypeLoader::Synchronous) {
+        // this was started Asynchronous, but we need to force Synchronous
+        // completion now.
+
+        // This only works when called directly from e.g. the UI thread, but not
+        // when recursively called on the QML thread via resolveTypes()
+
+        // NB: We do not want to know whether the thread is the main thread, but specifically
+        //     that the thread is _not_ the thread we're waiting for.
+        //     If !QT_CONFIG(qml_type_loader_thread) the QML thread is the main thread.
+
+        QQmlTypeLoaderThread *thread = data.thread();
+        if (thread && !thread->isThisThread()) {
+            while (!blob->isCompleteOrError())
+                thread->waitForNextMessage(); // Requires lock to be held, via data above
+        }
+    }
+    return blob;
+}
+
 /*!
 Returns a QQmlTypeData for the specified \a url.  The QQmlTypeData may be cached.
 */
@@ -1306,34 +1332,14 @@ QQmlRefPointer<QQmlTypeData> QQmlTypeLoader::getType(const QUrl &unNormalizedUrl
             (QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl).isEmpty() ||
              !QDir::isRelativePath(QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl))));
 
-    const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
-
-    const auto handleExisting = [&](const QQmlRefPointer<QQmlTypeData> &typeData) {
-        if ((mode == PreferSynchronous || mode == Synchronous) && QQmlFile::isSynchronous(url)) {
-            // this was started Asynchronous, but we need to force Synchronous
-            // completion now (if at all possible with this type of URL).
-
-            // This only works when called directly from e.g. the UI thread, but not
-            // when recursively called on the QML thread via resolveTypes()
-
-            // NB: We do not want to know whether the thread is the main thread, but specifically
-            //     that the thread is _not_ the thread we're waiting for.
-            //     If !QT_CONFIG(qml_type_loader_thread) the QML thread is the main thread.
-            if (thread() && !thread()->isThisThread()) {
-                while (!typeData->isCompleteOrError())
-                    thread()->waitForNextMessage(); // Requires lock to be held, via data above
-            }
-        }
-        return typeData;
-    };
-
     QQmlRefPointer<QQmlTypeData> typeData;
     {
+        const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
         QQmlTypeLoaderSharedDataPtr data(&m_data);
 
         typeData = data->typeCache.value(url);
         if (typeData)
-            return handleExisting(typeData);
+            return handleExisting(data, std::move(typeData), mode);
 
         // Trim before adding the new type, so that we don't immediately trim it away
         if (data->typeCache.size() >= data->typeCacheTrimThreshold)
@@ -1345,18 +1351,7 @@ QQmlRefPointer<QQmlTypeData> QQmlTypeLoader::getType(const QUrl &unNormalizedUrl
         data->typeCache.insert(url, typeData);
     }
 
-    QQmlMetaType::CachedUnitLookupError error = QQmlMetaType::CachedUnitLookupError::NoError;
-    const QQmlMetaType::CacheMode cacheMode = aotCacheMode();
-    if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (cacheMode != QQmlMetaType::RejectAll)
-            ? QQmlMetaType::findCachedCompilationUnit(typeData->url(), cacheMode, &error)
-            : nullptr) {
-        loadWithCachedUnit(QQmlDataBlob::Ptr(typeData.data()), cachedUnit, mode);
-    } else {
-        typeData->setCachedUnitStatus(error);
-        load(QQmlDataBlob::Ptr(typeData.data()), mode);
-    }
-
-    return typeData;
+    return finalizeBlob(std::move(typeData), mode);
 }
 
 /*!
@@ -1376,6 +1371,32 @@ QQmlRefPointer<QQmlTypeData> QQmlTypeLoader::getType(
 static bool isModuleUrl(const QUrl &url)
 {
     return url.path().endsWith(QLatin1String(".mjs"));
+}
+
+QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(const QUrl &unNormalizedUrl, Mode mode)
+{
+    // This can be called from either thread.
+
+    Q_ASSERT(!unNormalizedUrl.isRelative() &&
+             (QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl).isEmpty() ||
+              !QDir::isRelativePath(QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl))));
+
+    QQmlRefPointer<QQmlScriptBlob> scriptBlob;
+    {
+        const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
+        QQmlTypeLoaderSharedDataPtr data(&m_data);
+
+        scriptBlob = data->scriptCache.value(url);
+        if (scriptBlob)
+            return handleExisting(data, std::move(scriptBlob), mode);
+
+        scriptBlob = QQml::makeRefPointer<QQmlScriptBlob>(url, this, isModuleUrl(url)
+                ? QQmlScriptBlob::IsESModule::Yes
+                : QQmlScriptBlob::IsESModule::No);
+        data->scriptCache.insert(url, scriptBlob);
+    }
+
+    return finalizeBlob(std::move(scriptBlob), mode);
 }
 
 QQmlRefPointer<QV4::CompiledData::CompilationUnit> QQmlTypeLoader::injectModule(
@@ -1398,7 +1419,8 @@ QQmlRefPointer<QV4::CompiledData::CompilationUnit> QQmlTypeLoader::injectModule(
 }
 
 /*!
-Return a QQmlScriptBlob for \a url.  The QQmlScriptData may be cached.
+Return a QQmlScriptBlob for \a unNormalizedUrl or \a relativeUrl.
+This assumes PreferSynchronous, and therefore the result may not be ready yet.
 */
 QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(
         const QUrl &unNormalizedUrl, const QUrl &relativeUrl)
@@ -1421,6 +1443,7 @@ QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(
         if (!scriptBlob && unNormalizedUrl != relativeUrl)
             scriptBlob = data->scriptCache.value(relativeUrl);
 
+        // Do not try to finish the loading via handleExisting() here.
         if (scriptBlob)
             return scriptBlob;
 
@@ -1430,18 +1453,7 @@ QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(
         data->scriptCache.insert(url, scriptBlob);
     }
 
-    QQmlMetaType::CachedUnitLookupError error = QQmlMetaType::CachedUnitLookupError::NoError;
-    const QQmlMetaType::CacheMode cacheMode = aotCacheMode();
-    if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (cacheMode != QQmlMetaType::RejectAll)
-            ? QQmlMetaType::findCachedCompilationUnit(scriptBlob->url(), cacheMode, &error)
-            : nullptr) {
-        QQmlTypeLoader::loadWithCachedUnit(QQmlDataBlob::Ptr(scriptBlob.data()), cachedUnit);
-    } else {
-        scriptBlob->setCachedUnitStatus(error);
-        QQmlTypeLoader::load(QQmlDataBlob::Ptr(scriptBlob.data()));
-    }
-
-    return scriptBlob;
+    return finalizeBlob(std::move(scriptBlob), PreferSynchronous);
 }
 
 /*!

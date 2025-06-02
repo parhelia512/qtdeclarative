@@ -15,13 +15,13 @@
 // We mean it.
 //
 
-#include <private/qqmltypeloader_p.h>
 #include <private/qqmlnotifyingblob_p.h>
+#include <private/qqmlscriptdata_p.h>
+#include <private/qqmltypeloader_p.h>
 
 QT_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(DBG_DISK_CACHE)
 
-class QQmlScriptData;
 class Q_AUTOTEST_EXPORT QQmlScriptBlob : public QQmlNotifyingBlob
 {
 private:
@@ -40,7 +40,10 @@ public:
         QQmlRefPointer<QQmlScriptBlob> script;
     };
 
-    QQmlRefPointer<QQmlScriptData> scriptData() const;
+    QQmlRefPointer<QQmlScriptData> scriptData() const
+    {
+        return m_scriptData;
+    }
 
 protected:
     void dataReceived(const SourceCodeData &) override;

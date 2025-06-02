@@ -16,7 +16,6 @@
 //
 
 #include <private/qqmlrefcount_p.h>
-#include <private/qqmlscriptblob_p.h>
 #include <private/qv4value_p.h>
 #include <private/qv4persistent_p.h>
 #include <private/qv4compileddata_p.h>

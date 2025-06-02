@@ -7,6 +7,7 @@
 #include <private/qqmlmetatypedata_p.h>
 #include <private/qqmlpropertycachecreator_p.h>
 #include <private/qqmlscriptblob_p.h>
+#include <private/qqmlscriptdata_p.h>
 #include <private/qqmltype_p_p.h>
 #include <private/qqmltypeloader_p.h>
 #include <private/qqmltypemodule_p.h>

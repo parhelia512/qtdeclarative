@@ -4,7 +4,6 @@
 #include <private/qqmlengine_p.h>
 #include <private/qqmlirbuilder_p.h>
 #include <private/qqmlscriptblob_p.h>
-#include <private/qqmlscriptdata_p.h>
 #include <private/qqmlsourcecoordinate_p.h>
 #include <private/qqmlcontextdata_p.h>
 #include <private/qv4runtimecodegen_p.h>
@@ -24,11 +23,6 @@ QQmlScriptBlob::QQmlScriptBlob(const QUrl &url, QQmlTypeLoader *loader, IsESModu
 
 QQmlScriptBlob::~QQmlScriptBlob()
 {
-}
-
-QQmlRefPointer<QQmlScriptData> QQmlScriptBlob::scriptData() const
-{
-    return m_scriptData;
 }
 
 void QQmlScriptBlob::dataReceived(const SourceCodeData &data)

@@ -222,6 +222,8 @@ public:
     Data *operator->() const { return &data->m_sharedData; }
     operator Data *() const { return &data->m_sharedData; }
 
+    QQmlTypeLoaderThread *thread() const { return data->thread(); }
+
 private:
     LockedData *data = nullptr;
 };

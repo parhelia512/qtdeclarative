@@ -183,6 +183,9 @@ public:
     QQmlRefPointer<QQmlTypeData> getType(
             const QByteArray &data, const QUrl &url, Mode mode = PreferSynchronous);
 
+    QQmlRefPointer<QQmlScriptBlob> getScript(
+            const QUrl &unNormalizedUrl, Mode mode = PreferSynchronous);
+
     QQmlRefPointer<QV4::CompiledData::CompilationUnit> injectModule(
             const QUrl &relativeUrl, const QV4::CompiledData::Unit *unit);
 
@@ -358,6 +361,23 @@ private:
             }
         }
         return true;
+    }
+
+    template<typename Blob>
+    QQmlRefPointer<Blob> finalizeBlob(QQmlRefPointer<Blob> &&blob, QQmlTypeLoader::Mode mode)
+    {
+        QQmlMetaType::CachedUnitLookupError error = QQmlMetaType::CachedUnitLookupError::NoError;
+        const QQmlMetaType::CacheMode cacheMode = aotCacheMode();
+        if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (cacheMode != QQmlMetaType::RejectAll)
+                    ? QQmlMetaType::findCachedCompilationUnit(blob->url(), cacheMode, &error)
+                    : nullptr) {
+            loadWithCachedUnit(QQmlDataBlob::Ptr(blob.data()), cachedUnit, mode);
+        } else {
+            blob->setCachedUnitStatus(error);
+            load(QQmlDataBlob::Ptr(blob.data()), mode);
+        }
+
+        return blob;
     }
 
     QQmlMetaType::CacheMode aotCacheMode();

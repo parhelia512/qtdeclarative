@@ -133,11 +133,11 @@ int main(int argc, char *argv[])
                 file.close();
 
                 script.reset(new QV4::Script(ctx, QV4::Compiler::ContextType::Global, code, fn));
-                script->parseAsBinding = runAsQml;
+                script->setParseAsBinding(runAsQml);
                 script->parse();
             }
             if (!scope.hasException()) {
-                const auto unit = script->compilationUnit;
+                const auto unit = script->compilationUnit();
                 if (useCache && unit && !(unit->unitData()->flags & QV4::CompiledData::Unit::StaticData)) {
                     if (unit->unitData()->sourceTimeStamp == 0) {
                         const_cast<QV4::CompiledData::Unit*>(unit->unitData())->sourceTimeStamp = QFileInfo(fn).lastModified().toMSecsSinceEpoch();

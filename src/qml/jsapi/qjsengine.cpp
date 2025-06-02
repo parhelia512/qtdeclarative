@@ -520,12 +520,12 @@ QJSValue QJSEngine::evaluate(const QString& program, const QString& fileName, in
     QV4::ScopedValue result(scope);
 
     QV4::Script script(v4->rootContext(), QV4::Compiler::ContextType::Global, program, urlForFileName(fileName).toString(), lineNumber);
-    script.strictMode = false;
+    script.setStrictMode(false);
     if (v4->currentStackFrame)
-        script.strictMode = v4->currentStackFrame->v4Function->isStrict();
+        script.setStrictMode(v4->currentStackFrame->v4Function->isStrict());
     else if (v4->globalCode)
-        script.strictMode = v4->globalCode->isStrict();
-    script.inheritContext = true;
+        script.setStrictMode(v4->globalCode->isStrict());
+    script.setInheritContext();
     script.parse();
     if (!scope.hasException())
         result = script.run();
@@ -547,8 +547,8 @@ QJSValue QJSEngine::evaluate(const QString& program, const QString& fileName, in
     if (v4->isInterrupted.loadRelaxed())
         result = v4->newErrorObject(QStringLiteral("Interrupted"));
 
-    if (script.compilationUnit)
-        v4->trimCompilationUnitsForUrl(script.compilationUnit->finalUrl());
+    if (const auto cu = script.compilationUnit())
+        v4->trimCompilationUnitsForUrl(cu->finalUrl());
     return QJSValuePrivate::fromReturnedValue(result->asReturnedValue());
 }
 

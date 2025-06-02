@@ -72,11 +72,11 @@ void JavaScriptJob::run()
 
     QV4::Script script(ctx, QV4::Compiler::ContextType::Eval, this->script);
     if (const QV4::Function *function = frame ? frame->v4Function : engine->globalCode)
-        script.strictMode = function->isStrict();
+        script.setStrictMode(function->isStrict());
 
     // In order for property lookups in QML to work, we need to disable fast v4 lookups. That
     // is a side-effect of inheritContext.
-    script.inheritContext = true;
+    script.setInheritContext();
     script.parse();
     QV4::ScopedValue result(scope);
     if (!scope.hasException()) {

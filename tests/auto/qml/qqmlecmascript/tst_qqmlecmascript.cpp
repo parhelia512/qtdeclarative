@@ -2819,7 +2819,7 @@ static inline bool evaluate_error(QV4::ExecutionEngine *v4, const QV4::Value &o,
 
     QV4::Scope scope(v4);
     QV4::Script program(QV4::ScopedContext(scope, scope.engine->rootContext()), QV4::Compiler::ContextType::Eval, functionSource);
-    program.inheritContext = true;
+    program.setInheritContext();
 
     QV4::ScopedFunctionObject function(scope, program.run());
     if (scope.hasException()) {
@@ -2845,7 +2845,7 @@ static inline bool evaluate_value(QV4::ExecutionEngine *v4, const QV4::Value &o,
 
     QV4::Scope scope(v4);
     QV4::Script program(QV4::ScopedContext(scope, scope.engine->rootContext()), QV4::Compiler::ContextType::Eval, functionSource);
-    program.inheritContext = true;
+    program.setInheritContext();
 
     QV4::ScopedFunctionObject function(scope, program.run());
     if (scope.hasException()) {
@@ -2876,7 +2876,7 @@ static inline QV4::ReturnedValue evaluate(QV4::ExecutionEngine *v4, const QV4::V
     QV4::Scope scope(v4);
 
     QV4::Script program(QV4::ScopedContext(scope, scope.engine->rootContext()), QV4::Compiler::ContextType::Eval, functionSource);
-    program.inheritContext = true;
+    program.setInheritContext();
 
     QV4::ScopedFunctionObject function(scope, program.run());
     if (scope.hasException()) {

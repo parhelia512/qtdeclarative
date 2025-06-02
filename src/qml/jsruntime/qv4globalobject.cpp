@@ -322,8 +322,8 @@ ReturnedValue EvalFunction::evalCall(const Value *, const Value *argv, int argc,
     bool inheritContext = !isStrict;
 
     Script script(ctx, QV4::Compiler::ContextType::Eval, code, QStringLiteral("eval code"));
-    script.strictMode = (directCall && isStrict);
-    script.inheritContext = inheritContext;
+    script.setStrictMode(directCall && isStrict);
+    script.setInheritContext(inheritContext);
     script.parse();
     if (v4->hasException)
         return Encode::undefined();

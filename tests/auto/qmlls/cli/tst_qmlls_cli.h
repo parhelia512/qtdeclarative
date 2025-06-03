@@ -25,9 +25,9 @@ public:
 
 private slots:
     void initTestCase() final;
-    void cleanup();
     void warnings_data();
     void warnings();
+    void inputFile();
 
 public:
     QProcess m_server;

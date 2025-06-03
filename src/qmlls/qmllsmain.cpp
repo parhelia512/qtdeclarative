@@ -52,7 +52,22 @@ namespace QmlLsp {
 QFile *logFile = nullptr;
 QBasicMutex *logFileLock = nullptr;
 
-class StdinReader : public QObject
+class AbstractReader : public QObject
+{
+    Q_OBJECT
+public:
+    virtual ~AbstractReader() { }
+
+protected:
+    virtual void readNextMessageImpl() = 0;
+signals:
+    void receivedData(const QByteArray &data, bool canRequestMoreData);
+    void eof();
+public slots:
+    void readNextMessage() { readNextMessageImpl(); }
+};
+
+class StdinReader final : public AbstractReader
 {
     Q_OBJECT
 public:
@@ -103,11 +118,9 @@ private:
     Indicates whether sendData() should be called or not.
     */
     bool m_shouldSendData = false;
-signals:
-    void receivedData(const QByteArray &data, bool canRequestMoreData);
-    void eof();
-public slots:
-    void readNextMessage()
+
+protected:
+    void readNextMessageImpl() override
     {
         if (m_hasEof)
             return;
@@ -132,6 +145,37 @@ public slots:
             if (std::exchange(m_shouldSendData, false))
                 sendData();
         }
+    }
+};
+
+/*!
+   \internal
+   FileReader allows to read JsonRPC commands from a file. This is useful when the JsonRPC
+   commands can't be read from stdin, for example when running qmlls in the macos profiler.
+ */
+class FileReader final : public AbstractReader
+{
+    Q_OBJECT
+public:
+    FileReader(const QString &fileName) : m_file(fileName)
+    {
+        bool isOpen = m_file.open(QFile::ReadOnly);
+        Q_ASSERT(isOpen);
+    }
+
+private:
+    QFile m_file;
+
+protected:
+    void readNextMessageImpl() override
+    {
+        if (!m_file.isOpen())
+            return;
+        emit receivedData(m_file.readAll(), false);
+        // emit eof will shutdown qmlls before it manages to complete the preceding requests, so
+        // don't emit eof when reading from a file.
+        // also, just read the content of the file once, so close it now
+        m_file.close();
     }
 };
 
@@ -288,6 +332,11 @@ int qmllsMain(int argv, char *argc[])
     const QString qmlImportNoDefaultSetting = "DisableDefaultImports"_L1;
     settings.addOption(qmlImportNoDefaultSetting, false);
 
+    QCommandLineOption inputFile(QStringList() << "inputFile"_L1,
+                                 "Read from file instead of stdin"_L1, "fileName"_L1);
+    inputFile.setFlags(QCommandLineOption::HiddenFromHelp);
+    parser.addOption(inputFile);
+
     // we can't use parser.addVersionOption() because we already have one '-v' option for verbose...
     QCommandLineOption versionOption("version"_L1, "Displays version information."_L1);
     parser.addOption(versionOption);
@@ -385,13 +434,15 @@ int qmllsMain(int argv, char *argc[])
     qmlServer.codeModelManager()->setImportPaths(
             collectImportPaths(parser, qmlImportPathOption, environmentOption, qmlImportNoDefault));
 
-    StdinReader r;
+    auto r = parser.isSet(inputFile) && parser.value(inputFile) != "-"_L1
+            ? std::unique_ptr<AbstractReader>(std::make_unique<FileReader>(parser.value(inputFile)))
+            : std::unique_ptr<AbstractReader>(std::make_unique<StdinReader>());
     QThread workerThread;
-    r.moveToThread(&workerThread);
-    QObject::connect(&r, &StdinReader::receivedData, qmlServer.server(),
+    r->moveToThread(&workerThread);
+    QObject::connect(r.get(), &AbstractReader::receivedData, qmlServer.server(),
                      &QLanguageServer::receiveData);
-    QObject::connect(qmlServer.server(), &QLanguageServer::readNextMessage, &r,
-                     &StdinReader::readNextMessage);
+    QObject::connect(qmlServer.server(), &QLanguageServer::readNextMessage, r.get(),
+                     &AbstractReader::readNextMessage);
     auto exit = [&app, &workerThread]() {
         workerThread.quit();
         workerThread.wait();
@@ -400,10 +451,10 @@ int qmllsMain(int argv, char *argc[])
             QCoreApplication::exit();
         });
     };
-    QObject::connect(&r, &StdinReader::eof, &app, exit);
+    QObject::connect(r.get(), &StdinReader::eof, &app, exit);
     QObject::connect(qmlServer.server(), &QLanguageServer::exit, exit);
 
-    emit r.readNextMessage();
+    emit r->readNextMessage();
     workerThread.start();
     app.exec();
     workerThread.quit();

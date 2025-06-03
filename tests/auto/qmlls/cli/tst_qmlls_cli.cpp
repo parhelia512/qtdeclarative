@@ -19,14 +19,6 @@ void tst_qmlls_cli::initTestCase()
     m_server.setProgram(m_qmllsPath);
 }
 
-void tst_qmlls_cli::cleanup()
-{
-    m_server.closeWriteChannel();
-    m_server.waitForFinished();
-    QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
-    QCOMPARE(m_server.exitStatus(), QProcess::NormalExit);
-}
-
 // Helper structs to avoid confusions between expected and unexpected messages and between expected
 // and unexpected diagnostics.
 struct ExpectedMessages : public QStringList
@@ -228,6 +220,10 @@ void tst_qmlls_cli::startServerImpl()
 
 void tst_qmlls_cli::stopServerImpl()
 {
+    // note: the lambdas used in the "connect"-call of the tests might reference local variables, so
+    // disconnect the lambda via QScopedGuard to avoid the lambda to be called during
+    // waitForFinished();
+    disconnect(&m_server, nullptr, nullptr, nullptr);
     m_server.closeWriteChannel();
     m_server.waitForFinished();
     QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
@@ -255,11 +251,6 @@ void tst_qmlls_cli::warnings()
     QList<int> countExpectedDiagnostics(expectedDiagnostics.size(), 0);
     QList<int> countUnexpectedDiagnostics(unexpectedDiagnostics.size(), 0);
 
-    auto guard = qScopeGuard([this]() {
-        // note: the lambda used in the "connect"-call references local variables, so disconnect the
-        // lambda via QScopedGuard to avoid its captured references to dangle
-        disconnect(&m_server, &QProcess::readyReadStandardOutput, nullptr, nullptr);
-    });
     connect(&m_server, &QProcess::readyReadStandardError, this,
             [this, &expectedMessages, &countExpectedMessages, &unexpectedMessages,
              &countUnexpectedMessages]() {
@@ -277,7 +268,7 @@ void tst_qmlls_cli::warnings()
                 }
             });
 
-    auto guard2 = startServerRAII();
+    auto guard = startServerRAII();
 
     // each expected message should appear exactly one time
     QTRY_COMPARE_WITH_TIMEOUT(countExpectedMessages, QList<int>(expectedMessages.size(), 1), 500);
@@ -319,7 +310,32 @@ void tst_qmlls_cli::warnings()
     QCOMPARE(countExpectedDiagnostics, QList<int>(expectedDiagnostics.size(), 1));
     // each unexpected diagnostic should appear exactly zero times
     QCOMPARE(countUnexpectedDiagnostics, QList<int>(unexpectedDiagnostics.size(), 0));
+}
 
+void tst_qmlls_cli::inputFile()
+{
+    m_server.setArguments({ "--inputFile"_L1, testFile("serverInput.jsonrpc") });
+    m_protocol =
+            std::make_unique<QLanguageServerProtocol>([](const QByteArray &) { /* ignored */ });
+
+    connect(&m_server, &QProcess::readyReadStandardOutput, this, [this]() {
+        QByteArray data = m_server.readAllStandardOutput();
+        m_protocol->receiveData(data);
+    });
+
+    bool didInit = false;
+
+    QLspSpecification::InitializeParams params;
+    m_protocol->requestInitialize(
+            params, [&didInit](const QLspSpecification::InitializeResult &) { didInit = true; });
+
+    m_server.start();
+    QTRY_COMPARE_WITH_TIMEOUT(didInit, true, 10000);
+
+    disconnect(&m_server, &QProcess::readyReadStandardOutput, nullptr, nullptr);
+    m_server.close();
+    m_server.waitForFinished();
+    QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
 }
 
 QTEST_MAIN(tst_qmlls_cli)

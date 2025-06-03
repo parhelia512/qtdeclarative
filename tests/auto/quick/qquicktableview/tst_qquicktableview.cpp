@@ -7113,7 +7113,7 @@ void tst_QQuickTableView::editUsingEditTriggers_data()
         QTest::newRow("DoubleTapped") << QQuickTableView::EditTriggers(QQuickTableView::DoubleTapped) << interactive;
         QTest::newRow("SelectedTapped") << QQuickTableView::EditTriggers(QQuickTableView::SelectedTapped) << interactive;
         QTest::newRow("EditKeyPressed") << QQuickTableView::EditTriggers(QQuickTableView::EditKeyPressed) << interactive;
-        QTest::newRow("AnyKeyPressed") << QQuickTableView::EditTriggers(QQuickTableView::EditKeyPressed) << interactive;
+        QTest::newRow("AnyKeyPressed") << QQuickTableView::EditTriggers(QQuickTableView::AnyKeyPressed) << interactive;
         QTest::newRow("DoubleTapped | EditKeyPressed")
                 << QQuickTableView::EditTriggers(QQuickTableView::DoubleTapped | QQuickTableView::EditKeyPressed) << interactive;
         QTest::newRow("SingleTapped | AnyKeyPressed")

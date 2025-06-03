@@ -129,24 +129,24 @@ public:
         QQmlMetaType::CachedUnitLookupError m_cachedUnitStatus = QQmlMetaType::CachedUnitLookupError::NoError;
     };
 
-    QQmlTypeLoader(QQmlEngine *);
+    QQmlTypeLoader(QV4::ExecutionEngine *engine);
     ~QQmlTypeLoader();
 
     template<
             typename Engine,
             typename EnginePrivate = QQmlEnginePrivate,
-            typename = std::enable_if_t<std::is_same_v<Engine, QQmlEngine>>>
+            typename = std::enable_if_t<std::is_base_of_v<QJSEngine, Engine>>>
     static QQmlTypeLoader *get(Engine *engine)
     {
-        return get(EnginePrivate::get(engine));
+        return engine->handle()->typeLoader();
     }
 
     template<
             typename Engine,
-            typename = std::enable_if_t<std::is_same_v<Engine, QQmlEnginePrivate>>>
+            typename = std::enable_if_t<std::is_base_of_v<QJSEnginePrivate, Engine>>>
     static QQmlTypeLoader *get(Engine *engine)
     {
-        return &engine->typeLoader;
+        return Engine::get(engine)->handle()->typeLoader();
     }
 
     static void sanitizeUNCPath(QString *path)
@@ -298,7 +298,7 @@ private:
     };
 
     QQmlTypeLoaderThread *thread() const { return m_data.thread(); }
-    QQmlEngine *engine() const { return m_data.engine(); }
+    QV4::ExecutionEngine *engine() const { return m_data.engine(); }
 
     void startThread();
     void shutdownThread();

@@ -856,6 +856,10 @@ ExecutionEngine::ExecutionEngine(QJSEngine *jsEngine)
 
 ExecutionEngine::~ExecutionEngine()
 {
+#if QT_CONFIG(qml_network)
+    delete networkAccessManager;
+#endif
+    m_typeLoader.reset();
     qDeleteAll(m_extensionData);
     delete m_multiplyWrappedQObjects;
     m_multiplyWrappedQObjects = nullptr;
@@ -883,6 +887,15 @@ ExecutionEngine::~ExecutionEngine()
     m_xmlHttpRequestData = nullptr;
 #endif
 }
+
+#if QT_CONFIG(qml_network)
+QNetworkAccessManager *ExecutionEngine::getNetworkAccessManager()
+{
+    if (!networkAccessManager)
+        networkAccessManager = typeLoader()->createNetworkAccessManager(nullptr);
+    return networkAccessManager;
+}
+#endif
 
 #if QT_CONFIG(qml_debug)
 void ExecutionEngine::setDebugger(Debugging::Debugger *debugger)
@@ -2194,13 +2207,10 @@ ExecutionEngine::Module ExecutionEngine::registerNativeModule(
         return Module();
 
     QQmlRefPointer<CompiledData::CompilationUnit> cu;
-    if (m_qmlEngine) {
-        // Make sure the type loader doesn't try to resolve the module anymore.
-        // If some other code requests that same module, we need to produce the same CU.
-        cu = QQmlEnginePrivate::get(m_qmlEngine)->typeLoader.injectModule(url, unit);
-    } else {
-        cu = QQml::makeRefPointer<CompiledData::CompilationUnit>(unit);
-    }
+
+    // Make sure the type loader doesn't try to resolve the module anymore.
+    // If some other code requests that same module, we need to produce the same CU.
+    cu = typeLoader()->injectModule(url, unit);
 
     QQmlRefPointer<ExecutableCompilationUnit> newModule = insertCompilationUnit(std::move(cu));
 
@@ -2955,12 +2965,5 @@ int ExecutionEngine::registerExtension()
 {
     return registrationData()->extensionCount++;
 }
-
-#if QT_CONFIG(qml_network)
-QNetworkAccessManager *QV4::detail::getNetworkAccessManager(ExecutionEngine *engine)
-{
-    return engine->qmlEngine()->networkAccessManager();
-}
-#endif // qml_network
 
 QT_END_NAMESPACE

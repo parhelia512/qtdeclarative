@@ -248,12 +248,11 @@ void QQmlPropertyPrivate::initProperty(QObject *obj, const QString &name,
             // Types must begin with an uppercase letter (see checkRegistration()
             // in qqmlmetatype.cpp for the enforcement of this).
             if (typeNameCache && !pathName.isEmpty() && pathName.at(0).isUpper()) {
-                QQmlEnginePrivate *enginePrivate = QQmlEnginePrivate::get(engine);
-                QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(enginePrivate);
+                QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(engine.data());
                 QQmlTypeNameCache::Result r = typeNameCache->query(pathName, typeLoader);
                 if (r.isValid()) {
                     if (r.type.isValid()) {
-                        QQmlAttachedPropertiesFunc func = r.type.attachedPropertiesFunction(enginePrivate);
+                        QQmlAttachedPropertiesFunc func = r.type.attachedPropertiesFunction(typeLoader);
                         if (!func) return; // Not an attachable type
 
                         currentObject = qmlAttachedPropertiesObject(currentObject, func);
@@ -269,7 +268,7 @@ void QQmlPropertyPrivate::initProperty(QObject *obj, const QString &name,
                         if (!r.type.isValid())
                             return; // Invalid type in namespace
 
-                        QQmlAttachedPropertiesFunc func = r.type.attachedPropertiesFunction(enginePrivate);
+                        QQmlAttachedPropertiesFunc func = r.type.attachedPropertiesFunction(typeLoader);
                         if (!func)
                             return; // Not an attachable type
 

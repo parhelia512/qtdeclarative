@@ -467,8 +467,7 @@ QQmlComponent::~QQmlComponent()
         if (d->m_engine && !d->m_typeData->isCompleteOrError()) {
             // In this case we have to send it to the type loader thread to be dropped. It will
             // manipulate its "waiting" lists that other blobs may be using concurrently.
-            QQmlEnginePrivate::get(d->m_engine)->typeLoader.drop(
-                    QQmlDataBlob::Ptr(d->m_typeData.data()));
+            QQmlTypeLoader::get(d->m_engine)->drop(QQmlDataBlob::Ptr(d->m_typeData.data()));
         }
         d->m_typeData.reset();
     }
@@ -725,7 +724,7 @@ void QQmlComponent::setData(const QByteArray &data, const QUrl &url)
 
     d->m_url = url;
 
-    QQmlRefPointer<QQmlTypeData> typeData = QQmlEnginePrivate::get(d->m_engine)->typeLoader.getType(data, url);
+    QQmlRefPointer<QQmlTypeData> typeData = QQmlTypeLoader::get(d->m_engine)->getType(data, url);
 
     if (typeData->isCompleteOrError()) {
         d->fromTypeData(typeData);
@@ -824,8 +823,7 @@ void QQmlComponentPrivate::loadUrl(const QUrl &newUrl, QQmlComponent::Compilatio
     QQmlTypeLoader::Mode loaderMode = (mode == QQmlComponent::Asynchronous)
             ? QQmlTypeLoader::Asynchronous
             : QQmlTypeLoader::PreferSynchronous;
-    QQmlRefPointer<QQmlTypeData> data
-            = QQmlEnginePrivate::get(m_engine)->typeLoader.getType(m_url, loaderMode);
+    QQmlRefPointer<QQmlTypeData> data = QQmlTypeLoader::get(m_engine)->getType(m_url, loaderMode);
 
     if (data->isCompleteOrError()) {
         fromTypeData(data);
@@ -1420,9 +1418,8 @@ void QQmlComponentPrivate::prepareLoadFromModule(
     if (m_loadHelper)
         m_loadHelper->unregisterCallback(this);
 
-    QQmlTypeLoader *typeLoader = &QQmlEnginePrivate::get(m_engine)->typeLoader;
     // LoadHelper must be on the Heap as it derives from QQmlRefCount
-    m_loadHelper = QQml::makeRefPointer<LoadHelper>(typeLoader, uri, typeName, mode);
+    m_loadHelper = QQml::makeRefPointer<LoadHelper>(QQmlTypeLoader::get(m_engine), uri, typeName, mode);
 }
 
 void QQmlComponentPrivate::completeLoadFromModule(QAnyStringView uri, QAnyStringView typeName)

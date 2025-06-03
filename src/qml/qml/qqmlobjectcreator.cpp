@@ -840,10 +840,10 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
         QV4::ResolvedTypeReference *tr = resolvedType(binding->propertyNameIndex);
         Q_ASSERT(tr);
         QQmlType attachedType = tr->type();
-        QQmlEnginePrivate *enginePrivate = QQmlEnginePrivate::get(engine);
+        QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(engine);
         if (!attachedType.isValid()) {
-            QQmlTypeNameCache::Result res = context->imports()->query(
-                    stringAt(binding->propertyNameIndex), QQmlTypeLoader::get(enginePrivate));
+            QQmlTypeNameCache::Result res
+                    = context->imports()->query(stringAt(binding->propertyNameIndex), typeLoader);
             if (res.isValid())
                 attachedType = res.type;
             else
@@ -856,7 +856,7 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
                                 context->url()));
 
         QObject *qmlObject = qmlAttachedPropertiesObject(
-                _qobject, attachedType.attachedPropertiesFunction(enginePrivate));
+                _qobject, attachedType.attachedPropertiesFunction(typeLoader));
         if (!qmlObject) {
             recordError(binding->location,
                         QStringLiteral("Could not create attached properties object '%1'")
@@ -866,7 +866,8 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
 
         const size_t objectIndex = sharedState->allCreatedObjects.size();
         sharedState->allCreatedObjects.push_back(qmlObject);
-        const QQmlType attachedObjectType = QQmlMetaType::qmlType(attachedType.attachedPropertiesType(QQmlEnginePrivate::get((engine))));
+        const QQmlType attachedObjectType
+                = QQmlMetaType::qmlType(attachedType.attachedPropertiesType(typeLoader));
         const int parserStatusCast = attachedObjectType.parserStatusCast();
         QQmlParserStatus *parserStatus  = nullptr;
         if (parserStatusCast != -1)

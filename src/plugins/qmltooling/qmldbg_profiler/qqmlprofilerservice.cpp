@@ -92,11 +92,11 @@ void QQmlProfilerServiceImpl::engineAboutToBeAdded(QJSEngine *engine)
 
     QMutexLocker lock(&m_configMutex);
     if (QQmlEngine *qmlEngine = qobject_cast<QQmlEngine *>(engine)) {
-        QQmlEnginePrivate *enginePrivate = QQmlEnginePrivate::get(qmlEngine);
-        QQmlProfilerAdapter *qmlAdapter = new QQmlProfilerAdapter(this, enginePrivate);
+        QQmlProfilerAdapter *qmlAdapter
+                = new QQmlProfilerAdapter(this, QQmlEnginePrivate::get(qmlEngine));
         addEngineProfiler(qmlAdapter, engine);
         QQmlProfilerAdapter *compileAdapter
-                = new QQmlProfilerAdapter(this, &(enginePrivate->typeLoader));
+                = new QQmlProfilerAdapter(this, QQmlTypeLoader::get(engine));
         addEngineProfiler(compileAdapter, engine);
     }
     QV4ProfilerAdapter *v4Adapter = new QV4ProfilerAdapter(this, engine->handle());

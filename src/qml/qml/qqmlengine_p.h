@@ -100,7 +100,6 @@ class Q_QML_EXPORT QQmlEnginePrivate : public QJSEnginePrivate
 {
     Q_DECLARE_PUBLIC(QQmlEngine)
 public:
-    explicit QQmlEnginePrivate(QQmlEngine *q) : typeLoader(q) {}
     ~QQmlEnginePrivate() override;
 
     void init();
@@ -137,10 +136,7 @@ public:
     QUrl baseUrl;
 
     QQmlObjectCreator *activeObjectCreator = nullptr;
-#if QT_CONFIG(qml_network)
-    QNetworkAccessManager *getNetworkAccessManager();
-    QNetworkAccessManager *networkAccessManager = nullptr;
-#endif
+
     mutable QRecursiveMutex imageProviderMutex;
     QHash<QString,QSharedPointer<QQmlImageProviderBase> > imageProviders;
     QSharedPointer<QQmlImageProviderBase> imageProvider(const QString &providerId) const;
@@ -148,8 +144,6 @@ public:
     int scarceResourcesRefCount = 0;
     void referenceScarceResources();
     void dereferenceScarceResources();
-
-    QQmlTypeLoader typeLoader;
 
     QString offlineStoragePath;
 
@@ -166,9 +160,6 @@ public:
     // These methods may be called from any thread
     QString offlineStorageDatabaseDirectory() const;
 
-    bool isTypeLoaded(const QUrl &url) const;
-    bool isScriptLoaded(const QUrl &url) const;
-
     template <typename T>
     T singletonInstance(const QQmlType &type);
 
@@ -181,13 +172,14 @@ public:
     static void warning(QQmlEnginePrivate *, const QQmlError &);
     static void warning(QQmlEnginePrivate *, const QList<QQmlError> &);
 
-    inline static QV4::ExecutionEngine *getV4Engine(QQmlEngine *e);
     inline static QQmlEnginePrivate *get(QQmlEngine *e);
     inline static const QQmlEnginePrivate *get(const QQmlEngine *e);
+    inline static QQmlEngine *get(QQmlEnginePrivate *p);
+    inline static const QQmlEngine *get(const QQmlEnginePrivate *p);
+    inline static QQmlEnginePrivate *get(QV4::ExecutionEngine *e);
+
     inline static QQmlEnginePrivate *get(QQmlContext *c);
     inline static QQmlEnginePrivate *get(const QQmlRefPointer<QQmlContextData> &c);
-    inline static QQmlEngine *get(QQmlEnginePrivate *p);
-    inline static QQmlEnginePrivate *get(QV4::ExecutionEngine *e);
 
     static QList<QQmlError> qmlErrorFromDiagnostics(const QString &fileName, const QList<QQmlJS::DiagnosticMessage> &diagnosticMessages);
 
@@ -317,13 +309,6 @@ inline void QQmlEnginePrivate::dereferenceScarceResources()
             cleanupScarceResources();
         }
     }
-}
-
-QV4::ExecutionEngine *QQmlEnginePrivate::getV4Engine(QQmlEngine *e)
-{
-    Q_ASSERT(e);
-
-    return e->handle();
 }
 
 QQmlEnginePrivate *QQmlEnginePrivate::get(QQmlEngine *e)

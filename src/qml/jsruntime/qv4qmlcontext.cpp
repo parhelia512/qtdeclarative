@@ -201,7 +201,7 @@ ReturnedValue QQmlContextWrapper::getPropertyAndBase(const QQmlContextWrapper *r
     if (context->imports() && (name->startsWithUpper() || context->valueTypesAreAddressable())) {
         // Search for attached properties, enums and imported scripts
         QQmlTypeNameCache::Result r = context->imports()->query<QQmlImport::AllowRecursion>(
-                name, QQmlTypeLoader::get(ep));
+                name, v4->typeLoader());
 
         if (r.isValid()) {
             if (hasProperty)

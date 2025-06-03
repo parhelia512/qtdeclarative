@@ -207,14 +207,13 @@ void QQuickStackElement::initialize(RequiredProperties *requiredProperties)
     if (!properties.isUndefined()) {
         QQmlEngine *engine = qmlEngine(view);
         Q_ASSERT(engine);
-        QV4::ExecutionEngine *v4 = QQmlEnginePrivate::getV4Engine(engine);
-        Q_ASSERT(v4);
-        QV4::Scope scope(v4);
+        QV4::Scope scope(engine->handle());
+        Q_ASSERT(scope.engine);
         QV4::ScopedValue ipv(scope, properties.value());
         QV4::Scoped<QV4::QmlContext> qmlContext(scope, qmlCallingContext.value());
-        QV4::ScopedValue qmlObject(scope, QV4::QObjectWrapper::wrap(v4, item));
+        QV4::ScopedValue qmlObject(scope, QV4::QObjectWrapper::wrap(scope.engine, item));
         QQmlComponentPrivate::setInitialProperties(
-            v4, qmlContext, qmlObject, ipv, requiredProperties, item,
+            scope.engine, qmlContext, qmlObject, ipv, requiredProperties, item,
             component ? QQmlComponentPrivate::get(component)->creator() : nullptr);
         properties.clear();
     }

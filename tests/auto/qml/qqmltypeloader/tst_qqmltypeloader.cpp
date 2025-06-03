@@ -109,14 +109,14 @@ void tst_QQMLTypeLoader::loadComponentSynchronously()
 void tst_QQMLTypeLoader::trimCache()
 {
     QQmlEngine engine;
-    QQmlTypeLoader &loader = QQmlEnginePrivate::get(&engine)->typeLoader;
+    QQmlTypeLoader *loader = QQmlTypeLoader::get(&engine);
     QVector<QQmlTypeData *> releaseLater;
     QVector<QV4::CompiledData::CompilationUnit *> releaseCompilationUnitLater;
     for (int i = 0; i < 256; ++i) {
         QUrl url = testFileUrl("trim_cache.qml");
         url.setQuery(QString::number(i));
 
-        QQmlTypeData *data = loader.getType(url).take();
+        QQmlTypeData *data = loader->getType(url).take();
 
         // Backup source code should be dropped right after loading, even without cache trimming.
         QVERIFY(!data->backupSourceCode().isValid());
@@ -142,9 +142,9 @@ void tst_QQMLTypeLoader::trimCache()
         QUrl url = testFileUrl("trim_cache.qml");
         url.setQuery(QString::number(i));
         if (i % 5 == 0)
-            QVERIFY(loader.isTypeLoaded(url));
+            QVERIFY(loader->isTypeLoaded(url));
         else if (i < 128)
-            QVERIFY(!loader.isTypeLoaded(url));
+            QVERIFY(!loader->isTypeLoaded(url));
         // The cache is free to keep the others.
     }
 
@@ -159,13 +159,13 @@ void tst_QQMLTypeLoader::trimCache2()
 {
     QScopedPointer<QQuickView> window(new QQuickView());
     window->setSource(testFileUrl("trim_cache2.qml"));
-    QQmlTypeLoader &loader = QQmlEnginePrivate::get(window->engine())->typeLoader;
+    QQmlTypeLoader *loader = QQmlTypeLoader::get(window->engine());
     // in theory if gc has already run this could be false
     // QCOMPARE(loader.isTypeLoaded(testFileUrl("MyComponent2.qml")), true);
     window->engine()->collectGarbage();
     QTest::qWait(1);    // force event loop
     window->engine()->trimComponentCache();
-    QCOMPARE(loader.isTypeLoaded(testFileUrl("MyComponent2.qml")), false);
+    QCOMPARE(loader->isTypeLoaded(testFileUrl("MyComponent2.qml")), false);
 }
 
 // test trimming the cache of an item that contains sub-items created via incubation
@@ -173,8 +173,8 @@ void tst_QQMLTypeLoader::trimCache3()
 {
     QScopedPointer<QQuickView> window(new QQuickView());
     window->setSource(testFileUrl("trim_cache3.qml"));
-    QQmlTypeLoader &loader = QQmlEnginePrivate::get(window->engine())->typeLoader;
-    QCOMPARE(loader.isTypeLoaded(testFileUrl("ComponentWithIncubator.qml")), true);
+    QQmlTypeLoader *loader = QQmlTypeLoader::get(window->engine());
+    QCOMPARE(loader->isTypeLoaded(testFileUrl("ComponentWithIncubator.qml")), true);
 
     QQmlProperty::write(window->rootObject(), "source", QString());
 
@@ -185,7 +185,7 @@ void tst_QQMLTypeLoader::trimCache3()
 
     window->engine()->trimComponentCache();
 
-    QCOMPARE(loader.isTypeLoaded(testFileUrl("ComponentWithIncubator.qml")), false);
+    QCOMPARE(loader->isTypeLoaded(testFileUrl("ComponentWithIncubator.qml")), false);
 }
 
 void tst_QQMLTypeLoader::checkSingleton(const QString &dataDirectory)
@@ -739,8 +739,8 @@ static void getCompilationUnitAndRuntimeInfo(QQmlRefPointer<QV4::ExecutableCompi
                                              QList<int> &runtimeFunctionIndices, const QUrl &url,
                                              QQmlEngine *engine)
 {
-    QQmlTypeLoader &loader = QQmlEnginePrivate::get(engine)->typeLoader;
-    auto typeData = loader.getType(url);
+    QQmlTypeLoader *loader = QQmlTypeLoader::get(engine);
+    auto typeData = loader->getType(url);
     QVERIFY(typeData);
     QVERIFY(!typeData->backupSourceCode().isValid());
 

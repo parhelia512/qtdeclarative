@@ -1154,13 +1154,13 @@ QMetaType QQmlMetaType::listValueType(QMetaType metaType)
         return QMetaType {};
 }
 
-QQmlAttachedPropertiesFunc QQmlMetaType::attachedPropertiesFunc(QQmlEnginePrivate *engine,
-                                                                const QMetaObject *mo)
+QQmlAttachedPropertiesFunc QQmlMetaType::attachedPropertiesFunc(
+        QQmlTypeLoader *typeLoader, const QMetaObject *mo)
 {
     QQmlMetaTypeDataPtr data;
 
     QQmlType type(data->metaObjectToType.value(mo));
-    return type.attachedPropertiesFunction(engine);
+    return type.attachedPropertiesFunction(typeLoader);
 }
 
 QMetaProperty QQmlMetaType::defaultProperty(const QMetaObject *metaObject)

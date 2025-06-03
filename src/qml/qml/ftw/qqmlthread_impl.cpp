@@ -224,6 +224,12 @@ bool QQmlThread::isThisThread() const
     return d->isCurrentThread();
 }
 
+bool QQmlThread::isParentThread() const
+{
+    // The thread() of the QQmlThread is its parent thread.
+    return d->thread()->isCurrentThread();
+}
+
 QThread *QQmlThread::thread() const
 {
     return const_cast<QThread *>(static_cast<const QThread *>(d));

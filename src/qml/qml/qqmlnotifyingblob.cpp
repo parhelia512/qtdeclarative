@@ -19,7 +19,7 @@ void QQmlNotifyingBlob::registerCallback(Callback *callback)
 
 void QQmlNotifyingBlob::unregisterCallback(Callback *callback)
 {
-    assertEngineThread();
+    assertEngineThreadIfRunning();
     Q_ASSERT(m_callbacks.contains(callback));
     m_callbacks.removeOne(callback);
     Q_ASSERT(!m_callbacks.contains(callback));

@@ -116,8 +116,8 @@ QQmlAttachedPropertiesFunc qmlAttachedPropertiesFunction(QObject *object,
                                                          const QMetaObject *attachedMetaObject)
 {
     QQmlEngine *engine = object ? qmlEngine(object) : nullptr;
-    return QQmlMetaType::attachedPropertiesFunc(engine ? QQmlEnginePrivate::get(engine) : nullptr,
-                                                attachedMetaObject);
+    return QQmlMetaType::attachedPropertiesFunc(
+            engine ? QQmlTypeLoader::get(engine) : nullptr, attachedMetaObject);
 }
 
 QObject *qmlAttachedPropertiesObject(QObject *object, QQmlAttachedPropertiesFunc func, bool create)
@@ -507,7 +507,7 @@ int qmlTypeId(const char *uri, int versionMajor, int versionMinor, const char *q
        Types; internal code should use QQmlMetaType API.
     */
     QQmlEngine engine;
-    QQmlTypeLoader *typeLoader = &QQmlEnginePrivate::get(&engine)->typeLoader;
+    QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(&engine);
     auto loadHelper = QQml::makeRefPointer<LoadHelper>(
             typeLoader, uri, qmlName, QQmlTypeLoader::Synchronous);
     const QQmlType type = loadHelper->type();
@@ -2615,8 +2615,7 @@ bool AOTCompiledContext::loadAttachedLookup(uint index, QObject *object, void *t
     QV4::Scoped<QV4::QQmlTypeWrapper> wrapper(scope, lookup->qmlTypeLookup.qmlTypeWrapper);
     Q_ASSERT(wrapper);
     *static_cast<QObject **>(target) = qmlAttachedPropertiesObject(
-                object, wrapper->d()->type().attachedPropertiesFunction(
-                    QQmlEnginePrivate::get(qmlEngine())));
+                object, wrapper->d()->type().attachedPropertiesFunction(scope.engine->typeLoader()));
     return true;
 }
 

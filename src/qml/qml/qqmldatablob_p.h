@@ -60,6 +60,7 @@ public:
     void startLoading();
 
     QQmlTypeLoader *typeLoader() const { return m_typeLoader; }
+    void resetTypeLoader() { m_typeLoader = nullptr; }
 
     Type type() const;
 
@@ -116,10 +117,17 @@ public:
     }
 
     template<typename Loader = QQmlTypeLoader>
+    void assertEngineThreadIfRunning() const
+    {
+        const Loader *loader = m_typeLoader;
+        Q_ASSERT(!loader || !loader->thread() || loader->thread()->isParentThread());
+    }
+
+    template<typename Loader = QQmlTypeLoader>
     void assertEngineThread() const
     {
         const Loader *loader = m_typeLoader;
-        Q_ASSERT(loader && loader->engine() && loader->engine()->thread()->isCurrentThread());
+        Q_ASSERT(loader && loader->thread() && loader->thread()->isParentThread());
     }
 
 protected:

@@ -35,8 +35,10 @@
 
 #include <functional>
 
-#define ASSERT_LOADTHREAD() Q_ASSERT(thread() && thread()->isThisThread())
-#define ASSERT_ENGINETHREAD() Q_ASSERT(engine()->thread()->isCurrentThread())
+#define ASSERT_LOADTHREAD() \
+    Q_ASSERT(thread() && thread()->isThisThread())
+#define ASSERT_ENGINETHREAD() \
+    Q_ASSERT(!engine()->jsEngine() || engine()->jsEngine()->thread()->isCurrentThread())
 
 QT_BEGIN_NAMESPACE
 
@@ -413,7 +415,7 @@ void doInitializeEngine(
     if (thread && thread->isThisThread())
         thread->initializeEngine(iface, uri);
     else
-        iface->initializeEngine(data->engine(), uri);
+        iface->initializeEngine(data->engine()->qmlEngine(), uri);
 }
 
 void QQmlTypeLoader::initializeEngine(QQmlEngineExtensionInterface *iface, const char *uri)
@@ -647,11 +649,10 @@ void QQmlTypeLoader::clearQmldirInfo()
 }
 
 static void initializeConfiguredData(
-        const QQmlTypeLoaderConfiguredDataPtr &data, QQmlEngine *engine)
+        const QQmlTypeLoaderConfiguredDataPtr &data, QV4::ExecutionEngine *engine)
 {
-    QV4::ExecutionEngine *v4 = engine->handle();
-    data->diskCacheOptions = v4->diskCacheOptions();
-    data->isDebugging = v4->debugger() != nullptr;
+    data->diskCacheOptions = engine->diskCacheOptions();
+    data->isDebugging = engine->debugger() != nullptr;
     data->initialized = true;
 }
 
@@ -1201,7 +1202,7 @@ static QStringList parseEnvPath(const QString &envImportPath)
 /*!
 Constructs a new type loader that uses the given \a engine.
 */
-QQmlTypeLoader::QQmlTypeLoader(QQmlEngine *engine)
+QQmlTypeLoader::QQmlTypeLoader(QV4::ExecutionEngine *engine)
     : m_data(engine)
 {
     QQmlTypeLoaderConfiguredDataPtr data(&m_data);
@@ -1724,6 +1725,15 @@ void QQmlTypeLoader::setQmldirContent(const QString &url, const QString &content
         qmldir->setContent(url, content);
 }
 
+template<typename Blob>
+void clearBlobs(QHash<QUrl, QQmlRefPointer<Blob>> *blobs)
+{
+    std::for_each(blobs->cbegin(), blobs->cend(), [](const QQmlRefPointer<Blob> &blob) {
+        blob->resetTypeLoader();
+    });
+    blobs->clear();
+}
+
 /*!
 Clears cached information about loaded files, including any type data, scripts
 and qmldir information.
@@ -1745,10 +1755,10 @@ void QQmlTypeLoader::clearCache()
     threadData->importQmlDirCache.clear();
 
     QQmlTypeLoaderSharedDataPtr data(&m_data);
-    data->typeCache.clear();
+    clearBlobs(&data->typeCache);
+    clearBlobs(&data->scriptCache);
+    clearBlobs(&data->qmldirCache);
     data->typeCacheTrimThreshold = QQmlTypeLoaderSharedData::MinimumTypeCacheTrimThreshold;
-    data->scriptCache.clear();
-    data->qmldirCache.clear();
     data->importDirCache.clear();
 
     // The thread will auto-restart next time we need it.

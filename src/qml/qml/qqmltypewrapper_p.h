@@ -72,7 +72,7 @@ struct QQmlTypeWrapper : FunctionObject {
     void warnIfUncreatable() const;
 
     QQmlTypeNameCache::Result queryNamespace(
-            const QV4::String *name, QQmlEnginePrivate *enginePrivate) const;
+            const QV4::String *name, QV4::ExecutionEngine *engine) const;
 
     QV4QPointer<QObject> object;
 

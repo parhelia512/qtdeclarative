@@ -1374,7 +1374,7 @@ QObject *QtObject::createQmlObject(const QString &qml, QObject *parent, const QU
         return nullptr;
     }
 
-    QQmlRefPointer<QQmlTypeData> typeData = QQmlEnginePrivate::get(engine)->typeLoader.getType(
+    QQmlRefPointer<QQmlTypeData> typeData = v4Engine()->typeLoader()->getType(
                 qml.toUtf8(), resolvedUrl, QQmlTypeLoader::Synchronous);
 
     if (!typeData->isCompleteOrError()) {
@@ -1738,10 +1738,10 @@ QVariant QtObject::enumStringToValue(QJSValue enumType, QJSValue string)
     QQmlType type = enumWrapper->d()->type();
     int enumIndex = enumWrapper->d()->enumIndex;
     QString keyString = string.toString();
-    auto &typeLoader = QQmlEnginePrivate::get(m_engine->qmlEngine())->typeLoader;
+    auto *typeLoader = m_engine->typeLoader();
     int value = enumWrapper->d()->scoped
-            ? type.scopedEnumValue(&typeLoader, enumIndex, keyString, &ok)
-            : type.unscopedEnumValue(&typeLoader, enumIndex, keyString, &ok);
+            ? type.scopedEnumValue(typeLoader, enumIndex, keyString, &ok)
+            : type.unscopedEnumValue(typeLoader, enumIndex, keyString, &ok);
 
     if (ok)
         return value;
@@ -1773,10 +1773,10 @@ QVariant QtObject::enumValueToString(QJSValue enumType, QJSValue value)
     QQmlType type = enumWrapper->d()->type();
     int enumIndex = enumWrapper->d()->enumIndex;
     int keyValue = value.toInt();
-    auto &typeLoader = QQmlEnginePrivate::get(m_engine->qmlEngine())->typeLoader;
+    auto *typeLoader = m_engine->typeLoader();
     QString key = enumWrapper->d()->scoped
-            ? type.scopedEnumKey(&typeLoader, enumIndex, keyValue, &ok)
-            : type.unscopedEnumKey(&typeLoader, enumIndex, keyValue, &ok);
+            ? type.scopedEnumKey(typeLoader, enumIndex, keyValue, &ok)
+            : type.unscopedEnumKey(typeLoader, enumIndex, keyValue, &ok);
 
     if (ok)
         return key;
@@ -1805,11 +1805,11 @@ QVariant QtObject::enumValueToStrings(QJSValue enumType, QJSValue value)
     QQmlType type = enumWrapper->d()->type();
     int enumIndex = enumWrapper->d()->enumIndex;
     int keyValue = value.toInt();
-    auto &typeLoader = QQmlEnginePrivate::get(m_engine->qmlEngine())->typeLoader;
+    auto *typeLoader = m_engine->typeLoader();
     Scope scope(m_engine);
     QStringList keys = enumWrapper->d()->scoped
-            ? type.scopedEnumKeys(&typeLoader, enumIndex, keyValue, &ok)
-            : type.unscopedEnumKeys(&typeLoader, enumIndex, keyValue, &ok);
+            ? type.scopedEnumKeys(typeLoader, enumIndex, keyValue, &ok)
+            : type.unscopedEnumKeys(typeLoader, enumIndex, keyValue, &ok);
 
     if (ok)
         return keys;

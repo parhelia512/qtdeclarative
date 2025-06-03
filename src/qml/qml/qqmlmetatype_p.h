@@ -178,8 +178,8 @@ public:
     static QObject *toQObject(const QVariant &, bool *ok = nullptr);
 
     static QMetaType listValueType(QMetaType type);
-    static QQmlAttachedPropertiesFunc attachedPropertiesFunc(QQmlEnginePrivate *,
-                                                             const QMetaObject *);
+    static QQmlAttachedPropertiesFunc attachedPropertiesFunc(
+            QQmlTypeLoader *typeLoader, const QMetaObject *);
     static bool isInterface(QMetaType type);
     static const char *interfaceIId(QMetaType type);
     static bool isList(QMetaType type);

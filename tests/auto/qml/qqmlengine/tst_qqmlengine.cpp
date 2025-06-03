@@ -461,12 +461,14 @@ public:
 
     Q_INVOKABLE bool isTypeLoaded(QString file)
     {
-        return QQmlEnginePrivate::get(engine)->isTypeLoaded(tst_qqmlengine::instance()->testFileUrl(file));
+        return QQmlTypeLoader::get(engine)
+                ->isTypeLoaded(tst_qqmlengine::instance()->testFileUrl(file));
     }
 
     Q_INVOKABLE bool isScriptLoaded(QString file)
     {
-        return QQmlEnginePrivate::get(engine)->isScriptLoaded(tst_qqmlengine::instance()->testFileUrl(file));
+        return QQmlTypeLoader::get(engine)
+                ->isScriptLoaded(tst_qqmlengine::instance()->testFileUrl(file));
     }
 
     Q_INVOKABLE void beginIncubation()
@@ -1113,22 +1115,22 @@ void tst_qqmlengine::componentFromEval()
 void tst_qqmlengine::qrcUrls()
 {
     QQmlEngine engine;
-    QQmlEnginePrivate *pEngine = QQmlEnginePrivate::get(&engine);
+    QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(&engine);
 
     {
-        QQmlRefPointer<QQmlTypeData> oneQml(pEngine->typeLoader.getType(QUrl("qrc:/qrcurls.qml")));
+        QQmlRefPointer<QQmlTypeData> oneQml(typeLoader->getType(QUrl("qrc:/qrcurls.qml")));
         QVERIFY(oneQml.data() != nullptr);
         QVERIFY(!oneQml->backupSourceCode().isValid());
-        QQmlRefPointer<QQmlTypeData> twoQml(pEngine->typeLoader.getType(QUrl("qrc:///qrcurls.qml")));
+        QQmlRefPointer<QQmlTypeData> twoQml(typeLoader->getType(QUrl("qrc:///qrcurls.qml")));
         QVERIFY(twoQml.data() != nullptr);
         QCOMPARE(oneQml.data(), twoQml.data());
     }
 
     {
-        QQmlRefPointer<QQmlTypeData> oneJS(pEngine->typeLoader.getType(QUrl("qrc:/qrcurls.js")));
+        QQmlRefPointer<QQmlTypeData> oneJS(typeLoader->getType(QUrl("qrc:/qrcurls.js")));
         QVERIFY(oneJS.data() != nullptr);
         QVERIFY(!oneJS->backupSourceCode().isValid());
-        QQmlRefPointer<QQmlTypeData> twoJS(pEngine->typeLoader.getType(QUrl("qrc:///qrcurls.js")));
+        QQmlRefPointer<QQmlTypeData> twoJS(typeLoader->getType(QUrl("qrc:///qrcurls.js")));
         QVERIFY(twoJS.data() != nullptr);
         QCOMPARE(oneJS.data(), twoJS.data());
     }

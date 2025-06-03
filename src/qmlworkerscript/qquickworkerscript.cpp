@@ -105,7 +105,11 @@ public:
     WorkerDestroyEvent() : QEvent(QEvent::Type(WorkerEventType::Destroy)) {}
 };
 
-struct WorkerScript : public QV4::ExecutionEngine::Deletable
+struct WorkerScript
+    : public QV4::ExecutionEngine::Deletable
+#if QT_CONFIG(qml_network)
+    , public QQmlNetworkAccessManagerFactory
+#endif
 {
     WorkerScript(QV4::ExecutionEngine *);
     ~WorkerScript() = default;
@@ -113,7 +117,7 @@ struct WorkerScript : public QV4::ExecutionEngine::Deletable
     QQuickWorkerScriptEnginePrivate *p = nullptr;
     QQuickWorkerScript *owner = nullptr;
 #if QT_CONFIG(qml_network)
-    QScopedPointer<QNetworkAccessManager> scriptLocalNAM;
+    QNetworkAccessManager *create(QObject *parent) final;
 #endif
 };
 
@@ -222,6 +226,10 @@ QV4::ExecutionEngine *QQuickWorkerScriptEnginePrivate::workerEngine(int id)
     WorkerScript *script = workerScriptExtension(engine);
     script->owner = owner;
     script->p = this;
+#if QT_CONFIG(qml_network)
+    // Eagerly create a network access manager that can outlive the parent engine.
+    engine->getNetworkAccessManager();
+#endif
     *it = engine;
     return engine;
 }
@@ -305,7 +313,7 @@ void QQuickWorkerScriptEnginePrivate::reportScriptException(WorkerScript *script
 
 QQuickWorkerScriptEngine::QQuickWorkerScriptEngine(QQmlEngine *parent)
     : QThread(parent)
-    , d(new QQuickWorkerScriptEnginePrivate(&QQmlEnginePrivate::get(parent)->typeLoader))
+    , d(new QQuickWorkerScriptEnginePrivate(QQmlTypeLoader::get(parent)))
 {
     connect(d, SIGNAL(stopThread()), this, SLOT(quit()), Qt::DirectConnection);
     QMutexLocker locker(&d->m_lock);
@@ -348,16 +356,16 @@ WorkerScript::WorkerScript(QV4::ExecutionEngine *engine)
     engine->globalObject->put(workerScriptName, api);
 
 #if QT_CONFIG(qml_network)
-    engine->networkAccessManager = [](QV4::ExecutionEngine *engine) {
-        WorkerScript *workerScript = workerScriptExtension(engine);
-        if (!workerScript->scriptLocalNAM) {
-            workerScript->scriptLocalNAM.reset(
-                    workerScript->p->m_typeLoader->createNetworkAccessManager(workerScript->p));
-        }
-        return workerScript->scriptLocalNAM.get();
-    };
+    engine->typeLoader()->setNetworkAccessManagerFactory(this);
 #endif // qml_network
 }
+
+#if QT_CONFIG(qml_network)
+QNetworkAccessManager *WorkerScript::create(QObject *parent)
+{
+    return p->m_typeLoader->createNetworkAccessManager(parent);
+}
+#endif
 
 int QQuickWorkerScriptEngine::registerWorkerScript(QQuickWorkerScript *owner)
 {

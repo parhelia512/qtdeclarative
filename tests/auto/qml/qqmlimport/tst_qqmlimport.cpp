@@ -104,7 +104,7 @@ void tst_QQmlImport::envResourceImportPath()
     qputenv("QML_IMPORT_PATH", envPaths.join(QDir::listSeparator()).toUtf8());
 
     QQmlEngine engine;
-    const QStringList importPaths = QQmlEnginePrivate::get(&engine)->typeLoader.importPathList();
+    const QStringList importPaths = QQmlTypeLoader::get(&engine)->importPathList();
 
     for (const QString &path : envPaths)
         QVERIFY((importPaths.contains(path.startsWith(u':') ? QLatin1String("qrc") + path : path)));

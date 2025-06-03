@@ -2755,8 +2755,7 @@ void tst_qqmllanguage::scriptStringWithoutSourceCode()
     QUrl url = testFileUrl("scriptString7.qml");
     QScopedPointer<const QV4::CompiledData::Unit, FreeUnitData> readOnlyQmlUnit;
     {
-        QQmlEnginePrivate *eng = QQmlEnginePrivate::get(&engine);
-        QQmlRefPointer<QQmlTypeData> td = eng->typeLoader.getType(url);
+        QQmlRefPointer<QQmlTypeData> td = QQmlTypeLoader::get(&engine)->getType(url);
         Q_ASSERT(td);
         QVERIFY(!td->backupSourceCode().isValid());
 

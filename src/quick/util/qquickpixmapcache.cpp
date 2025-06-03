@@ -443,7 +443,7 @@ QNetworkAccessManager *QQuickPixmapReader::networkAccessManager()
 {
     if (!accessManager) {
         Q_ASSERT(readerThreadExecutionEnforcer());
-        accessManager = QQmlEnginePrivate::get(engine)->typeLoader.createNetworkAccessManager(
+        accessManager = QQmlTypeLoader::get(engine)->createNetworkAccessManager(
                 readerThreadExecutionEnforcer());
     }
     return accessManager;

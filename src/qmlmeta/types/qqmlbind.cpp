@@ -1000,8 +1000,7 @@ void QQmlBindPrivate::decodeBinding(
 
             QQmlContext *context = qmlContext(q);
             QObject *attachedObject = qmlAttachedPropertiesObject(
-                    q, attachedType.attachedPropertiesFunction(
-                               QQmlEnginePrivate::get(context->engine())));
+                    q, attachedType.attachedPropertiesFunction(QQmlTypeLoader::get(context->engine())));
             if (!attachedObject) {
                 qmlWarning(q).nospace() <<"Could not create attached properties object '"
                                         << attachedType.typeName() << "'";

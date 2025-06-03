@@ -432,9 +432,8 @@ QString QQuickSpinBoxPrivate::evaluateTextFromValue(int val) const
     if (engine && textFromValue.isCallable()) {
         QJSValue loc;
 #if QT_CONFIG(qml_locale)
-        QV4::ExecutionEngine *v4 = QQmlEnginePrivate::getV4Engine(engine);
         loc = QJSValuePrivate::fromReturnedValue(
-                v4->fromData(QMetaType::fromType<QLocale>(), &locale));
+                engine->handle()->fromData(QMetaType::fromType<QLocale>(), &locale));
 #endif
         text = textFromValue.call(QJSValueList() << val << loc).toString();
     } else {
@@ -451,9 +450,8 @@ int QQuickSpinBoxPrivate::evaluateValueFromText(const QString &text) const
     if (engine && valueFromText.isCallable()) {
         QJSValue loc;
 #if QT_CONFIG(qml_locale)
-        QV4::ExecutionEngine *v4 = QQmlEnginePrivate::getV4Engine(engine);
         loc = QJSValuePrivate::fromReturnedValue(
-                v4->fromData(QMetaType::fromType<QLocale>(), &locale));
+                engine->handle()->fromData(QMetaType::fromType<QLocale>(), &locale));
 #endif
         value = valueFromText.call(QJSValueList() << text << loc).toInt();
     } else {

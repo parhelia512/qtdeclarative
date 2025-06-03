@@ -57,16 +57,8 @@ QT_BEGIN_NAMESPACE
 
 #if QT_CONFIG(qml_network)
 class QNetworkAccessManager;
-
-namespace QV4 {
-struct QObjectMethod;
-namespace detail {
-QNetworkAccessManager *getNetworkAccessManager(ExecutionEngine *engine);
-}
-}
-#else
-namespace QV4 { struct QObjectMethod; }
 #endif // qml_network
+namespace QV4 { struct QObjectMethod; }
 
 // Used to allow a QObject method take and return raw V4 handles without having to expose
 // 48 in the public API.
@@ -176,9 +168,9 @@ public:
     template<typename TypeLoader = QQmlTypeLoader>
     TypeLoader *typeLoader()
     {
-        if (m_qmlEngine)
-            return TypeLoader::get(m_qmlEngine);
-        return nullptr;
+        if (!m_typeLoader)
+            m_typeLoader = std::make_unique<TypeLoader>(this);
+        return m_typeLoader.get();
     }
 
     enum JSObjects {
@@ -359,7 +351,8 @@ public:
     FunctionObject *thrower() const { return reinterpret_cast<FunctionObject *>(jsObjects + ThrowerObject); }
 
 #if QT_CONFIG(qml_network)
-    QNetworkAccessManager* (*networkAccessManager)(ExecutionEngine*)  = detail::getNetworkAccessManager;
+    QNetworkAccessManager *getNetworkAccessManager();
+    QNetworkAccessManager *networkAccessManager = nullptr;
 #endif
 
     enum JSStrings {
@@ -866,6 +859,7 @@ private:
     void *m_xmlHttpRequestData = nullptr;
 #endif
 
+    std::unique_ptr<QQmlTypeLoader> m_typeLoader;
     QQmlEngine *m_qmlEngine = nullptr;
 
     QQmlDelayedCallQueue m_delayedCallQueue;

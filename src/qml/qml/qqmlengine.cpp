@@ -509,7 +509,7 @@ void QQmlEnginePrivate::init()
   Create a new QQmlEngine with the given \a parent.
 */
 QQmlEngine::QQmlEngine(QObject *parent)
-: QJSEngine(*new QQmlEnginePrivate(this), parent)
+: QJSEngine(*new QQmlEnginePrivate, parent)
 {
     Q_D(QQmlEngine);
     d->init();
@@ -538,7 +538,15 @@ QQmlEngine::QQmlEngine(QQmlEnginePrivate &dd, QObject *parent)
 QQmlEngine::~QQmlEngine()
 {
     Q_D(QQmlEngine);
-    handle()->inShutdown = true;
+
+#if QT_CONFIG(qml_worker_script)
+    // Delete the workerscript engine early
+    // so that it won't be able to use the type loader anymore.
+    delete std::exchange(d->workerScriptEngine, nullptr);
+#endif
+
+    QV4::ExecutionEngine *v4 = handle();
+    v4->inShutdown = true;
     QJSEnginePrivate::removeFromDebugServer(this);
 
     // Emit onDestruction signals for the root context before
@@ -555,7 +563,7 @@ QQmlEngine::~QQmlEngine()
     delete d->rootContext;
     d->rootContext = nullptr;
 
-    d->typeLoader.invalidate();
+    v4->typeLoader()->invalidate();
 
     // QQmlGadgetPtrWrapper can have QQmlData with various references.
     qDeleteAll(d->cachedValueTypeInstances);
@@ -612,8 +620,6 @@ QQmlEngine::~QQmlEngine()
  */
 void QQmlEngine::clearComponentCache()
 {
-    Q_D(QQmlEngine);
-
     // Contexts can hold on to CUs but live on the JS heap.
     // Use a non-incremental GC run to get rid of those.
     QV4::MemoryManager *mm = handle()->memoryManager;
@@ -622,8 +628,9 @@ void QQmlEngine::clearComponentCache()
     mm->runGC();
     mm->gcStateMachine->timeLimit = std::move(oldLimit);
 
-    handle()->trimCompilationUnits();
-    d->typeLoader.clearCache();
+    QV4::ExecutionEngine *v4 = handle();
+    v4->trimCompilationUnits();
+    v4->typeLoader()->clearCache();
     QQmlMetaType::freeUnusedTypesAndCaches();
 }
 
@@ -641,9 +648,9 @@ void QQmlEngine::clearComponentCache()
  */
 void QQmlEngine::trimComponentCache()
 {
-    Q_D(QQmlEngine);
-    handle()->trimCompilationUnits();
-    d->typeLoader.trimCache();
+    QV4::ExecutionEngine *v4 = handle();
+    v4->trimCompilationUnits();
+    v4->typeLoader()->trimCache();
 }
 
 /*!
@@ -695,8 +702,7 @@ QQmlContext *QQmlEngine::rootContext() const
 */
 QQmlAbstractUrlInterceptor *QQmlEngine::urlInterceptor() const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.urlInterceptors().last();
+    return QQmlTypeLoader::get(this)->urlInterceptors().last();
 }
 #endif
 
@@ -711,8 +717,7 @@ QQmlAbstractUrlInterceptor *QQmlEngine::urlInterceptor() const
 */
 void QQmlEngine::addUrlInterceptor(QQmlAbstractUrlInterceptor *urlInterceptor)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.addUrlInterceptor(urlInterceptor);
+    QQmlTypeLoader::get(this)->addUrlInterceptor(urlInterceptor);
 }
 
 /*!
@@ -725,8 +730,7 @@ void QQmlEngine::addUrlInterceptor(QQmlAbstractUrlInterceptor *urlInterceptor)
 */
 void QQmlEngine::removeUrlInterceptor(QQmlAbstractUrlInterceptor *urlInterceptor)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.removeUrlInterceptor(urlInterceptor);
+    QQmlTypeLoader::get(this)->removeUrlInterceptor(urlInterceptor);
 }
 
 /*!
@@ -735,8 +739,7 @@ void QQmlEngine::removeUrlInterceptor(QQmlAbstractUrlInterceptor *urlInterceptor
  */
 QUrl QQmlEngine::interceptUrl(const QUrl &url, QQmlAbstractUrlInterceptor::DataType type) const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.interceptUrl(url, type);
+    return QQmlTypeLoader::get(this)->interceptUrl(url, type);
 }
 
 /*!
@@ -744,8 +747,7 @@ QUrl QQmlEngine::interceptUrl(const QUrl &url, QQmlAbstractUrlInterceptor::DataT
  */
 QList<QQmlAbstractUrlInterceptor *> QQmlEngine::urlInterceptors() const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.urlInterceptors();
+    return QQmlTypeLoader::get(this)->urlInterceptors();
 }
 
 QSharedPointer<QQmlImageProviderBase> QQmlEnginePrivate::imageProvider(const QString &providerId) const
@@ -770,8 +772,7 @@ QSharedPointer<QQmlImageProviderBase> QQmlEnginePrivate::imageProvider(const QSt
 */
 void QQmlEngine::setNetworkAccessManagerFactory(QQmlNetworkAccessManagerFactory *factory)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.setNetworkAccessManagerFactory(factory);
+    QQmlTypeLoader::get(this)->setNetworkAccessManagerFactory(factory);
 }
 
 class QQmlEnginePublicAPIToken {};
@@ -783,16 +784,7 @@ class QQmlEnginePublicAPIToken {};
 */
 QQmlNetworkAccessManagerFactory *QQmlEngine::networkAccessManagerFactory() const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.networkAccessManagerFactory().get(QQmlEnginePublicAPIToken());
-}
-
-QNetworkAccessManager *QQmlEnginePrivate::getNetworkAccessManager()
-{
-    Q_Q(QQmlEngine);
-    if (!networkAccessManager)
-        networkAccessManager = typeLoader.createNetworkAccessManager(q);
-    return networkAccessManager;
+    return QQmlTypeLoader::get(this)->networkAccessManagerFactory().get(QQmlEnginePublicAPIToken());
 }
 
 /*!
@@ -809,9 +801,7 @@ QNetworkAccessManager *QQmlEnginePrivate::getNetworkAccessManager()
 */
 QNetworkAccessManager *QQmlEngine::networkAccessManager() const
 {
-    // ### Qt7: This method is clearly not const since it _creates_ the network access manager.
-    Q_D(const QQmlEngine);
-    return const_cast<QQmlEnginePrivate *>(d)->getNetworkAccessManager();
+    return handle()->getNetworkAccessManager();
 }
 #endif // qml_network
 
@@ -1066,7 +1056,7 @@ QJSValue QQmlEngine::singletonInstance<QJSValue>(QAnyStringView uri, QAnyStringV
     Q_D(QQmlEngine);
 
     auto loadHelper = QQml::makeRefPointer<LoadHelper>(
-            &d->typeLoader, uri, typeName, QQmlTypeLoader::Synchronous);
+            QQmlTypeLoader::get(this), uri, typeName, QQmlTypeLoader::Synchronous);
     const QQmlType type = loadHelper->type();
 
     if (!type.isSingleton())
@@ -1610,8 +1600,7 @@ void QQmlEnginePrivate::cleanupScarceResources()
 */
 void QQmlEngine::addImportPath(const QString& path)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.addImportPath(path);
+    QQmlTypeLoader::get(this)->addImportPath(path);
 }
 
 /*!
@@ -1631,8 +1620,7 @@ void QQmlEngine::addImportPath(const QString& path)
 */
 QStringList QQmlEngine::importPathList() const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.importPathList();
+    return QQmlTypeLoader::get(this)->importPathList();
 }
 
 /*!
@@ -1649,8 +1637,7 @@ QStringList QQmlEngine::importPathList() const
   */
 void QQmlEngine::setImportPathList(const QStringList &paths)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.setImportPathList(paths);
+    QQmlTypeLoader::get(this)->setImportPathList(paths);
 }
 
 
@@ -1667,8 +1654,7 @@ void QQmlEngine::setImportPathList(const QStringList &paths)
 */
 void QQmlEngine::addPluginPath(const QString& path)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.addPluginPath(path);
+    QQmlTypeLoader::get(this)->addPluginPath(path);
 }
 
 /*!
@@ -1682,8 +1668,7 @@ void QQmlEngine::addPluginPath(const QString& path)
 */
 QStringList QQmlEngine::pluginPathList() const
 {
-    Q_D(const QQmlEngine);
-    return d->typeLoader.pluginPathList();
+    return QQmlTypeLoader::get(this)->pluginPathList();
 }
 
 /*!
@@ -1698,8 +1683,7 @@ QStringList QQmlEngine::pluginPathList() const
   */
 void QQmlEngine::setPluginPathList(const QStringList &paths)
 {
-    Q_D(QQmlEngine);
-    d->typeLoader.setPluginPathList(paths);
+    QQmlTypeLoader::get(this)->setPluginPathList(paths);
 }
 
 #if QT_CONFIG(library)
@@ -1720,9 +1704,8 @@ void QQmlEngine::setPluginPathList(const QStringList &paths)
 */
 bool QQmlEngine::importPlugin(const QString &filePath, const QString &uri, QList<QQmlError> *errors)
 {
-    Q_D(QQmlEngine);
     QQmlTypeLoaderQmldirContent qmldir;
-    QQmlPluginImporter importer(uri, QTypeRevision(),  &qmldir, &d->typeLoader, errors);
+    QQmlPluginImporter importer(uri, QTypeRevision(),  &qmldir, QQmlTypeLoader::get(this), errors);
     return importer.importDynamicPlugin(filePath, uri, false).isValid();
 }
 #endif
@@ -1907,16 +1890,6 @@ QJSValue QQmlEnginePrivate::singletonInstance<QJSValue>(const QQmlType &type)
     return value;
 }
 
-bool QQmlEnginePrivate::isTypeLoaded(const QUrl &url) const
-{
-    return typeLoader.isTypeLoaded(url);
-}
-
-bool QQmlEnginePrivate::isScriptLoaded(const QUrl &url) const
-{
-    return typeLoader.isScriptLoaded(url);
-}
-
 void QQmlEnginePrivate::executeRuntimeFunction(const QUrl &url, qsizetype functionIndex,
                                                QObject *thisObject, int argc, void **args,
                                                QMetaType *types)
@@ -1985,7 +1958,7 @@ QV4::ExecutableCompilationUnit *QQmlEnginePrivate::compilationUnitFromUrl(const 
         return unit.data();
     }
 
-    auto unit = typeLoader.getType(url)->compilationUnit();
+    auto unit = v4->typeLoader()->getType(url)->compilationUnit();
     if (!unit)
         return nullptr;
 

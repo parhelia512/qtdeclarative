@@ -38,6 +38,7 @@ public:
     void wait();
 
     bool isThisThread() const;
+    bool isParentThread() const;
 
     // Synchronously invoke a method in the thread
     template<typename Method, typename ...Args>

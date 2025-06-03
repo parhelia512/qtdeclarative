@@ -229,9 +229,13 @@ HighlightingVisitor::HighlightingVisitor(const QQmlJS::Dom::DomItem &item,
                                          HighlightingMode mode)
     : m_highlights(mode), m_range(range)
 {
-    item.visitTree(Path(), [this](const Path &path, const DomItem &item, bool b) {
-        return this->visitor(path, item, b);
-    }, VisitOption::Default, emptyChildrenVisitor, emptyChildrenVisitor, highlightingFilter());
+    item.visitTree(
+            Path(),
+            [this](const Path &path, const DomItem &item, bool b) {
+                return this->visitor(path, item, b);
+            },
+            VisitOption::Default | VisitOption::NoPath, emptyChildrenVisitor, emptyChildrenVisitor,
+            highlightingFilter());
 }
 
 bool HighlightingVisitor::visitor(Path, const DomItem &item, bool)

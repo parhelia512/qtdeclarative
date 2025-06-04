@@ -280,7 +280,7 @@ V4_DEFINE_EXTENSION(QQmlComponentExtension, componentExtension);
     \value Asynchronous Load/compile the component in a background thread.
 */
 
-void QQmlComponentPrivate::typeDataReady(QQmlTypeData *)
+void QQmlComponentPrivate::ready(QQmlNotifyingBlob *)
 {
     Q_Q(QQmlComponent);
 
@@ -292,7 +292,7 @@ void QQmlComponentPrivate::typeDataReady(QQmlTypeData *)
     emit q->statusChanged(q->status());
 }
 
-void QQmlComponentPrivate::typeDataProgress(QQmlTypeData *, qreal p)
+void QQmlComponentPrivate::progress(QQmlNotifyingBlob *, qreal p)
 {
     setProgress(p);
 }

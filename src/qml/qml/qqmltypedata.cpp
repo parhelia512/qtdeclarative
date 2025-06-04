@@ -22,10 +22,6 @@ QT_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcCycle, "qt.qml.typeresolution.cycle", QtWarningMsg)
 
-QQmlTypeData::TypeDataCallback::~TypeDataCallback()
-{
-}
-
 QString QQmlTypeData::TypeReference::qualifiedName() const
 {
     QString result;
@@ -37,7 +33,7 @@ QString QQmlTypeData::TypeReference::qualifiedName() const
 }
 
 QQmlTypeData::QQmlTypeData(const QUrl &url, QQmlTypeLoader *manager)
-    : QQmlTypeLoader::Blob(url, QmlFile, manager),
+    : QQmlNotifyingBlob(url, QmlFile, manager),
       m_typesResolved(false), m_implicitImportLoaded(false)
 {
 
@@ -53,21 +49,6 @@ QQmlTypeData::~QQmlTypeData()
 QV4::CompiledData::CompilationUnit *QQmlTypeData::compilationUnit() const
 {
     return m_compiledData.data();
-}
-
-void QQmlTypeData::registerCallback(TypeDataCallback *callback)
-{
-    assertEngineThread();
-    Q_ASSERT(!m_callbacks.contains(callback));
-    m_callbacks.append(callback);
-}
-
-void QQmlTypeData::unregisterCallback(TypeDataCallback *callback)
-{
-    assertEngineThread();
-    Q_ASSERT(m_callbacks.contains(callback));
-    m_callbacks.removeOne(callback);
-    Q_ASSERT(!m_callbacks.contains(callback));
 }
 
 QQmlType QQmlTypeData::qmlType(const QString &inlineComponentName) const
@@ -696,16 +677,6 @@ void QQmlTypeData::done()
     }
 }
 
-void QQmlTypeData::completed()
-{
-    assertEngineThread();
-    // Notify callbacks
-    while (!m_callbacks.isEmpty()) {
-        TypeDataCallback *callback = m_callbacks.takeFirst();
-        callback->typeDataReady(this);
-    }
-}
-
 bool QQmlTypeData::loadImplicitImport()
 {
     assertTypeLoaderThread();
@@ -906,16 +877,6 @@ void QQmlTypeData::allDependenciesDone()
 
     if (!m_typesResolved)
         resolveTypes();
-}
-
-void QQmlTypeData::downloadProgressChanged(qreal p)
-{
-    assertEngineThread();
-
-    for (int ii = 0; ii < m_callbacks.size(); ++ii) {
-        TypeDataCallback *callback = m_callbacks.at(ii);
-        callback->typeDataProgress(this, p);
-    }
 }
 
 QString QQmlTypeData::stringAt(int index) const

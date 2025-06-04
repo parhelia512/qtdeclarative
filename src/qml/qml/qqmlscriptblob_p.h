@@ -16,12 +16,13 @@
 //
 
 #include <private/qqmltypeloader_p.h>
+#include <private/qqmlnotifyingblob_p.h>
 
 QT_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(DBG_DISK_CACHE)
 
 class QQmlScriptData;
-class Q_AUTOTEST_EXPORT QQmlScriptBlob : public QQmlTypeLoader::Blob
+class Q_AUTOTEST_EXPORT QQmlScriptBlob : public QQmlNotifyingBlob
 {
 private:
     friend class QQmlTypeLoader;

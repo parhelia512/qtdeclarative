@@ -116,25 +116,6 @@ void WorkspaceHandlers::clientInitialized(QLanguageServer *server)
                     protocol->notifyLogMessage(msg);
                 });
     }
-
-    QSet<QString> rootPaths;
-    if (std::holds_alternative<QByteArray>(clientInfo.rootUri)) {
-        QString path = m_codeModel->url2Path(
-                QQmlLSUtils::lspUriToQmlUrl(std::get<QByteArray>(clientInfo.rootUri)));
-        rootPaths.insert(path);
-    } else if (clientInfo.rootPath && std::holds_alternative<QByteArray>(*clientInfo.rootPath)) {
-        QString path = QString::fromUtf8(std::get<QByteArray>(*clientInfo.rootPath));
-        rootPaths.insert(path);
-    }
-
-    if (clientInfo.workspaceFolders
-        && std::holds_alternative<QList<WorkspaceFolder>>(*clientInfo.workspaceFolders)) {
-        for (const WorkspaceFolder &workspace :
-             std::as_const(std::get<QList<WorkspaceFolder>>(*clientInfo.workspaceFolders))) {
-            const QUrl workspaceUrl(QString::fromUtf8(QQmlLSUtils::lspUriToQmlUrl(workspace.uri)));
-            rootPaths.insert(workspaceUrl.toLocalFile());
-        }
-    }
 }
 
 QT_END_NAMESPACE

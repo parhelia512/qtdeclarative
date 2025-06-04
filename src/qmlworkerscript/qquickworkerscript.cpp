@@ -95,7 +95,6 @@ struct WorkerScript : public QV4::ExecutionEngine::Deletable
     ~WorkerScript() = default;
 
     QQuickWorkerScriptEnginePrivate *p = nullptr;
-    QUrl source;
     QQuickWorkerScript *owner = nullptr;
 #if QT_CONFIG(qml_network)
     QScopedPointer<QNetworkAccessManager> scriptLocalNAM;
@@ -250,7 +249,6 @@ void QQuickWorkerScriptEnginePrivate::processLoad(int id, const QUrl &url)
         return;
 
     WorkerScript *script = workerScriptExtension(engine);
-    script->source = url;
 
     if (fileName.endsWith(QLatin1String(".mjs"))) {
         if (auto module = engine->loadModule(url)) {

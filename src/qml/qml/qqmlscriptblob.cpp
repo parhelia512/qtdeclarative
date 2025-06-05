@@ -84,11 +84,15 @@ void QQmlScriptBlob::dataReceived(const SourceCodeData &data)
         irUnit.jsParserEngine.setDirectives(&collector);
 
         QList<QQmlError> errors;
+        const QString fragment = finalUrl().fragment();
         irUnit.javaScriptCompilationUnit = QV4::Script::precompile(
                      &irUnit.jsModule, &irUnit.jsParserEngine, &irUnit.jsGenerator, urlString(),
-                     source, &errors, finalUrl().fragment() == QLatin1String("global")
+                     source, &errors, fragment == QLatin1String("global")
                         ? QV4::Compiler::ContextType::Global
-                        : QV4::Compiler::ContextType::ScriptImportedByQML);
+                        : QV4::Compiler::ContextType::ScriptImportedByQML,
+                     fragment == QLatin1String("include")
+                        ? QV4::Script::InheritContext::Yes
+                        : QV4::Script::InheritContext::No);
 
         source.clear();
         if (!errors.isEmpty()) {

@@ -33,11 +33,13 @@ namespace QV4 {
 
 struct Q_QML_EXPORT Script
 {
+    enum class InheritContext { No, Yes };
     static QQmlRefPointer<QV4::CompiledData::CompilationUnit> precompile(
             QV4::Compiler::Module *module, QQmlJS::Engine *jsEngine,
             Compiler::JSUnitGenerator *unitGenerator, const QString &fileName,
             const QString &source, QList<QQmlError> *reportedErrors = nullptr,
-            QV4::Compiler::ContextType contextType = QV4::Compiler::ContextType::Global);
+            QV4::Compiler::ContextType contextType = QV4::Compiler::ContextType::Global,
+            InheritContext inheritContext = InheritContext::No);
     static Script *createFromFileOrCache(
             ExecutionEngine *engine, QmlContext *qmlContext, const QString &fileName,
             const QUrl &originalUrl, QString *error);

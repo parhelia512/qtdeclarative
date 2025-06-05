@@ -147,7 +147,7 @@ QQmlRefPointer<QV4::CompiledData::CompilationUnit> Script::precompile(
         QV4::Compiler::Module *module, QQmlJS::Engine *jsEngine,
         Compiler::JSUnitGenerator *unitGenerator, const QString &fileName,
         const QString &source, QList<QQmlError> *reportedErrors,
-        QV4::Compiler::ContextType contextType)
+        QV4::Compiler::ContextType contextType, InheritContext inheritContext)
 {
     using namespace QV4::Compiler;
     using namespace QQmlJS::AST;
@@ -174,6 +174,8 @@ QQmlRefPointer<QV4::CompiledData::CompilationUnit> Script::precompile(
     }
 
     Codegen cg(unitGenerator, /*strict mode*/false);
+    if (inheritContext == InheritContext::Yes)
+        cg.setUseFastLookups(false);
     cg.generateFromProgram(source, program, module, contextType);
     if (cg.hasError()) {
         if (reportedErrors) {

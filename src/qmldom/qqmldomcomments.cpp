@@ -798,9 +798,7 @@ void CommentCollector::collectComments(
         }
 
         if (const auto *const commentNode = std::get_if<NodeRef>(&elementToBeLinked.element)) {
-            auto commentedElement = astComments->ensureCommentForNode(commentNode->node,
-                                                                      commentNode->commentAnchor);
-            commentedElement->addComment(comment);
+            astComments->addComment(commentNode->node, commentNode->commentAnchor, comment);
         } else if (const auto *const regionRef =
                            std::get_if<RegionRef>(&elementToBeLinked.element)) {
             DomItem currentItem = m_rootItem.item().path(regionRef->path);

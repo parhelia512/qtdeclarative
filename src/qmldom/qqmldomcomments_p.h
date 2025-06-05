@@ -249,6 +249,7 @@ public:
     {
     }
 
+    // note: the returned pointer is invalidated when comments are added!
     const CommentedElement *commentForNode(AST::Node *n, CommentAnchor location) const
     {
         const auto it = m_commentedElements.constFind(CommentKey{ n, location });
@@ -266,15 +267,21 @@ public:
         return std::make_pair(pre, post);
     }
 
-    CommentedElement *ensureCommentForNode(AST::Node *n, CommentAnchor location)
+    void addComment(AST::Node *n, CommentAnchor location, const Comment &comment)
     {
-        const CommentKey key{ n, location };
-        return &m_commentedElements[key];
+        ensureCommentForNode(n, location).addComment(comment);
     }
 
     QMultiMap<quint32, const QList<Comment> *> allCommentsInNode(AST::Node *n);
 
 private:
+    // note: the returned reference is invalidated when m_commentedElements is modified!
+    CommentedElement &ensureCommentForNode(AST::Node *n, CommentAnchor location)
+    {
+        const CommentKey key{ n, location };
+        return m_commentedElements[key];
+    }
+
     std::shared_ptr<Engine> m_engine;
     QHash<CommentKey, CommentedElement> m_commentedElements;
 };

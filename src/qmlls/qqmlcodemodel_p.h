@@ -85,6 +85,7 @@ public:
     QQmllsBuildInformation();
     void loadSettingsFrom(const QStringList &buildPaths);
     QStringList importPathsFor(const QString &filePath);
+    ModuleSetting settingFor(const QString &filePath);
 
 private:
     QString m_docDir;

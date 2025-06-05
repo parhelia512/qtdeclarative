@@ -841,12 +841,17 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths)
 
 QStringList QQmllsBuildInformation::importPathsFor(const QString &filePath)
 {
-    QStringList result;
+    return settingFor(filePath).importPaths;
+}
+
+ModuleSetting QQmllsBuildInformation::settingFor(const QString &filePath)
+{
+    ModuleSetting result;
     qsizetype longestMatch = 0;
     for (const ModuleSetting &setting : m_moduleSettings) {
         const qsizetype matchLength = setting.sourceFolder.size();
         if (filePath.startsWith(setting.sourceFolder) && matchLength > longestMatch) {
-            result = setting.importPaths;
+            result = setting;
             longestMatch = matchLength;
         }
     }

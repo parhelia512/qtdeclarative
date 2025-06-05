@@ -600,6 +600,15 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
     return result;
 }
 
+void QQmlCodeModel::setImportPaths(const QStringList &importPaths)
+{
+    m_importPaths = importPaths;
+    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
+        env->setLoadPaths(importPaths);
+    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
+        env->setLoadPaths(importPaths);
+}
+
 QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
 {
     QList<QByteArray> roots;

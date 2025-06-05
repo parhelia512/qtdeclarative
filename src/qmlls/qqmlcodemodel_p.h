@@ -121,7 +121,7 @@ public:
     void setBuildPathsForRootUrl(QByteArray url, const QStringList &paths);
     QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const { return m_importPaths; };
-    void setImportPaths(const QStringList &paths) { m_importPaths = paths; };
+    void setImportPaths(const QStringList &paths);
     void removeRootUrls(const QList<QByteArray> &urls);
     QQmlToolingSettings *settings() const { return m_settings; }
     QStringList findFilePathsFromFileNames(const QStringList &fileNames);

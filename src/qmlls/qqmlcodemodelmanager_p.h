@@ -1,0 +1,106 @@
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+
+#ifndef QQmlCodeModelManager_P_H
+#define QQmlCodeModelManager_P_H
+
+//
+//  W A R N I N G
+//  -------------
+//
+// This file is not part of the Qt API.  It exists purely as an
+// implementation detail.  This header file may change from version to
+// version without notice, or even be removed.
+//
+// We mean it.
+//
+
+#include "qqmlcodemodel_p.h"
+
+#include <QObject>
+#include <QHash>
+#include <QtCore/qfilesystemwatcher.h>
+#include <QtCore/private/qfactoryloader_p.h>
+#include <QtQmlDom/private/qqmldomitem_p.h>
+#include <QtQmlCompiler/private/qqmljsscope_p.h>
+#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
+
+#include <memory>
+
+QT_BEGIN_NAMESPACE
+class TextSynchronization;
+namespace QmlLsp {
+
+struct QQmlWorkspace
+{
+    QByteArray url;
+    std::unique_ptr<QQmlCodeModel> codeModel;
+    bool managedByClient = false;
+    bool toBeClosed = false;
+};
+
+class QQmlCodeModelManager : public QObject
+{
+    Q_OBJECT
+public:
+    QQmlCodeModelManager(QObject *parent = nullptr, QQmlToolingSettings *settings = nullptr);
+
+    OpenDocumentSnapshot snapshotByUrl(const QByteArray &url);
+    OpenDocument openDocumentByUrl(const QByteArray &url);
+
+    void addOpenToUpdate(const QByteArray &);
+    void removeDirectory(const QByteArray &);
+
+    void newOpenFile(const QByteArray &url, int version, const QString &docText);
+    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText);
+    void closeOpenFile(const QByteArray &url);
+    QList<QByteArray> rootUrls() const;
+    void addRootUrls(const QList<QByteArray> &urls);
+    QStringList buildPathsForFileUrl(const QByteArray &url);
+    void setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths);
+    QStringList importPathsForUrl(const QByteArray &);
+    void setImportPaths(const QStringList &paths);
+    void removeRootUrls(const QList<QByteArray> &urls);
+    QQmlToolingSettings *settings() const { return m_settings; }
+    void disableCMakeCalls();
+    const QFactoryLoader &pluginLoader() const { return m_pluginLoader; }
+
+    RegisteredSemanticTokens &registeredTokens(const QByteArray &);
+    const RegisteredSemanticTokens &registeredTokens(const QByteArray &) const;
+    void setDocumentationRootPath(const QString &path);
+    HelpManager *helpManagerForUrl(const QByteArray &);
+
+protected:
+    using Workspaces = std::vector<QQmlWorkspace>;
+    using WorkspaceIterator = Workspaces::const_iterator;
+
+    QQmlCodeModel *findCodeModelForFile(const QByteArray &url);
+    WorkspaceIterator findWorkspaceForFile(const QByteArray &url);
+    WorkspaceIterator workspaceFromBuildFolder(const QString &fileName,
+                                               const QStringList &buildFolders);
+    enum ManagedBy { ManagedByClient, ManagedByServer };
+    using WorkspaceMutableIterator = Workspaces::iterator;
+    WorkspaceMutableIterator findWorkspace(const QByteArray &url);
+    void appendWorkspace(const QByteArray &url, ManagedBy managedBy);
+
+    QQmlToolingSettings *m_settings;
+    QFactoryLoader m_pluginLoader;
+
+    Workspaces m_workspaces;
+    QQmllsBuildInformation m_buildInformation;
+
+    std::map<QByteArray, QByteArray> m_file2CodeModel;
+
+    // defaults to apply to new codemodels:
+    QStringList m_defaultImportPaths;
+    bool m_defaultDisableCMakeCalls = false;
+    QString m_defaultDocumentationRootPath;
+
+Q_SIGNALS:
+    void updatedSnapshot(const QByteArray &url);
+};
+
+} // namespace QmlLsp
+QT_END_NAMESPACE
+
+#endif // QQmlCodeModelManager_P_H

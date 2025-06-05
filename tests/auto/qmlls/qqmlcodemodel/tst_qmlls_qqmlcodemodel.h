@@ -34,6 +34,18 @@ private slots:
     void openFiles();
     void importPathViaSettings();
     void reloadLotsOfFiles();
+
+    // Tests for the qqmlcodemodelmanager:
+    void buildPaths_data();
+    void buildPaths();
+    void defaultWorkspace();
+    void closeWorkspace();
+    void rootUrls();
+    void addingWorkspaces();
+    void newWorkspace();
+    void duplicateWorkspace();
+    void withQmllsBuildIni();
+    void withQmllsBuildIniWithoutRootUrls();
 };
 
 #endif // TST_QMLLS_QQMLCODEMODEL_H

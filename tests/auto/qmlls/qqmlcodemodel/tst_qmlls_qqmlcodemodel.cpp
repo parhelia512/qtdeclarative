@@ -5,6 +5,7 @@
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 #include <QtQmlLS/private/qqmlcodemodel_p.h>
+#include <QtQmlLS/private/qqmlcodemodelmanager_p.h>
 #include <QtQmlLS/private/qqmllsutils_p.h>
 #include <QtQmlDom/private/qqmldomitem_p.h>
 #include <QtQmlDom/private/qqmldomtop_p.h>
@@ -299,6 +300,343 @@ void tst_qmlls_qqmlcodemodel::reloadLotsOfFiles()
     thread->setStackSize(1 << 20);
     thread->start();
     thread->wait();
+}
+
+struct TestCodeModelManager final : public QmlLsp::QQmlCodeModelManager
+{
+    TestCodeModelManager(QQmlToolingSettings *settings = nullptr)
+        : QmlLsp::QQmlCodeModelManager(nullptr, settings)
+    {
+        disableCMakeCalls();
+    }
+
+    QmlLsp::QQmlCodeModel *findCodeModelForFile(const QByteArray &url)
+    {
+        return QmlLsp::QQmlCodeModelManager::findCodeModelForFile(url);
+    }
+    QmlLsp::QQmlCodeModel *findCodeModel(const QByteArray &url)
+    {
+        const auto it = QmlLsp::QQmlCodeModelManager::findWorkspace(url);
+        return it != m_workspaces.end() ? it->codeModel.get() : nullptr;
+    }
+};
+
+void tst_qmlls_qqmlcodemodel::buildPaths_data()
+{
+    QTest::addColumn<QList<QByteArray>>("roots");
+    QTest::addColumn<QByteArray>("root");
+    QTest::addColumn<QString>("buildPath");
+    QTest::addColumn<QByteArray>("file");
+
+    const QList<QByteArray> roots = {
+        testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded(),
+        testFileUrl("twoWorkspaces/WorkSpaceB"_L1).toEncoded(),
+    };
+
+    QTest::addRow("WorkspaceA")
+            << roots << testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded()
+            << testFile("twoWorkspaces/ImportPathA"_L1)
+            << testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1).toEncoded();
+    QTest::addRow("WorkspaceB")
+            << roots << testFileUrl("twoWorkspaces/WorkSpaceB"_L1).toEncoded()
+            << testFile("twoWorkspaces/ImportPathB"_L1)
+            << testFileUrl("twoWorkspaces/WorkSpaceB/UseImportPathB.qml"_L1).toEncoded();
+}
+
+void tst_qmlls_qqmlcodemodel::buildPaths()
+{
+    QFETCH(QList<QByteArray>, roots);
+    QFETCH(QByteArray, root);
+    QFETCH(QString, buildPath);
+    QFETCH(QByteArray, file);
+
+    QmlLsp::QQmlCodeModelManager manager;
+    manager.addRootUrls(roots);
+    QVERIFY(!manager.buildPathsForFileUrl(root).contains(buildPath));
+    manager.setBuildPathsForRootUrl(root, { buildPath });
+    QVERIFY(manager.buildPathsForFileUrl(root).contains(buildPath));
+    QVERIFY(manager.buildPathsForFileUrl(file).contains(buildPath));
+}
+
+void tst_qmlls_qqmlcodemodel::defaultWorkspace()
+{
+    const QByteArray fileAUrl = testFileUrl(u"FileA.qml"_s).toEncoded();
+    const QByteArray unrelatedRoot = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
+
+    TestCodeModelManager manager;
+    manager.addRootUrls({ unrelatedRoot });
+    manager.newOpenFile(fileAUrl, 0, readFile(u"FileA.qml"_s));
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(fileAUrl).validDoc, 3000);
+
+    // make sure that fileA was not saved in the unrelated root
+    QCOMPARE_NE(manager.findCodeModelForFile(fileAUrl),
+                manager.findCodeModelForFile(unrelatedRoot));
+    const QByteArray defaultWS;
+    QCOMPARE(manager.findCodeModelForFile(fileAUrl), manager.findCodeModelForFile(defaultWS));
+}
+
+void tst_qmlls_qqmlcodemodel::closeWorkspace()
+{
+    const QByteArray defaultRoot;
+    const QByteArray root = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
+    const QByteArray file1 =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1).toEncoded();
+    const QByteArray file2 =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA2.qml"_L1).toEncoded();
+    const QString fileContent = readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1);
+
+    TestCodeModelManager manager;
+    manager.setImportPaths({ testFile("twoWorkspaces/ImportPathA"_L1),
+                             QLibraryInfo::path(QLibraryInfo::QmlImportsPath) });
+    manager.addRootUrls({ root });
+    manager.newOpenFile(file1, 0, fileContent);
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(file1).validDoc, 3000);
+
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModel(root));
+
+    manager.removeRootUrls({ root });
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModel(root));
+    QCOMPARE_NE(manager.findCodeModelForFile(file1), manager.findCodeModel(defaultRoot));
+    QVERIFY(manager.snapshotByUrl(file1).validDoc);
+
+    manager.newOpenFile(file2, 0, fileContent);
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(file2).validDoc, 3000);
+    // new files should not open in closed workspaces
+    QCOMPARE(manager.findCodeModelForFile(file2), manager.findCodeModel(defaultRoot));
+
+    manager.closeOpenFile(file1);
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModel(defaultRoot));
+    QVERIFY(!manager.snapshotByUrl(file1).validDoc);
+}
+
+void tst_qmlls_qqmlcodemodel::rootUrls()
+{
+    const QByteArray rootA = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
+    const QByteArray rootB = testFileUrl("twoWorkspaces/WorkSpaceB"_L1).toEncoded();
+    const QByteArray defaultWS;
+
+    TestCodeModelManager manager;
+    QCOMPARE(manager.rootUrls().size(), 1);
+    manager.addRootUrls({ rootA, rootB });
+    QCOMPARE(manager.rootUrls().size(), 3);
+
+    QCOMPARE_NE(manager.findCodeModelForFile(rootA), defaultWS);
+    QCOMPARE_NE(manager.findCodeModelForFile(rootB), defaultWS);
+    QCOMPARE_NE(manager.findCodeModelForFile(rootA), manager.findCodeModelForFile(rootB));
+}
+
+void tst_qmlls_qqmlcodemodel::addingWorkspaces()
+{
+    const QByteArray outerWorkspace = testFileUrl("twoWorkspaces/"_L1).toEncoded();
+    const QByteArray innerWorkspace = testFileUrl("twoWorkspaces/WorkSpaceA/"_L1).toEncoded();
+
+    const QByteArray file1 =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1).toEncoded();
+    const QByteArray file2 =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA2.qml"_L1).toEncoded();
+
+    const QString fileContent = readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1);
+
+    TestCodeModelManager manager;
+    manager.setImportPaths({ testFile("twoWorkspaces/ImportPathA"_L1),
+                             QLibraryInfo::path(QLibraryInfo::QmlImportsPath) });
+    manager.addRootUrls({ outerWorkspace });
+
+    manager.newOpenFile(file1, 0, fileContent);
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(file1).validDoc, 3000);
+
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModelForFile(outerWorkspace));
+
+    manager.addRootUrls({ innerWorkspace });
+    // fileA should not use the new root because its open!
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModelForFile(outerWorkspace));
+    // new files like fileB should use the new WS
+    QCOMPARE(manager.findCodeModelForFile(file2), manager.findCodeModelForFile(innerWorkspace));
+
+    manager.newOpenFile(file2, 0, fileContent);
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(file2).validDoc, 3000);
+    QCOMPARE(manager.findCodeModelForFile(file2), manager.findCodeModelForFile(innerWorkspace));
+
+    manager.closeOpenFile(file1);
+    // fileA was closed, so it can now be reopened in the new outerRoot workspace
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModelForFile(innerWorkspace));
+    manager.newOpenFile(file1, 0, fileContent);
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(file1).validDoc, 3000);
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModelForFile(innerWorkspace));
+
+    // closing outerRoot should not affect opened files
+    manager.removeRootUrls({ innerWorkspace });
+    QCOMPARE(manager.findCodeModelForFile(file1), manager.findCodeModel(innerWorkspace));
+    QCOMPARE(manager.findCodeModelForFile(file2), manager.findCodeModel(innerWorkspace));
+}
+
+void tst_qmlls_qqmlcodemodel::newWorkspace()
+{
+    const QByteArray rootA = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
+    const QString buildPathA = testFile("twoWorkspaces/ImportPathA"_L1);
+    const QString docPathA = testFile("twoWorkspaces/dummydocpaththatdoesnotexist"_L1);
+
+    TestCodeModelManager manager;
+
+    // set properties before the WS is created (qmlls reads those values via commandline or
+    // environment variable, so they should be valid for all code models)
+    manager.setImportPaths({ buildPathA });
+    manager.setDocumentationRootPath(docPathA);
+
+    manager.addRootUrls({ rootA });
+
+    // make sure that the new WS contains the properties set before its existence
+    auto *codeModel = manager.findCodeModelForFile(rootA);
+    QCOMPARE(codeModel->importPaths(), { buildPathA });
+    QCOMPARE(codeModel->documentationRootPath(), { docPathA });
+}
+
+void tst_qmlls_qqmlcodemodel::duplicateWorkspace()
+{
+    const QByteArray rootA = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
+
+    TestCodeModelManager manager;
+    manager.addRootUrls({ rootA });
+    const QList<QByteArray> expectedRoots{ {}, rootA };
+    QCOMPARE(manager.rootUrls(), expectedRoots);
+    auto *codeModel = manager.findCodeModelForFile(rootA);
+
+    // don't create or recreate ws that already exists
+    manager.addRootUrls({ rootA, rootA, rootA });
+    QCOMPARE(manager.rootUrls(), expectedRoots);
+    QCOMPARE(manager.findCodeModelForFile(rootA), codeModel);
+}
+
+void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
+{
+    const QByteArray rootAUrl = testFileUrl("twoWorkspaces/WorkSpaceA/"_L1).toEncoded();
+    const QByteArray rootBUrl = testFileUrl("twoWorkspaces/WorkSpaceB/"_L1).toEncoded();
+    const QString rootA = testFile("twoWorkspaces/WorkSpaceA/"_L1);
+    const QString rootB = testFile("twoWorkspaces/WorkSpaceB/"_L1);
+    const QString importPathA = testFile("twoWorkspaces/ImportPathA/"_L1);
+    const QString importPathB = testFile("twoWorkspaces/ImportPathB/"_L1);
+    const QString defaultImportPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
+    const QStringList expectedImportPathA{ importPathA, defaultImportPath };
+    const QStringList expectedImportPathB{ importPathB, defaultImportPath };
+    const QByteArray fileAUrl =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1).toEncoded();
+    const QByteArray fileBUrl =
+            testFileUrl("twoWorkspaces/WorkSpaceB/UseImportPathB.qml"_L1).toEncoded();
+    const QString fileA = testFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1);
+
+    QTemporaryDir buildPathA;
+    QVERIFY(buildPathA.isValid());
+
+    QDir(buildPathA.path()).mkdir(".qt"_L1);
+
+    {
+        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
+        QFile qmllsBuildIniFile(qmllsBuildIni);
+        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
+        qmllsBuildIniFile.write(
+                "[General]\n[%1]\nimportPaths=\"%2%6%3\"\n[%4]\nimportPaths=\"%5%6%3\"\n"_L1
+                        .arg(QString(rootA).replace("/"_L1, "<SLASH>"_L1), importPathA,
+                             defaultImportPath, QString(rootB).replace("/"_L1, "<SLASH>"_L1),
+                             importPathB, QDir::listSeparator())
+                        .toUtf8());
+    }
+
+    TestCodeModelManager manager;
+    manager.addRootUrls({ rootAUrl });
+
+    QCOMPARE_NE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
+    QCOMPARE_NE(manager.findCodeModelForFile(rootBUrl)->importPaths(), expectedImportPathB);
+
+    manager.setBuildPathsForRootUrl(rootAUrl, { buildPathA.path() });
+    // import path was updated using .qmlls.build.ini on existing WS
+    QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
+
+    manager.addRootUrls({ rootBUrl });
+    // import path was set using .qmlls.build.ini on newly created WS
+    QCOMPARE(manager.findCodeModelForFile(rootBUrl)->importPaths(), expectedImportPathB);
+
+    manager.newOpenFile(fileAUrl, 0, readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1));
+    manager.newOpenFile(fileBUrl, 0, readFile("twoWorkspaces/WorkSpaceB/UseImportPathB.qml"_L1));
+
+    for (const auto &fileUrl : { fileAUrl, fileBUrl })
+        QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(fileUrl).validDoc, 3000);
+
+    DomItem domItemA = manager.snapshotByUrl(fileAUrl).validDoc;
+    DomItem domItemB = manager.snapshotByUrl(fileBUrl).validDoc;
+
+    // sanity check
+    QCOMPARE_NE(domItemA, domItemB);
+
+    auto loadedQmldir = [](const DomItem &item) {
+        return item[Fields::components]
+                .key(QString())
+                .index(0)[Fields::objects]
+                .index(0)[Fields::prototypes]
+                .index(0)[Fields::get][Fields::uri]
+                .value()
+                .toString();
+    };
+    QCOMPARE(loadedQmldir(domItemA), "\"%1\""_L1.arg(importPathA + "MyModule/qmldir"_L1));
+    QCOMPARE(loadedQmldir(domItemB), "\"%1\""_L1.arg(importPathB + "MyModule/qmldir"_L1));
+}
+
+void tst_qmlls_qqmlcodemodel::withQmllsBuildIniWithoutRootUrls()
+{
+    const QByteArray projectRootUrl = testFileUrl("twoWorkspaces/"_L1).toEncoded();
+    const QByteArray rootAUrl = testFileUrl("twoWorkspaces/WorkSpaceA/"_L1).toEncoded();
+    const QString importPath = testFile("twoWorkspaces/ImportPathA/"_L1);
+    const QString defaultImportPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
+    const QByteArray fileUrl =
+            testFileUrl("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1).toEncoded();
+
+    QTemporaryDir buildPathA;
+    QVERIFY(buildPathA.isValid());
+
+    QDir(buildPathA.path()).mkdir(".qt"_L1);
+
+    {
+        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
+        QFile qmllsBuildIniFile(qmllsBuildIni);
+        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly));
+        qmllsBuildIniFile.write(
+                "[General]\n[%1]\nimportPaths=\"%2%4%3\"\n"_L1
+                        .arg(testFile("twoWorkspaces/WorkSpaceA/"_L1).replace("/"_L1, "<SLASH>"_L1),
+                             importPath, defaultImportPath, QDir::listSeparator())
+                        .toUtf8());
+    }
+
+    TestCodeModelManager manager;
+    manager.addRootUrls({ projectRootUrl });
+    manager.setBuildPathsForRootUrl(projectRootUrl, { buildPathA.path() });
+
+    QCOMPARE(manager.rootUrls(), QList<QByteArray>{} << QByteArray{} << projectRootUrl);
+
+    // opening fileA should create the rootA workspace, even if rootA was never added as root url to
+    // manager.
+    manager.newOpenFile(fileUrl, 0, readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1));
+    QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(fileUrl).validDoc, 3000);
+    QCOMPARE(manager.rootUrls(), QList<QByteArray>{} << QByteArray{} << projectRootUrl << rootAUrl);
+
+    QCOMPARE_NE(manager.findCodeModelForFile(fileUrl),
+                manager.findCodeModelForFile(projectRootUrl));
+    const QByteArray defaultRoot;
+    QCOMPARE_NE(manager.findCodeModelForFile(fileUrl), manager.findCodeModelForFile(defaultRoot));
+    QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPaths(),
+             QStringList{} << importPath << defaultImportPath);
+
+    DomItem domItemA = manager.snapshotByUrl(fileUrl).validDoc;
+
+    auto loadedQmldir = [](const DomItem &item) {
+        return item[Fields::components]
+                .key(QString())
+                .index(0)[Fields::objects]
+                .index(0)[Fields::prototypes]
+                .index(0)[Fields::get][Fields::uri]
+                .value()
+                .toString();
+    };
+    QCOMPARE(loadedQmldir(domItemA),
+             "\"%1\""_L1.arg(testFile("twoWorkspaces/ImportPathA/MyModule/qmldir")));
 }
 
 QTEST_MAIN(tst_qmlls_qqmlcodemodel)

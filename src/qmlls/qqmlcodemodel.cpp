@@ -752,8 +752,11 @@ void QQmlCodeModel::openUpdate(const QByteArray &url)
 
 void QQmlCodeModel::addOpenToUpdate(const QByteArray &url)
 {
-    QMutexLocker l(&m_mutex);
-    m_openDocumentsToUpdate.insert(url);
+    {
+        QMutexLocker l(&m_mutex);
+        m_openDocumentsToUpdate.insert(url);
+    }
+    openNeedUpdate();
 }
 
 QDebug OpenDocumentSnapshot::dump(QDebug dbg, DumpOptions options)

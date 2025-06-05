@@ -105,7 +105,6 @@ public:
     OpenDocumentSnapshot snapshotByUrl(const QByteArray &url);
     OpenDocument openDocumentByUrl(const QByteArray &url);
 
-    void openNeedUpdate();
     void addOpenToUpdate(const QByteArray &);
     void removeDirectory(const QByteArray &);
     // void updateDocument(const OpenDocument &doc);
@@ -145,6 +144,7 @@ private:
     void openUpdateStart();
     void openUpdateEnd();
     void openUpdate(const QByteArray &);
+    void openNeedUpdate();
     QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
     static bool callCMakeBuild(const QStringList &buildPaths);

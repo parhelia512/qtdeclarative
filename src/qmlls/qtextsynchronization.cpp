@@ -62,7 +62,6 @@ void TextSynchronization::didDidChangeTextDocument(const DidChangeTextDocumentPa
                 << "text is\n:----------" << document->toPlainText() << "\n_________";
     }
     m_codeModel->addOpenToUpdate(url);
-    m_codeModel->openNeedUpdate();
 }
 
 void TextSynchronization::registerHandlers(QLanguageServer *server, QLanguageServerProtocol *)

@@ -338,7 +338,7 @@ int qmllsMain(int argv, char *argc[])
             (parser.isSet(ignoreSettings) ? nullptr : &settings));
 
     if (parser.isSet(docDir))
-        qmlServer.codeModel()->setDocumentationRootPath(
+        qmlServer.codeModelManager()->setDocumentationRootPath(
                 QString::fromUtf8(parser.value(docDir).toUtf8()));
 
     const bool disableCMakeCallsViaEnvironment =
@@ -351,7 +351,7 @@ int qmllsMain(int argv, char *argc[])
             qWarning() << "Disabling CMake calls via command line switch.";
         }
 
-        qmlServer.codeModel()->disableCMakeCalls();
+        qmlServer.codeModelManager()->disableCMakeCalls();
     }
 
     if (parser.isSet(buildDirOption)) {
@@ -361,7 +361,7 @@ int qmllsMain(int argv, char *argc[])
         qInfo().nospace().noquote()
                 << "Using build directories passed by -b: \"" << dirs.join(u"\", \""_s) << "\".";
 
-        qmlServer.codeModel()->setBuildPathsForRootUrl(QByteArray(), dirs);
+        qmlServer.codeModelManager()->setBuildPathsForRootUrl(QByteArray(), dirs);
     } else if (QStringList dirsFromEnv =
                        QQmlToolingUtils::getAndWarnForInvalidDirsFromEnv(u"QMLLS_BUILD_DIRS"_s);
                !dirsFromEnv.isEmpty()) {
@@ -378,7 +378,7 @@ int qmllsMain(int argv, char *argc[])
                    "folder.";
     }
 
-    qmlServer.codeModel()->setImportPaths(
+    qmlServer.codeModelManager()->setImportPaths(
             collectImportPaths(parser, qmlImportPathOption, environmentOption, qmlImportNoDefault));
 
     StdinReader r;

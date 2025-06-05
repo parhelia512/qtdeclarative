@@ -16,7 +16,6 @@
 //
 
 #include "qlanguageserver_p.h"
-#include "qqmlcodemodel_p.h"
 #include "qqmlbasemodule_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -30,7 +29,7 @@ class QmlGoToDefinitionSupport : public QQmlBaseModule<DefinitionRequest>
 {
     Q_OBJECT
 public:
-    QmlGoToDefinitionSupport(QmlLsp::QQmlCodeModel *codeModel);
+    QmlGoToDefinitionSupport(QmlLsp::QQmlCodeModelManager *codeModel);
 
     QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;

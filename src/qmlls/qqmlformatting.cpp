@@ -14,8 +14,8 @@ QT_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(formatLog, "qt.languageserver.formatting")
 
-QQmlDocumentFormatting::QQmlDocumentFormatting(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel)
+QQmlDocumentFormatting::QQmlDocumentFormatting(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager)
 {
 }
 
@@ -43,8 +43,8 @@ void QQmlDocumentFormatting::process(RequestPointerArgument request)
     ResponseScopeGuard guard(result, request->m_response);
 
     using namespace QQmlJS::Dom;
-    QmlLsp::OpenDocument doc = m_codeModel->openDocumentByUrl(
-                QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
+    QmlLsp::OpenDocument doc = m_codeModelManager->openDocumentByUrl(
+            QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
 
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     if (!file) {

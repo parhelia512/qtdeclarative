@@ -14,8 +14,8 @@
 
 QT_BEGIN_NAMESPACE
 
-QQmlRangeFormatting::QQmlRangeFormatting(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel)
+QQmlRangeFormatting::QQmlRangeFormatting(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager)
 {
 }
 
@@ -40,7 +40,7 @@ void QQmlRangeFormatting::process(RequestPointerArgument request)
     using namespace QQmlJS::Dom;
     QList<QLspSpecification::TextEdit> result{};
 
-    QmlLsp::OpenDocument doc = m_codeModel->openDocumentByUrl(
+    QmlLsp::OpenDocument doc = m_codeModelManager->openDocumentByUrl(
             QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
 
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);

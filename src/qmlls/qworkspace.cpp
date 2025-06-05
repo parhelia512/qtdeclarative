@@ -26,15 +26,16 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                          QList<QByteArray> toRemove;
                          for (const WorkspaceFolder &folder : removed) {
                              toRemove.append(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
-                             m_codeModel->removeDirectory(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
+                             m_codeModelManager->removeDirectory(
+                                     QQmlLSUtils::lspUriToQmlUrl(folder.uri));
                          }
-                         m_codeModel->removeRootUrls(toRemove);
+                         m_codeModelManager->removeRootUrls(toRemove);
                          const QList<WorkspaceFolder> &added = event.added;
                          QList<QByteArray> toAdd;
                          for (const WorkspaceFolder &folder : added) {
                              toAdd.append(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
                          }
-                         m_codeModel->addRootUrls(toAdd);
+                         m_codeModelManager->addRootUrls(toAdd);
                      });
 
     QObject::connect(server, &QLanguageServer::clientInitialized, this,

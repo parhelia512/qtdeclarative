@@ -17,7 +17,6 @@
 
 #include "qlanguageserver_p.h"
 #include "qqmlbasemodule_p.h"
-#include "qqmlcodemodel_p.h"
 #include "qqmlsemantictokens_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -52,7 +51,7 @@ using SemanticTokensRangeRequest =
 class SemanticTokenFullHandler : public QQmlBaseModule<SemanticTokensRequest>
 {
 public:
-    SemanticTokenFullHandler(QmlLsp::QQmlCodeModel *codeModel);
+    SemanticTokenFullHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
@@ -63,7 +62,7 @@ public:
 class SemanticTokenDeltaHandler : public QQmlBaseModule<SemanticTokensDeltaRequest>
 {
 public:
-    SemanticTokenDeltaHandler(QmlLsp::QQmlCodeModel *codeModel);
+    SemanticTokenDeltaHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensDeltaRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
@@ -74,7 +73,7 @@ public:
 class SemanticTokenRangeHandler : public QQmlBaseModule<SemanticTokensRangeRequest>
 {
 public:
-    SemanticTokenRangeHandler(QmlLsp::QQmlCodeModel *codeModel);
+    SemanticTokenRangeHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensRangeRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
@@ -85,7 +84,7 @@ public:
 class QQmlHighlightSupport : public QLanguageServerModule
 {
 public:
-    QQmlHighlightSupport(QmlLsp::QQmlCodeModel *codeModel);
+    QQmlHighlightSupport(QmlLsp::QQmlCodeModelManager *codeModel);
     QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,

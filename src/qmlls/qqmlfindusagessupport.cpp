@@ -12,8 +12,10 @@ QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 
-QQmlFindUsagesSupport::QQmlFindUsagesSupport(QmlLsp::QQmlCodeModel *codeModel)
-    : BaseT(codeModel) { }
+QQmlFindUsagesSupport::QQmlFindUsagesSupport(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : BaseT(codeModelManager)
+{
+}
 
 QString QQmlFindUsagesSupport::name() const
 {

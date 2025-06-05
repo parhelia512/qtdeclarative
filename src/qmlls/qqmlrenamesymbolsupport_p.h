@@ -16,7 +16,6 @@
 //
 
 #include "qlanguageserver_p.h"
-#include "qqmlcodemodel_p.h"
 #include "qqmlbasemodule_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -29,7 +28,7 @@ class QQmlRenameSymbolSupport : public QQmlBaseModule<RenameRequest>
 {
     Q_OBJECT
 public:
-    QQmlRenameSymbolSupport(QmlLsp::QQmlCodeModel *codeModel);
+    QQmlRenameSymbolSupport(QmlLsp::QQmlCodeModelManager *codeModel);
 
     QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;

@@ -8,8 +8,8 @@ QT_BEGIN_NAMESPACE
 
 Q_STATIC_LOGGING_CATEGORY(hoverLog, "qt.languageserver.hover")
 
-QQmlHover::QQmlHover(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel)
+QQmlHover::QQmlHover(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager)
 {
 }
 
@@ -34,7 +34,8 @@ void QQmlHover::setupCapabilities(
 
 void QQmlHover::process(RequestPointerArgument request)
 {
-    HelpManager *helpManager = m_codeModel->helpManager();
+    HelpManager *helpManager =
+            m_codeModelManager->helpManagerForUrl(request->m_parameters.textDocument.uri);
 
     if (!helpManager) {
         qCWarning(hoverLog)
@@ -50,7 +51,8 @@ void QQmlHover::process(RequestPointerArgument request)
     }
     const auto textDocument = request->m_parameters.textDocument;
     const auto position = request->m_parameters.position;
-    const auto doc = m_codeModel->openDocumentByUrl(QQmlLSUtils::lspUriToQmlUrl(textDocument.uri));
+    const auto doc =
+            m_codeModelManager->openDocumentByUrl(QQmlLSUtils::lspUriToQmlUrl(textDocument.uri));
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     if (!file) {
         guard.setError(QQmlLSUtils::ErrorMessage{

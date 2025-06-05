@@ -55,21 +55,21 @@ for more information.
 */
 QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> sendData,
                                        QQmlToolingSharedSettings *settings)
-    : m_codeModel(nullptr, settings),
+    : m_codeModelManager(nullptr, settings),
       m_server(sendData),
-      m_textSynchronization(&m_codeModel),
-      m_lint(&m_server, &m_codeModel),
-      m_workspace(&m_codeModel),
-      m_completionSupport(&m_codeModel),
-      m_navigationSupport(&m_codeModel),
-      m_definitionSupport(&m_codeModel),
-      m_referencesSupport(&m_codeModel),
-      m_documentFormatting(&m_codeModel),
-      m_renameSupport(&m_codeModel),
-      m_rangeFormatting(&m_codeModel),
-      m_hover(&m_codeModel),
-      m_highlightSupport(&m_codeModel),
-      m_documentSymbolSupport(&m_codeModel)
+      m_textSynchronization(&m_codeModelManager),
+      m_lint(&m_server, &m_codeModelManager),
+      m_workspace(&m_codeModelManager),
+      m_completionSupport(&m_codeModelManager),
+      m_navigationSupport(&m_codeModelManager),
+      m_definitionSupport(&m_codeModelManager),
+      m_referencesSupport(&m_codeModelManager),
+      m_documentFormatting(&m_codeModelManager),
+      m_renameSupport(&m_codeModelManager),
+      m_rangeFormatting(&m_codeModelManager),
+      m_hover(&m_codeModelManager),
+      m_highlightSupport(&m_codeModelManager),
+      m_documentSymbolSupport(&m_codeModelManager)
 {
     m_server.addServerModule(this);
     m_server.addServerModule(&m_textSynchronization);
@@ -96,9 +96,9 @@ void QQmlLanguageServer::registerHandlers(QLanguageServer *server,
     QObject::connect(server, &QLanguageServer::lifecycleError, this,
                      &QQmlLanguageServer::errorExit);
     QObject::connect(server, &QLanguageServer::exit, this, &QQmlLanguageServer::exit);
-    QObject::connect(server, &QLanguageServer::runStatusChanged, this, [](QLanguageServer::RunStatus r) {
-        qCDebug(lspServerLog) << "runStatus" << int(r);
-    });
+    QObject::connect(
+            server, &QLanguageServer::runStatusChanged, this,
+            [](QLanguageServer::RunStatus r) { qCDebug(lspServerLog) << "runStatus" << int(r); });
     protocol->typedRpc()->registerNotificationHandler<Notifications::AddBuildDirsParams>(
             QByteArray(Notifications::AddBuildDirsMethod),
             [this](const QByteArray &, const Notifications::AddBuildDirsParams &params) {
@@ -109,7 +109,7 @@ void QQmlLanguageServer::registerHandlers(QLanguageServer *server,
                                    dirPaths.begin(), [](const QByteArray &utf8Str) {
                                        return QString::fromUtf8(utf8Str);
                                    });
-                    m_codeModel.setBuildPathsForRootUrl(buildDirs.baseUri, dirPaths);
+                    m_codeModelManager.setBuildPathsForRootUrl(buildDirs.baseUri, dirPaths);
                 }
             });
 }
@@ -130,7 +130,7 @@ void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializePa
             std::transform(workspaceList->cbegin(), workspaceList->cend(),
                            std::back_inserter(workspaceUris),
                            [](const auto &workspaceFolder) { return workspaceFolder.uri; });
-            m_codeModel.setRootUrls(workspaceUris);
+            m_codeModelManager.addRootUrls(workspaceUris);
         }
     }
 }
@@ -157,9 +157,9 @@ int QQmlLanguageServer::returnValue() const
     return m_returnValue;
 }
 
-QQmlCodeModel *QQmlLanguageServer::codeModel()
+QQmlCodeModelManager *QQmlLanguageServer::codeModelManager()
 {
-    return &m_codeModel;
+    return &m_codeModelManager;
 }
 
 QLanguageServer *QQmlLanguageServer::server()

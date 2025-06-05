@@ -105,10 +105,11 @@ void QmlLintSuggestions::setupCapabilities(const QLspSpecification::InitializePa
     serverInfo.capabilities.codeActionProvider = true;
 }
 
-QmlLintSuggestions::QmlLintSuggestions(QLanguageServer *server, QmlLsp::QQmlCodeModel *codeModel)
-    : m_server(server), m_codeModel(codeModel)
+QmlLintSuggestions::QmlLintSuggestions(QLanguageServer *server,
+                                       QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : m_server(server), m_codeModelManager(codeModelManager)
 {
-    QObject::connect(m_codeModel, &QmlLsp::QQmlCodeModel::updatedSnapshot, this,
+    QObject::connect(m_codeModelManager, &QmlLsp::QQmlCodeModelManager::updatedSnapshot, this,
                      &QmlLintSuggestions::diagnose, Qt::DirectConnection);
 }
 
@@ -235,7 +236,7 @@ QmlLintSuggestions::VersionToDiagnose
 QmlLintSuggestions::chooseVersionToDiagnoseHelper(const QByteArray &url, bool force)
 {
     const std::chrono::milliseconds maxInvalidTime = 400ms;
-    QmlLsp::OpenDocumentSnapshot snapshot = m_codeModel->snapshotByUrl(url);
+    QmlLsp::OpenDocumentSnapshot snapshot = m_codeModelManager->snapshotByUrl(url);
 
     LastLintUpdate &lastUpdate = m_lastUpdate[url];
 
@@ -320,9 +321,9 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
     diagnosticParams.version = version;
 
     qCDebug(lintLog) << "has doc, do real lint";
-    QStringList imports = m_codeModel->buildPathsForFileUrl(url);
+    QStringList imports = m_codeModelManager->buildPathsForFileUrl(url);
     const QString filename = doc.canonicalFilePath();
-    imports.append(m_codeModel->importPathsForUrl(url));
+    imports.append(m_codeModelManager->importPathsForUrl(url));
     // add source directory as last import as fallback in case there is no qmldir in the build
     // folder this mimics qmllint behaviors
     imports.append(QFileInfo(filename).dir().absolutePath());

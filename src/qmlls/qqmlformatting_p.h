@@ -17,7 +17,6 @@
 
 #include "qlanguageserver_p.h"
 #include "qqmlbasemodule_p.h"
-#include "qqmlcodemodel_p.h"
 
 #include <QtQmlFormat/private/qqmlformatoptions_p.h>
 
@@ -35,7 +34,7 @@ class QQmlDocumentFormatting : public QQmlBaseModule<DocumentFormattingRequest>
 {
     Q_OBJECT
 public:
-    QQmlDocumentFormatting(QmlLsp::QQmlCodeModel *codeModel);
+    QQmlDocumentFormatting(QmlLsp::QQmlCodeModelManager *codeModel);
     QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,

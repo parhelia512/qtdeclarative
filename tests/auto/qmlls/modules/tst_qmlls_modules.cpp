@@ -1321,29 +1321,156 @@ void tst_qmlls_modules::warnings_data()
                };
     {
         ExpectedWarnings noWarningsExpected;
-        noWarningsExpected.extraImportPaths.append(testFile("warnings/QmllsBuildIni/qml"_L1));
+        noWarningsExpected.extraImportPathsPerWorkspace[{}] = {
+            testFile("warnings/QmllsBuildIni/qml"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
 
         QTest::addRow("WithQmllsBuildIni")
                 << u"warnings/QmllsBuildIni/Main.qml"_s << noWarningsExpected;
     }
+
+    {
+        ExpectedWarnings noWarningsExpected;
+        noWarningsExpected.extraImportPathsPerWorkspace[testFile(u"warnings/QmllsBuildIni"_s)] = {
+            testFile("warnings/QmllsBuildIni/qml"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+
+        QTest::addRow("WithQmllsBuildIniAndWorkspace")
+                << u"warnings/QmllsBuildIni/Main.qml"_s << noWarningsExpected;
+    }
+
+    {
+        ExpectedWarnings noWarningsExpected;
+        noWarningsExpected
+                .extraImportPathsPerWorkspace[testFile("workspaces/twoWorkspaces/WorkspaceA")] = {
+            testFile("workspaces/twoWorkspaces/ImportPathA"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+        noWarningsExpected
+                .extraImportPathsPerWorkspace[testFile("workspaces/twoWorkspaces/WorkspaceB")] = {
+            testFile("workspaces/twoWorkspaces/ImportPathB"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+
+        QTest::addRow("TwoWorkspacesA")
+                << u"workspaces/twoWorkspaces/WorkspaceA/UseImportPathA.qml"_s
+                << noWarningsExpected;
+
+        QTest::addRow("TwoWorkspacesB")
+                << u"workspaces/twoWorkspaces/WorkspaceB/UseImportPathB.qml"_s
+                << noWarningsExpected;
+    }
+    {
+        ExpectedWarnings missingWorkspaceB;
+        missingWorkspaceB
+                .extraImportPathsPerWorkspace[testFile("workspaces/twoWorkspaces/WorkspaceA")] = {
+            testFile("workspaces/twoWorkspaces/ImportPathA"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+
+        QTest::addRow("OneWorkspaceA")
+                << u"workspaces/twoWorkspaces/WorkspaceA/UseImportPathA.qml"_s << missingWorkspaceB;
+
+        missingWorkspaceB.warnings.append(
+                "Warnings occurred while importing module \"MyModule\": [import]"_L1);
+        missingWorkspaceB.warnings.append(
+                "Failed to import MyModule. Are your import paths set up properly? Did you build "
+                "your project? If yes, did you set the \"QT_QML_GENERATE_QMLLS_INI\" CMake "
+                "variable on your project to \"ON\"? [import]"_L1);
+        missingWorkspaceB.warnings.append(
+                "MyItem was not found. Did you add all imports and dependencies?: Did you mean \"Item\"? [import]"_L1);
+        missingWorkspaceB.warnings.append(
+                "Could not find property \"fromImportPathB\". [missing-property]"_L1);
+
+        QTest::addRow("MissingWorkspaceB")
+                << u"workspaces/twoWorkspaces/WorkspaceB/UseImportPathB.qml"_s << missingWorkspaceB;
+    }
+    {
+        ExpectedWarnings nestedWorkspaces;
+        nestedWorkspaces
+                .extraImportPathsPerWorkspace[testFile("workspaces/twoWorkspaces/WorkspaceA")] = {
+            testFile("workspaces/twoWorkspaces/ImportPathA"_L1),
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+        nestedWorkspaces.extraImportPathsPerWorkspace[testFile("workspaces/twoWorkspaces")] = {
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+        nestedWorkspaces.extraImportPathsPerWorkspace[testFile("workspaces/")] = {
+            QLibraryInfo::path(QLibraryInfo::QmlImportsPath)
+        };
+
+        // use import paths from WorkspaceA
+        QTest::addRow("NestedWorkspaces")
+                << u"workspaces/twoWorkspaces/WorkspaceA/UseImportPathA.qml"_s << nestedWorkspaces;
+
+        nestedWorkspaces.warnings.append(
+                "Warnings occurred while importing module \"MyModule\": [import]"_L1);
+        nestedWorkspaces.warnings.append(
+                "Failed to import MyModule. Are your import paths set up properly? Did you build "
+                "your project? If yes, did you set the \"QT_QML_GENERATE_QMLLS_INI\" CMake "
+                "variable on your project to \"ON\"? [import]"_L1);
+        nestedWorkspaces.warnings.append(
+                "MyItem was not found. Did you add all imports and dependencies?: Did you mean \"Item\"? [import]"_L1);
+        nestedWorkspaces.warnings.append(
+                "Could not find property \"fromImportPathA\". [missing-property]"_L1);
+
+        // use import paths from twoWorkspaces and not from WorkspaceA, expect warnings
+        QTest::addRow("NestedWorkspaces2")
+                << u"workspaces/twoWorkspaces/UseImportPathA.qml"_s << nestedWorkspaces;
+    }
 }
 
-static QString qmllsBuildIniContent(const QString &qmlFileName, QStringList importPaths)
+static QString qmllsBuildIniContent(const QString &qmlFileName,
+                                    const QMap<QString, QStringList> &importPathsPerWorkspace)
 {
-    const QString groupName = QDir::cleanPath(qmlFileName + "/.."_L1).replace("/"_L1, "<SLASH>"_L1);
-    return "[General]\n[%1]\nimportPaths=\"%2\""_L1.arg(groupName,
-                                                        importPaths.join(QDir::listSeparator()));
+    QString result = "[General]\n"_L1;
+    for (const auto &[workspace, importPaths] : importPathsPerWorkspace.asKeyValueRange()) {
+        const QString groupName =
+                QDir::cleanPath(workspace.isEmpty() ? (qmlFileName + "/.."_L1) : workspace)
+                        .replace("/"_L1, "<SLASH>"_L1);
+        result += "[%1]\nimportPaths=\"%2\"\n"_L1.arg(groupName,
+                                                      importPaths.join(QDir::listSeparator()));
+    }
+    return result;
 }
 
 static void createQmllsBuildIni(const QString &buildFolder, const QString &qmlFileName,
-                                QStringList importPaths)
+                                const QMap<QString, QStringList> &importPathsPerWorkspace)
 {
     QDir dir(buildFolder);
     QVERIFY(dir.mkdir(".qt"_L1));
     const QString qmllsBuildIniPath = dir.absoluteFilePath(".qt/.qmlls.build.ini"_L1);
     QFile qmllsBuildIni(qmllsBuildIniPath);
     QVERIFY(qmllsBuildIni.open(QFile::WriteOnly));
-    qmllsBuildIni.write(qmllsBuildIniContent(qmlFileName, importPaths).toUtf8());
+    qmllsBuildIni.write(qmllsBuildIniContent(qmlFileName, importPathsPerWorkspace).toUtf8());
+}
+
+static Notifications::AddBuildDirsParams
+addBuildDirsParamsFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace,
+                          const QByteArray &tempDir)
+{
+    Notifications::AddBuildDirsParams params;
+    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
+        UriToBuildDirs uriToBuildDirs;
+        uriToBuildDirs.baseUri = QUrl::fromLocalFile(workspace).toEncoded();
+        uriToBuildDirs.buildDirs.append(tempDir);
+        params.buildDirsToSet.append(uriToBuildDirs);
+    }
+
+    return params;
+}
+
+static DidChangeWorkspaceFoldersParams
+addDidChangeWorkspaceFoldersFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace)
+{
+    DidChangeWorkspaceFoldersParams params;
+    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
+        params.event.added.append(
+                { QUrl::fromLocalFile(workspace).toEncoded(), workspace.toUtf8() });
+    }
+    return params;
 }
 
 void tst_qmlls_modules::warnings()
@@ -1352,18 +1479,19 @@ void tst_qmlls_modules::warnings()
     QFETCH(ExpectedWarnings, expectedWarnings);
 
     std::optional<QTemporaryDir> tempDir;
-    if (!expectedWarnings.extraImportPaths.isEmpty()) {
+    if (!expectedWarnings.extraImportPathsPerWorkspace.isEmpty()) {
         tempDir.emplace();
         QVERIFY(tempDir->isValid());
-        createQmllsBuildIni(tempDir->path(), testFile(filePath), expectedWarnings.extraImportPaths);
+        createQmllsBuildIni(tempDir->path(), testFile(filePath),
+                            expectedWarnings.extraImportPathsPerWorkspace);
 
-        Notifications::AddBuildDirsParams params;
-        UriToBuildDirs uriToBuildDirs;
-        uriToBuildDirs.baseUri = testFileUrl(filePath).toEncoded();
-        uriToBuildDirs.buildDirs.append(tempDir->path().toUtf8());
-        params.buildDirsToSet.append(uriToBuildDirs);
-        m_protocol->typedRpc()->sendNotification(QByteArray(Notifications::AddBuildDirsMethod),
-                                                 params);
+        m_protocol->notifyDidChangeWorkspaceFolders(
+                addDidChangeWorkspaceFoldersFromMap(expectedWarnings.extraImportPathsPerWorkspace));
+
+        m_protocol->typedRpc()->sendNotification(
+                QByteArray(Notifications::AddBuildDirsMethod),
+                addBuildDirsParamsFromMap(expectedWarnings.extraImportPathsPerWorkspace,
+                                          tempDir->path().toUtf8()));
     }
 
     bool diagnosticOk = false;
@@ -1383,10 +1511,11 @@ void tst_qmlls_modules::warnings()
                     return;
                 }
 
-                QCOMPARE(p.diagnostics.size(), expectedWarnings.warnings.size());
-                for (qsizetype i = 0; i < p.diagnostics.size(); ++i) {
+                for (qsizetype i = 0;
+                     i < std::min(p.diagnostics.size(), expectedWarnings.warnings.size()); ++i) {
                     QCOMPARE(p.diagnostics[i].message, expectedWarnings.warnings[i].toUtf8());
                 }
+                QCOMPARE(p.diagnostics.size(), expectedWarnings.warnings.size());
                 diagnosticOk = true;
             });
 

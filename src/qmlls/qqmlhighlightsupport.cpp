@@ -45,8 +45,8 @@ A wrapper class that handles the semantic tokens request for a whole file as des
 https://microsoft.github.io/language-server-protocol/specifications/specification-3-16/#semanticTokens_fullRequest
 Sends a QLspSpecification::SemanticTokens data as response that is generated for the entire file.
 */
-SemanticTokenFullHandler::SemanticTokenFullHandler(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel), m_mode(HighlightingUtils::HighlightingMode::Default)
+SemanticTokenFullHandler::SemanticTokenFullHandler(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager), m_mode(HighlightingUtils::HighlightingMode::Default)
 {
 }
 
@@ -60,8 +60,8 @@ void SemanticTokenFullHandler::process(
 
     Responses::SemanticTokensResultType result;
     ResponseScopeGuard guard(result, request->m_response);
-    const auto doc = m_codeModel->openDocumentByUrl(
-            QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
+    const QByteArray uri = QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri);
+    const auto doc = m_codeModelManager->openDocumentByUrl(uri);
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     const auto fileObject = file.ownerAs<QmlFile>();
     if (!fileObject || !(fileObject && fileObject->isValid())) {
@@ -72,7 +72,7 @@ void SemanticTokenFullHandler::process(
         return;
     }
     auto &&encoded = HighlightingUtils::collectTokens(file, std::nullopt, m_mode);
-    auto &registeredTokens = m_codeModel->registeredTokens();
+    auto &registeredTokens = m_codeModelManager->registeredTokens(uri);
     if (!encoded.isEmpty()) {
         HighlightingUtils::updateResultID(registeredTokens.resultId);
         result = SemanticTokens{ registeredTokens.resultId, encoded };
@@ -94,8 +94,8 @@ https://microsoft.github.io/language-server-protocol/specifications/specificatio
 Sends either SemanticTokens or SemanticTokensDelta data as response.
 This is generally requested when the text document is edited after receiving full highlighting data.
 */
-SemanticTokenDeltaHandler::SemanticTokenDeltaHandler(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel), m_mode(HighlightingUtils::HighlightingMode::Default)
+SemanticTokenDeltaHandler::SemanticTokenDeltaHandler(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager), m_mode(HighlightingUtils::HighlightingMode::Default)
 {
 }
 
@@ -109,8 +109,8 @@ void SemanticTokenDeltaHandler::process(
 
     Responses::SemanticTokensDeltaResultType result;
     ResponseScopeGuard guard(result, request->m_response);
-    const auto doc = m_codeModel->openDocumentByUrl(
-            QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
+    const QByteArray uri = QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri);
+    const auto doc = m_codeModelManager->openDocumentByUrl(uri);
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     const auto fileObject = file.ownerAs<QmlFile>();
     if (!fileObject || !(fileObject && fileObject->isValid())) {
@@ -121,7 +121,7 @@ void SemanticTokenDeltaHandler::process(
         return;
     }
     auto newEncoded = HighlightingUtils::collectTokens(file, std::nullopt, m_mode);
-    auto &registeredTokens = m_codeModel->registeredTokens();
+    auto &registeredTokens = m_codeModelManager->registeredTokens(uri);
     const auto lastResultId = registeredTokens.resultId;
     HighlightingUtils::updateResultID(registeredTokens.resultId);
 
@@ -151,8 +151,8 @@ A wrapper class that handles the semantic tokens range request for a file
 https://microsoft.github.io/language-server-protocol/specifications/specification-3-16/#semanticTokens_rangeRequest
 Sends a QLspSpecification::SemanticTokens data as response that is generated for a range of file.
 */
-SemanticTokenRangeHandler::SemanticTokenRangeHandler(QmlLsp::QQmlCodeModel *codeModel)
-    : QQmlBaseModule(codeModel), m_mode(HighlightingUtils::HighlightingMode::Default)
+SemanticTokenRangeHandler::SemanticTokenRangeHandler(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : QQmlBaseModule(codeModelManager), m_mode(HighlightingUtils::HighlightingMode::Default)
 {
 }
 
@@ -166,8 +166,8 @@ void SemanticTokenRangeHandler::process(
 
     Responses::SemanticTokensRangeResultType result;
     ResponseScopeGuard guard(result, request->m_response);
-    const auto doc = m_codeModel->openDocumentByUrl(
-            QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri));
+    const QByteArray uri = QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri);
+    const auto doc = m_codeModelManager->openDocumentByUrl(uri);
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     const auto qmlFile = file.as<QmlFile>();
     if (!qmlFile || !(qmlFile && qmlFile->isValid())) {
@@ -184,7 +184,7 @@ void SemanticTokenRangeHandler::process(
     int endOffset = int(QQmlLSUtils::textOffsetFrom(code, range.end.line, range.end.character));
     auto &&encoded = HighlightingUtils::collectTokens(
             file, HighlightsRange{ startOffset, endOffset }, m_mode);
-    auto &registeredTokens = m_codeModel->registeredTokens();
+    auto &registeredTokens = m_codeModelManager->registeredTokens(uri);
     if (!encoded.isEmpty()) {
         HighlightingUtils::updateResultID(registeredTokens.resultId);
         result = SemanticTokens{ registeredTokens.resultId, std::move(encoded) };
@@ -198,8 +198,8 @@ void SemanticTokenRangeHandler::registerHandlers(QLanguageServer *, QLanguageSer
     protocol->registerSemanticTokensRangeRequestHandler(getRequestHandler());
 }
 
-QQmlHighlightSupport::QQmlHighlightSupport(QmlLsp::QQmlCodeModel *codeModel)
-    : m_full(codeModel), m_delta(codeModel), m_range(codeModel)
+QQmlHighlightSupport::QQmlHighlightSupport(QmlLsp::QQmlCodeModelManager *codeModelManager)
+    : m_full(codeModelManager), m_delta(codeModelManager), m_range(codeModelManager)
 {
 }
 

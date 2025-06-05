@@ -16,7 +16,7 @@
 //
 
 #include "qlanguageserver_p.h"
-#include "qqmlcodemodel_p.h"
+#include "qqmlcodemodelmanager_p.h"
 
 #include <chrono>
 #include <optional>
@@ -33,7 +33,7 @@ class QmlLintSuggestions : public QLanguageServerModule
 {
     Q_OBJECT
 public:
-    QmlLintSuggestions(QLanguageServer *server, QmlLsp::QQmlCodeModel *codeModel);
+    QmlLintSuggestions(QLanguageServer *server, QmlLsp::QQmlCodeModelManager *codeModelManager);
 
     QString name() const override { return QLatin1StringView("QmlLint Suggestions"); }
 public Q_SLOTS:
@@ -68,7 +68,7 @@ private:
     QMutex m_mutex;
     QHash<QByteArray, LastLintUpdate> m_lastUpdate;
     QLanguageServer *m_server;
-    QmlLsp::QQmlCodeModel *m_codeModel;
+    QmlLsp::QQmlCodeModelManager *m_codeModelManager;
 };
 } // namespace QmlLsp
 QT_END_NAMESPACE

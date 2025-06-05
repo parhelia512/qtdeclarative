@@ -38,32 +38,6 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                          m_codeModel->addRootUrls(toAdd);
                      });
 
-    QObject::connect(server->notifySignals(),
-                     &QLspNotifySignals::receivedDidChangeWatchedFilesNotification, this,
-                     [this](const DidChangeWatchedFilesParams &params) {
-                         const QList<FileEvent> &changes = params.changes;
-                         for (const FileEvent &change : changes) {
-                             const QString filename =
-                                     m_codeModel->url2Path(QQmlLSUtils::lspUriToQmlUrl(change.uri));
-                             switch (FileChangeType(change.type)) {
-                             case FileChangeType::Created:
-                                 // m_codeModel->addFile(filename);
-                                 break;
-                             case FileChangeType::Changed: {
-                                 QFile file(filename);
-                                 if (file.open(QIODevice::ReadOnly))
-                                     // m_modelManager->setFileContents(filename, file.readAll());
-                                     break;
-                                 break;
-                             }
-                             case FileChangeType::Deleted:
-                                 // m_modelManager->removeFile(filename);
-                                 break;
-                             }
-                         }
-                         // update due to dep changes...
-                     });
-
     QObject::connect(server, &QLanguageServer::clientInitialized, this,
                      &WorkspaceHandlers::clientInitialized);
 }

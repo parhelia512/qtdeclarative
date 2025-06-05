@@ -107,9 +107,8 @@ public:
 
     void openNeedUpdate();
     void addOpenToUpdate(const QByteArray &);
-    void removeDirectory(const QString &path);
+    void removeDirectory(const QByteArray &);
     // void updateDocument(const OpenDocument &doc);
-    QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
     void newOpenFile(const QByteArray &url, int version, const QString &docText);
     void newDocForOpenFile(const QByteArray &url, int version, const QString &docText);
     void closeOpenFile(const QByteArray &url);
@@ -119,7 +118,7 @@ public:
     QStringList buildPathsForRootUrl(const QByteArray &url);
     QStringList buildPathsForFileUrl(const QByteArray &url);
     void setBuildPathsForRootUrl(QByteArray url, const QStringList &paths);
-    QStringList importPathsForFile(const QString &fileName);
+    QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const { return m_importPaths; };
     void setImportPaths(const QStringList &paths) { m_importPaths = paths; };
     void removeRootUrls(const QList<QByteArray> &urls);
@@ -146,6 +145,7 @@ private:
     void openUpdateStart();
     void openUpdateEnd();
     void openUpdate(const QByteArray &);
+    QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
     static bool callCMakeBuild(const QStringList &buildPaths);
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);

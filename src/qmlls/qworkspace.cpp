@@ -26,8 +26,7 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                          QList<QByteArray> toRemove;
                          for (const WorkspaceFolder &folder : removed) {
                              toRemove.append(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
-                             m_codeModel->removeDirectory(m_codeModel->url2Path(
-                                     QQmlLSUtils::lspUriToQmlUrl(folder.uri)));
+                             m_codeModel->removeDirectory(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
                          }
                          m_codeModel->removeRootUrls(toRemove);
                          const QList<WorkspaceFolder> &added = event.added;

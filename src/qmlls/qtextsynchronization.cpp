@@ -23,7 +23,6 @@ void TextSynchronization::didCloseTextDocument(const DidCloseTextDocumentParams 
 void TextSynchronization::didOpenTextDocument(const DidOpenTextDocumentParams &params)
 {
     const TextDocumentItem &item = params.textDocument;
-    const QString fileName = m_codeModel->url2Path(QQmlLSUtils::lspUriToQmlUrl(item.uri));
     m_codeModel->newOpenFile(QQmlLSUtils::lspUriToQmlUrl(item.uri), item.version,
                              QString::fromUtf8(item.text));
 }
@@ -31,7 +30,6 @@ void TextSynchronization::didOpenTextDocument(const DidOpenTextDocumentParams &p
 void TextSynchronization::didDidChangeTextDocument(const DidChangeTextDocumentParams &params)
 {
     QByteArray url = QQmlLSUtils::lspUriToQmlUrl(params.textDocument.uri);
-    const QString fileName = m_codeModel->url2Path(url);
     auto openDoc = m_codeModel->openDocumentByUrl(url);
     std::shared_ptr<Utils::TextDocument> document = openDoc.textDocument;
     if (!document) {

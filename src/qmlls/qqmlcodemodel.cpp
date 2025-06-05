@@ -132,8 +132,9 @@ OpenDocumentSnapshot QQmlCodeModel::snapshotByUrl(const QByteArray &url)
     return openDocumentByUrl(url).snapshot;
 }
 
-void QQmlCodeModel::removeDirectory(const QString &path)
+void QQmlCodeModel::removeDirectory(const QByteArray &url)
 {
+    const QString path = url2Path(url);
     if (auto validEnvPtr = m_validEnv.ownerAs<DomEnvironment>())
         validEnvPtr->removePath(path);
     if (auto currentEnvPtr = m_currentEnv.ownerAs<DomEnvironment>())
@@ -456,7 +457,7 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
         m_rebuildRequired = false;
     }
 
-    loadPaths.append(importPathsForFile(fPath));
+    loadPaths.append(importPathsForUrl(url));
     if (std::shared_ptr<DomEnvironment> newCurrentPtr = newCurrent.ownerAs<DomEnvironment>()) {
         newCurrentPtr->setLoadPaths(loadPaths);
     }
@@ -576,8 +577,9 @@ static bool isNotSeparator(char c)
     return c != '/';
 }
 
-QStringList QQmlCodeModel::importPathsForFile(const QString &fileName)
+QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
 {
+    const QString fileName = url2Path(url);
     QStringList result = importPaths();
 
     const QString importPaths = u"importPaths"_s;

@@ -38,9 +38,6 @@ public:
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;
     void process(RequestPointerArgument req) override;
-
-private:
-    std::unique_ptr<HelpManager> m_helpManager;
 };
 
 QT_END_NAMESPACE

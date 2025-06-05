@@ -17,6 +17,7 @@
 
 #include "qlanguageserver_p.h"
 #include "qtextdocument_p.h"
+#include "qqmllshelputils_p.h"
 
 #include <QObject>
 #include <QHash>
@@ -133,6 +134,7 @@ public:
     void setDocumentationRootPath(const QString &path);
 
     QSet<QString> ignoreForWatching() const { return m_ignoreForWatching; }
+    HelpManager *helpManager() { return &m_helpManager; }
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url);
@@ -174,6 +176,7 @@ private:
     RegisteredSemanticTokens m_tokens;
     QString m_documentationRootPath;
     QSet<QString> m_ignoreForWatching;
+    HelpManager m_helpManager;
 private slots:
     void onCppFileChanged(const QString &);
 };

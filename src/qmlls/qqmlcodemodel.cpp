@@ -692,7 +692,7 @@ void QQmlCodeModel::setDocumentationRootPath(const QString &path)
     QMutexLocker l(&m_mutex);
     if (m_documentationRootPath != path) {
         m_documentationRootPath = path;
-        emit documentationRootPathChanged(path);
+        m_helpManager.setDocumentationRootPath(path);
     }
 }
 

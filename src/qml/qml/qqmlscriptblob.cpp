@@ -132,7 +132,10 @@ void QQmlScriptBlob::done()
     // Check all script dependencies for errors
     for (int ii = 0; ii < m_scripts.size(); ++ii) {
         const ScriptReference &script = m_scripts.at(ii);
-        Q_ASSERT(script.script->isCompleteOrError());
+        // We would like to assert on isCompleteOrError() here, but since ECMAScript dependencies
+        // can be cyclic, we need to live with certain scripts formally not being complete.
+        // However, since we only omit the dependency if the compilation unit already exists when
+        // loading, we will still catch all errors here.
         if (script.script->isError()) {
             QList<QQmlError> errors = script.script->errors();
             QQmlError error;
@@ -167,12 +170,15 @@ void QQmlScriptBlob::done()
 
         m_importCache->populateCache(m_scriptData->typeNameCache.data());
     }
-    m_scripts.clear();
 
     if (auto cu = m_scriptData->compilationUnit()) {
         cu->qmlType = QQmlMetaType::findCompositeType(url(), cu, QQmlMetaType::JavaScript);
+        for (const auto &script : std::as_const(m_scripts))
+            cu->dependentScripts.append(script.script->scriptData());
         QQmlMetaType::registerInternalCompositeType(cu);
     }
+
+    m_scripts.clear();
 }
 
 QString QQmlScriptBlob::stringAt(int index) const
@@ -230,10 +236,8 @@ void QQmlScriptBlob::initializeFromCompilationUnit(
         const QUrl absoluteRequest = unit->finalUrl().resolved(relativeRequest);
         QQmlRefPointer<QQmlScriptBlob> absoluteBlob
                 = typeLoader()->getScript(absoluteRequest, relativeRequest);
-        if (absoluteBlob->m_scriptData && absoluteBlob->m_scriptData->m_precompiledScript)
-            continue;
-
-        addDependency(absoluteBlob.data());
+        if (!absoluteBlob->m_scriptData || !absoluteBlob->m_scriptData->m_precompiledScript)
+            addDependency(absoluteBlob.data());
         scriptImported(
                 absoluteBlob, /* ### */QV4::CompiledData::Location(), /*qualifier*/QString(),
                 /*namespace*/QString());

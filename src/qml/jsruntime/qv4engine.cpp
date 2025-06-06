@@ -13,6 +13,7 @@
 #include <private/qqmljsdiagnosticmessage_p.h>
 #include <private/qqmllist_p.h>
 #include <private/qqmllistwrapper_p.h>
+#include <private/qqmlscriptdata_p.h>
 #include <private/qqmltypeloader_p.h>
 #include <private/qqmltypewrapper_p.h>
 #include <private/qqmlvaluetype_p.h>
@@ -2051,6 +2052,9 @@ QQmlRefPointer<ExecutableCompilationUnit> ExecutionEngine::compileModule(const Q
 {
     QQmlMetaType::CachedUnitLookupError cacheError = QQmlMetaType::CachedUnitLookupError::NoError;
     const DiskCacheOptions options = diskCacheOptions();
+
+    QQmlRefPointer<ExecutableCompilationUnit> cu;
+
     if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (options & DiskCache::Aot)
             ? QQmlMetaType::findCachedCompilationUnit(
                 url,
@@ -2059,24 +2063,40 @@ QQmlRefPointer<ExecutableCompilationUnit> ExecutionEngine::compileModule(const Q
                     : QQmlMetaType::RequireFullyTyped,
                 &cacheError)
             : nullptr) {
-        return executableCompilationUnit(
+        cu = executableCompilationUnit(
                 QQml::makeRefPointer<QV4::CompiledData::CompilationUnit>(
                         cachedUnit->qmlData, cachedUnit->aotCompiledFunctions, url.fileName(),
                         url.toString()));
+    } else {
+
+        QFile f(QQmlFile::urlToLocalFileOrQrc(url));
+        if (!f.open(QIODevice::ReadOnly)) {
+            throwError(QStringLiteral("Could not open module %1 for reading").arg(url.toString()));
+            return nullptr;
+        }
+
+        const QDateTime timeStamp = QFileInfo(f).lastModified();
+
+        const QString sourceCode = QString::fromUtf8(f.readAll());
+        f.close();
+
+        cu = compileModule(url, sourceCode, timeStamp);
     }
 
-    QFile f(QQmlFile::urlToLocalFileOrQrc(url));
-    if (!f.open(QIODevice::ReadOnly)) {
-        throwError(QStringLiteral("Could not open module %1 for reading").arg(url.toString()));
-        return nullptr;
+    const auto baseCompilationUnit = cu->baseCompilationUnit();
+    const auto data = cu->unitData();
+    for (uint i = 0, end = data->moduleRequestTableSize; i < end; ++i) {
+        cu->baseCompilationUnit()->dependentScripts.append(scriptDataForDependency(
+                loadModule(cu->urlAt(data->moduleRequestTable()[i]), cu.data())));
     }
 
-    const QDateTime timeStamp = QFileInfo(f).lastModified();
+    // Only register with the type registry when the dependentScripts are ready!
+    // Otherwise we get thread safety problems.
+    baseCompilationUnit->qmlType = QQmlMetaType::findCompositeType(
+            url, baseCompilationUnit, QQmlMetaType::JavaScript);
+    QQmlMetaType::registerInternalCompositeType(baseCompilationUnit);
 
-    const QString sourceCode = QString::fromUtf8(f.readAll());
-    f.close();
-
-    return compileModule(url, sourceCode, timeStamp);
+    return cu;
 }
 
 
@@ -2154,6 +2174,17 @@ void ExecutionEngine::trimCompilationUnitsForUrl(const QUrl &url)
         else
             ++it;
     }
+}
+
+QQmlRefPointer<QQmlScriptData> ExecutionEngine::scriptDataForDependency(
+        const ExecutionEngine::Module &dependency)
+{
+    QQmlRefPointer<QQmlScriptData> scriptData(
+            new QQmlScriptData, QQmlRefPointer<QQmlScriptData>::Adopt);
+    scriptData->url = dependency->finalUrl();
+    scriptData->urlString = dependency->finalUrlString();
+    scriptData->m_precompiledScript = dependency->baseCompilationUnit();
+    return scriptData;
 }
 
 template<typename NotFound>

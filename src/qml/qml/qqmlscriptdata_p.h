@@ -50,6 +50,7 @@ public:
 
 private:
     friend class QQmlScriptBlob;
+    friend struct QV4::ExecutionEngine;
 
     QQmlRefPointer<QQmlContextData> qmlContextDataForContext(
             const QQmlRefPointer<QQmlContextData> &parentQmlContextData);

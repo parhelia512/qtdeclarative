@@ -15,9 +15,10 @@
 // We mean it.
 //
 
-#include <private/qqmltype_p.h>
-#include <private/qqmlmetatype_p.h>
 #include <private/qhashedstring_p.h>
+#include <private/qqmlmetatype_p.h>
+#include <private/qqmlscriptdata_p.h>
+#include <private/qqmltype_p.h>
 #include <private/qqmlvaluetype_p.h>
 
 #include <QtCore/qset.h>
@@ -130,6 +131,13 @@ struct QQmlMetaTypeData
             qWarning("%s", message.toUtf8().constData());
     }
 
+    static void clearCompositeType(const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &cu)
+    {
+        if (cu->isESModule())
+            cu->dependentScripts.clear();
+    }
+
+    void clearCompositeTypes();
     void clearCompositeMetaTypes();
 
 private:

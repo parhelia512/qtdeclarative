@@ -9,10 +9,8 @@
 #include <private/qqmlscriptblob_p.h>
 #include <private/qqmlscriptdata_p.h>
 #include <private/qqmltype_p_p.h>
-#include <private/qqmltypeloader_p.h>
 #include <private/qqmltypemodule_p.h>
 #include <private/qqmlvaluetype_p.h>
-#include <private/qv4executablecompilationunit_p.h>
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qmutex.h>
@@ -335,9 +333,7 @@ void QQmlMetaType::clearTypeRegistrations()
 
     data->moduleImports.clear();
 
-    // Avoid deletion recursion (via QQmlTypePrivate dtor) by moving them out of the way first.
-    QQmlMetaTypeData::CompositeTypes emptyComposites;
-    emptyComposites.swap(data->compositeTypes);
+    data->clearCompositeTypes();
 
     qDeleteAll(data->metaTypeToValueType);
     data->metaTypeToValueType.clear();
@@ -1591,9 +1587,11 @@ void QQmlMetaType::freeUnusedTypesAndCaches()
     bool droppedAtLeastOneComposite;
     do {
         droppedAtLeastOneComposite = false;
-        auto it = data->compositeTypes.begin();
-        while (it != data->compositeTypes.end()) {
-            if ((*it)->count() <= doCountInternalCompositeTypeSelfReferences(data, *it)) {
+        auto it = data->compositeTypes.cbegin();
+        while (it != data->compositeTypes.cend()) {
+            const auto &cu = *it;
+            if (cu->count() <= doCountInternalCompositeTypeSelfReferences(data, cu)) {
+                QQmlMetaTypeData::clearCompositeType(cu);
                 it = data->compositeTypes.erase(it);
                 droppedAtLeastOneComposite = true;
             } else {
@@ -1997,6 +1995,7 @@ void QQmlMetaType::unregisterInternalCompositeType(
         const auto [begin, end] = std::as_const(data->compositeTypes).equal_range(iface);
         for (auto it = begin; it != end; ++it) {
             if (*it == compilationUnit) {
+                QQmlMetaTypeData::clearCompositeType(compilationUnit);
                 data->compositeTypes.erase(it);
                 break;
             }

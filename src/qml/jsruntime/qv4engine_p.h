@@ -806,6 +806,8 @@ private:
     friend struct ExecutionEngineCallDepthRecorder;
 
     static void initializeStaticMembers();
+    static QQmlRefPointer<QQmlScriptData> scriptDataForDependency(
+            const ExecutionEngine::Module &dependency);
 
     bool inStack(const void *current) const
     {

@@ -65,6 +65,14 @@ public:
                 && aUrl.query() == bUrl.query();
     }
 
+    static QUrl normalizedUrl(const QUrl &unNormalizedUrl)
+    {
+        QUrl normalized(unNormalizedUrl);
+        if (normalized.scheme() == QLatin1String("qrc"))
+            normalized.setHost(QString()); // map qrc:///a.qml to qrc:/a.qml
+        return normalized;
+    }
+
     enum CompositeTypeLookupMode {
         NonSingleton,
         Singleton,

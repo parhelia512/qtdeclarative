@@ -191,7 +191,7 @@ static QQmlTypePrivate *createQQmlType(QQmlMetaTypeData *data, const QString &el
     d->setName(QString::fromUtf8(type.uri), elementName);
     d->version = type.version;
 
-    const QUrl normalized = QQmlTypeLoader::normalize(type.url);
+    const QUrl normalized = QQmlMetaType::normalizedUrl(type.url);
     d->extraData.compositeTypeData = normalized;
     addQQmlMetaTypeInterfaces(
             data, normalized, d, QQmlPropertyCacheCreatorBase::createClassNameTypeByUrl(normalized));
@@ -576,7 +576,7 @@ QQmlType QQmlMetaType::registerCompositeType(const QQmlPrivate::RegisterComposit
     QQmlTypePrivate *priv = createQQmlType(data, typeName, type);
     addTypeToData(priv, data);
 
-    data->urlToType.insert(QQmlTypeLoader::normalize(type.url), priv);
+    data->urlToType.insert(QQmlMetaType::normalizedUrl(type.url), priv);
 
     return QQmlType(priv);
 }
@@ -700,7 +700,7 @@ QQmlType QQmlMetaType::findCompositeType(
         const QUrl &url, const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
         CompositeTypeLookupMode mode)
 {
-    const QUrl normalized = QQmlTypeLoader::normalize(url);
+    const QUrl normalized = QQmlMetaType::normalizedUrl(url);
     QQmlMetaTypeDataPtr data;
 
     bool urlExists = true;
@@ -1028,7 +1028,7 @@ QQmlType QQmlMetaType::typeForUrl(
         QList<QQmlError> *errors, QTypeRevision version)
 {
     // ### unfortunate (costly) conversion
-    const QUrl normalized = QQmlTypeLoader::normalize(url);
+    const QUrl normalized = QQmlMetaType::normalizedUrl(url);
 
     QQmlMetaTypeDataPtr data;
     {
@@ -1349,7 +1349,7 @@ QQmlType QQmlMetaType::qmlListType(QMetaType metaType)
 */
 QQmlType QQmlMetaType::qmlType(const QUrl &unNormalizedUrl)
 {
-    const QUrl url = QQmlTypeLoader::normalize(unNormalizedUrl);
+    const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
     const QQmlMetaTypeDataPtr data;
 
     QQmlType type(data->urlToType.value(url));
@@ -1996,7 +1996,7 @@ QQmlRefPointer<QV4::CompiledData::CompilationUnit> QQmlMetaType::obtainCompilati
 QQmlRefPointer<QV4::CompiledData::CompilationUnit> QQmlMetaType::obtainCompilationUnit(
         const QUrl &url)
 {
-    const QUrl normalized = QQmlTypeLoader::normalize(url);
+    const QUrl normalized = QQmlMetaType::normalizedUrl(url);
     QQmlMetaTypeDataPtr data;
 
     auto found = data->urlToType.constFind(normalized);

@@ -669,7 +669,7 @@ static QQmlType::SingletonInstanceInfo::ConstPtr singletonInstanceInfo(
         const QQmlPrivate::RegisterCompositeSingletonType &type)
 {
     QQmlType::SingletonInstanceInfo::Ptr siinfo = QQmlType::SingletonInstanceInfo::create();
-    siinfo->url = QQmlTypeLoader::normalize(type.url);
+    siinfo->url = QQmlMetaType::normalizedUrl(type.url);
     siinfo->typeName = type.typeName;
     return QQmlType::SingletonInstanceInfo::ConstPtr(
             siinfo.take(), QQmlType::SingletonInstanceInfo::ConstPtr::Adopt);

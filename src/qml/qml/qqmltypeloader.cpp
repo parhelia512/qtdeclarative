@@ -1294,14 +1294,6 @@ QQmlTypeLoader::~QQmlTypeLoader()
     clearQmldirInfo();
 }
 
-QUrl QQmlTypeLoader::normalize(const QUrl &unNormalizedUrl)
-{
-    QUrl normalized(unNormalizedUrl);
-    if (normalized.scheme() == QLatin1String("qrc"))
-        normalized.setHost(QString()); // map qrc:///a.qml to qrc:/a.qml
-    return normalized;
-}
-
 /*!
 Returns a QQmlTypeData for the specified \a url.  The QQmlTypeData may be cached.
 */
@@ -1313,7 +1305,7 @@ QQmlRefPointer<QQmlTypeData> QQmlTypeLoader::getType(const QUrl &unNormalizedUrl
             (QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl).isEmpty() ||
              !QDir::isRelativePath(QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl))));
 
-    const QUrl url = normalize(unNormalizedUrl);
+    const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
 
     const auto handleExisting = [&](const QQmlRefPointer<QQmlTypeData> &typeData) {
         if ((mode == PreferSynchronous || mode == Synchronous) && QQmlFile::isSynchronous(url)) {
@@ -1416,7 +1408,7 @@ QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(
             (QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl).isEmpty() ||
              !QDir::isRelativePath(QQmlFile::urlToLocalFileOrQrc(unNormalizedUrl))));
 
-    const QUrl url = normalize(unNormalizedUrl);
+    const QUrl url = QQmlMetaType::normalizedUrl(unNormalizedUrl);
 
     QQmlRefPointer<QQmlScriptBlob> scriptBlob;
     {

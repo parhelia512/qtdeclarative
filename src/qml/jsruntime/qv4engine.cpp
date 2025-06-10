@@ -2149,8 +2149,8 @@ ExecutionEngine::Module doFindModule(
         const QUrl &url, const ExecutableCompilationUnit *referrer, NotFound &&notFound)
 {
     const QUrl resolved = referrer
-            ? referrer->finalUrl().resolved(QQmlTypeLoader::normalize(url))
-            : QQmlTypeLoader::normalize(url);
+            ? referrer->finalUrl().resolved(QQmlMetaType::normalizedUrl(url))
+            : QQmlMetaType::normalizedUrl(url);
     auto existingModule = compilationUnits.constFind(resolved);
     if (existingModule != compilationUnits.constEnd())
         return *existingModule;

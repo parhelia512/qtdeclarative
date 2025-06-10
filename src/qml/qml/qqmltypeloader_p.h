@@ -178,8 +178,6 @@ public:
                 : QByteArray();
     }
 
-    static QUrl normalize(const QUrl &unNormalizedUrl);
-
     QQmlRefPointer<QQmlTypeData> getType(
             const QUrl &unNormalizedUrl, Mode mode = PreferSynchronous);
     QQmlRefPointer<QQmlTypeData> getType(

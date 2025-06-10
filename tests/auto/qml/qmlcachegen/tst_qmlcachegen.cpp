@@ -1069,8 +1069,8 @@ void tst_qmlcachegen::aotstatsGeneration()
         const auto it = std::find_if(fileEntries.cbegin(), fileEntries.cend(),
                                      [&](const auto &e) { return e.functionName == entry.name; });
         QVERIFY(it != fileEntries.cend());
-        QVERIFY(it->codegenResult == entry.codegenResult);
-        QVERIFY(it->message == entry.message);
+        QCOMPARE(it->codegenResult, entry.codegenResult);
+        QCOMPARE(it->message, entry.message);
     }
 }
 

@@ -3,22 +3,30 @@
 
 #include "test262runner.h"
 
-#include <qdebug.h>
-#include <qdir.h>
-#include <qdiriterator.h>
-#include <qfile.h>
-#include <qjsondocument.h>
-#include <qjsonobject.h>
-#include <qlibraryinfo.h>
-#include <qprocess.h>
-#include <qtemporaryfile.h>
-#include <qthread.h>
-
-#include "private/qqmlbuiltinfunctions_p.h"
-#include "private/qv4arraybuffer_p.h"
-#include "private/qv4globalobject_p.h"
-#include <QtCore/QLoggingCategory>
+#include <private/qqmlbuiltinfunctions_p.h>
+#include <private/qqmlscriptblob_p.h>
+#include <private/qqmlscriptdata_p.h>
+#include <private/qqmltypeloader_p.h>
+#include <private/qv4arraybuffer_p.h>
+#include <private/qv4globalobject_p.h>
 #include <private/qv4script_p.h>
+
+#include <QtCore/qdebug.h>
+#include <QtCore/qdir.h>
+#include <QtCore/qdiriterator.h>
+#include <QtCore/qfile.h>
+#include <QtCore/qjsondocument.h>
+#include <QtCore/qjsonobject.h>
+#include <QtCore/qlibraryinfo.h>
+#include <QtCore/qprocess.h>
+#include <QtCore/qtemporaryfile.h>
+#include <QtCore/qthread.h>
+#include <QtCore/qbuffer.h>
+
+#include <QtQml/qqmlnetworkaccessmanagerfactory.h>
+
+#include <QtNetwork/qnetworkaccessmanager.h>
+#include <QtNetwork/qnetworkreply.h>
 
 DEFINE_BOOL_CONFIG_OPTION(useThreads, QML_TEST262_USE_THREADS);
 
@@ -193,7 +201,7 @@ void Test262Runner::assignSloppy(int processIndex)
     json.insert("mode", "sloppy");
     json.insert("testData", QString::fromUtf8(task.content));
     json.insert("runAsModule", false);
-    json.insert("testCasePath", "");
+    json.insert("testCasePath", QFileInfo(testDir + "/test/" + task.test).absoluteFilePath());
     json.insert("harnessForModules", "");
     p.write(QJsonDocument(json).toJson(QJsonDocument::Compact));
     p.write("\r\n");
@@ -321,9 +329,12 @@ TestCase::Result getTestExecutionResult(QV4::ExecutionEngine &vm)
 
 void SingleTest::run()
 {
+    const QString testCasePath
+            = QFileInfo(runner->testDirectory() + "/test/" + data.test).absoluteFilePath();
+
     if (data.runInSloppyMode) {
         QV4::ExecutionEngine vm;
-        Test262Runner::executeTest(vm, data.content);
+        Test262Runner::executeTest(vm, data.content, testCasePath, data.harness, false, false);
         TestCase::Result ok = getTestExecutionResult(vm);
 
         if (data.negative)
@@ -334,11 +345,10 @@ void SingleTest::run()
         data.sloppyResult = TestCase::Result(TestCase::Skipped);
     }
     if (data.runInStrictMode) {
-        QString testCasePath = QFileInfo(runner->testDirectory() + "/test/" + data.test).absoluteFilePath();
         QByteArray c = "'use strict';\n" + data.content;
 
         QV4::ExecutionEngine vm;
-        Test262Runner::executeTest(vm, c, testCasePath, data.harness, data.runAsModuleCode);
+        Test262Runner::executeTest(vm, c, testCasePath, data.harness, data.runAsModuleCode, true);
         TestCase::Result ok = getTestExecutionResult(vm);
 
         if (data.negative)
@@ -351,57 +361,142 @@ void SingleTest::run()
     runner->addResult(data);
 }
 
+class ImmediateReply : public QNetworkReply
+{
+    Q_OBJECT
+
+public:
+    ImmediateReply(const QByteArray &content)
+    {
+        buffer.setData(content);
+        buffer.open(QIODevice::ReadOnly);
+        open(QIODevice::ReadOnly);
+        setFinished(true);
+    }
+
+    qint64 readData(char *data, qint64 maxSize) final { return buffer.read(data, maxSize); }
+    void abort() final { buffer.close(); }
+
+private:
+    QBuffer buffer;
+};
+
+class HarnessReply : public QNetworkReply
+{
+    Q_OBJECT
+
+public:
+    HarnessReply(const QString &localFile, const QByteArray &harness)
+    {
+        QFile file(localFile);
+        if (file.open(QIODevice::ReadOnly)) {
+            buffer.setData(harness + file.readAll());
+            buffer.open(QIODevice::ReadOnly);
+            open(QIODevice::ReadOnly);
+        } else {
+            setError(
+                    QNetworkReply::ContentNotFoundError,
+                    QStringLiteral("Could not load file %1").arg(localFile));
+        }
+        setFinished(true);
+    }
+
+    qint64 readData(char *data, qint64 maxSize) final { return buffer.read(data, maxSize); }
+    void abort() final { buffer.close(); }
+
+private:
+    QBuffer buffer;
+};
+
+class HarnessManager : public QNetworkAccessManager
+{
+public:
+    HarnessManager(
+            const QString &testFile, const QByteArray &testData, const QByteArray &harness,
+            QObject *parent = nullptr)
+        : QNetworkAccessManager(parent)
+        , testFile(testFile)
+        , testData(testData)
+        , harness(harness) {}
+
+protected:
+    QNetworkReply *createRequest(
+            Operation op, const QNetworkRequest &request, QIODevice *outgoingData) final
+    {
+        QUrl url = request.url();
+
+        const bool needsHarness = (url.scheme().startsWith("harness"));
+        if (needsHarness)
+            url.setScheme("file");
+
+        if (url.toLocalFile() == testFile)
+            return new ImmediateReply(testData);
+
+        if (needsHarness)
+            return new HarnessReply(url.toLocalFile(), harness);
+
+        return QNetworkAccessManager::createRequest(op, request, outgoingData);
+    }
+
+private:
+    QString testFile;
+    QByteArray testData;
+    QByteArray harness;
+};
+
+class HarnessManagerFactory : public QQmlNetworkAccessManagerFactory
+{
+public:
+    HarnessManagerFactory(
+            const QString &testFile, const QByteArray &testData, const QByteArray &harness)
+        : testFile(testFile)
+        , testData(testData)
+        , harness(harness) {}
+
+    QNetworkAccessManager *create(QObject *parent) final
+    {
+        return new HarnessManager(testFile, testData, harness, parent);
+    }
+
+private:
+    QString testFile;
+    QByteArray testData;
+    QByteArray harness;
+};
+
 void Test262Runner::executeTest(QV4::ExecutionEngine &vm, const QString &testData,
                              const QString &testCasePath, const QString &harnessForModules,
-                             bool runAsModule)
+                             bool runAsModule, bool isStrict)
 {
+    HarnessManagerFactory factory(testCasePath, testData.toUtf8(), harnessForModules.toUtf8());
+    vm.typeLoader()->setNetworkAccessManagerFactory(&factory);
+
     QV4::Scope scope(&vm);
     QV4::GlobalExtensions::init(vm.globalObject,
                                 QJSEngine::ConsoleExtension | QJSEngine::GarbageCollectionExtension);
     QV4::initD262(&vm);
 
-    if (runAsModule) {
-        const QUrl rootModuleUrl = QUrl::fromLocalFile(testCasePath);
-        // inject all modules with the harness
-        QVector<QUrl> modulesToLoad = { rootModuleUrl };
-        while (!modulesToLoad.isEmpty()) {
-            QUrl url = modulesToLoad.takeFirst();
-            QQmlRefPointer<QV4::ExecutableCompilationUnit> module;
+    QUrl rootModuleUrl = QUrl::fromLocalFile(testCasePath);
+    rootModuleUrl.setScheme(isStrict ? "harness+strict" : "harness+sloppy");
+    rootModuleUrl.setFragment(runAsModule ? "module" : "global");
 
-            QFile f(url.toLocalFile());
-            if (f.open(QIODevice::ReadOnly)) {
-                QByteArray content = harnessForModules.toLocal8Bit() + f.readAll();
-                module = vm.compileModule(url.toString(),
-                                          QString::fromUtf8(content.constData(),content.size()),
-                                          QFileInfo(f).lastModified());
-                if (vm.hasException)
-                    break;
-            } else {
-                vm.throwError(QStringLiteral("Could not load module"));
-                break;
-            }
+    QQmlRefPointer<QQmlScriptBlob> scriptBlob = vm.typeLoader()->getScript(rootModuleUrl);
+    if (scriptBlob->isError()) {
+        vm.throwError(QStringLiteral("Could not load module"));
+        return;
+    }
 
-            const QStringList moduleRequests = module->baseCompilationUnit()->moduleRequests();
-            for (const QString &request: moduleRequests) {
-                const QUrl absoluteRequest = module->finalUrl().resolved(QUrl(request));
-                if (!vm.moduleForUrl(absoluteRequest))
-                    modulesToLoad << absoluteRequest;
-            }
-        }
-
-        if (!vm.hasException) {
-            const auto rootModule = vm.loadModule(rootModuleUrl);
-            if (rootModule && rootModule->instantiate())
-                rootModule->evaluate();
-        }
+    Q_ASSERT(scriptBlob->isComplete());
+    const auto cu = vm.executableCompilationUnit(scriptBlob->scriptData()->compilationUnit());
+    if (cu->isESModule()) {
+        if (cu->instantiate())
+            cu->evaluate();
+    } else if (QV4::Function *vmFunction = cu->rootFunction()) {
+        QScopedValueRollback<QV4::Function *> savedGlobal(vm.globalCode, vmFunction);
+        vmFunction->call(vm.globalObject, nullptr, 0, vm.rootContext());
     } else {
-        QV4::ScopedContext ctx(scope, vm.rootContext());
-
-        QV4::Script script(ctx, QV4::Compiler::ContextType::Global, testData);
-        script.parse();
-
-        if (!vm.hasException)
-            script.run();
+        QV4::ScopedObject error(scope, vm.newSyntaxErrorObject(QStringLiteral("Syntax error")));
+        vm.throwError(error);
     }
 }
 
@@ -1045,3 +1140,5 @@ QByteArray Test262Runner::harness(const QByteArray &name)
 }
 
 QT_END_NAMESPACE
+
+#include "test262runner.moc"

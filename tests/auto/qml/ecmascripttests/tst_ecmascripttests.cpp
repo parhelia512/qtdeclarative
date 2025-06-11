@@ -155,7 +155,9 @@ void doRunnerProcess()
         readInput(done, mode, testData, testCasePath, harnessForModules, runAsModule);
         if (done)
             break;
-        Test262Runner::executeTest(vm, testData, testCasePath, harnessForModules, runAsModule);
+        Test262Runner::executeTest(
+                vm, testData, testCasePath, harnessForModules, runAsModule,
+                mode == QLatin1String("strict"));
         printResult(vm, mode);
     }
 }

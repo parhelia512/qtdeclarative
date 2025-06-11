@@ -1380,7 +1380,7 @@ QQmlRefPointer<QQmlTypeData> QQmlTypeLoader::getType(
 
 static bool isModuleUrl(const QUrl &url)
 {
-    return url.path().endsWith(QLatin1String(".mjs"));
+    return url.fragment() == QLatin1String("module") || url.path().endsWith(QLatin1String(".mjs"));
 }
 
 QQmlRefPointer<QQmlScriptBlob> QQmlTypeLoader::getScript(const QUrl &unNormalizedUrl, Mode mode)

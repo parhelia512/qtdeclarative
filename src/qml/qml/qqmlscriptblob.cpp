@@ -86,7 +86,9 @@ void QQmlScriptBlob::dataReceived(const SourceCodeData &data)
         QList<QQmlError> errors;
         irUnit.javaScriptCompilationUnit = QV4::Script::precompile(
                      &irUnit.jsModule, &irUnit.jsParserEngine, &irUnit.jsGenerator, urlString(),
-                     source, &errors, QV4::Compiler::ContextType::ScriptImportedByQML);
+                     source, &errors, finalUrl().fragment() == QLatin1String("global")
+                        ? QV4::Compiler::ContextType::Global
+                        : QV4::Compiler::ContextType::ScriptImportedByQML);
 
         source.clear();
         if (!errors.isEmpty()) {
@@ -233,7 +235,9 @@ void QQmlScriptBlob::initializeFromCompilationUnit(
     const QStringList moduleRequests = unit->moduleRequests();
     for (const QString &request: moduleRequests) {
         const QUrl relativeRequest(request);
-        const QUrl absoluteRequest = unit->finalUrl().resolved(relativeRequest);
+        QUrl absoluteRequest = unit->finalUrl().resolved(relativeRequest);
+        if (!request.endsWith(QLatin1String(".mjs")))
+            absoluteRequest.setFragment(QLatin1String("module"));
         QQmlRefPointer<QQmlScriptBlob> absoluteBlob
                 = typeLoader()->getScript(absoluteRequest, relativeRequest);
         if (!absoluteBlob->m_scriptData || !absoluteBlob->m_scriptData->m_precompiledScript)

@@ -2192,9 +2192,12 @@ ExecutionEngine::Module doFindModule(
         const QMultiHash<QUrl, QQmlRefPointer<ExecutableCompilationUnit>> &compilationUnits,
         const QUrl &url, const ExecutableCompilationUnit *referrer, NotFound &&notFound)
 {
-    const QUrl resolved = referrer
+    QUrl resolved = referrer
             ? referrer->finalUrl().resolved(QQmlMetaType::normalizedUrl(url))
             : QQmlMetaType::normalizedUrl(url);
+    if (!resolved.path().endsWith(QLatin1String(".mjs")))
+        resolved.setFragment(QLatin1String("module"));
+
     auto existingModule = compilationUnits.constFind(resolved);
     if (existingModule != compilationUnits.constEnd())
         return *existingModule;

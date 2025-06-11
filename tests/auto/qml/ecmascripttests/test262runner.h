@@ -143,10 +143,9 @@ public:
     bool report();
     QString testDirectory() const { return testDir; }
 
-    static void executeTest(QV4::ExecutionEngine &vm, const QString &testData,
-                            const QString &testCasePath = QString(),
-                            const QString &harnessForModules = QString(),
-                            bool runAsModule = false);
+    static void executeTest(
+            QV4::ExecutionEngine &vm, const QString &testData, const QString &testCasePath,
+            const QString &harnessForModules, bool runAsModule, bool isStrict);
 
 private:
     friend class SingleTest;

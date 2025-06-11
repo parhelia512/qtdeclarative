@@ -86,8 +86,8 @@ openNeedUpdate() checks if there is work to do, and if yes ensure that a
 worker thread (or more) that work on it exist.
 */
 
-QQmlCodeModel::QQmlCodeModel(QObject *parent, QQmlToolingSettings *settings)
-    : QObject { parent },
+QQmlCodeModel::QQmlCodeModel(QObject *parent, QQmlToolingSharedSettings *settings)
+    : QObject{ parent },
       m_importPaths(QLibraryInfo::path(QLibraryInfo::QmlImportsPath)),
       m_currentEnv(std::make_shared<DomEnvironment>(
               m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),

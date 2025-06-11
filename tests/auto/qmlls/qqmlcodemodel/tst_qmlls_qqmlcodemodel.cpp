@@ -46,7 +46,7 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
     QFETCH(QString, pathFromCommandLine);
     QFETCH(QString, expectedPath);
 
-    QQmlToolingSettings settings(u"qmlls"_s);
+    QQmlToolingSharedSettings settings(u"qmlls"_s);
     if (!pathFromIniFile.isEmpty())
         settings.addOption("buildDir", pathFromIniFile);
 
@@ -219,7 +219,7 @@ void tst_qmlls_qqmlcodemodel::importPathViaSettings()
     settingsFile.flush();
 
     // actually test the qqmlcodemodel
-    QQmlToolingSettings settings(u"qmlls"_s);
+    QQmlToolingSharedSettings settings(u"qmlls"_s);
     settings.addOption(u"importPaths"_s);
     QmlLsp::QQmlCodeModel model(nullptr, &settings);
 
@@ -304,7 +304,7 @@ void tst_qmlls_qqmlcodemodel::reloadLotsOfFiles()
 
 struct TestCodeModelManager final : public QmlLsp::QQmlCodeModelManager
 {
-    TestCodeModelManager(QQmlToolingSettings *settings = nullptr)
+    TestCodeModelManager(QQmlToolingSharedSettings *settings = nullptr)
         : QmlLsp::QQmlCodeModelManager(nullptr, settings)
     {
         disableCMakeCalls();

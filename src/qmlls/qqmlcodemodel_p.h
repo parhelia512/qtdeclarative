@@ -100,7 +100,7 @@ public:
     enum class UrlLookup { Caching, ForceLookup };
     enum class State { Running, Stopping };
 
-    explicit QQmlCodeModel(QObject *parent = nullptr, QQmlToolingSettings *settings = nullptr);
+    explicit QQmlCodeModel(QObject *parent = nullptr, QQmlToolingSharedSettings *settings = nullptr);
     ~QQmlCodeModel();
     QQmlJS::Dom::DomItem currentEnv() const { return m_currentEnv; };
     QQmlJS::Dom::DomItem validEnv() const { return m_validEnv; };
@@ -124,7 +124,7 @@ public:
     QStringList importPaths() const { return m_importPaths; };
     void setImportPaths(const QStringList &paths);
     void removeRootUrls(const QList<QByteArray> &urls);
-    QQmlToolingSettings *settings() const { return m_settings; }
+    QQmlToolingSharedSettings *settings() const { return m_settings; }
     QStringList findFilePathsFromFileNames(const QStringList &fileNames);
     static QStringList fileNamesToWatch(const QQmlJS::Dom::DomItem &qmlFile);
     void disableCMakeCalls();
@@ -169,7 +169,7 @@ private:
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;
-    QQmlToolingSettings *m_settings;
+    QQmlToolingSharedSettings *m_settings;
     QQmllsBuildInformation m_buildInformation;
     QFileSystemWatcher m_cppFileWatcher;
     QFactoryLoader m_pluginLoader;

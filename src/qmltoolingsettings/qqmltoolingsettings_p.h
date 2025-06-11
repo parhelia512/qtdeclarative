@@ -18,6 +18,7 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qvariant.h>
+#include <QtCore/qmutex.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -41,6 +42,45 @@ private:
     QVariantHash m_values;
 
     bool read(const QString &settingsFilePath);
+};
+
+class QQmlToolingSharedSettings : private QQmlToolingSettings
+{
+public:
+    QQmlToolingSharedSettings(const QString &toolName) : QQmlToolingSettings(toolName) { }
+
+    void addOption(const QString &name, const QVariant defaultValue = QVariant())
+    {
+        QMutexLocker lock(&m_mutex);
+        QQmlToolingSettings::addOption(name, defaultValue);
+    }
+
+    bool writeDefaults() const
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::writeDefaults();
+    }
+
+    bool search(const QString &path)
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::search(path);
+    }
+
+    QVariant value(const QString &name) const
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::value(name);
+    }
+
+    bool isSet(const QString &name) const
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::isSet(name);
+    }
+
+private:
+    mutable QMutex m_mutex;
 };
 
 QT_END_NAMESPACE

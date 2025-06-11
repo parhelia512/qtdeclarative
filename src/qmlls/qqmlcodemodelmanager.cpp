@@ -13,7 +13,7 @@ namespace QmlLsp {
 using namespace QQmlJS::Dom;
 using namespace Qt::StringLiterals;
 
-QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSettings *settings)
+QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSettings *settings)
     : QObject{ parent }, m_settings(settings), m_pluginLoader(QmlLSPluginInterface_iid, u"/qmlls"_s)
 {
     const QByteArray defaultCodeModel;

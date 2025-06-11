@@ -215,7 +215,7 @@ int qmllsMain(int argv, char *argc[])
     QCoreApplication app(argv, argc);
 
     QCommandLineParser parser;
-    QQmlToolingSettings settings("qmlls"_L1);
+    QQmlToolingSharedSettings settings("qmlls"_L1);
     parser.setApplicationDescription("QML languageserver"_L1);
 
     parser.addHelpOption();

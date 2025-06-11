@@ -42,7 +42,7 @@ class QQmlLanguageServer : public QLanguageServerModule
     Q_OBJECT
 public:
     QQmlLanguageServer(std::function<void(const QByteArray &)> sendData,
-                       QQmlToolingSettings *settings = nullptr);
+                       QQmlToolingSharedSettings *settings = nullptr);
 
     QString name() const final;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) final;

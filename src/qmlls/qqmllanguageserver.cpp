@@ -54,7 +54,7 @@ The code model starts other threads to update its state. See its documentation
 for more information.
 */
 QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> sendData,
-                                       QQmlToolingSettings *settings)
+                                       QQmlToolingSharedSettings *settings)
     : m_codeModel(nullptr, settings),
       m_server(sendData),
       m_textSynchronization(&m_codeModel),

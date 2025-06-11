@@ -43,7 +43,7 @@ class QQmlCodeModelManager : public QObject
 {
     Q_OBJECT
 public:
-    QQmlCodeModelManager(QObject *parent = nullptr, QQmlToolingSettings *settings = nullptr);
+    QQmlCodeModelManager(QObject *parent = nullptr, QQmlToolingSharedSettings *settings = nullptr);
 
     OpenDocumentSnapshot snapshotByUrl(const QByteArray &url);
     OpenDocument openDocumentByUrl(const QByteArray &url);
@@ -61,7 +61,7 @@ public:
     QStringList importPathsForUrl(const QByteArray &);
     void setImportPaths(const QStringList &paths);
     void removeRootUrls(const QList<QByteArray> &urls);
-    QQmlToolingSettings *settings() const { return m_settings; }
+    QQmlToolingSharedSettings *settings() const { return m_settings; }
     void disableCMakeCalls();
     const QFactoryLoader &pluginLoader() const { return m_pluginLoader; }
 
@@ -83,7 +83,7 @@ protected:
     WorkspaceMutableIterator findWorkspace(const QByteArray &url);
     void appendWorkspace(const QByteArray &url, ManagedBy managedBy);
 
-    QQmlToolingSettings *m_settings;
+    QQmlToolingSharedSettings *m_settings;
     QFactoryLoader m_pluginLoader;
 
     Workspaces m_workspaces;

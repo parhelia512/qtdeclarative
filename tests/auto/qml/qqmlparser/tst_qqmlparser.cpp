@@ -53,6 +53,57 @@ private slots:
     void invalidImportVersion_data();
     void invalidImportVersion();
 
+    void propertyDeclarations_data();
+    void propertyDeclarations();
+
+private:
+    // TODO move to some utils?
+    enum SyntaxKind {
+        // qml
+        UiProgram,
+        UiObjectMember,
+        // js
+        JSModule,
+        JSScript,
+        JSExpression,
+        JSStatement,
+    };
+
+    struct ParseResult
+    {
+        bool success;
+        QQmlJS::DiagnosticMessage diagnosticMessage;
+    };
+
+    inline auto parseAs(SyntaxKind kind, const QString &code) -> ParseResult
+    {
+        QQmlJS::Engine engine;
+        QQmlJS::Lexer lexer(&engine);
+        QQmlJS::Parser parser(&engine);
+
+        const bool qmlMode = kind == UiProgram || kind == UiObjectMember;
+        lexer.setCode(code, 1, qmlMode);
+
+        const auto parse = [kind, &parser]() -> bool {
+            switch (kind) {
+            case UiProgram:
+                return parser.parse();
+            case UiObjectMember:
+                return parser.parseUiObjectMember();
+            case JSModule:
+                return parser.parseModule();
+            case JSScript:
+                return parser.parseScript();
+            case JSExpression:
+                return parser.parseExpression();
+            case JSStatement:
+                return parser.parseStatement();
+            }
+            Q_UNREACHABLE_RETURN(false);
+        };
+        return { parse(), parser.diagnosticMessage() };
+    }
+
 private:
     QStringList excludedDirs;
 
@@ -218,10 +269,7 @@ private:
 
 }
 
-tst_qqmlparser::tst_qqmlparser()
-    : QQmlDataTest(QT_QMLTEST_DATADIR)
-{
-}
+tst_qqmlparser::tst_qqmlparser() : QQmlDataTest(QT_QMLTEST_DATADIR) { }
 
 void tst_qqmlparser::initTestCase()
 {
@@ -837,6 +885,194 @@ void tst_qqmlparser::invalidImportVersion()
     QRegularExpression regexp(
                 "^Invalid (major )?version. Version numbers must be >= 0 and < 255\\.$");
     QVERIFY(regexp.match(parser.errorMessage()).hasMatch());
+}
+
+// TODO move somewhere to make more visible? (QTBUG-138020)
+namespace Syntax {
+using Token = QQmlJSGrammar::VariousConstants;
+static constexpr auto spellFor(Token token) -> QLatin1StringView
+{
+    switch (token) {
+    case Token::T_COLON:
+        return QLatin1StringView(":");
+    case Token::T_VAR:
+        return QLatin1StringView("var");
+    case Token::T_PROPERTY:
+        return QLatin1StringView("property");
+    case Token::T_DEFAULT:
+        return QLatin1StringView("default");
+    case Token::T_READONLY:
+        return QLatin1StringView("readonly");
+    case Token::T_REQUIRED:
+        return QLatin1StringView("required");
+    case Token::T_FINAL:
+        return QLatin1StringView("final");
+    default:
+        break;
+    }
+    Q_UNREACHABLE_RETURN({});
+}
+
+using Word = std::variant<Token, QLatin1StringView>;
+static inline auto stringView(const Word &word) -> QLatin1StringView
+{
+    return std::holds_alternative<Token>(word) ? spellFor(std::get<Token>(word))
+                                               : std::get<QLatin1StringView>(word);
+}
+
+using Phrase = QList<Word>;
+static inline auto toString(const Phrase &phrase) -> QString
+{
+    QString result;
+    for (const auto &word : phrase) {
+        result += stringView(word) + QChar(' ');
+    }
+    return result;
+}
+
+} // namespace Syntax
+
+void tst_qqmlparser::propertyDeclarations_data()
+{
+    using namespace Syntax;
+
+    QTest::addColumn<QString>("propertyDeclaration");
+    QTest::addColumn<ParseResult>("expectedParseResult");
+
+    const auto addTestRow = [](const Phrase &phrase, const ParseResult &expectedParseResult) {
+        const QString propertyDeclaration = toString(phrase);
+        QTest::addRow("%s", qPrintable(propertyDeclaration))
+                << propertyDeclaration << expectedParseResult;
+    };
+
+    // can't reuse Parser::compileError unfortunately because it's protected
+    const auto diagnosticMsg = [](const QString &message,
+                                  QtMsgType kind = QtCriticalMsg) -> QQmlJS::DiagnosticMessage {
+        return QQmlJS::DiagnosticMessage{ message, kind, QQmlJS::SourceLocation() };
+    };
+    const auto perfectParseResult = ParseResult{ true, QQmlJS::DiagnosticMessage() };
+
+    // For the purposes of this test variables of Phrase type are divirging from camelCase
+    // this is made for the puposes of them matching closely the end-result test strings,
+    // e.g. property_var_p -> "property var p"
+    const Phrase property_var_p = { Token::T_PROPERTY, Token::T_VAR, QLatin1StringView("p") };
+    const Phrase colon_1 = { Token::T_COLON, QLatin1StringView("1") };
+
+    addTestRow(property_var_p, perfectParseResult);
+
+    //---------------------------- Default properties ---------------------------------------------
+    {
+        const Phrase default_ = { Token::T_DEFAULT };
+        const Phrase default_property_var_p = default_ + property_var_p;
+
+        addTestRow(default_property_var_p, perfectParseResult);
+
+        const Phrase default_property_var_p_colon_1 = default_property_var_p + colon_1;
+        addTestRow(default_property_var_p_colon_1, perfectParseResult);
+    }
+
+    //---------------------------- Readonly properties --------------------------------------------
+    {
+        const Phrase readonly = { Token::T_READONLY };
+        const Phrase readonly_property_var_p = readonly + property_var_p;
+
+        addTestRow(
+                readonly_property_var_p,
+                ParseResult{ true, diagnosticMsg("Read-only properties require an initializer.") });
+
+        const auto readonly_property_var_p_colon_1 = readonly_property_var_p + colon_1;
+
+        addTestRow(readonly_property_var_p_colon_1, perfectParseResult);
+
+        // TODO cover list properties?
+    }
+
+    //---------------------------- Required properties --------------------------------------------
+    {
+        const Phrase required = { Token::T_REQUIRED };
+        const Phrase required_property_var_p = required + property_var_p;
+
+        addTestRow(required_property_var_p, perfectParseResult);
+
+        const auto required_property_var_p_colon_1 = required_property_var_p + colon_1;
+
+        addTestRow(
+                required_property_var_p_colon_1,
+                ParseResult{
+                        true,
+                        diagnosticMsg("Required properties with initializer do not make sense.") });
+
+        // TODO cover other rules related to initialization of required properties
+    }
+
+    //---------------------------- Final properties ---------------------------------------------
+    {
+        const Phrase final = { Token::T_FINAL };
+        const Phrase final_property_var_p = final + property_var_p;
+
+        addTestRow(final_property_var_p, perfectParseResult);
+
+        const Phrase final_property_var_p_colon_1 = final_property_var_p + colon_1;
+        addTestRow(final_property_var_p_colon_1, perfectParseResult);
+    }
+
+    //---------------------------- Stacking property attributes -----------------------------------
+    {
+        const Phrase final = { Token::T_FINAL };
+        const Phrase default_ = { Token::T_DEFAULT };
+        const Phrase readonly = { Token::T_READONLY };
+        const Phrase required = { Token::T_REQUIRED };
+
+        // final +
+        addTestRow(final + default_ + property_var_p, perfectParseResult);
+        // readonly props require an initializer
+        addTestRow(final + readonly + property_var_p + colon_1, perfectParseResult);
+        addTestRow(final + required + property_var_p, perfectParseResult);
+
+        // default +
+        addTestRow(default_ + final + property_var_p, perfectParseResult);
+        addTestRow(default_ + required + property_var_p, perfectParseResult);
+        /* default + readonly is contradictory because readonly prevents external assignment,
+         * while default implies the property is the target for implicit
+         * external assignments - so a readonly property can't logically be the default */
+        addTestRow(default_ + readonly + property_var_p + colon_1,
+                   ParseResult{ true,
+                                diagnosticMsg("Readonly prevents re-assignment, hence there is no "
+                                              "use for default") });
+
+        // readonly +
+        addTestRow(readonly + final + property_var_p + colon_1, perfectParseResult);
+        // if property is readonly, a.k.a. already initialized, there is no use of marking it
+        // required
+        addTestRow(
+                readonly + required + property_var_p + colon_1,
+                ParseResult{
+                        true,
+                        diagnosticMsg("Required properties with initializer do not make sense.") });
+
+        // required +
+        addTestRow(required + final + property_var_p, perfectParseResult);
+        addTestRow(required + default_ + property_var_p, perfectParseResult);
+
+        addTestRow(final + required + default_ + property_var_p, perfectParseResult);
+    }
+}
+
+void tst_qqmlparser::propertyDeclarations()
+{
+    QFETCH(QString, propertyDeclaration);
+    QFETCH(ParseResult, expectedParseResult);
+
+    const ParseResult actualParseResult = parseAs(SyntaxKind::UiObjectMember, propertyDeclaration);
+
+    QCOMPARE(actualParseResult.success, expectedParseResult.success);
+
+    // For the purposes of these tests comparing only message and type is enough
+    QCOMPARE(actualParseResult.diagnosticMessage.type, expectedParseResult.diagnosticMessage.type);
+    QEXPECT_FAIL("default readonly property var p : 1 ", "A Warning is to be implemented",
+                 Continue);
+    QCOMPARE(actualParseResult.diagnosticMessage.message,
+             expectedParseResult.diagnosticMessage.message);
 }
 
 QTEST_MAIN(tst_qqmlparser)

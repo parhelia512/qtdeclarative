@@ -105,7 +105,8 @@ Disable the functionality that uses CMake, and remove the already watched paths 
 void QQmlCodeModel::disableCMakeCalls()
 {
     m_cmakeStatus = DoesNotHaveCMake;
-    m_cppFileWatcher.removePaths(m_cppFileWatcher.files());
+    if (const QStringList toRemove = m_cppFileWatcher.files(); !toRemove.isEmpty())
+        m_cppFileWatcher.removePaths(toRemove);
     QObject::disconnect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, nullptr, nullptr);
 }
 

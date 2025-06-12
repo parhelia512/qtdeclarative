@@ -136,6 +136,7 @@ public:
 
     QV4::PersistentValue v4Value;
     QQmlAnyBinding binding;
+    int none = 0;
 
 private:
     void silentDestroy(QQmlBindEntryKind oldKind)

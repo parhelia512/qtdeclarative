@@ -32,61 +32,77 @@
 
 QT_BEGIN_NAMESPACE
 
-class WorkerDataEvent : public QEvent
+enum class WorkerEventType
+{
+    Data = QEvent::User,
+    Load,
+    Remove,
+    Error,
+    Destroy = QEvent::User + 100,
+};
+
+class WorkerIdEvent : public QEvent
 {
 public:
-    enum Type { WorkerData = QEvent::User };
+    WorkerIdEvent(int workerId, WorkerEventType type)
+        : QEvent(QEvent::Type(type)), m_workerId(workerId)
+    {}
 
-    WorkerDataEvent(int workerId, const QByteArray &data);
-    virtual ~WorkerDataEvent();
-
-    int workerId() const;
-    QByteArray data() const;
+    int workerId() const { return m_workerId; }
 
 private:
-    int m_id;
+    int m_workerId = -1;
+};
+
+class WorkerDataEvent : public WorkerIdEvent
+{
+public:
+    WorkerDataEvent(int workerId, const QByteArray &data)
+        : WorkerIdEvent(workerId, WorkerEventType::Data), m_data(data)
+    {}
+
+    QByteArray data() const { return m_data; }
+
+private:
     QByteArray m_data;
 };
 
-class WorkerLoadEvent : public QEvent
+class WorkerLoadEvent : public WorkerIdEvent
 {
 public:
-    enum Type { WorkerLoad = WorkerDataEvent::WorkerData + 1 };
+    WorkerLoadEvent(int workerId, const QUrl &url)
+        : WorkerIdEvent(workerId, WorkerEventType::Load), m_url(url)
+    {}
 
-    WorkerLoadEvent(int workerId, const QUrl &url);
-
-    int workerId() const;
-    QUrl url() const;
+    QUrl url() const { return m_url; }
 
 private:
-    int m_id;
     QUrl m_url;
 };
 
-class WorkerRemoveEvent : public QEvent
+class WorkerRemoveEvent : public WorkerIdEvent
 {
 public:
-    enum Type { WorkerRemove = WorkerLoadEvent::WorkerLoad + 1 };
-
-    WorkerRemoveEvent(int workerId);
-
-    int workerId() const;
-
-private:
-    int m_id;
+    WorkerRemoveEvent(int workerId) : WorkerIdEvent(workerId, WorkerEventType::Remove) {}
 };
 
 class WorkerErrorEvent : public QEvent
 {
 public:
-    enum Type { WorkerError = WorkerRemoveEvent::WorkerRemove + 1 };
+    WorkerErrorEvent(const QQmlError &error)
+        : QEvent(QEvent::Type(WorkerEventType::Error)), m_error(error)
+    {}
 
-    WorkerErrorEvent(const QQmlError &error);
-
-    QQmlError error() const;
+    QQmlError error() const { return m_error; }
 
 private:
     QQmlError m_error;
+};
+
+class WorkerDestroyEvent : public QEvent
+{
+public:
+    WorkerDestroyEvent() : QEvent(QEvent::Type(WorkerEventType::Destroy)) {}
 };
 
 struct WorkerScript : public QV4::ExecutionEngine::Deletable
@@ -107,10 +123,6 @@ class QQuickWorkerScriptEnginePrivate : public QObject
 {
     Q_OBJECT
 public:
-    enum WorkerEventTypes {
-        WorkerDestroyEvent = QEvent::User + 100
-    };
-
     QQuickWorkerScriptEnginePrivate(QQmlTypeLoader *typeLoader)
         : m_typeLoader(typeLoader), m_nextId(0)
     {
@@ -163,18 +175,18 @@ QV4::ReturnedValue QQuickWorkerScriptEnginePrivate::method_sendMessage(const QV4
 
 bool QQuickWorkerScriptEnginePrivate::event(QEvent *event)
 {
-    if (event->type() == (QEvent::Type)WorkerDataEvent::WorkerData) {
+    switch (WorkerEventType(event->type())) {
+    case WorkerEventType::Data: {
         WorkerDataEvent *workerEvent = static_cast<WorkerDataEvent *>(event);
         processMessage(workerEvent->workerId(), workerEvent->data());
         return true;
-    } else if (event->type() == (QEvent::Type)WorkerLoadEvent::WorkerLoad) {
+    }
+    case WorkerEventType::Load: {
         WorkerLoadEvent *workerEvent = static_cast<WorkerLoadEvent *>(event);
         processLoad(workerEvent->workerId(), workerEvent->url());
         return true;
-    } else if (event->type() == (QEvent::Type)WorkerDestroyEvent) {
-        emit stopThread();
-        return true;
-    } else if (event->type() == (QEvent::Type)WorkerRemoveEvent::WorkerRemove) {
+    }
+    case WorkerEventType::Remove: {
         QMutexLocker locker(&m_lock);
         WorkerRemoveEvent *workerEvent = static_cast<WorkerRemoveEvent *>(event);
         auto itr = workers.constFind(workerEvent->workerId());
@@ -184,9 +196,15 @@ bool QQuickWorkerScriptEnginePrivate::event(QEvent *event)
             workers.erase(itr);
         }
         return true;
-    } else {
-        return QObject::event(event);
     }
+    case WorkerEventType::Destroy:
+        emit stopThread();
+        return true;
+    default:
+        break;
+    }
+
+    return QObject::event(event);
 }
 
 QV4::ExecutionEngine *QQuickWorkerScriptEnginePrivate::workerEngine(int id)
@@ -285,60 +303,6 @@ void QQuickWorkerScriptEnginePrivate::reportScriptException(WorkerScript *script
         QCoreApplication::postEvent(script->owner, new WorkerErrorEvent(error));
 }
 
-WorkerDataEvent::WorkerDataEvent(int workerId, const QByteArray &data)
-: QEvent((QEvent::Type)WorkerData), m_id(workerId), m_data(data)
-{
-}
-
-WorkerDataEvent::~WorkerDataEvent()
-{
-}
-
-int WorkerDataEvent::workerId() const
-{
-    return m_id;
-}
-
-QByteArray WorkerDataEvent::data() const
-{
-    return m_data;
-}
-
-WorkerLoadEvent::WorkerLoadEvent(int workerId, const QUrl &url)
-: QEvent((QEvent::Type)WorkerLoad), m_id(workerId), m_url(url)
-{
-}
-
-int WorkerLoadEvent::workerId() const
-{
-    return m_id;
-}
-
-QUrl WorkerLoadEvent::url() const
-{
-    return m_url;
-}
-
-WorkerRemoveEvent::WorkerRemoveEvent(int workerId)
-: QEvent((QEvent::Type)WorkerRemove), m_id(workerId)
-{
-}
-
-int WorkerRemoveEvent::workerId() const
-{
-    return m_id;
-}
-
-WorkerErrorEvent::WorkerErrorEvent(const QQmlError &error)
-: QEvent((QEvent::Type)WorkerError), m_error(error)
-{
-}
-
-QQmlError WorkerErrorEvent::error() const
-{
-    return m_error;
-}
-
 QQuickWorkerScriptEngine::QQuickWorkerScriptEngine(QQmlEngine *parent)
     : QThread(parent)
     , d(new QQuickWorkerScriptEnginePrivate(&QQmlEnginePrivate::get(parent)->typeLoader))
@@ -352,7 +316,7 @@ QQuickWorkerScriptEngine::QQuickWorkerScriptEngine(QQmlEngine *parent)
 
 QQuickWorkerScriptEngine::~QQuickWorkerScriptEngine()
 {
-    QCoreApplication::postEvent(d, new QEvent((QEvent::Type)QQuickWorkerScriptEnginePrivate::WorkerDestroyEvent));
+    QCoreApplication::postEvent(d, new WorkerDestroyEvent);
 
     //We have to force to cleanup the main thread's event queue here
     //to make sure the main GUI release all pending locks/wait conditions which
@@ -637,21 +601,25 @@ void QQuickWorkerScript::componentComplete()
 
 bool QQuickWorkerScript::event(QEvent *event)
 {
-    if (event->type() == (QEvent::Type)WorkerDataEvent::WorkerData) {
+    switch (WorkerEventType(event->type())) {
+    case WorkerEventType::Data:
         if (QQmlEngine *engine = qmlEngine(this)) {
             QV4::ExecutionEngine *v4 = engine->handle();
             WorkerDataEvent *workerEvent = static_cast<WorkerDataEvent *>(event);
             emit message(QJSValuePrivate::fromReturnedValue(
-                             QV4::Serialize::deserialize(workerEvent->data(), v4)));
+                    QV4::Serialize::deserialize(workerEvent->data(), v4)));
         }
         return true;
-    } else if (event->type() == (QEvent::Type)WorkerErrorEvent::WorkerError) {
+    case WorkerEventType::Error: {
         WorkerErrorEvent *workerEvent = static_cast<WorkerErrorEvent *>(event);
         QQmlEnginePrivate::warning(qmlEngine(this), workerEvent->error());
         return true;
-    } else {
-        return QObject::event(event);
     }
+    default:
+        break;
+    }
+
+    return QObject::event(event);
 }
 
 QT_END_NAMESPACE

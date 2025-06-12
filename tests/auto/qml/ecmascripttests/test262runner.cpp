@@ -20,6 +20,8 @@
 #include <QtCore/QLoggingCategory>
 #include <private/qv4script_p.h>
 
+DEFINE_BOOL_CONFIG_OPTION(useThreads, QML_TEST262_USE_THREADS);
+
 using namespace Qt::StringLiterals;
 
 static const char *excludedFeatures[] = {
@@ -451,8 +453,12 @@ bool Test262Runner::run()
 
     if (command.isEmpty()) {
 #if QT_CONFIG(process)
-        createProcesses();
-        loop.exec();
+        if (useThreads()) {
+            runWithThreadPool();
+        } else {
+            createProcesses();
+            loop.exec();
+        }
 #else
         runWithThreadPool();
 #endif

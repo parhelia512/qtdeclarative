@@ -1592,15 +1592,8 @@ DEFINE_OBJECT_VTABLE(QObjectWrapper);
 
 namespace {
 
-template<typename A, typename B, typename C, typename D, typename E, typename F, typename G>
-class MaxSizeOf7 {
-    template<typename Z, typename X>
-    struct SMax {
-        char dummy[sizeof(Z) > sizeof(X) ? sizeof(Z) : sizeof(X)];
-    };
-public:
-    static const size_t Size = sizeof(SMax<A, SMax<B, SMax<C, SMax<D, SMax<E, SMax<F, G> > > > > >);
-};
+template<typename... Types>
+constexpr std::size_t MaxSizeOfN = (std::max)({sizeof(Types)...});
 
 struct CallArgument {
     Q_DISABLE_COPY_MOVE(CallArgument);
@@ -1639,13 +1632,13 @@ private:
         std::vector<QModelIndex> *stdVectorQModelIndexPtr;
 #endif
 
-        char allocData[MaxSizeOf7<QVariant,
+        char allocData[MaxSizeOfN<QVariant,
                                   QString,
                                   QList<QObject *>,
                                   QJSValue,
                                   QJsonArray,
                                   QJsonObject,
-                                  QJsonValue>::Size];
+                                  QJsonValue>];
         qint64 q_for_alignment;
     };
 

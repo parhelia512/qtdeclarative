@@ -350,10 +350,8 @@ Heap::Module *ExecutableCompilationUnit::instantiate()
     if (isESModule())
         setModule(module->d());
 
-    const QStringList moduleRequests = m_compilationUnit->moduleRequests();
-    for (const QString &request: moduleRequests) {
-        const QUrl url(request);
-        const auto dependentModuleUnit = engine->loadModule(url, this);
+    for (uint i = 0, end = data->moduleRequestTableSize; i < end; ++i) {
+        const auto dependentModuleUnit = dependentModule(urlAt(data->moduleRequestTable()[i]));
         if (engine->hasException)
             return nullptr;
         if (dependentModuleUnit)
@@ -369,10 +367,9 @@ Heap::Module *ExecutableCompilationUnit::instantiate()
     }
     for (uint i = 0; i < importCount; ++i) {
         const CompiledData::ImportEntry &entry = data->importEntryTable()[i];
-        QUrl url = urlAt(entry.moduleRequest);
         importName = runtimeStrings[entry.importName];
 
-        if (const auto module = engine->loadModule(url, this)) {
+        if (const auto module = dependentModule(urlAt(entry.moduleRequest))) {
             const Value *valuePtr = module->resolveExport(importName);
             if (!valuePtr) {
                 QString referenceErrorMessage = QStringLiteral("Unable to resolve import reference ");
@@ -397,9 +394,9 @@ Heap::Module *ExecutableCompilationUnit::instantiate()
 
     for (uint i = 0; i < data->indirectExportEntryTableSize; ++i) {
         const CompiledData::ExportEntry &entry = data->indirectExportEntryTable()[i];
-        if (auto dependentModule = engine->loadModule(urlAt(entry.moduleRequest), this)) {
+        if (auto module = dependentModule(urlAt(entry.moduleRequest))) {
             ScopedString importName(scope, runtimeStrings[entry.importName]);
-            if (!dependentModule->resolveExport(importName)) {
+            if (!module->resolveExport(importName)) {
                 throwReferenceError(entry, importName->toQString());
                 return nullptr;
             }
@@ -444,10 +441,9 @@ const Value *ExecutableCompilationUnit::resolveExportRecursively(
 
     if (auto indirectExport = lookupNameInExportTable(
                 data->indirectExportEntryTable(), data->indirectExportEntryTableSize, exportName)) {
-        QUrl request = urlAt(indirectExport->moduleRequest);
-        if (auto dependentModule = engine->loadModule(request, this)) {
+        if (auto module = dependentModule(urlAt(indirectExport->moduleRequest))) {
             ScopedString importName(scope, runtimeStrings[indirectExport->importName]);
-            return dependentModule->resolveExportRecursively(importName, resolveSet);
+            return module->resolveExportRecursively(importName, resolveSet);
         }
         return nullptr;
     }
@@ -459,10 +455,9 @@ const Value *ExecutableCompilationUnit::resolveExportRecursively(
 
     for (uint i = 0; i < data->starExportEntryTableSize; ++i) {
         const CompiledData::ExportEntry &entry = data->starExportEntryTable()[i];
-        QUrl request = urlAt(entry.moduleRequest);
         const Value *resolution = nullptr;
-        if (auto dependentModule = engine->loadModule(request, this))
-            resolution = dependentModule->resolveExportRecursively(exportName, resolveSet);
+        if (auto module = dependentModule(urlAt(entry.moduleRequest)))
+            resolution = module->resolveExportRecursively(exportName, resolveSet);
 
         // ### handle ambiguous
         if (resolution) {
@@ -521,8 +516,8 @@ void ExecutableCompilationUnit::getExportedNamesRecursively(
 
     for (uint i = 0; i < data->starExportEntryTableSize; ++i) {
         const CompiledData::ExportEntry &entry = data->starExportEntryTable()[i];
-        if (auto dependentModule = engine->loadModule(urlAt(entry.moduleRequest), this)) {
-            dependentModule->getExportedNamesRecursively(
+        if (auto module = dependentModule(urlAt(entry.moduleRequest))) {
+            module->getExportedNamesRecursively(
                     names, exportNameSet, /*includeDefaultExport*/false);
         }
     }
@@ -541,15 +536,15 @@ void ExecutableCompilationUnit::evaluateModuleRequests()
 {
     Q_ASSERT(engine);
 
-    const QStringList moduleRequests = m_compilationUnit->moduleRequests();
-    for (const QString &request: moduleRequests) {
-        auto dependentModule = engine->loadModule(QUrl(request), this);
+    const CompiledData::Unit *data = unitData();
+    for (uint i = 0, end = data->moduleRequestTableSize; i < end; ++i) {
+        auto module = dependentModule(urlAt(data->moduleRequestTable()[i]));
 
         if (engine->hasException)
             return;
 
-        Q_ASSERT(dependentModule);
-        dependentModule->evaluate();
+        Q_ASSERT(module);
+        module->evaluate();
         if (engine->hasException)
             return;
     }

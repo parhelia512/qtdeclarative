@@ -221,6 +221,23 @@ public:
                 : nullptr;
     }
 
+    template<typename Engine = ExecutionEngine>
+    QQmlRefPointer<ExecutableCompilationUnit> dependentModule(const QUrl &relative) const
+    {
+        auto cu = static_cast<Engine *>(engine)->loadModule(relative, this);
+
+        // Make sure that this is actually a dependent script.
+        // Otherwise we cannot guarantee that it's available.
+        Q_ASSERT(cu);
+        Q_ASSERT(std::any_of(m_compilationUnit->dependentScripts.cbegin(),
+                             m_compilationUnit->dependentScripts.cend(),
+                             [&](const auto &dependentScript) {
+            return dependentScript->url == cu->finalUrl();
+        }));
+
+        return cu;
+    }
+
     void populate();
     void clear();
 

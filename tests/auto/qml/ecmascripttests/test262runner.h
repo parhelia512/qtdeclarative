@@ -4,13 +4,16 @@
 #ifndef TEST262RUNNER_H
 #define TEST262RUNNER_H
 
-#include <qeventloop.h>
-#include <qmap.h>
-#include <qmutex.h>
-#include <qprocess.h>
-#include <qqueue.h>
-#include <qset.h>
-#include <qthreadpool.h>
+#include <QtCore/qeventloop.h>
+#include <QtCore/qmap.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qqueue.h>
+#include <QtCore/qset.h>
+#include <QtCore/qthreadpool.h>
+
+#if QT_CONFIG(process)
+#include <QtCore/qprocess.h>
+#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -116,7 +119,7 @@ class Test262Runner : public QObject
     Q_OBJECT
 
 public:
-    Test262Runner(const QString &command, const QString &testDir, const QString &expectationsFile);
+    Test262Runner(const QString &testDir, const QString &expectationsFile);
     ~Test262Runner();
 
     enum Mode {
@@ -137,7 +140,6 @@ public:
 
     void setFilter(const QString &f) { filter = f; }
 
-    void cat();
     bool run();
 
     bool report();
@@ -156,14 +158,6 @@ private:
 
     void runWithThreadPool();
 
-    void runAsExternalTests();
-    void createProcesses();
-    void assignTaskOrTerminate(int processIndex);
-    void assignSloppy(int processIndex);
-    void assignStrict(int processIndex);
-    void sendDone(int processIndex);
-    QString readUntilNull(QProcess &p);
-
     TestData getTestData(const TestCase &testCase);
     void parseYaml(const QByteArray &content, TestData *data);
 
@@ -171,7 +165,20 @@ private:
 
     void addResult(const TestData &result);
 
-    QString command;
+#if QT_CONFIG(process)
+    void assignTaskOrTerminate(int processIndex);
+    void assignSloppy(int processIndex);
+    void assignStrict(int processIndex);
+    void sendDone(int processIndex);
+    void createProcesses();
+
+    std::vector<std::unique_ptr<QProcess>> processes;
+    QQueue<TestData> tasks;
+    QHash<int, TestData> currentTasks;
+    QEventLoop loop;
+    int runningCount = 0;
+#endif
+
     QString testDir;
     QString expectationsFile;
     int flags = 0;
@@ -183,12 +190,6 @@ private:
 
     QThreadPool *threadPool = nullptr;
     QMutex mutex;
-
-    QEventLoop loop;
-    std::vector<std::unique_ptr<QProcess>> processes;
-    int runningCount = 0;
-    QQueue<TestData> tasks;
-    QHash<int, TestData> currentTasks;
 };
 
 QT_END_NAMESPACE

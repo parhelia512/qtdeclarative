@@ -156,10 +156,9 @@ if(QT_FEATURE_private_tests)
     add_subdirectory(qv4identifiertable)
     add_subdirectory(qv4regexp)
     add_subdirectory(qv4urlobject)
-    if(QT_FEATURE_process              # TODO: Why?
-            AND QT_FEATURE_qml_network # Needs QQmlNetworkAccessManagerFactory
-            AND NOT QNX                # Extremely slow
-            AND NOT (ANDROID           # Weird compiler bug
+    if(QT_FEATURE_qml_network # Needs QQmlNetworkAccessManagerFactory
+            AND NOT QNX       # Extremely slow
+            AND NOT (ANDROID  # Weird compiler bug
                 AND CLANG
                 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0.0"
                 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0.0"))

@@ -28,7 +28,9 @@
 #include <QtNetwork/qnetworkaccessmanager.h>
 #include <QtNetwork/qnetworkreply.h>
 
+#if QT_CONFIG(process)
 DEFINE_BOOL_CONFIG_OPTION(useThreads, QML_TEST262_USE_THREADS);
+#endif
 
 using namespace Qt::StringLiterals;
 
@@ -141,8 +143,8 @@ void TestCase::Result::diagnose(const QString &test, const QString &mode, State 
     }
 }
 
-Test262Runner::Test262Runner(const QString &command, const QString &dir, const QString &expectationsFile)
-    : command(command), testDir(dir), expectationsFile(expectationsFile)
+Test262Runner::Test262Runner(const QString &dir, const QString &expectationsFile)
+    : testDir(dir), expectationsFile(expectationsFile)
 {
     if (testDir.endsWith(QLatin1Char('/')))
         testDir = testDir.chopped(1);
@@ -154,17 +156,7 @@ Test262Runner::~Test262Runner()
         delete threadPool;
 }
 
-void Test262Runner::cat()
-{
-    if (!loadTests())
-        return;
-
-    if (testCases.size() != 1)
-        qWarning() << "test262 --cat: Ambiguous test case, using" << testCases.begin().key();
-    TestData data = getTestData(testCases.begin().value());
-    printf("%s", data.content.constData());
-}
-
+#if QT_CONFIG(process)
 void Test262Runner::assignTaskOrTerminate(int processIndex)
 {
     if (tasks.isEmpty()) {
@@ -299,6 +291,7 @@ void Test262Runner::createProcesses()
         p.start();
     }
 }
+#endif
 
 class SingleTest : public QRunnable
 {
@@ -535,31 +528,27 @@ bool Test262Runner::run()
     if (flags & WithTestExpectations)
         loadTestExpectations();
 
-    for (auto it = testCases.constBegin(); it != testCases.constEnd(); ++it) {
-        auto c = it.value();
-        if (!c.skipTestCase) {
-            TestData data = getTestData(c);
-            if (data.isExcluded || data.async)
-                continue;
-
-            tasks.append(data);
-        }
-    }
-
-    if (command.isEmpty()) {
 #if QT_CONFIG(process)
-        if (useThreads()) {
-            runWithThreadPool();
-        } else {
-            createProcesses();
-            loop.exec();
-        }
-#else
+    if (useThreads()) {
         runWithThreadPool();
-#endif
     } else {
-        runAsExternalTests();
+        for (auto it = testCases.constBegin(); it != testCases.constEnd(); ++it) {
+            auto c = it.value();
+            if (!c.skipTestCase) {
+                TestData data = getTestData(c);
+                if (data.isExcluded || data.async)
+                    continue;
+
+                tasks.append(data);
+            }
+        }
+
+        createProcesses();
+        loop.exec();
     }
+#else
+    runWithThreadPool();
+#endif
 
     const bool testsOk = report();
 
@@ -917,54 +906,27 @@ void Test262Runner::writeTestExpectations()
         qWarning() << "Could not write new TestExpectations file at" << expectationsFile;
 }
 
-void Test262Runner::runAsExternalTests()
-{
-    for (TestData &testData : tasks) {
-        auto runTest = [&] (const char *header, TestCase::Result *result) {
-            QTemporaryFile tempFile;
-            if (!tempFile.open()) {
-                qFatal("Could not open temporary test data file: %s",
-                       qPrintable(tempFile.errorString()));
-            }
-            tempFile.write(header);
-            tempFile.write(testData.content);
-            tempFile.close();
-
-            QProcess process;
-            process.start(command, QStringList(tempFile.fileName()));
-            if (!process.waitForFinished(-1) || process.error() == QProcess::FailedToStart) {
-                qWarning() << "Could not execute" << command;
-                *result = TestCase::Result(TestCase::Crashes);
-            }
-            if (process.exitStatus() != QProcess::NormalExit) {
-                *result = TestCase::Result(TestCase::Crashes);
-            }
-            bool ok = (process.exitCode() == EXIT_SUCCESS);
-            if (testData.negative)
-                ok = !ok;
-            *result = ok ? TestCase::Result(TestCase::Passes)
-                         : TestCase::Result(TestCase::Fails, process.readAllStandardError());
-        };
-
-        if (testData.runInSloppyMode)
-            runTest("", &testData.sloppyResult);
-        if (testData.runInStrictMode)
-            runTest("'use strict';\n", &testData.strictResult);
-
-        addResult(testData);
-    }
-}
-
 void Test262Runner::addResult(const TestData &result)
 {
-    {
-#if !QT_CONFIG(process)
-        QMutexLocker locker(&mutex);
-#endif
+    const auto addResultToTestCases = [this](const TestData &result) {
         Q_ASSERT(result.strictExpectation.state == testCases[result.test].strictExpectation.state);
         Q_ASSERT(result.sloppyExpectation.state == testCases[result.test].sloppyExpectation.state);
         testCases[result.test] = result;
+    };
+
+#if QT_CONFIG(process)
+    if (useThreads()) {
+        QMutexLocker locker(&mutex);
+        addResultToTestCases(result);
+    } else {
+        addResultToTestCases(result);
     }
+#else
+    {
+        QMutexLocker locker(&mutex);
+        addResultToTestCases(result);
+    }
+#endif
 
     if (!(flags & Verbose))
         return;

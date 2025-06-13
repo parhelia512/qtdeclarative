@@ -2048,77 +2048,6 @@ ReturnedValue ExecutionEngine::global()
     return globalObject->asReturnedValue();
 }
 
-QQmlRefPointer<ExecutableCompilationUnit> ExecutionEngine::compileModule(const QUrl &url)
-{
-    QQmlMetaType::CachedUnitLookupError cacheError = QQmlMetaType::CachedUnitLookupError::NoError;
-    const DiskCacheOptions options = diskCacheOptions();
-
-    QQmlRefPointer<ExecutableCompilationUnit> cu;
-
-    if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (options & DiskCache::Aot)
-            ? QQmlMetaType::findCachedCompilationUnit(
-                url,
-                (options & DiskCache::AotByteCode)
-                    ? QQmlMetaType::AcceptUntyped
-                    : QQmlMetaType::RequireFullyTyped,
-                &cacheError)
-            : nullptr) {
-        cu = executableCompilationUnit(
-                QQml::makeRefPointer<QV4::CompiledData::CompilationUnit>(
-                        cachedUnit->qmlData, cachedUnit->aotCompiledFunctions, url.fileName(),
-                        url.toString()));
-    } else {
-
-        QFile f(QQmlFile::urlToLocalFileOrQrc(url));
-        if (!f.open(QIODevice::ReadOnly)) {
-            throwError(QStringLiteral("Could not open module %1 for reading").arg(url.toString()));
-            return nullptr;
-        }
-
-        const QDateTime timeStamp = QFileInfo(f).lastModified();
-
-        const QString sourceCode = QString::fromUtf8(f.readAll());
-        f.close();
-
-        cu = compileModule(url, sourceCode, timeStamp);
-    }
-
-    const auto baseCompilationUnit = cu->baseCompilationUnit();
-    const auto data = cu->unitData();
-    for (uint i = 0, end = data->moduleRequestTableSize; i < end; ++i) {
-        cu->baseCompilationUnit()->dependentScripts.append(scriptDataForDependency(
-                loadModule(cu->urlAt(data->moduleRequestTable()[i]), cu.data())));
-    }
-
-    // Only register with the type registry when the dependentScripts are ready!
-    // Otherwise we get thread safety problems.
-    baseCompilationUnit->qmlType = QQmlMetaType::findCompositeType(
-            url, baseCompilationUnit, QQmlMetaType::JavaScript);
-    QQmlMetaType::registerInternalCompositeType(baseCompilationUnit);
-
-    return cu;
-}
-
-
-QQmlRefPointer<ExecutableCompilationUnit> ExecutionEngine::compileModule(
-        const QUrl &url, const QString &sourceCode, const QDateTime &sourceTimeStamp)
-{
-    QList<QQmlJS::DiagnosticMessage> diagnostics;
-    auto unit = Compiler::Codegen::compileModule(/*debugMode*/debugger() != nullptr, url.toString(),
-                                                 sourceCode, sourceTimeStamp, &diagnostics);
-    for (const QQmlJS::DiagnosticMessage &m : diagnostics) {
-        if (m.isError()) {
-            throwSyntaxError(m.message, url.toString(), m.loc.startLine, m.loc.startColumn);
-            return nullptr;
-        } else {
-            qWarning() << url << ':' << m.loc.startLine << ':' << m.loc.startColumn
-                      << ": warning: " << m.message;
-        }
-    }
-
-    return insertCompilationUnit(std::move(unit));
-}
-
 QQmlRefPointer<ExecutableCompilationUnit> ExecutionEngine::compilationUnitForUrl(const QUrl &url) const
 {
     // Gives the _most recently inserted_ CU of that URL. That's what we want.
@@ -2176,21 +2105,14 @@ void ExecutionEngine::trimCompilationUnitsForUrl(const QUrl &url)
     }
 }
 
-QQmlRefPointer<QQmlScriptData> ExecutionEngine::scriptDataForDependency(
-        const ExecutionEngine::Module &dependency)
-{
-    QQmlRefPointer<QQmlScriptData> scriptData(
-            new QQmlScriptData, QQmlRefPointer<QQmlScriptData>::Adopt);
-    scriptData->url = dependency->finalUrl();
-    scriptData->urlString = dependency->finalUrlString();
-    scriptData->m_precompiledScript = dependency->baseCompilationUnit();
-    return scriptData;
-}
-
-template<typename NotFound>
-ExecutionEngine::Module doFindModule(
-        const QMultiHash<QUrl, QQmlRefPointer<ExecutableCompilationUnit>> &compilationUnits,
-        const QUrl &url, const ExecutableCompilationUnit *referrer, NotFound &&notFound)
+/*!
+ * Returns any _existing_ module for the given \a url and \a referrer. This
+ * does not actually load anything. You must guarantee the existence of the
+ * module by keeping a (direct or indirect) reference to it somewhere, or you
+ * must live with a possible nullptr being returned.
+ */
+ExecutionEngine::Module ExecutionEngine::moduleForUrl(
+        const QUrl &url, const ExecutableCompilationUnit *referrer)
 {
     QUrl resolved = referrer
             ? referrer->finalUrl().resolved(QQmlMetaType::normalizedUrl(url))
@@ -2198,36 +2120,52 @@ ExecutionEngine::Module doFindModule(
     if (!resolved.path().endsWith(QLatin1String(".mjs")))
         resolved.setFragment(QLatin1String("module"));
 
-    auto existingModule = compilationUnits.constFind(resolved);
-    if (existingModule != compilationUnits.constEnd())
+    // Executable compilation unit already present in engine
+    auto existingModule = m_compilationUnits.constFind(resolved);
+    if (existingModule != m_compilationUnits.constEnd())
         return *existingModule;
 
+    // Also try with the relative url, to support native modules.
     if (resolved != url) {
-        // Also try with the relative url, to support native modules.
-        existingModule = compilationUnits.constFind(url);
-        if (existingModule != compilationUnits.constEnd())
+        existingModule = m_compilationUnits.constFind(url);
+        if (existingModule != m_compilationUnits.constEnd())
             return *existingModule;
     }
 
-    return notFound(resolved);
-}
+    // Compilation Unit present in QQmlMetaTypeData
+    if (auto cu = QQmlMetaType::obtainCompilationUnit(resolved))
+        return executableCompilationUnit(std::move(cu));
 
-ExecutionEngine::Module ExecutionEngine::moduleForUrl(
-        const QUrl &url, const ExecutableCompilationUnit *referrer) const
-{
-    return doFindModule(m_compilationUnits, url, referrer, [](const QUrl &) {
-        return Module();
-    });
-}
+    // Compilation Unit readily loadable from .qmlc file or binary
+    QQmlMetaType::CachedUnitLookupError cacheError = QQmlMetaType::CachedUnitLookupError::NoError;
+    const DiskCacheOptions options = diskCacheOptions();
+    if (const QQmlPrivate::CachedQmlUnit *cachedUnit = (options & DiskCache::Aot)
+                ? QQmlMetaType::findCachedCompilationUnit(
+                          resolved,
+                          (options & DiskCache::AotByteCode)
+                                  ? QQmlMetaType::AcceptUntyped
+                                  : QQmlMetaType::RequireFullyTyped,
+                          &cacheError)
+                : nullptr) {
+        const auto cu = executableCompilationUnit(
+                QQml::makeRefPointer<QV4::CompiledData::CompilationUnit>(
+                        cachedUnit->qmlData, cachedUnit->aotCompiledFunctions,
+                        resolved.fileName(), resolved.toString()));
+        const auto data = cu->unitData();
+        for (uint i = 0, end = data->moduleRequestTableSize; i < end; ++i) {
+            const auto dependency = moduleForUrl(cu->urlAt(data->moduleRequestTable()[i]), cu.data());
+            QQmlRefPointer<QQmlScriptData> scriptData(
+                    new QQmlScriptData, QQmlRefPointer<QQmlScriptData>::Adopt);
+            scriptData->url = dependency->finalUrl();
+            scriptData->urlString = dependency->finalUrlString();
+            scriptData->m_precompiledScript = dependency->baseCompilationUnit();
+            cu->baseCompilationUnit()->dependentScripts.append(std::move(scriptData));
+        }
+        return cu;
+    }
 
-ExecutionEngine::Module ExecutionEngine::loadModule(
-        const QUrl &url, const ExecutableCompilationUnit *referrer)
-{
-    return doFindModule(m_compilationUnits, url, referrer, [this](const QUrl &resolved) {
-        if (auto cu = QQmlMetaType::obtainCompilationUnit(resolved))
-            return executableCompilationUnit(std::move(cu));
-        return compileModule(resolved);
-    });
+    // Unavailable
+    return Module();
 }
 
 ExecutionEngine::Module ExecutionEngine::registerNativeModule(

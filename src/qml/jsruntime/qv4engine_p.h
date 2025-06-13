@@ -742,10 +742,6 @@ public:
 
     double localTZA = 0.0; // local timezone, initialized at startup
 
-    QQmlRefPointer<ExecutableCompilationUnit> compileModule(const QUrl &url);
-    QQmlRefPointer<ExecutableCompilationUnit> compileModule(
-            const QUrl &url, const QString &sourceCode, const QDateTime &sourceTimeStamp);
-
     QQmlRefPointer<ExecutableCompilationUnit> compilationUnitForUrl(const QUrl &url) const;
 
     QQmlRefPointer<ExecutableCompilationUnit> executableCompilationUnit(
@@ -765,8 +761,7 @@ public:
     using Module = QQmlRefPointer<ExecutableCompilationUnit>;
 
     Module registerNativeModule(const QUrl &url, const QV4::Value &value);
-    Module moduleForUrl(const QUrl &_url, const ExecutableCompilationUnit *referrer = nullptr) const;
-    Module loadModule(const QUrl &_url, const ExecutableCompilationUnit *referrer = nullptr);
+    Module moduleForUrl(const QUrl &_url, const ExecutableCompilationUnit *referrer = nullptr);
 
     DiskCacheOptions diskCacheOptions() const;
 
@@ -806,8 +801,6 @@ private:
     friend struct ExecutionEngineCallDepthRecorder;
 
     static void initializeStaticMembers();
-    static QQmlRefPointer<QQmlScriptData> scriptDataForDependency(
-            const ExecutionEngine::Module &dependency);
 
     bool inStack(const void *current) const
     {

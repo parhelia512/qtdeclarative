@@ -224,7 +224,7 @@ public:
     template<typename Engine = ExecutionEngine>
     QQmlRefPointer<ExecutableCompilationUnit> dependentModule(const QUrl &relative) const
     {
-        auto cu = static_cast<Engine *>(engine)->loadModule(relative, this);
+        auto cu = static_cast<Engine *>(engine)->moduleForUrl(relative, this);
 
         // Make sure that this is actually a dependent script.
         // Otherwise we cannot guarantee that it's available.

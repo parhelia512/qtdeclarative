@@ -20,6 +20,8 @@
 #include <QtCore/qscopedvaluerollback.h>
 #include <QtCore/qstring.h>
 
+QT_BEGIN_NAMESPACE
+
 using namespace QV4;
 using namespace QQmlJS;
 
@@ -239,3 +241,5 @@ Script *Script::createFromFileOrCache(
     result->parse();
     return result;
 }
+
+QT_END_NAMESPACE

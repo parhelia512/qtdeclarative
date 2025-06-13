@@ -1667,7 +1667,7 @@ QMLFutureReservedWord: T_PACKAGE | T_ABSTRACT | T_INTERFACE | T_IMPLEMENTS | T_P
 
 --- QMLReserved means can't be used as QmlIdentifier
 --- todo: consider making all QMLContextualKeyword-s reserved ones or the other way around
-QMLReservedWord: T_STATIC | T_AS | T_REQUIRED | T_FINAL
+QMLReservedWord: T_STATIC | T_AS | T_FINAL
                 | QMLFutureReservedWord;
 
 --- 262 ES 7 11.6.2.1

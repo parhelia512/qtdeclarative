@@ -40,9 +40,6 @@ struct Q_QML_EXPORT Script
             const QString &source, QList<QQmlError> *reportedErrors = nullptr,
             QV4::Compiler::ContextType contextType = QV4::Compiler::ContextType::Global,
             InheritContext inheritContext = InheritContext::No);
-    static Script *createFromFileOrCache(
-            ExecutionEngine *engine, QmlContext *qmlContext, const QString &fileName,
-            const QUrl &originalUrl, QString *error);
 
     Script(
             ExecutionContext *scope, QV4::Compiler::ContextType mode, const QString &sourceCode,

@@ -1734,8 +1734,6 @@ Type: SimpleType;
 SimpleType: T_VAR;
 /.  case $rule_number: Q_FALLTHROUGH(); ./
 SimpleType: T_VOID;
-/.  case $rule_number: Q_FALLTHROUGH(); ./
-SimpleType: T_FINAL;
 /.
     case $rule_number: {
         AST::UiQualifiedId *id = new (pool) AST::UiQualifiedId(stringRef(1));

@@ -790,7 +790,7 @@ void TestQmllint::dirtyQmlCode_data()
             << Result{ { { "Cannot assign literal of type string to int"_L1 } } };
     QTest::newRow("badEnumFromQtQml")
             << QStringLiteral("badEnumFromQtQml.qml")
-            << Result{ { { "Member \"Linear123\" not found on type \"QQmlEasingEnums\""_L1,
+            << Result{ { { "Member \"Linear123\" not found on type \"QQmlEasing\""_L1,
                            4, 30 } } };
     QTest::newRow("badGeneralizedGroup1")
             << QStringLiteral("badGeneralizedGroup1.qml")

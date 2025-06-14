@@ -449,9 +449,24 @@ void QQmlMarginsValueType::setBottom(int bottom)
 }
 
 #if QT_CONFIG(easingcurve)
-QQmlEasingEnums::Type QQmlEasingValueType::type() const
+qreal QQmlEasing::valueForProgress(Type type, qreal progress) const
 {
-    return (QQmlEasingEnums::Type)QEasingCurve::type();
+    return QEasingCurve(static_cast<QEasingCurve::Type>(type)).valueForProgress(progress);
+}
+
+QQmlEasingValueType::QQmlEasingValueType(QQmlEasing::Type type)
+    : QEasingCurve(static_cast<QEasingCurve::Type>(type))
+{
+}
+
+qreal QQmlEasingValueType::valueForProgress(qreal progress)
+{
+    return QEasingCurve::valueForProgress(progress);
+}
+
+QQmlEasing::Type QQmlEasingValueType::type() const
+{
+    return (QQmlEasing::Type)QEasingCurve::type();
 }
 
 qreal QQmlEasingValueType::amplitude() const
@@ -469,7 +484,7 @@ qreal QQmlEasingValueType::period() const
     return QEasingCurve::period();
 }
 
-void QQmlEasingValueType::setType(QQmlEasingEnums::Type type)
+void QQmlEasingValueType::setType(QQmlEasing::Type type)
 {
     QEasingCurve::setType((QEasingCurve::Type)type);
 }

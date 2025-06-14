@@ -283,7 +283,7 @@ void QQmlTypeLoader::loadWithStaticDataThread(const QQmlDataBlob::Ptr &blob, con
 {
     ASSERT_LOADTHREAD();
 
-    setData(blob, data);
+    setData(blob, data, DataOrigin::Static);
 }
 
 void QQmlTypeLoader::loadWithCachedUnitThread(const QQmlDataBlob::Ptr &blob, const QQmlPrivate::CachedQmlUnit *unit)
@@ -378,7 +378,7 @@ void QQmlTypeLoader::networkReplyFinished(QNetworkReply *reply)
         blob->networkError(reply->error());
     } else {
         QByteArray data = reply->readAll();
-        setData(blob, data);
+        setData(blob, data, DataOrigin::Device);
     }
 }
 
@@ -430,13 +430,23 @@ void QQmlTypeLoader::initializeEngine(QQmlExtensionInterface *iface, const char 
     doInitializeEngine(iface, thread(), &m_data, uri);
 }
 
-void QQmlTypeLoader::setData(const QQmlDataBlob::Ptr &blob, const QByteArray &data)
+/*!
+ * \internal
+ * Use the given \a data as source code for the given \a blob. \a origin states where the \a data
+ * came from and what we can do with it. DataOrigin::Static means that it's arbitrary static data
+ * passed by the user. We shall not produce a .qmlc file for it and we shall disregard any existing
+ * compilation units. DataOrigin::Device means that it was loaded from a file or other device and
+ * can be assumed to remain the same. We can use any caching mechanism to load a compilation unit
+ * for it and we can produce a .qmlc file for it.
+ */
+void QQmlTypeLoader::setData(const QQmlDataBlob::Ptr &blob, const QByteArray &data, DataOrigin origin)
 {
     ASSERT_LOADTHREAD();
 
     QQmlDataBlob::SourceCodeData d;
     d.inlineSourceCode = QString::fromUtf8(data);
     d.hasInlineSourceCode = true;
+    d.hasStaticData = (origin == DataOrigin::Static);
     setData(blob, d);
 }
 

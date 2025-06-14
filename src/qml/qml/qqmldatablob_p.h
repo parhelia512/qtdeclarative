@@ -88,7 +88,7 @@ public:
         QDateTime sourceTimeStamp() const;
         bool exists() const;
         bool isEmpty() const;
-        bool isCacheable() const { return !hasInlineSourceCode; }
+        bool isCacheable() const { return !hasStaticData; }
         bool isValid() const
         {
             return hasInlineSourceCode || !fileInfo.filePath().isEmpty();
@@ -100,6 +100,7 @@ public:
         QString inlineSourceCode;
         QFileInfo fileInfo;
         bool hasInlineSourceCode = false;
+        bool hasStaticData = false;
     };
 
     template<typename Loader = QQmlTypeLoader>

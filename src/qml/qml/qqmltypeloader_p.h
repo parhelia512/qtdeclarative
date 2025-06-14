@@ -322,7 +322,8 @@ private:
     void networkReplyProgress(QNetworkReply *, qint64, qint64);
 #endif
 
-    void setData(const QQmlDataBlob::Ptr &, const QByteArray &);
+    enum class DataOrigin { Device, Static };
+    void setData(const QQmlDataBlob::Ptr &, const QByteArray &, DataOrigin);
     void setData(const QQmlDataBlob::Ptr &, const QString &fileName);
     void setData(const QQmlDataBlob::Ptr &, const QQmlDataBlob::SourceCodeData &);
     void setCachedUnit(const QQmlDataBlob::Ptr &blob, const QQmlPrivate::CachedQmlUnit *unit);

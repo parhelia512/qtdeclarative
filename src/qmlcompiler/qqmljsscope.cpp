@@ -36,11 +36,6 @@ QQmlJSScope::QQmlJSScope(const QString &internalName) : QQmlJSScope{}
     m_internalName = internalName;
 }
 
-QQmlJSScope::Ptr QQmlJSScope::create(const QString &internalName)
-{
-    return QSharedPointer<QQmlJSScope>(new QQmlJSScope(internalName));
-}
-
 void QQmlJSScope::reparent(const QQmlJSScope::Ptr &parentScope, const QQmlJSScope::Ptr &childScope)
 {
     if (const QQmlJSScope::Ptr parent = childScope->m_parentScope.toStrongRef())

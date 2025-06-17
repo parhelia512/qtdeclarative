@@ -142,11 +142,6 @@ public:
         write(u"\n");
         return *this;
     }
-    LineWriter &space()
-    {
-        write(u" ");
-        return *this;
-    }
     LineWriter &write(QStringView v, TextAddType tType = TextAddType::Normal);
     void commitLine(const QString &eol, TextAddType t = TextAddType::Normal, int untilChar = -1);
     void flush();

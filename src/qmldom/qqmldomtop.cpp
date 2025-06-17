@@ -280,7 +280,7 @@ DomUniverse::LoadResult DomUniverse::load(const ContentWithDate &codeWithDate,
     } else if (fType == DomType::QmltypesFile) {
         auto qmltypesFile = std::make_shared<QmltypesFile>(canonicalPath, codeWithDate.content,
                                                            codeWithDate.date);
-        QmltypesReader reader(univ.copy(qmltypesFile));
+        QmltypesReader reader(qmltypesFile);
         reader.parse();
         return insertOrUpdateExternalItem(std::move(qmltypesFile));
     } else if (fType == DomType::QmldirFile) {

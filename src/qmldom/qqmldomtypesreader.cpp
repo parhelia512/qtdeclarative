@@ -181,14 +181,14 @@ void QmltypesReader::insertComponent(const QQmlJSScope::ConstPtr &jsScope,
     comp.setExtensionTypeName(jsScope->extensionTypeName());
     comp.setExtensionIsJavaScript(jsScope->extensionIsJavaScript());
     comp.setExtensionIsNamespace(jsScope->extensionIsNamespace());
-    Path exportSourcePath = qmltypesFile().canonicalPath();
+    Path exportSourcePath = qmltypesFilePtr()->canonicalPath();
     QMap<int, Path> revToPath;
     auto it = objects.end();
     auto begin = objects.begin();
     int objectIndex = 0;
     QList<int> metaRevs;
-    Path compPath = qmltypesFile()
-                            .canonicalPath()
+    Path compPath = qmltypesFilePtr()
+                            ->canonicalPath()
                             .withField(Fields::components)
                             .withKey(comp.name())
                             .withIndex(qmltypesFilePtr()->components().values(comp.name()).size());
@@ -261,7 +261,7 @@ bool QmltypesReader::parse()
 void QmltypesReader::addError(ErrorMessage &&message)
 {
     if (message.file.isEmpty())
-        message.file = qmltypesFile().canonicalFilePath();
+        message.file = qmltypesFilePtr()->canonicalFilePath();
     if (!message.path)
         message.path = m_currentPath;
     qmltypesFilePtr()->addErrorLocal(message.handle());

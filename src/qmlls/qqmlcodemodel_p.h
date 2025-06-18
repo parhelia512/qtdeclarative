@@ -126,7 +126,6 @@ public:
     QStringList findFilePathsFromFileNames(const QStringList &fileNames);
     static QStringList fileNamesToWatch(const QQmlJS::Dom::DomItem &qmlFile);
     void disableCMakeCalls();
-    const QFactoryLoader &pluginLoader() const { return m_pluginLoader; }
 
     RegisteredSemanticTokens &registeredTokens();
     const RegisteredSemanticTokens &registeredTokens() const;
@@ -170,7 +169,6 @@ private:
     QQmlToolingSharedSettings *m_settings;
     QQmllsBuildInformation m_buildInformation;
     QFileSystemWatcher m_cppFileWatcher;
-    QFactoryLoader m_pluginLoader;
     bool m_rebuildRequired = true; // always trigger a rebuild on start
     CMakeStatus m_cmakeStatus = RequiresInitialization;
     RegisteredSemanticTokens m_tokens;

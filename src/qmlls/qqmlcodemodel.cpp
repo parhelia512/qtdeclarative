@@ -95,8 +95,7 @@ QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
       m_validEnv(std::make_shared<DomEnvironment>(
               m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
       m_rootUrl(rootUrl),
-      m_settings(settings),
-      m_pluginLoader(QmlLSPluginInterface_iid, u"/qmlls"_s)
+      m_settings(settings)
 {
 }
 

@@ -597,6 +597,11 @@ QQuickPixmapReader::QQuickPixmapReader(QQmlEngine *eng)
 , accessManager(nullptr)
 #endif
 {
+    // Make sure the type loader exists before we start the thread.
+    // We might need it to create a network access manager and we must
+    // construct it from the engine thread.
+    engine->handle()->typeLoader();
+
     Q_DETACH_THREAD_AFFINITY_MARKER(m_readerThreadAffinityMarker);
 #if QT_CONFIG(quick_pixmap_cache_threaded_download)
     eventLoopQuitHack = new QObject;

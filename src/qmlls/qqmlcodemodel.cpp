@@ -89,11 +89,12 @@ worker thread (or more) that work on it exist.
 QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
                              QQmlToolingSharedSettings *settings)
     : QObject{ parent },
-      m_importPaths(QLibraryInfo::path(QLibraryInfo::QmlImportsPath)),
       m_currentEnv(std::make_shared<DomEnvironment>(
-              m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
+              QLibraryInfo::paths(QLibraryInfo::QmlImportsPath),
+              DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
       m_validEnv(std::make_shared<DomEnvironment>(
-              m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
+              m_currentEnv.ownerAs<DomEnvironment>()->loadPaths(),
+              DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
       m_rootUrl(rootUrl),
       m_settings(settings)
 {
@@ -579,11 +580,19 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
 
 void QQmlCodeModel::setImportPaths(const QStringList &importPaths)
 {
-    m_importPaths = importPaths;
     if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
         env->setLoadPaths(importPaths);
     if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
         env->setLoadPaths(importPaths);
+}
+
+QStringList QQmlCodeModel::importPaths() const
+{
+    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
+        return env->loadPaths();
+    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
+        return env->loadPaths();
+    return {};
 }
 
 QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)

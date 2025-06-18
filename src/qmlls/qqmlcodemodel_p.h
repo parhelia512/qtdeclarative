@@ -120,7 +120,7 @@ public:
     QStringList buildPathsForFileUrl(const QByteArray &url);
     void setBuildPathsForRootUrl(QByteArray url, const QStringList &paths);
     QStringList importPathsForUrl(const QByteArray &);
-    QStringList importPaths() const { return m_importPaths; };
+    QStringList importPaths() const;
     void setImportPaths(const QStringList &paths);
     QQmlToolingSharedSettings *settings() const { return m_settings; }
     QStringList findFilePathsFromFileNames(const QStringList &fileNames);
@@ -156,7 +156,6 @@ private:
     mutable QMutex m_mutex;
     State m_state = State::Running;
     int m_nUpdateInProgress = 0;
-    QStringList m_importPaths;
     QQmlJS::Dom::DomItem m_currentEnv;
     QQmlJS::Dom::DomItem m_validEnv;
     QByteArray m_lastOpenDocumentUpdated;

@@ -100,7 +100,8 @@ public:
     enum class UrlLookup { Caching, ForceLookup };
     enum class State { Running, Stopping };
 
-    explicit QQmlCodeModel(QObject *parent = nullptr, QQmlToolingSharedSettings *settings = nullptr);
+    explicit QQmlCodeModel(const QByteArray &rootUrl = {}, QObject *parent = nullptr,
+                           QQmlToolingSharedSettings *settings = nullptr);
     ~QQmlCodeModel();
     QQmlJS::Dom::DomItem currentEnv() const { return m_currentEnv; };
     QQmlJS::Dom::DomItem validEnv() const { return m_validEnv; };
@@ -114,16 +115,13 @@ public:
     void newOpenFile(const QByteArray &url, int version, const QString &docText);
     void newDocForOpenFile(const QByteArray &url, int version, const QString &docText);
     void closeOpenFile(const QByteArray &url);
-    void setRootUrls(const QList<QByteArray> &urls);
-    QList<QByteArray> rootUrls() const;
-    void addRootUrls(const QList<QByteArray> &urls);
+    QByteArray rootUrl() const;
     QStringList buildPathsForRootUrl(const QByteArray &url);
     QStringList buildPathsForFileUrl(const QByteArray &url);
     void setBuildPathsForRootUrl(QByteArray url, const QStringList &paths);
     QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const { return m_importPaths; };
     void setImportPaths(const QStringList &paths);
-    void removeRootUrls(const QList<QByteArray> &urls);
     QQmlToolingSharedSettings *settings() const { return m_settings; }
     QStringList findFilePathsFromFileNames(const QStringList &fileNames);
     static QStringList fileNamesToWatch(const QQmlJS::Dom::DomItem &qmlFile);
@@ -165,7 +163,7 @@ private:
     QByteArray m_lastOpenDocumentUpdated;
     QSet<QByteArray> m_openDocumentsToUpdate;
     QHash<QByteArray, QStringList> m_buildPathsForRootUrl;
-    QList<QByteArray> m_rootUrls;
+    QByteArray m_rootUrl;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;

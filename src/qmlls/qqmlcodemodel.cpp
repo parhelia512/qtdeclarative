@@ -86,13 +86,15 @@ openNeedUpdate() checks if there is work to do, and if yes ensure that a
 worker thread (or more) that work on it exist.
 */
 
-QQmlCodeModel::QQmlCodeModel(QObject *parent, QQmlToolingSharedSettings *settings)
+QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
+                             QQmlToolingSharedSettings *settings)
     : QObject{ parent },
       m_importPaths(QLibraryInfo::path(QLibraryInfo::QmlImportsPath)),
       m_currentEnv(std::make_shared<DomEnvironment>(
               m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
       m_validEnv(std::make_shared<DomEnvironment>(
               m_importPaths, DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
+      m_rootUrl(rootUrl),
       m_settings(settings),
       m_pluginLoader(QmlLSPluginInterface_iid, u"/qmlls"_s)
 {
@@ -363,20 +365,18 @@ QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNa
 
     QStringList result;
 
-    for (const auto &rootUrl : m_rootUrls) {
-        const QString rootDir = QUrl(QString::fromUtf8(rootUrl)).toLocalFile();
+    const QString rootDir = QUrl(QString::fromUtf8(m_rootUrl)).toLocalFile();
 
-        if (rootDir.isEmpty())
-            continue;
+    if (rootDir.isEmpty())
+        return result;
 
-        qCDebug(codeModelLog) << "Searching for files to watch in workspace folder" << rootDir;
-        QDirIterator it(rootDir, fileNamesToSearch, QDir::Files, QDirIterator::Subdirectories);
-        while (it.hasNext()) {
-            const QFileInfo info = it.nextFileInfo();
-            const QString fileName = info.fileName();
-            foundFiles.insert(fileName);
-            result << info.absoluteFilePath();
-        }
+    qCDebug(codeModelLog) << "Searching for files to watch in workspace folder" << rootDir;
+    QDirIterator it(rootDir, fileNamesToSearch, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QFileInfo info = it.nextFileInfo();
+        const QString fileName = info.fileName();
+        foundFiles.insert(fileName);
+        result << info.absoluteFilePath();
     }
 
     for (const auto& fileName: fileNamesToSearch) {
@@ -544,32 +544,10 @@ void QQmlCodeModel::closeOpenFile(const QByteArray &url)
     m_openDocuments.remove(url);
 }
 
-void QQmlCodeModel::setRootUrls(const QList<QByteArray> &urls)
+QByteArray QQmlCodeModel::rootUrl() const
 {
     QMutexLocker l(&m_mutex);
-    m_rootUrls = urls;
-}
-
-void QQmlCodeModel::addRootUrls(const QList<QByteArray> &urls)
-{
-    QMutexLocker l(&m_mutex);
-    for (const QByteArray &url : urls) {
-        if (!m_rootUrls.contains(url))
-            m_rootUrls.append(url);
-    }
-}
-
-void QQmlCodeModel::removeRootUrls(const QList<QByteArray> &urls)
-{
-    QMutexLocker l(&m_mutex);
-    for (const QByteArray &url : urls)
-        m_rootUrls.removeOne(url);
-}
-
-QList<QByteArray> QQmlCodeModel::rootUrls() const
-{
-    QMutexLocker l(&m_mutex);
-    return m_rootUrls;
+    return m_rootUrl;
 }
 
 QStringList QQmlCodeModel::buildPathsForRootUrl(const QByteArray &url)

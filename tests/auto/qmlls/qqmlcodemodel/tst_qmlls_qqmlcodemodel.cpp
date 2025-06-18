@@ -56,7 +56,7 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
         qputenv(environmentVariable, pathFromEnvironmentVariable.toUtf8());
     }
 
-    QmlLsp::QQmlCodeModel model(nullptr, &settings);
+    QmlLsp::QQmlCodeModel model(QByteArray(), nullptr, &settings);
     if (!pathFromCommandLine.isEmpty())
         model.setBuildPathsForRootUrl(QByteArray(), QStringList{ pathFromCommandLine });
 
@@ -103,8 +103,7 @@ void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames()
     QFETCH(QStringList, expectedPaths);
     QFETCH(QSet<QString>, missingFiles);
 
-    QmlLsp::QQmlCodeModel model;
-    model.setRootUrls({ testFileUrl(u"sourceFolder"_s).toEncoded() });
+    QmlLsp::QQmlCodeModel model(testFileUrl(u"sourceFolder"_s).toEncoded());
 
     auto result = model.findFilePathsFromFileNames(fileNames);
 
@@ -221,7 +220,7 @@ void tst_qmlls_qqmlcodemodel::importPathViaSettings()
     // actually test the qqmlcodemodel
     QQmlToolingSharedSettings settings(u"qmlls"_s);
     settings.addOption(u"importPaths"_s);
-    QmlLsp::QQmlCodeModel model(nullptr, &settings);
+    QmlLsp::QQmlCodeModel model(QByteArray(), nullptr, &settings);
 
     const QString someFile = u"importPathFromSettings/SomeFile.qml"_s;
     const QByteArray fileUrl = testFileUrl(someFile).toEncoded();

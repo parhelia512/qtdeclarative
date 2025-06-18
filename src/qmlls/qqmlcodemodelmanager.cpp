@@ -80,8 +80,7 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
 {
     QQmlWorkspace ws;
     ws.url = url;
-    ws.codeModel = std::make_unique<QQmlCodeModel>(this, m_settings);
-    ws.codeModel->setRootUrls({ url });
+    ws.codeModel = std::make_unique<QQmlCodeModel>(url, this, m_settings);
 
     // set default values
     if (!m_defaultImportPaths.isEmpty())

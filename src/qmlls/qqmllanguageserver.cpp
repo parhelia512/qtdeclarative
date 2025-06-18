@@ -114,7 +114,7 @@ void QQmlLanguageServer::registerHandlers(QLanguageServer *server,
             });
 }
 
-void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
+void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializeParams &,
                                            QLspSpecification::InitializeResult &serverInfo)
 {
     QJsonObject expCap;
@@ -122,17 +122,6 @@ void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializePa
         expCap = serverInfo.capabilities.experimental->toObject();
     expCap.insert(u"addBuildDirs"_s, QJsonObject({ { u"supported"_s, true } }));
     serverInfo.capabilities.experimental = expCap;
-
-    if (clientInfo.workspaceFolders) {
-        if (auto workspaceList =
-                    std::get_if<QList<WorkspaceFolder>>(&*clientInfo.workspaceFolders)) {
-            QList<QByteArray> workspaceUris;
-            std::transform(workspaceList->cbegin(), workspaceList->cend(),
-                           std::back_inserter(workspaceUris),
-                           [](const auto &workspaceFolder) { return workspaceFolder.uri; });
-            m_codeModelManager.addRootUrls(workspaceUris);
-        }
-    }
 }
 
 QString QQmlLanguageServer::name() const

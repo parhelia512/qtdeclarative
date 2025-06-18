@@ -72,7 +72,9 @@ void tst_qmlls_modules::init()
     m_server.start();
 
     InitializeParams clientInfo;
-    clientInfo.rootUri = QUrl::fromLocalFile(dataDirectory() + "/default").toString().toUtf8();
+    clientInfo.workspaceFolders = QList<WorkspaceFolder>{
+        { QUrl::fromLocalFile(dataDirectory()).toEncoded(), "default"_ba },
+    };
 
     TextDocumentClientCapabilities tDoc;
     tDoc.typeDefinition = TypeDefinitionClientCapabilities{ false, false };

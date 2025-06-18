@@ -60,6 +60,43 @@ void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializePar
         serverInfo.capabilities.workspace = QJsonObject();
     serverInfo.capabilities.workspace->insert(u"workspaceFolders"_s,
                                               QTypedJson::toJsonValue(folders));
+
+    openInitialWorkspace(clientInfo);
+}
+
+void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)
+{
+    if (clientInfo.workspaceFolders) {
+        const auto *folders = std::get_if<QList<WorkspaceFolder>>(&*clientInfo.workspaceFolders);
+
+        // note: if *clientInfo.workspaceFolders contains a nullptr_t than it means that no WS was
+        // opened yet.
+        if (!folders)
+            return;
+
+        QList<QByteArray> rootPaths;
+        for (const auto &folder : std::as_const(*folders)) {
+            rootPaths.append(QQmlLSUtils::lspUriToQmlUrl(folder.uri));
+        }
+        m_codeModelManager->addRootUrls(rootPaths);
+        return;
+    }
+
+    // note: rootUri is deprecated in the LSP protocol
+    if (const auto *rootUri = std::get_if<QByteArray>(&clientInfo.rootUri)) {
+        m_codeModelManager->addRootUrls({ QQmlLSUtils::lspUriToQmlUrl(*rootUri) });
+        return;
+    }
+    // note: rootPath is also deprecated in the LSP protocol. It was deprecated even before rootUri
+    // was deprecated.
+    if (clientInfo.rootPath) {
+        if (const auto *rootPath = std::get_if<QByteArray>(&*clientInfo.rootPath)) {
+            m_codeModelManager->addRootUrls({
+                    QUrl::fromLocalFile(QString::fromUtf8(*rootPath)).toEncoded(),
+            });
+            return;
+        }
+    }
 }
 
 void WorkspaceHandlers::clientInitialized(QLanguageServer *server)

@@ -37,6 +37,7 @@ public Q_SLOTS:
     void clientInitialized(QLanguageServer *);
 
 private:
+    void openInitialWorkspace(const QLspSpecification::InitializeParams &);
     QmlLsp::QQmlCodeModelManager *m_codeModelManager = nullptr;
 };
 

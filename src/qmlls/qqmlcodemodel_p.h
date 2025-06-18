@@ -105,6 +105,7 @@ public:
     QQmlJS::Dom::DomItem validEnv() const { return m_validEnv; };
     OpenDocumentSnapshot snapshotByUrl(const QByteArray &url);
     OpenDocument openDocumentByUrl(const QByteArray &url);
+    bool isEmpty() const;
 
     void addOpenToUpdate(const QByteArray &);
     void removeDirectory(const QByteArray &);

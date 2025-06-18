@@ -186,6 +186,12 @@ OpenDocument QQmlCodeModel::openDocumentByUrl(const QByteArray &url)
     return m_openDocuments.value(url);
 }
 
+bool QQmlCodeModel::isEmpty() const
+{
+    QMutexLocker l(&m_mutex);
+    return m_openDocuments.isEmpty();
+}
+
 RegisteredSemanticTokens &QQmlCodeModel::registeredTokens()
 {
     QMutexLocker l(&m_mutex);

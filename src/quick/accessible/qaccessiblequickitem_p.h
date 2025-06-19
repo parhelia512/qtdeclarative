@@ -31,6 +31,7 @@ class Q_QUICK_EXPORT QAccessibleQuickItem : public QAccessibleObject, public QAc
 public:
     QAccessibleQuickItem(QQuickItem *item);
 
+    bool isValid() const override;
     QWindow *window() const override;
 
     QRect rect() const override;

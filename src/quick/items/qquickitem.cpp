@@ -49,6 +49,10 @@
 # include <QtGui/qcursor.h>
 #endif
 
+#if QT_CONFIG(accessibility)
+# include <private/qaccessiblecache_p.h>
+#endif
+
 #include <QtCore/qpointer.h>
 
 #include <algorithm>
@@ -2382,6 +2386,11 @@ QQuickItem::~QQuickItem()
 {
     Q_D(QQuickItem);
     d->inDestructor = true;
+
+#if QT_CONFIG(accessibility)
+    if (QGuiApplicationPrivate::is_app_running && !QGuiApplicationPrivate::is_app_closing && QAccessible::isActive())
+        QAccessibleCache::instance()->sendObjectDestroyedEvent(this);
+#endif
 
     if (d->windowRefCount > 1)
         d->windowRefCount = 1; // Make sure window is set to null in next call to derefWindow().

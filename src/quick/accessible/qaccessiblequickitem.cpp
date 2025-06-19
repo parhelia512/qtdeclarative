@@ -210,6 +210,12 @@ QAccessibleQuickItem::QAccessibleQuickItem(QQuickItem *item)
 {
 }
 
+bool QAccessibleQuickItem::isValid() const
+{
+    return item() && !QQuickItemPrivate::get(item())->inDestructor;
+}
+
+
 QWindow *QAccessibleQuickItem::window() const
 {
     QQuickWindow *window = item()->window();

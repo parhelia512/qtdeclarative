@@ -7,6 +7,8 @@
 
 #include <QtGui/qaccessible.h>
 #include <QtGui/private/qguiapplication_p.h>
+#include <QtGui/private/qaccessiblecache_p.h>
+
 #include <qpa/qplatformnativeinterface.h>
 #include <qpa/qplatformintegration.h>
 #include <qpa/qplatformaccessibility.h>
@@ -849,10 +851,9 @@ void tst_QQuickAccessible::announceTest()
 
 void tst_QQuickAccessible::eventTest()
 {
-    std::unique_ptr<QQuickView, void(*)(QQuickView *)> window(new QQuickView, [](QQuickView *ptr) {
-        delete ptr;
-        QTestAccessibility::clearEvents();
-    });
+    auto clearEvents = qScopeGuard([]{ QTestAccessibility::clearEvents(); });
+    std::unique_ptr<QQuickView> window(new QQuickView());
+
     window->setSource(testFileUrl("eventTest.qml"));
     window->show();
     QVERIFY(QTest::qWaitForWindowExposed(window.get()));
@@ -870,11 +871,20 @@ void tst_QQuickAccessible::eventTest()
 
     // move an item that is accessible
     QQuickItem *buttonItem = rootItem->findChild<QQuickItem*>(QLatin1String("button"));
+    auto buttonIface = QAccessible::queryAccessibleInterface(buttonItem);
+    QVERIFY(buttonIface);
     QTestAccessibility::clearEvents();
     buttonItem->setX(buttonItem->x() + 2);
     QCOMPARE(QTestAccessibility::events().size(), 1);
     QAccessibleEvent ev(buttonItem, QAccessible::LocationChanged);
     QTestAccessibility::verifyEvent(&ev);
+
+    auto windowIface = QAccessible::queryAccessibleInterface(window.get());
+    QAccessibleObjectDestroyedEvent ev2(buttonIface);
+    QAccessibleObjectDestroyedEvent ev3(windowIface);
+    window.reset();
+    QTestAccessibility::verifyEvent(&ev2);
+    QTestAccessibility::verifyEvent(&ev3);
 }
 
 void tst_QQuickAccessible::relations_data()

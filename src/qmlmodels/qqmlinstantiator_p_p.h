@@ -46,6 +46,26 @@ public:
     static QQmlInstantiatorPrivate *get(QQmlInstantiator *instantiator) { return instantiator->d_func(); }
     static const QQmlInstantiatorPrivate *get(const QQmlInstantiator *instantiator) { return instantiator->d_func(); }
 
+    void connectModel(QQmlInstanceModel *newModel)
+    {
+        if (!newModel)
+            return;
+        QObjectPrivate::connect(newModel, &QQmlInstanceModel::modelUpdated,
+                                this, &QQmlInstantiatorPrivate::_q_modelUpdated);
+        QObjectPrivate::connect(newModel, &QQmlInstanceModel::createdItem,
+                                this, &QQmlInstantiatorPrivate::_q_createdItem);
+    }
+
+    void disconnectModel(QQmlInstanceModel *prevModel)
+    {
+        if (!prevModel)
+            return;
+        QObjectPrivate::disconnect(prevModel, &QQmlInstanceModel::modelUpdated,
+                                   this, &QQmlInstantiatorPrivate::_q_modelUpdated);
+        QObjectPrivate::disconnect(prevModel, &QQmlInstanceModel::createdItem,
+                                   this, &QQmlInstantiatorPrivate::_q_createdItem);
+    }
+
     bool componentComplete:1;
     bool effectiveReset:1;
     bool active:1;

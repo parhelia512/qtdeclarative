@@ -209,6 +209,7 @@ QQmlInstantiator::~QQmlInstantiator()
 {
     Q_D(QQmlInstantiator);
     d->clear();
+    d->disconnectModel(d->instanceModel);
 }
 
 /*!
@@ -394,19 +395,8 @@ void QQmlInstantiator::setModel(const QVariant &v)
     }
 
     if (d->instanceModel != prevModel) {
-        if (prevModel) {
-            disconnect(prevModel, SIGNAL(modelUpdated(QQmlChangeSet,bool)),
-                    this, SLOT(_q_modelUpdated(QQmlChangeSet,bool)));
-            disconnect(prevModel, SIGNAL(createdItem(int,QObject*)), this, SLOT(_q_createdItem(int,QObject*)));
-            //disconnect(prevModel, SIGNAL(initItem(int,QObject*)), this, SLOT(initItem(int,QObject*)));
-        }
-
-        if (d->instanceModel) {
-            connect(d->instanceModel, SIGNAL(modelUpdated(QQmlChangeSet,bool)),
-                    this, SLOT(_q_modelUpdated(QQmlChangeSet,bool)));
-            connect(d->instanceModel, SIGNAL(createdItem(int,QObject*)), this, SLOT(_q_createdItem(int,QObject*)));
-            //connect(d->instanceModel, SIGNAL(initItem(int,QObject*)), this, SLOT(initItem(int,QObject*)));
-        }
+        d->disconnectModel(prevModel);
+        d->connectModel(d->instanceModel);
     }
 
     d->regenerate();

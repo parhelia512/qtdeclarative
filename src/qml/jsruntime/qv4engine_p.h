@@ -714,6 +714,7 @@ public:
 #endif
 
     void setQmlEngine(QQmlEngine *engine);
+    void resetQmlEngine() { m_qmlEngine = nullptr; }
 
     QQmlDelayedCallQueue *delayedCallQueue() { return &m_delayedCallQueue; }
 

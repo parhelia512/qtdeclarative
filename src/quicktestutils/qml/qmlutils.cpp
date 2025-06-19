@@ -127,14 +127,12 @@ void gc(QV4::ExecutionEngine &engine, GCFlags flags)
 }
 
 bool gcDone(QQmlEngine *engine) {
-    auto priv = QQmlEnginePrivate::get(engine);
-    return gcDone(priv->v4engine());
+    return gcDone(engine->handle());
 }
 
 void gc(QQmlEngine &engine, GCFlags flags)
 {
-    auto priv = QQmlEnginePrivate::get(&engine);
-    gc(*priv->v4engine(), flags);
+    gc(*engine.handle(), flags);
 }
 
 

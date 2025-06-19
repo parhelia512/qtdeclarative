@@ -54,6 +54,8 @@ public:
             Q_EMIT q->uiLanguageChanged();
     }
     Q_OBJECT_BINDABLE_PROPERTY(QJSEnginePrivate, QString, uiLanguage, &QJSEnginePrivate::uiLanguageChanged);
+
+    std::unique_ptr<QV4::ExecutionEngine> v4Engine;
 };
 
 QT_END_NAMESPACE

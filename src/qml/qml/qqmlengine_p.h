@@ -127,8 +127,6 @@ public:
     QQmlDelayedError *erroredBindings = nullptr;
     int inProgressCreations = 0;
 
-    QV4::ExecutionEngine *v4engine() const { return q_func()->handle(); }
-
 #if QT_CONFIG(qml_worker_script)
     QThread *workerScriptEngine = nullptr;
 #endif
@@ -304,8 +302,7 @@ inline void QQmlEnginePrivate::dereferenceScarceResources()
     // expression must have completed.  We can safely release the
     // scarce resources.
     if (Q_LIKELY(scarceResourcesRefCount == 0)) {
-        QV4::ExecutionEngine *engine = v4engine();
-        if (Q_UNLIKELY(!engine->scarceResources.isEmpty())) {
+        if (Q_UNLIKELY(!v4Engine->scarceResources.isEmpty())) {
             cleanupScarceResources();
         }
     }

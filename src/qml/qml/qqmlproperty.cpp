@@ -1449,7 +1449,7 @@ static ConvertAndAssignResult tryConvertAndAssign(
     }
 
     QVariant converted = QQmlValueTypeProvider::createValueType(
-            value, propertyMetaType, enginePriv ? enginePriv->v4engine() : nullptr);
+            value, propertyMetaType, enginePriv ? enginePriv->v4Engine.get() : nullptr);
     if (!converted.isValid()) {
         converted = QVariant(propertyMetaType);
         if (!QMetaType::convert(value.metaType(), value.constData(),
@@ -1669,7 +1669,7 @@ bool QQmlPropertyPrivate::write(
     } else if (enginePriv && propertyMetaType == QMetaType::fromType<QJSValue>()) {
         // We can convert everything into a QJSValue if we have an engine.
         QJSValue jsValue = QJSValuePrivate::fromReturnedValue(
-                    enginePriv->v4engine()->metaTypeToJS(variantMetaType, value.constData()));
+                    enginePriv->v4Engine->metaTypeToJS(variantMetaType, value.constData()));
         return property.writeProperty(object, &jsValue, flags);
     } else {
         Q_ASSERT(variantMetaType != propertyMetaType);

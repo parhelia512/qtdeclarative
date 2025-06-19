@@ -357,8 +357,9 @@ QJSEngine::QJSEngine(QObject *parent)
 */
 QJSEngine::QJSEngine(QJSEnginePrivate &dd, QObject *parent)
     : QObject(dd, parent)
-    , m_v4Engine(new QV4::ExecutionEngine(this))
 {
+    dd.v4Engine = std::make_unique<QV4::ExecutionEngine>(this);
+    m_v4Engine = dd.v4Engine.get();
     checkForApplicationInstance();
 }
 
@@ -373,7 +374,7 @@ QJSEngine::~QJSEngine()
 {
     m_v4Engine->inShutdown = true;
     QJSEnginePrivate::removeFromDebugServer(this);
-    delete m_v4Engine;
+    m_v4Engine->publicEngine = nullptr;
 }
 
 /*!
@@ -1263,10 +1264,7 @@ QJSEnginePrivate *QJSEnginePrivate::get(QV4::ExecutionEngine *e)
     return e->jsEngine()->d_func();
 }
 
-QJSEnginePrivate::~QJSEnginePrivate()
-{
-    QQmlMetaType::freeUnusedTypesAndCaches();
-}
+QJSEnginePrivate::~QJSEnginePrivate() = default;
 
 void QJSEnginePrivate::addToDebugServer(QJSEngine *q)
 {

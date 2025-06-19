@@ -568,6 +568,8 @@ QQmlEngine::~QQmlEngine()
     // QQmlGadgetPtrWrapper can have QQmlData with various references.
     qDeleteAll(d->cachedValueTypeInstances);
     d->cachedValueTypeInstances.clear();
+
+    v4->resetQmlEngine();
 }
 
 /*! \fn void QQmlEngine::quit()
@@ -1575,7 +1577,7 @@ void QQmlEnginePrivate::cleanupScarceResources()
     // note that the actual SRD is owned by the JS engine,
     // so we cannot delete the SRD; but we can free the
     // memory used by the variant in the SRD.
-    QV4::ExecutionEngine *engine = v4engine();
+    QV4::ExecutionEngine *engine = v4Engine.get();
     while (QV4::ExecutionEngine::ScarceResourceData *sr = engine->scarceResources.first()) {
         sr->data = QVariant();
         engine->scarceResources.remove(sr);
@@ -1815,7 +1817,7 @@ QJSValue QQmlEnginePrivate::singletonInstance<QJSValue>(const QQmlType &type)
             // should behave identically to QML singleton types.
             q->setContextForObject(o, new QQmlContext(q->rootContext(), q));
         }
-        singletonInstances.convertAndInsert(v4engine(), siinfo, &value);
+        singletonInstances.convertAndInsert(v4Engine.get(), siinfo, &value);
 
     } else if (siinfo->qobjectCallback) {
         QObject *o = siinfo->qobjectCallback(q, q);
@@ -1854,12 +1856,15 @@ QJSValue QQmlEnginePrivate::singletonInstance<QJSValue>(const QQmlType &type)
         }
 
         value = q->newQObject(o);
-        singletonInstances.convertAndInsert(v4engine(), siinfo, &value);
+        singletonInstances.convertAndInsert(v4Engine.get(), siinfo, &value);
     } else if (!siinfo->url.isEmpty()) {
         QQmlComponent component(q, siinfo->url, QQmlComponent::PreferSynchronous);
         if (component.isError()) {
             warning(component.errors());
-            v4engine()->throwError(QLatin1String("Due to the preceding error(s), Singleton \"%1\" could not be loaded.").arg(QString::fromUtf8(type.typeName())));
+            v4Engine->throwError(
+                    QLatin1String("Due to the preceding error(s), "
+                                  "Singleton \"%1\" could not be loaded.")
+                            .arg(QString::fromUtf8(type.typeName())));
 
             return QJSValue(QJSValue::UndefinedValue);
         }
@@ -1878,12 +1883,15 @@ QJSValue QQmlEnginePrivate::singletonInstance<QJSValue>(const QQmlType &type)
             for (const auto &reqProp: *requiredProperties)
                 errors.push_back(QQmlComponentPrivate::unsetRequiredPropertyToQQmlError(reqProp));
             warning(errors);
-            v4engine()->throwError(QLatin1String("Due to the preceding error(s), Singleton \"%1\" could not be loaded.").arg(QString::fromUtf8(type.typeName())));
+            v4Engine->throwError(
+                    QLatin1String("Due to the preceding error(s), "
+                                  "Singleton \"%1\" could not be loaded.")
+                            .arg(QString::fromUtf8(type.typeName())));
             return QJSValue(QJSValue::UndefinedValue);
         }
 
         value = q->newQObject(o);
-        singletonInstances.convertAndInsert(v4engine(), siinfo, &value);
+        singletonInstances.convertAndInsert(v4Engine.get(), siinfo, &value);
         component.completeCreate();
     }
 
@@ -1915,7 +1923,7 @@ void QQmlEnginePrivate::executeRuntimeFunction(const QV4::ExecutableCompilationU
     Q_ASSERT(function);
     Q_ASSERT(function->compiledFunction);
 
-    QV4::ExecutionEngine *v4 = v4engine();
+    QV4::ExecutionEngine *v4 = v4Engine.get();
 
     // NB: always use scriptContext() by default as this method ignores whether
     // there's already a stack frame (except when dealing with closures). the
@@ -1951,7 +1959,7 @@ void QQmlEnginePrivate::executeRuntimeFunction(const QV4::ExecutableCompilationU
 
 QV4::ExecutableCompilationUnit *QQmlEnginePrivate::compilationUnitFromUrl(const QUrl &url)
 {
-    QV4::ExecutionEngine *v4 = v4engine();
+    QV4::ExecutionEngine *v4 = v4Engine.get();
     if (auto unit = v4->compilationUnitForUrl(url)) {
         if (!unit->runtimeStrings)
             unit->populate();
@@ -1983,7 +1991,7 @@ QQmlEnginePrivate::createInternalContext(const QQmlRefPointer<QV4::ExecutableCom
     const auto *dependentScripts = unit->dependentScriptsPtr();
     const qsizetype dependentScriptsSize = dependentScripts->size();
     if (isComponentRoot && dependentScriptsSize) {
-        QV4::ExecutionEngine *v4 = v4engine();
+        QV4::ExecutionEngine *v4 = v4Engine.get();
         Q_ASSERT(v4);
         QV4::Scope scope(v4);
 

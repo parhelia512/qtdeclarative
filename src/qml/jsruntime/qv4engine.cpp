@@ -887,6 +887,8 @@ ExecutionEngine::~ExecutionEngine()
     qt_rem_qmlxmlhttprequest(this, m_xmlHttpRequestData);
     m_xmlHttpRequestData = nullptr;
 #endif
+
+    QQmlMetaType::freeUnusedTypesAndCaches();
 }
 
 #if QT_CONFIG(qml_network)

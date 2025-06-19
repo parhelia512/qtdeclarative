@@ -38,6 +38,8 @@ private slots:
     void boundDelegateComponent();
 
     void listDataDestruction();
+
+    void setDelegateAfterModel();
 };
 
 tst_qqmlinstantiator::tst_qqmlinstantiator()
@@ -318,6 +320,25 @@ void tst_qqmlinstantiator::listDataDestruction()
     QScopedPointer<QObject> o(component.create());
     QVERIFY(!o.isNull());
     QCOMPARE(o->objectName(), QLatin1String("A"));
+}
+
+void tst_qqmlinstantiator::setDelegateAfterModel()
+{
+    // TODO: We can't do this trick with DelegateModel on Instantiator because Instantiator
+    //       explicitly avoids touching the delegate of a DelegateModel passed in as model.
+    //       That's fine, but inconsistent with other views.
+
+    QQmlEngine engine;
+    const QUrl url = testFileUrl("setDelegateAfterModel.qml");
+    QQmlComponent component(&engine, url);
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> object(component.create());
+    QVERIFY(!object.isNull());
+
+    // If the model was lost by setting the delegate, the count would be 0.
+    QCOMPARE(object->property("count").toInt(), 3);
+    object->setProperty("useObjectModel", QVariant::fromValue<bool>(true));
+    QCOMPARE(object->property("count").toInt(), 2);
 }
 
 class SingleBoolItemModel : public QAbstractListModel

@@ -160,6 +160,8 @@ void QQuickWeekNumberColumn::setSource(const QVariant &source)
     delegates.
 
     \snippet basic/WeekNumberColumn.qml delegate
+
+    \include delegate-ownership.qdocinc {no-ownership} {WeekNumberColumn}
 */
 QQmlComponent *QQuickWeekNumberColumn::delegate() const
 {

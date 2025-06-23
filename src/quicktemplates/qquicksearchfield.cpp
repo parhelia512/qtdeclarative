@@ -856,6 +856,8 @@ void QQuickSearchField::setPopup(QQuickPopup *popup)
         }
     }
     \endcode
+
+    \include delegate-ownership.qdocinc {no-ownership-since-6.11} {SearchField}
 */
 QQmlComponent *QQuickSearchField::delegate() const
 {
@@ -869,7 +871,6 @@ void QQuickSearchField::setDelegate(QQmlComponent *delegate)
     if (d->delegate == delegate)
         return;
 
-    delete d->delegate;
     d->delegate = delegate;
     QQmlDelegateModel *delegateModel = qobject_cast<QQmlDelegateModel *>(d->delegateModel);
     if (delegateModel)

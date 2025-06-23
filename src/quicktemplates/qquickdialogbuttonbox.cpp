@@ -641,6 +641,8 @@ QQuickAbstractButton *QQuickDialogButtonBox::standardButton(QPlatformDialogHelpe
 
     This property holds a delegate for creating standard buttons.
 
+    \include delegate-ownership.qdocinc {no-ownership} {DialogButtonBox}
+
     \sa standardButtons
 */
 QQmlComponent *QQuickDialogButtonBox::delegate() const
@@ -655,7 +657,6 @@ void QQuickDialogButtonBox::setDelegate(QQmlComponent* delegate)
     if (d->delegate == delegate)
         return;
 
-    delete d->delegate;
     d->delegate = delegate;
     emit delegateChanged();
 }

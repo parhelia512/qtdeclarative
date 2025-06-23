@@ -286,6 +286,8 @@ void QQuickPageIndicator::setInteractive(bool interactive)
         \row \li \b index : int \li The index of the item
         \row \li \b pressed : bool \li Whether the item is pressed
     \endtable
+
+    \include delegate-ownership.qdocinc {no-ownership} {PageIndicator}
 */
 QQmlComponent *QQuickPageIndicator::delegate() const
 {

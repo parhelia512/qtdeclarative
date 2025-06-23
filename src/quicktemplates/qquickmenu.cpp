@@ -1944,6 +1944,8 @@ void QQuickMenu::setOverlap(qreal overlap)
     \note delegates will only be visible when using a \l {Menu types}
     {non-native Menu}.
 
+    \include delegate-ownership.qdocinc {no-ownership} {Menu}
+
     \sa Action
 */
 QQmlComponent *QQuickMenu::delegate() const

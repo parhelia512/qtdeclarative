@@ -567,4 +567,29 @@ TestCase {
         let control2 = createTemporaryObject(backgroundDeletionOrder2, testCase)
         verify(control2)
     }
+
+    Component {
+        id: delegateComponent1
+
+        Button {}
+    }
+
+    Component {
+        id: delegateComponent2
+
+        Button {}
+    }
+
+    function test_dontDeleteDelegates() {
+        let control = createTemporaryObject(buttonBox, testCase, { delegate: delegateComponent1 })
+        verify(control)
+
+        // When setting a new delegate, the old one shouldn't be destroyed.
+        control.delegate = delegateComponent2
+        verify(delegateComponent1)
+
+        // The same goes for the new delegate: it shouldn't be destroyed when setting the old one.
+        control.delegate = delegateComponent1
+        verify(delegateComponent2)
+    }
 }

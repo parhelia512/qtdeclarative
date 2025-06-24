@@ -64,6 +64,7 @@ public:
     QQmlToolingSharedSettings *settings() const { return m_settings; }
     void disableCMakeCalls();
     const QFactoryLoader &pluginLoader() const { return m_pluginLoader; }
+    QByteArray shortestRootUrlForFile(const QByteArray &fileUrl) const;
 
     RegisteredSemanticTokens &registeredTokens(const QByteArray &);
     const RegisteredSemanticTokens &registeredTokens(const QByteArray &) const;

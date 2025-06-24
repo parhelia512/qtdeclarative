@@ -46,6 +46,7 @@ private slots:
     void duplicateWorkspace();
     void withQmllsBuildIni();
     void withQmllsBuildIniWithoutRootUrls();
+    void shortestRootUrlForFile();
 };
 
 #endif // TST_QMLLS_QQMLCODEMODEL_H

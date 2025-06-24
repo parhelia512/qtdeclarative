@@ -213,6 +213,28 @@ QStringList QQmlCodeModelManager::buildPathsForFileUrl(const QByteArray &url)
     return findCodeModelForFile(url)->buildPathsForFileUrl(url);
 }
 
+QByteArray QQmlCodeModelManager::shortestRootUrlForFile(const QByteArray &fileUrl) const
+{
+    // fallback value for candidate is the empty url of the default workspace
+    QByteArray candidate;
+
+    // ignore the default workspace which is at the front of m_workspaces
+    Q_ASSERT(m_workspaces.size() > 0);
+    Q_ASSERT(m_workspaces.front().url.isEmpty());
+    auto it = std::find_if(
+            ++m_workspaces.cbegin(), m_workspaces.cend(),
+            [&fileUrl](const QQmlWorkspace &ws) { return fileUrl.startsWith(ws.url); });
+
+    if (it != m_workspaces.cend())
+        candidate = it->url;
+
+    for (; it != m_workspaces.cend(); ++it) {
+        if (it->url.length() < candidate.length() && fileUrl.startsWith(it->url))
+            candidate = it->url;
+    }
+    return candidate;
+}
+
 void QQmlCodeModelManager::setDocumentationRootPath(const QString &path)
 {
     m_defaultDocumentationRootPath = path;

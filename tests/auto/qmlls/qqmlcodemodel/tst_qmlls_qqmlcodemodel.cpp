@@ -638,4 +638,27 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIniWithoutRootUrls()
              "\"%1\""_L1.arg(testFile("twoWorkspaces/ImportPathA/MyModule/qmldir")));
 }
 
+void tst_qmlls_qqmlcodemodel::shortestRootUrlForFile()
+{
+    QmlLsp::QQmlCodeModelManager manager;
+    const QByteArray rootA{ testFileUrl("rootA").toEncoded() };
+    const QByteArray rootB{ testFileUrl("rootA/sub/subsub/rootB").toEncoded() };
+    const QByteArray rootC{ testFileUrl("rootA/sub/rootC").toEncoded() };
+    const QByteArray rootD{ testFileUrl("rootD").toEncoded() };
+
+    manager.addRootUrls({ rootA, rootB, rootC, rootD });
+    QCOMPARE(manager.shortestRootUrlForFile(testFileUrl("rootA/MyFile.qml").toEncoded()), rootA);
+    QCOMPARE(manager.shortestRootUrlForFile(
+                     testFileUrl("rootA/sub/subsub/rootB/MyFile.qml").toEncoded()),
+             rootA);
+    QCOMPARE(manager.shortestRootUrlForFile(testFileUrl("rootA/sub/rootC/MyFile.qml").toEncoded()),
+             rootA);
+    QCOMPARE(manager.shortestRootUrlForFile(testFileUrl("rootD/sub/rootC/MyFile.qml").toEncoded()),
+             rootD);
+
+    QmlLsp::QQmlCodeModelManager empty;
+    QCOMPARE(empty.shortestRootUrlForFile(testFileUrl("rootD/sub/rootC/MyFile.qml").toEncoded()),
+             QByteArray{});
+}
+
 QTEST_MAIN(tst_qmlls_qqmlcodemodel)

@@ -2045,7 +2045,14 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
         }
         return {};
     }
-    case SingletonIdentifier:
+    case SingletonIdentifier: {
+        const QString filePath = resolvedExpression->semanticScope->filePath();
+        const QQmlJS::SourceLocation location = resolvedExpression->semanticScope->sourceLocation();
+        if (const auto result = Location::tryFrom(filePath, location, item))
+            return result;
+
+        return fallbackLocationForCppType(*resolvedExpression, headerDirectories);
+    }
     case EnumeratorIdentifier:
     case EnumeratorValueIdentifier:
     case GroupedPropertyIdentifier:

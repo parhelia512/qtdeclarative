@@ -1971,6 +1971,12 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
                    };
     }
 
+    QTest::addRow("singletonFromQml") << testFile("findDefinition/UseMySingletons.qml"_L1) << 5
+                                      << 31 << testFile("findDefinition/MySingleton.qml"_L1) << 4
+                                      << 1 << strlen("Item") << noExtraBuildDir;
+    QTest::addRow("singletonFromCpp") << testFile("findDefinition/UseMySingletons.qml"_L1) << 6
+                                      << 31 << "mysingletonfromcppheader.h" << 42 << 1 << strlen("")
+                                      << QStringList{ testFile("findDefinition"_L1) };
     QTest::addRow("componentFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 3
                                       << 1 << "mycomponentfromcppheader.h" << 42 << 1 << strlen("")
                                       << QStringList{ testFile("findDefinition"_L1) };
@@ -2004,6 +2010,11 @@ void tst_qmlls_utils::findDefinitionFromLocation()
             file.field(QQmlJS::Dom::Fields::currentItem), line - 1, character - 1);
 
     QCOMPARE(locations.size(), 1);
+
+    if (QTest::currentDataTag() == "singletonFromCpp"_L1) {
+        QTest::ignoreMessage(QtDebugMsg,
+                             "Could not find file \"mysingletonfromcppheader.h\" in the dom!");
+    }
 
     if (QTest::currentDataTag() == "componentFromCpp"_L1) {
         QTest::ignoreMessage(QtDebugMsg,

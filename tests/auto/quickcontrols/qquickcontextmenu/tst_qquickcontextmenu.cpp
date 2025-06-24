@@ -65,6 +65,8 @@ void tst_QQuickContextMenu::initTestCase()
 
     contextMenuTriggeredOnRelease = QGuiApplicationPrivate::platformTheme()->themeHint(
         QPlatformTheme::ContextMenuOnMouseRelease).toBool();
+
+    setFastAnimations(true);
 }
 
 void tst_QQuickContextMenu::customContextMenu_data()

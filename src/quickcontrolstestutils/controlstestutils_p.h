@@ -108,6 +108,18 @@ namespace QQuickControlsTestUtils
     };
 
     [[nodiscard]] bool arePopupWindowsSupported();
+
+    // Helper that allows us to call setFastAnimations, which requires a QCoreApplication instance.
+    class QmlTestHelper : public QObject
+    {
+        Q_OBJECT
+
+    public slots:
+        void applicationAvailable()
+        {
+            QQuickVisualTestUtils::setFastAnimations(true);
+        }
+    };
 }
 
 namespace QQuickTest

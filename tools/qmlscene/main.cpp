@@ -537,7 +537,7 @@ int main(int argc, char ** argv)
 
     QQuickWindow::setTextRenderType(options.textRenderType);
 
-    QUnifiedTimer::instance()->setSlowModeEnabled(options.slowAnimations);
+    QUnifiedTimer::instance()->setSpeedModifier(options.slowAnimations ? 0.2 : 1);
 
     if (options.rhi) {
         if (options.rhiBackendSet)

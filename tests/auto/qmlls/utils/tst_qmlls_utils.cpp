@@ -1970,6 +1970,10 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
                            u"findDefinition/TestAppWithBuildFolder/build/somesubfolder/anothersubfolder"_s)
                    };
     }
+
+    QTest::addRow("componentFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 3
+                                      << 1 << "mycomponentfromcppheader.h" << 42 << 1 << strlen("")
+                                      << QStringList{ testFile("findDefinition"_L1) };
 }
 
 void tst_qmlls_utils::findDefinitionFromLocation()
@@ -2001,7 +2005,12 @@ void tst_qmlls_utils::findDefinitionFromLocation()
 
     QCOMPARE(locations.size(), 1);
 
-    auto definition = QQmlLSUtils::findDefinitionOf(locations.front().domItem);
+    if (QTest::currentDataTag() == "componentFromCpp"_L1) {
+        QTest::ignoreMessage(QtDebugMsg,
+                             "Could not find file \"mycomponentfromcppheader.h\" in the dom!");
+    }
+
+    auto definition = QQmlLSUtils::findDefinitionOf(locations.front().domItem, extraBuildDirs);
 
     // if expectedFilePath is empty, we probably just want to make sure that it does
     // not crash

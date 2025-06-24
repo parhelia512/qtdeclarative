@@ -1948,7 +1948,26 @@ findPropertyDefinitionOf(const DomItem &file, QQmlJS::SourceLocation propertyDef
     return {};
 }
 
-std::optional<Location> findDefinitionOf(const DomItem &item)
+static std::optional<Location> fallbackLocationForCppType(const ExpressionType &type,
+                                                          const QStringList &headerLocations)
+{
+    // fallback: construct location from the line number in the qmltypes file for C++ defined
+    // elements:
+    const QString filePath =
+            findFilePathFromFileName(headerLocations, type.semanticScope->filePath());
+    if (filePath.isEmpty())
+        return {};
+
+    // note: Select the first line of the file if lineNumber is not set.
+    const quint32 lineNumber = type.semanticScope->lineNumber();
+    const QQmlJS::SourceLocation startLocation = lineNumber == 0
+            ? QQmlJS::SourceLocation{ 0, 0, 1, 1 }
+            : type.semanticScope->sourceLocation();
+    const TextPosition endPosition{ static_cast<int>(startLocation.startLine) + 1, 1 };
+    return Location{ filePath, startLocation, endPosition };
+}
+
+std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList &headerDirectories)
 {
     auto resolvedExpression = resolveExpressionType(item, ResolveOptions::ResolveOwnerType);
 
@@ -2006,8 +2025,12 @@ std::optional<Location> findDefinitionOf(const DomItem &item)
     }
     case AttachedTypeIdentifier:
     case QmlComponentIdentifier: {
-        return Location::tryFrom(resolvedExpression->semanticScope->filePath(),
-                                 resolvedExpression->semanticScope->sourceLocation(), item);
+        if (const auto result =
+                    Location::tryFrom(resolvedExpression->semanticScope->filePath(),
+                                      resolvedExpression->semanticScope->sourceLocation(), item)) {
+            return result;
+        }
+        return fallbackLocationForCppType(*resolvedExpression, headerDirectories);
     }
     case QualifiedModuleIdentifier: {
         const DomItem imports = item.fileObject().field(Fields::imports);

@@ -1,0 +1,16 @@
+import QtQuick.tooling 1.2
+
+Module {
+    Component {
+        file: "mycomponentfromcppheader.h"
+        lineNumber: 42
+        name: "MyComponentFromCpp"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["ModuleWithComponent/MyComponentFromCpp 254.0"]
+        Property {
+            name: "myValue"
+            type: "int"
+        }
+    }
+}

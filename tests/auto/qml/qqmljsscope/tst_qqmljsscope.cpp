@@ -123,6 +123,7 @@ private Q_SLOTS:
     void javaScriptBuiltinFlag();
     void isRoot();
     void idLocation();
+    void lineNumber();
 
 public:
     tst_qqmljsscope()
@@ -1097,6 +1098,14 @@ void tst_qqmljsscope::idLocation()
     QCOMPARE(actual.startLine, 7);
     QCOMPARE(actual.startColumn, 25);
     QCOMPARE(actual.length, 10);
+}
+
+void tst_qqmljsscope::lineNumber()
+{
+    const auto jsscope = run(u"UseTypeWithProperties.qml"_s, false);
+    const auto baseFromCpp = jsscope->baseType();
+    QVERIFY(baseFromCpp);
+    QCOMPARE(baseFromCpp->lineNumber(), 13);
 }
 
 QTEST_MAIN(tst_qqmljsscope)

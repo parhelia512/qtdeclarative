@@ -211,6 +211,9 @@ public:
     QString filePath() const { return m_filePath; }
     void setFilePath(const QString &file) { m_filePath = file; }
 
+    quint32 lineNumber() const { return m_sourceLocation.startLine; }
+    void setLineNumber(quint32 lineNumber);
+
     // The name the type uses to refer to itself. Either C++ class name or base name of
     // QML file. isComposite tells us if this is a C++ or a QML name.
     QString internalName() const { return m_internalName; }

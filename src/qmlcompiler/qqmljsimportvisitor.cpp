@@ -1124,7 +1124,10 @@ void QQmlJSImportVisitor::checkRequiredProperties()
                                 .arg(requiredScopeName),
                         sourceScope->sourceLocation()
                     };
-                    suggestion->setFilename(sourceScope->filePath());
+                    // note: suggestions only accepts qml file paths, and can't open the
+                    // non-absolute paths in QQmlJSScope::filePath of C++ defined types
+                    if (sourceScope->isComposite())
+                        suggestion->setFilename(sourceScope->filePath());
                 }
             } else {
                 message += " (marked as required by %1)"_L1.arg(requiredScopeName);

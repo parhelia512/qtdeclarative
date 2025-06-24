@@ -80,6 +80,13 @@ void QQmlJSScope::insertJSIdentifier(const QString &name, const JavaScriptIdenti
     }
 }
 
+void QQmlJSScope::setLineNumber(quint32 lineNumber)
+{
+    m_sourceLocation.startLine = lineNumber;
+    // also set the startColumn to make the QQmlJSSourceLocation usable
+    m_sourceLocation.startColumn = 1;
+}
+
 void QQmlJSScope::insertPropertyIdentifier(const QQmlJSMetaProperty &property)
 {
     addOwnProperty(property);

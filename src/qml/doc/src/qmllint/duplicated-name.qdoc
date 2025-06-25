@@ -36,7 +36,7 @@ Item {
 }
 \endqml
 
-\section1 Duplicated signal mame
+\section1 Duplicated signal name
 
 \section2 What happened?
 Multiple signals in the same QML component scope have the same name.

@@ -82,6 +82,7 @@ private slots:
     void panMenuBar_data();
     void panMenuBar();
     void dontDeleteDelegates();
+    void clearMenus();
 
 private:
     bool nativeMenuBarSupported = false;
@@ -1894,6 +1895,16 @@ void tst_qquickmenubar::dontDeleteDelegates()
     // The same goes for the new delegate: it shouldn't be destroyed when setting the old one.
     menuBar->setDelegate(delegateComponent1);
     QVERIFY(delegateComponent2);
+}
+
+void tst_qquickmenubar::clearMenus()
+{
+    QQmlEngine engine;
+    QQmlComponent c(&engine, testFileUrl("clearMenus.qml"));
+    QVERIFY2(c.isReady(), qPrintable(c.errorString()));
+    QScopedPointer<QObject> o(c.create());
+    QVERIFY(!o.isNull());
+    QTRY_COMPARE(o->property("v").toInt(), 2);
 }
 
 QTEST_QUICKCONTROLS_MAIN(tst_qquickmenubar)

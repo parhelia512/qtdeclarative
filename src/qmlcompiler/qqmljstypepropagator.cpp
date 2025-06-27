@@ -1534,6 +1534,26 @@ void QQmlJSTypePropagator::setRegister(int index, QQmlJSRegisterContent content)
     m_state.setRegister(index, content);
 }
 
+/*! \internal
+ * Merges the types of two variations of the register at \index
+ * When the code branches and merges, the same register can carry one of multiple types.
+ * For example:
+ *
+ * let a
+ * if (something)
+ *     a = 12
+ * else
+ *     a = "stringstring"
+ * console.log(a)
+ *
+ * At the point where we log the value we need a type that can hold both, the number and
+ * the string because we don't know which branch was taken before. mergeRegister chooses a
+ * type that can hold both variants.
+ *
+ * Since the type propagator can run multiple passes over the same code (for loops with back
+ * jumps), we need to reproduce previous resolutions of the merge where they still fit. To that
+ * effect, we check m_prevStateAnnotations here.
+ */
 void QQmlJSTypePropagator::mergeRegister(
             int index, const VirtualRegister &a, const VirtualRegister &b)
 {

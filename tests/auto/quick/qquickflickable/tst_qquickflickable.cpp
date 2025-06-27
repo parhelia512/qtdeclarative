@@ -1993,7 +1993,7 @@ void tst_qquickflickable::flickTwiceUsingTouches()
     qDebug() << "contentYAfterFirstFlick " << contentYAfterFirstFlick;
     QVERIFY(contentYAfterFirstFlick > 50.0f);
     // Wait until view stops moving
-    QTRY_VERIFY(!flickable->isMoving());
+    QTRY_VERIFY_WITH_TIMEOUT(!flickable->isMoving(), 3s);
 
     QQuickTest::pointerFlick(touchscreen.get(), &window, 1, QPoint(100, 400), QPoint(100, 240), 100);
 

@@ -32,6 +32,8 @@ QQmlDataTest::QQmlDataTest(
         m_usesOwnCacheDir = true;
         qputenv("QML_DISK_CACHE_PATH", m_cacheDir.path().toLocal8Bit());
     }
+
+    QTest::defaultTryTimeout.store(std::chrono::seconds(1));
 }
 
 QQmlDataTest::~QQmlDataTest()

@@ -250,7 +250,7 @@ void tst_qv4mm::accessParentOnDestruction()
     QVERIFY(obj);
     QPointer<QObject> timer = qvariant_cast<QObject *>(obj->property("timer"));
     QVERIFY(timer);
-    QTRY_VERIFY(!timer->property("running").toBool());
+    QTRY_VERIFY_WITH_TIMEOUT(!timer->property("running").toBool(), 2s);
     QCOMPARE(obj->property("iterations").toInt(), 100);
     QCOMPARE(obj->property("creations").toInt(), 100);
     gc(engine); // ensure incremental gc has finished, and collected all objects

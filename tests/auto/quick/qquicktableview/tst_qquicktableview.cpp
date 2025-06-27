@@ -4189,8 +4189,8 @@ void tst_QQuickTableView::positionViewAtCellWithAnimation()
     // Wait for animation to finish
     QVERIFY(tableViewPrivate->positionXAnimation.isRunning());
     QVERIFY(tableViewPrivate->positionYAnimation.isRunning());
-    QTRY_COMPARE(tableViewPrivate->positionXAnimation.isRunning(), false);
-    QTRY_COMPARE(tableViewPrivate->positionYAnimation.isRunning(), false);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionXAnimation.isRunning(), false, 3s);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionYAnimation.isRunning(), false, 3s);
 
     // Check that the cell is now placed in the top left corner
     QVERIFY(tableViewPrivate->loadedItems.contains(serializedIndex));
@@ -4204,7 +4204,7 @@ void tst_QQuickTableView::positionViewAtCellWithAnimation()
     // Wait for animation to finish
     QVERIFY(tableViewPrivate->positionXAnimation.isRunning());
     QVERIFY(!tableViewPrivate->positionYAnimation.isRunning());
-    QTRY_COMPARE(tableViewPrivate->positionXAnimation.isRunning(), false);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionXAnimation.isRunning(), false, 3s);
 
     // Check that the cell is now placed in the top right corner
     QVERIFY(tableViewPrivate->loadedItems.contains(serializedIndex));
@@ -4218,8 +4218,8 @@ void tst_QQuickTableView::positionViewAtCellWithAnimation()
     // Wait for animation to finish
     QVERIFY(tableViewPrivate->positionXAnimation.isRunning());
     QVERIFY(tableViewPrivate->positionYAnimation.isRunning());
-    QTRY_COMPARE(tableViewPrivate->positionXAnimation.isRunning(), false);
-    QTRY_COMPARE(tableViewPrivate->positionYAnimation.isRunning(), false);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionXAnimation.isRunning(), false, 3s);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionYAnimation.isRunning(), false, 3s);
 
     // Check that the cell is now placed in the bottom left corner
     QVERIFY(tableViewPrivate->loadedItems.contains(serializedIndex));
@@ -4233,7 +4233,7 @@ void tst_QQuickTableView::positionViewAtCellWithAnimation()
     // Wait for animation to finish
     QVERIFY(tableViewPrivate->positionXAnimation.isRunning());
     QVERIFY(!tableViewPrivate->positionYAnimation.isRunning());
-    QTRY_COMPARE(tableViewPrivate->positionXAnimation.isRunning(), false);
+    QTRY_COMPARE_WITH_TIMEOUT(tableViewPrivate->positionXAnimation.isRunning(), false, 3s);
 
     // Check that the cell is now placed in the bottom right corner
     QVERIFY(tableViewPrivate->loadedItems.contains(serializedIndex));

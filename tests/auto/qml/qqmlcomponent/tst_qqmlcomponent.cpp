@@ -451,7 +451,7 @@ void tst_qqmlcomponent::async()
     ComponentWatcher watcher(&component);
     component.loadUrl(server.url("/TestComponent.qml"), QQmlComponent::Asynchronous);
     QCOMPARE(watcher.loading, 1);
-    QTRY_VERIFY(component.isReady());
+    QTRY_VERIFY_WITH_TIMEOUT(component.isReady(), 3s);
     QCOMPARE(watcher.ready, 1);
     QCOMPARE(watcher.error, 0);
 

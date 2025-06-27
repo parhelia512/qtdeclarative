@@ -1539,7 +1539,7 @@ void tst_qqmlxmlhttprequest::stateChangeCallingContext()
     object->setProperty("serverBaseUrl", server.baseUrl().toString());
     component.completeCreate();
     server.sendDelayedItem();
-    QTRY_VERIFY(object->property("success").toBool());
+    QTRY_VERIFY_WITH_TIMEOUT(object->property("success").toBool(), 3s);
 }
 
 void tst_qqmlxmlhttprequest::overrideMime()

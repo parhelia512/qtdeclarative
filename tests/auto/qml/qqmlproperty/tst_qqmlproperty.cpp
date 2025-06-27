@@ -2636,7 +2636,7 @@ void tst_qqmlproperty::invalidateQPropertyChangeTriggers()
     });
 
     root->setProperty("running", true);
-    QTRY_VERIFY(!root->property("running").toBool());
+    QTRY_VERIFY_WITH_TIMEOUT(!root->property("running").toBool(), 2s);
 
     QCOMPARE(names, (QStringList {
         u""_s, u"1300"_s, u"Create Object"_s,

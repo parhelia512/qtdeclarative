@@ -684,7 +684,7 @@ void tst_QQmlProfilerService::flushInterval()
     // Make sure we get multiple messages
     QTRY_VERIFY(m_client->qmlMessages.size() > 0);
     QVERIFY(m_client->qmlMessages.size() < 100);
-    QTRY_VERIFY(m_client->qmlMessages.size() > 100);
+    QTRY_VERIFY_WITH_TIMEOUT(m_client->qmlMessages.size() > 100, 5s);
 
     m_client->client->setRecording(false);
     checkTraceReceived();

@@ -2848,7 +2848,7 @@ void tst_QQuickPathView::touchMove()
     // Wait for the flick to finish
     QVERIFY(QTest::qWaitFor([&]()
         { return !pathview->isFlicking(); }
-    ));
+    , QDeadlineTimer(5000)));
     QVERIFY(!pathview->isMoving());
     QVERIFY(!pathview->isDragging());
     QCOMPARE(movingSpy.size(), 2);

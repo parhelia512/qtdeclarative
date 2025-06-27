@@ -429,7 +429,7 @@ void tst_qquickanimatedimage::qtbug_16520()
 
     anim->setProperty("source", server.urlString("/stickman.gif"));
     QTRY_COMPARE(anim->opacity(), qreal(0));
-    QTRY_COMPARE(anim->opacity(), qreal(1));
+    QTRY_COMPARE_WITH_TIMEOUT(anim->opacity(), qreal(1), 2s);
 
     delete anim;
     delete root;

@@ -4367,7 +4367,7 @@ void tst_qquickvisualdatamodel::checkFilterGroupForDelegate()
     QQuickItem *obj = view.rootObject();
     QVERIFY(obj);
 
-    QTRY_VERIFY(obj->property("numChanges").toInt() > 100);
+    QTRY_VERIFY_WITH_TIMEOUT(obj->property("numChanges").toInt() > 100, 3s);
     QVERIFY(obj->property("ok").toBool());
 }
 

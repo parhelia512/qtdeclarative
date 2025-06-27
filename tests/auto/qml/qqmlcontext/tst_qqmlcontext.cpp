@@ -897,7 +897,7 @@ void tst_qqmlcontext::outerContextObject()
     });
     timer.start();
 
-    QTRY_VERIFY(iterations >= 100);
+    QTRY_VERIFY_WITH_TIMEOUT(iterations >= 100, 2s);
 }
 
 void tst_qqmlcontext::contextObjectHierarchy()

@@ -224,9 +224,9 @@ bool QQuickControlsTestUtils::arePopupWindowsSupported()
 #endif
 }
 
-QString QQuickTest::qActiveFocusFailureMessage(QQuickPopup *popup)
+QByteArray QQuickTest::qActiveFocusFailureMessage(QQuickPopup *popup)
 {
-    QString message;
+    QByteArray message;
     QDebug debug(&message);
     const QQuickWindow *window = popup->window();
     const QString activeFocusItemStr = window

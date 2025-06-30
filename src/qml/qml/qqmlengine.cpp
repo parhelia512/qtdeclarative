@@ -2039,7 +2039,7 @@ static inline QString shellNormalizeFileName(const QString &name)
 }
 #endif // Q_OS_WIN
 
-bool QQml_isFileCaseCorrect(const QString &fileName, int lengthIn /* = -1 */)
+bool QQml_isFileCaseCorrect(const QString &fileName)
 {
 #if defined(Q_OS_DARWIN) || defined(Q_OS_WIN)
     QFileInfo info(fileName);
@@ -2077,18 +2077,14 @@ bool QQml_isFileCaseCorrect(const QString &fileName, int lengthIn /* = -1 */)
     const int canonicalLength = canonical.length();
 
     int length = qMin(absoluteLength, canonicalLength);
-    if (lengthIn >= 0) {
-        length = qMin(lengthIn, length);
-    } else {
-        // No length given: Limit to file name. Do not trigger
-        // on drive letters or folder names.
-        int lastSlash = absolute.lastIndexOf(QLatin1Char('/'));
-        if (lastSlash < 0)
-            lastSlash = absolute.lastIndexOf(QLatin1Char('\\'));
-        if (lastSlash >= 0) {
-            const int fileNameLength = absoluteLength - 1 - lastSlash;
-            length = qMin(length, fileNameLength);
-        }
+    // Limit to file name. Do not trigger
+    // on drive letters or folder names.
+    int lastSlash = absolute.lastIndexOf(QLatin1Char('/'));
+    if (lastSlash < 0)
+        lastSlash = absolute.lastIndexOf(QLatin1Char('\\'));
+    if (lastSlash >= 0) {
+        const int fileNameLength = absoluteLength - 1 - lastSlash;
+        length = qMin(length, fileNameLength);
     }
 
     for (int ii = 0; ii < length; ++ii) {
@@ -2101,7 +2097,6 @@ bool QQml_isFileCaseCorrect(const QString &fileName, int lengthIn /* = -1 */)
             return false;
     }
 #else
-    Q_UNUSED(lengthIn);
     Q_UNUSED(fileName);
 #endif
     return true;

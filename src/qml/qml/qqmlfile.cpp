@@ -22,8 +22,14 @@ QT_BEGIN_NAMESPACE
     and file names the way \l{QQmlEngine} does when loading content from them.
 */
 
+static char qrc_string[] = "qrc";
+static char file_string[] = "file";
+
+#if QT_DEPRECATED_SINCE(6, 11)
+
 /*!
     \internal
+    \deprecated [6.11]
 
     \enum QQmlFile::Status
     \value Null
@@ -32,8 +38,6 @@ QT_BEGIN_NAMESPACE
     \value Loading
  */
 
-static char qrc_string[] = "qrc";
-static char file_string[] = "file";
 
 #if defined(Q_OS_ANDROID)
 static char assets_string[] = "assets";
@@ -272,6 +276,7 @@ QQmlFile::Status QQmlFile::status() const
 
 /*!
     \internal
+    \deprecated [6.11]
  */
 QString QQmlFile::error() const
 {
@@ -288,6 +293,7 @@ QString QQmlFile::error() const
 
 /*!
     \internal
+    \deprecated [6.11]
  */
 qint64 QQmlFile::size() const
 {
@@ -296,6 +302,7 @@ qint64 QQmlFile::size() const
 
 /*!
     \internal
+    \deprecated [6.11]
  */
 const char *QQmlFile::data() const
 {
@@ -304,6 +311,7 @@ const char *QQmlFile::data() const
 
 /*!
     \internal
+    \deprecated [6.11]
  */
 QByteArray QQmlFile::dataByteArray() const
 {
@@ -312,6 +320,8 @@ QByteArray QQmlFile::dataByteArray() const
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Loads content at \a url using \a engine.
  */
 void QQmlFile::load(QQmlEngine *engine, const QUrl &url)
@@ -346,6 +356,8 @@ void QQmlFile::load(QQmlEngine *engine, const QUrl &url)
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Loads content at \a url using \a engine.
  */
 void QQmlFile::load(QQmlEngine *engine, const QString &url)
@@ -384,6 +396,7 @@ void QQmlFile::load(QQmlEngine *engine, const QString &url)
 
 /*!
     \internal
+    \deprecated [6.11]
  */
 void QQmlFile::clear()
 {
@@ -395,6 +408,8 @@ void QQmlFile::clear()
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Redirects to the other clear() overload, ignoring \a object.
  */
 void QQmlFile::clear(QObject *object)
@@ -421,6 +436,8 @@ bool QQmlFile::connectFinished(QObject *object, const char *method)
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Connects \a method of \a object to the internal \c{finished} signal.
  */
 bool QQmlFile::connectFinished(QObject *object, int method)
@@ -436,6 +453,8 @@ bool QQmlFile::connectFinished(QObject *object, int method)
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Connects \a method of \a object to the internal \c{downloadProgress} signal.
  */
 bool QQmlFile::connectDownloadProgress(QObject *object, const char *method)
@@ -451,6 +470,8 @@ bool QQmlFile::connectDownloadProgress(QObject *object, const char *method)
 
 /*!
     \internal
+    \deprecated [6.11]
+
     Connects \a method of \a object to the internal \c{downloadProgress} signal.
  */
 bool QQmlFile::connectDownloadProgress(QObject *object, int method)
@@ -464,6 +485,8 @@ bool QQmlFile::connectDownloadProgress(QObject *object, int method)
                                 object, method);
 }
 #endif
+
+#endif // QT_DEPRECATED_SINCE(6, 11)
 
 /*!
     \internal

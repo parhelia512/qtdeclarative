@@ -830,10 +830,7 @@ void tst_qqmllanguage::errors_data()
     QTest::newRow("enum value too large") << "invalidQmlEnumValue.3.qml" << "invalidQmlEnumValue.3.errors.txt" << false;
     QTest::newRow("non-integer enum value") << "invalidQmlEnumValue.4.qml" << "invalidQmlEnumValue.4.errors.txt" << false;
 
-    const QString expectedError = isCaseSensitiveFileSystem(dataDirectory()) ?
-        QStringLiteral("incorrectCase.errors.sensitive.txt") :
-        QStringLiteral("incorrectCase.errors.insensitive.txt");
-    QTest::newRow("incorrectCase") << "incorrectCase.qml" << expectedError << false;
+    QTest::newRow("incorrectCase") << "incorrectCase.qml" << "incorrectCase.errors.txt" << false;
 
     QTest::newRow("metaobjectRevision.1") << "metaobjectRevision.1.qml" << "metaobjectRevision.1.errors.txt" << false;
     QTest::newRow("metaobjectRevision.2") << "metaobjectRevision.2.qml" << "metaobjectRevision.2.errors.txt" << false;

@@ -356,32 +356,18 @@ QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNa
                                            }),
                             fileNamesToSearch.end());
 
-    // early return:
-    if (fileNamesToSearch.isEmpty())
-        return {};
-
-    QSet<QString> foundFiles;
-    foundFiles.reserve(fileNamesToSearch.size());
-
-    QStringList result;
-
     const QString rootDir = QUrl(QString::fromUtf8(m_rootUrl)).toLocalFile();
-
-    if (rootDir.isEmpty())
-        return result;
-
     qCDebug(codeModelLog) << "Searching for files to watch in workspace folder" << rootDir;
-    QDirIterator it(rootDir, fileNamesToSearch, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        const QFileInfo info = it.nextFileInfo();
-        const QString fileName = info.fileName();
-        foundFiles.insert(fileName);
-        result << info.absoluteFilePath();
-    }
 
-    for (const auto& fileName: fileNamesToSearch) {
-        if (!foundFiles.contains(fileName))
+
+    const QStringList result =
+            QQmlLSUtils::findFilePathsFromFileNames(rootDir, fileNamesToSearch);
+
+    for (const auto &fileName : fileNamesToSearch) {
+        if (std::none_of(result.begin(), result.end(),
+                         [&fileName](const QString &path) { return path.endsWith(fileName); })) {
             m_ignoreForWatching.insert(fileName);
+        }
     }
     return result;
 }

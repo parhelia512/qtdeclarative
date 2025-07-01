@@ -2443,6 +2443,22 @@ RenameUsages::RenameUsages(const QList<Edit> &renamesInFile,
     std::sort(m_renamesInFilename.begin(), m_renamesInFilename.end());
 }
 
+QStringList findFilePathsFromFileNames(const QString &rootDir, const QStringList &fileNamesToSearch)
+{
+    if (fileNamesToSearch.isEmpty() || rootDir.isEmpty())
+        return {};
+
+    QStringList result;
+    QDirIterator it(rootDir, fileNamesToSearch, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QFileInfo info = it.nextFileInfo();
+        const QString fileName = info.fileName();
+        result << info.absoluteFilePath();
+    }
+
+    return result;
+}
+
 } // namespace QQmlLSUtils
 
 QT_END_NAMESPACE

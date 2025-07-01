@@ -293,6 +293,8 @@ QQmlJSScope::ConstPtr findDefiningScopeForEnumeration(const QQmlJSScope::ConstPt
                                                             const QString &nameToCheck);
 QQmlJSScope::ConstPtr findDefiningScopeForEnumerationKey(const QQmlJSScope::ConstPtr &referrerScope,
                                                         const QString &nameToCheck);
+QStringList findFilePathsFromFileNames(const QString &rootDir,
+                                       const QStringList &fileNamesToSearch);
 } // namespace QQmlLSUtils
 
 QT_END_NAMESPACE

@@ -2985,7 +2985,6 @@ void tst_qqmllanguage::reservedWords_data()
     QTest::newRow("export") << QByteArray("export");
     QTest::newRow("extends") << QByteArray("extends");
     QTest::newRow("false") << QByteArray("false");
-    QTest::newRow("final") << QByteArray("final");
     QTest::newRow("finally") << QByteArray("finally");
     QTest::newRow("for") << QByteArray("for");
     QTest::newRow("function") << QByteArray("function");

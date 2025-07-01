@@ -3446,6 +3446,10 @@ public:
     bool isReadonly() const { return readonlyToken().isValid(); }
     SourceLocation finalToken() const { return m_finalToken; }
     bool isFinal() const { return finalToken().isValid(); }
+    SourceLocation virtualToken() const { return m_virtualToken; }
+    bool isVirtual() const { return virtualToken().isValid(); }
+    SourceLocation overrideToken() const { return m_overrideToken; }
+    bool isOverride() const { return overrideToken().isValid(); }
 
     SourceLocation propertyToken() const { return m_propertyToken; }
 
@@ -3472,8 +3476,10 @@ private:
     SourceLocation m_defaultToken;
     SourceLocation m_readonlyToken;
     SourceLocation m_requiredToken;
-    SourceLocation m_propertyToken;
     SourceLocation m_finalToken;
+    SourceLocation m_virtualToken;
+    SourceLocation m_overrideToken;
+    SourceLocation m_propertyToken;
 };
 
 class QML_PARSER_EXPORT UiPublicMember: public UiObjectMember
@@ -3535,6 +3541,18 @@ public:
         return hasAttributes ? m_attributes->finalToken() : SourceLocation {};
     }
     bool isFinal() const { return finalToken().isValid(); }
+
+    SourceLocation overrideToken() const
+    {
+        return hasAttributes ? m_attributes->overrideToken() : SourceLocation{};
+    }
+    bool isOverride() const { return overrideToken().isValid(); }
+
+    SourceLocation virtualToken() const
+    {
+        return hasAttributes ? m_attributes->virtualToken() : SourceLocation{};
+    }
+    bool isVirtual() const { return virtualToken().isValid(); }
 
     void setAttributes(UiPropertyAttributes *attributes)
     {

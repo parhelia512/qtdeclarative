@@ -522,6 +522,11 @@ static inline int classify7(QStringView s, int parseModeFlags) {
       }
     }
   }
+  else if ((parseModeFlags & Lexer::QmlMode) && s[0].unicode() == 'v') {
+      if (s.slice(1) == QLatin1StringView("irtual")) {
+          return Lexer::T_VIRTUAL;
+      }
+  }
   return Lexer::T_IDENTIFIER;
 }
 
@@ -593,6 +598,11 @@ static inline int classify8(QStringView s, int parseModeFlags) {
         }
       }
     }
+  }
+  else if ((parseModeFlags & Lexer::QmlMode) && s[0].unicode() == 'o') {
+      if (s.slice(1) == QLatin1StringView("verride")) {
+          return Lexer::T_OVERRIDE;
+      }
   }
   else if ((parseModeFlags & Lexer::QmlMode) && s[0].unicode() == 'p') {
     if (s[1].unicode() == 'r') {

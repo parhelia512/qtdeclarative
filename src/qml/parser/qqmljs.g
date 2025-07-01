@@ -86,6 +86,9 @@
 %token T_SET "set"
 %token T_THROWS "throws"
 
+%token T_VIRTUAL "virtual"
+%token T_OVERRIDE "override"
+
 -- token representing no token
 %token T_NONE
 
@@ -115,13 +118,14 @@
 --%left T_PLUS T_MINUS
 
 -- non-associative keywords
-%nonassoc T_ABSTRACT T_AS T_COLON T_COMPONENT T_FINAL T_FROM T_GET T_IDENTIFIER T_IMPLEMENTS
+%nonassoc T_ABSTRACT T_AS T_COLON T_COMPONENT T_FROM T_GET T_IDENTIFIER T_IMPLEMENTS
 %nonassoc T_INTERFACE T_NATIVE T_OF T_ON T_PACKAGE T_PRIVATE T_PROPERTY T_PROTECTED T_PUBLIC
-%nonassoc T_READONLY T_REQUIRED T_SET T_SIGNAL T_STATIC T_SYNCHRONIZED T_THROWS T_TRANSIENT T_VOLATILE
+%nonassoc T_SET T_SIGNAL T_STATIC T_SYNCHRONIZED T_THROWS T_TRANSIENT T_VOLATILE
+%nonassoc T_VIRTUAL T_OVERRIDE T_FINAL T_READONLY T_REQUIRED T_DEFAULT
 
 %nonassoc REDUCE_HERE
 %right T_THEN T_ELSE
-%right T_WITHOUTAS T_AS
+%right T_WITHOUTAS
 
 %start TopLevel
 
@@ -1320,6 +1324,8 @@ AttrRequired:  T_REQUIRED %prec REDUCE_HERE;
 AttrReadonly:  T_READONLY %prec REDUCE_HERE;
 AttrDefault:  T_DEFAULT %prec REDUCE_HERE;
 AttrFinal: T_FINAL %prec REDUCE_HERE;
+AttrVirtual:  T_VIRTUAL %prec REDUCE_HERE;
+AttrOverride:  T_OVERRIDE %prec REDUCE_HERE;
 
 UiPropertyAttributes: AttrRequired UiPropertyAttributes;
 /.
@@ -1359,8 +1365,52 @@ UiPropertyAttributes: AttrFinal UiPropertyAttributes;
     case $rule_number: {
         AST::UiPropertyAttributes *node = sym(2).UiPropertyAttributes;
         if (node->isFinal())
-            diagnostic_messages.append(compileError(node->finalToken(), QLatin1String("Duplicated 'final' attribute is not allowed."), QtCriticalMsg));
+            syntaxError(node->finalToken(), "Duplicated 'final' attribute is not allowed.");
         node->m_finalToken = loc(1);
+        if (node->isVirtual()) {
+            syntaxError(node->virtualToken(), "The 'virtual' cannot be combined with 'final', as these attributes are mutually exclusive");
+        }
+        if (node->isOverride()) {
+            syntaxError(node->overrideToken(), "'override' is redundant when a property is marked as 'final'");
+        }
+        sym(1).UiPropertyAttributes = node;
+    } break;
+./
+
+UiPropertyAttributes: AttrVirtual UiPropertyAttributes;
+/.
+    case $rule_number: {
+        AST::UiPropertyAttributes *node = sym(2).UiPropertyAttributes;
+        if (node->isVirtual())
+            syntaxError(node->virtualToken(), "Duplicated 'virtual' attribute is not allowed.");
+        if (node->isOverride()) {
+            syntaxError(loc(1), "'virtual' is redundant when overriding a property. The 'override' "
+            "must only be used when actually overriding an existing property; using it on a "
+            "new property is an error.");
+        }
+        if (node->isFinal()) {
+            syntaxError(loc(1), "The 'virtual' cannot be combined with 'final', as these attributes are mutually exclusive");
+        }
+        node->m_virtualToken = loc(1);
+        sym(1).UiPropertyAttributes = node;
+    } break;
+./
+
+UiPropertyAttributes: AttrOverride UiPropertyAttributes;
+/.
+    case $rule_number: {
+        AST::UiPropertyAttributes *node = sym(2).UiPropertyAttributes;
+        if (node->isOverride())
+            syntaxError(node->overrideToken(), "Duplicated 'override' attribute is not allowed.");
+        if (node->isVirtual()) {
+            syntaxError(node->virtualToken(), "'virtual' is redundant when overriding a property. The 'override' "
+            "must only be used when actually overriding an existing property; using it on a "
+            "new property is an error.");
+        }
+        if (node->isFinal()) {
+            syntaxError(loc(1), "'override' is redundant when a property is marked as 'final'");
+        }
+        node->m_overrideToken = loc(1);
         sym(1).UiPropertyAttributes = node;
     } break;
 ./
@@ -1671,7 +1721,10 @@ EnumMemberList: EnumMemberList T_COMMA T_IDENTIFIER T_EQ T_MINUS T_NUMERIC_LITER
 -- Keywords & Identifiers
 --------------------------------------------------------------------------------------------------------
 ECMAContextualKeyword: T_GET | T_SET | T_FROM | T_OF;
-QMLContextualKeyword: T_PROPERTY | T_SIGNAL | T_READONLY | T_ON | T_REQUIRED | T_COMPONENT;
+--- T_DEFAULT should also be a part of QMLContextualKeyword, however it also belongs to ECMAKeyword
+--- and because of the workaround for JsIdentifier, it can't currently be included here
+QMLContextualKeyword: T_PROPERTY | T_SIGNAL | T_READONLY | T_ON | T_REQUIRED | T_COMPONENT | T_FINAL
+                    | T_VIRTUAL | T_OVERRIDE;
 
 --- as per ES7 these words are no longer reserved, however we might be interested in
 --- keeping them reserved for future usage in QML
@@ -1680,8 +1733,7 @@ QMLFutureReservedWord: T_PACKAGE | T_ABSTRACT | T_INTERFACE | T_IMPLEMENTS | T_P
 
 --- QMLReserved means can't be used as QmlIdentifier
 --- todo: consider making all QMLContextualKeyword-s reserved ones or the other way around
-QMLReservedWord: T_STATIC | T_AS | T_FINAL
-                | QMLFutureReservedWord;
+QMLReservedWord: T_STATIC | T_AS | QMLFutureReservedWord;
 
 --- 262 ES 7 11.6.2.1
 ECMAKeyword: T_BREAK | T_DO | T_IN | T_TYPEOF | T_CASE | T_ELSE | T_INSTANCEOF

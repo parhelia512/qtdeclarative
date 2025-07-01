@@ -57,6 +57,7 @@ private slots:
     void floodTypeLoaderEventQueue();
     void retainQmlTypeAcrossEngines();
     void loadLocalTypesAfterRemoteFails();
+    void populateDirectoryCache();
 
 private:
     void checkSingleton(const QString & dataDirectory);
@@ -983,6 +984,18 @@ void tst_QQMLTypeLoader::loadLocalTypesAfterRemoteFails()
     QScopedPointer<QObject> object(component.create());
     QCOMPARE(object->property("someValue").toInt(), 5);
     QCOMPARE(object->property("doneSomething").toInt(), 5);
+}
+
+void tst_QQMLTypeLoader::populateDirectoryCache()
+{
+    QQmlEngine engine;
+    QQmlTypeLoader *typeLoader = QQmlTypeLoader::get(&engine);
+
+    // Deliberately confuse it with a double slash
+    QVERIFY(typeLoader->directoryExists(dataDirectory() + "//"));
+
+    // One slash used to be required.
+    QVERIFY(typeLoader->fileExists(dataDirectory() + '/', "doesExist.qml"));
 }
 
 QTEST_MAIN(tst_QQMLTypeLoader)

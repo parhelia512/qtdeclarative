@@ -1531,9 +1531,9 @@ QString QQmlTypeLoader::absoluteFilePath(const QString &path)
     }
 #endif
 
-    const qsizetype lastSlash = path.lastIndexOf(QLatin1Char('/')) + 1;
-    const QString dirPath(path.left(lastSlash));
-    const QString fileName(path.mid(lastSlash, path.size() - lastSlash));
+    const qsizetype onePastLastSlash = path.lastIndexOf(QLatin1Char('/')) + 1;
+    const QString dirPath(path.left(onePastLastSlash - 1));
+    const QString fileName(path.mid(onePastLastSlash, path.size() - onePastLastSlash));
     QString absoluteFilePath;
 
     if (fileExists(dirPath, fileName))
@@ -1545,7 +1545,39 @@ QString QQmlTypeLoader::absoluteFilePath(const QString &path)
     return absoluteFilePath;
 }
 
-bool QQmlTypeLoader::fileExists(const QString &path, const QString &file)
+enum class FileSetPopulateResult { NotFound, Found, Overflow };
+static FileSetPopulateResult populateFileSet(
+        QCache<QString, bool> *fileSet, const QString &path, const QString &file)
+{
+    const QDirListing listing(path, QDirListing::IteratorFlag::CaseSensitive);
+    bool seen = false;
+    for (const auto &entry : listing) {
+        const QString next = entry.fileName();
+        if (next == file)
+            seen = true;
+        fileSet->insert(next, new bool(true));
+        if (fileSet->totalCost() == fileSet->maxCost())
+            break;
+    }
+
+    if (seen)
+        return FileSetPopulateResult::Found;
+    if (fileSet->totalCost() < fileSet->maxCost())
+        return FileSetPopulateResult::NotFound;
+    return FileSetPopulateResult::Overflow;
+}
+
+static QString stripTrailingSlashes(const QString &path)
+{
+    for (qsizetype length = path.size(); length > 0; --length) {
+        if (path[length - 1] != QLatin1Char('/'))
+            return path.left(length);
+    }
+
+    return QString();
+}
+
+bool QQmlTypeLoader::fileExists(const QString &dirPath, const QString &file)
 {
     // Can be called from either thread.
 
@@ -1555,11 +1587,12 @@ bool QQmlTypeLoader::fileExists(const QString &path, const QString &file)
     // claim that Date.qml exists in such a situation on a case-insensitive file sysem. Such a
     // thing then shadows the JavaScript Date object and disaster ensues.
 
+    const QString path = stripTrailingSlashes(dirPath);
+
     const QChar nullChar(QChar::Null);
     if (path.isEmpty() || path.contains(nullChar) || file.isEmpty() || file.contains(nullChar))
         return false;
 
-    Q_ASSERT(path.endsWith(QLatin1Char('/')));
 
     QQmlTypeLoaderSharedDataPtr data(&m_data);
     QCache<QString, bool> *fileSet = data->importDirCache.object(path);
@@ -1589,21 +1622,14 @@ bool QQmlTypeLoader::fileExists(const QString &path, const QString &file)
             if (!fileSet)
                 return false;
 
-            const QDirListing listing(dir.path(), QDirListing::IteratorFlag::CaseSensitive);
-            bool seen = false;
-            for (const auto &entry : listing) {
-                const QString next = entry.fileName();
-                if (next == file)
-                    seen = true;
-                fileSet->insert(next, new bool(true));
-                if (fileSet->totalCost() == fileSet->maxCost())
-                    break;
-            }
-
-            if (seen)
-                return true;
-            else if (fileSet->totalCost() < fileSet->maxCost())
+            switch (populateFileSet(fileSet, dir.path(), file)) {
+            case FileSetPopulateResult::NotFound:
                 return false;
+            case FileSetPopulateResult::Found:
+                return true;
+            case FileSetPopulateResult::Overflow:
+                break;
+            }
 
             // Cache overflow. Look up files individually
         } else {
@@ -1670,17 +1696,19 @@ bool QQmlTypeLoader::directoryExists(const QString &path)
         return fileInfo.exists() && fileInfo.isDir();
     }
 
-    int length = path.size();
-    if (path.endsWith(QLatin1Char('/')))
-        --length;
-    QString dirPath(path.left(length));
+    const QString dirPath = stripTrailingSlashes(path);
 
     QQmlTypeLoaderSharedDataPtr data(&m_data);
     if (!data->importDirCache.contains(dirPath)) {
-        QCache<QString, bool> *files = QDir(dirPath).exists()
-                ? new QCache<QString, bool>
-                : nullptr;
-        data->importDirCache.insert(dirPath, files);
+        if (QDir(dirPath).exists()) {
+            QCache<QString, bool> *files = new QCache<QString, bool>;
+            populateFileSet(files, dirPath, QString());
+            data->importDirCache.insert(dirPath, files);
+            return true;
+        }
+
+        data->importDirCache.insert(dirPath, nullptr);
+        return false;
     }
 
     return data->importDirCache.object(dirPath) != nullptr;

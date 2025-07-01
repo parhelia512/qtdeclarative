@@ -1325,7 +1325,7 @@ void DomEnvironment::loadModuleDependency(
         // location. It gets even funnier if the callback is first called and then copied further.
         // TODO: Is this the intended behavior?
         int toLoad = (commonV ? 1 : 0) + ((maxV >= 0) ? 1 : 0);
-        const auto loadCallback2 = loadCallback
+        const auto &loadCallback2 = loadCallback
                 ? [p, loadCallback, toLoad](Path, const DomItem &, const DomItem &elV) mutable {
                       if (--toLoad == 0) {
                           DomItem el = elV.path(p);

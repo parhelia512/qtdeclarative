@@ -193,6 +193,16 @@ public:
     QQmlRefPointer<QQmlQmldirData> getQmldir(const QUrl &);
 
     QString absoluteFilePath(const QString &path);
+
+    bool fileExists(const QString &filePath)
+    {
+        Q_ASSERT(!filePath.endsWith(QLatin1Char('/')));
+        const qsizetype pastLastSlash = filePath.lastIndexOf(QLatin1Char('/')) + 1;
+        return fileExists(
+                filePath.left(pastLastSlash - 1),
+                filePath.mid(pastLastSlash, filePath.size() - pastLastSlash));
+    }
+
     bool fileExists(const QString &dirPath, const QString &file);
     bool directoryExists(const QString &path);
 

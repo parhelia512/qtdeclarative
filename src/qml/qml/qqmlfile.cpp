@@ -93,7 +93,7 @@ public:
     QByteArray data;
 
     enum Error {
-        None, NotFound, CaseMismatch, Network
+        None, NotFound, Network
     };
 
     Error error;
@@ -287,8 +287,6 @@ QString QQmlFile::error() const
         return QString();
     case QQmlFilePrivate::NotFound:
         return QLatin1String("File not found");
-    case QQmlFilePrivate::CaseMismatch:
-        return QLatin1String("File name case mismatch");
     }
 }
 
@@ -333,10 +331,9 @@ void QQmlFile::load(QQmlEngine *engine, const QUrl &url)
     d->url = url;
 
     if (isLocalFile(url)) {
-        QString lf = urlToLocalFileOrQrc(url);
-
-        if (!QQml_isFileCaseCorrect(lf)) {
-            d->error = QQmlFilePrivate::CaseMismatch;
+        const QString lf = urlToLocalFileOrQrc(url);
+        if (!QQmlTypeLoader::get(engine)->fileExists(lf)) {
+            d->error = QQmlFilePrivate::NotFound;
             return;
         }
 
@@ -370,10 +367,9 @@ void QQmlFile::load(QQmlEngine *engine, const QString &url)
     d->urlString = url;
 
     if (isLocalFile(url)) {
-        QString lf = urlToLocalFileOrQrc(url);
-
-        if (!QQml_isFileCaseCorrect(lf)) {
-            d->error = QQmlFilePrivate::CaseMismatch;
+        const QString lf = urlToLocalFileOrQrc(url);
+        if (!QQmlTypeLoader::get(engine)->fileExists(lf)) {
+            d->error = QQmlFilePrivate::NotFound;
             return;
         }
 

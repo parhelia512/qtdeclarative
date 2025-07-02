@@ -306,7 +306,9 @@ void QQmlTypeLoader::loadThread(const QQmlDataBlob::Ptr &blob)
 
     if (QQmlFile::isSynchronous(blob->m_url)) {
         const QString fileName = QQmlFile::urlToLocalFileOrQrc(blob->m_url);
-        if (!QQml_isFileCaseCorrect(fileName)) {
+        if (!fileExists(fileName) && QFileInfo::exists(fileName)) {
+            // If the file doesn't exist at all, that's fine. It may be cached. If it's a case
+            // mismatch, though, we have to error out.
             blob->setError(QLatin1String("File name case mismatch"));
             return;
         }
@@ -1531,11 +1533,7 @@ QString QQmlTypeLoader::absoluteFilePath(const QString &path)
     }
 #endif
 
-    const qsizetype onePastLastSlash = path.lastIndexOf(QLatin1Char('/')) + 1;
-    const QString dirPath(path.left(onePastLastSlash - 1));
-    const QString fileName(path.mid(onePastLastSlash, path.size() - onePastLastSlash));
-
-    return fileExists(dirPath, fileName)
+    return fileExists(path)
             ? QFileInfo(path).absoluteFilePath()
             : QString();
 }
@@ -1757,11 +1755,11 @@ const QQmlTypeLoaderQmldirContent QQmlTypeLoader::qmldirContent(const QString &f
 
 #define ERROR(description) { QQmlError e; e.setDescription(description); qmldir->setError(e); }
 #define NOT_READABLE_ERROR QString(QLatin1String("module \"$$URI$$\" definition \"%1\" not readable"))
-#define CASE_MISMATCH_ERROR QString(QLatin1String("cannot load module \"$$URI$$\": File name case mismatch for \"%1\""))
+#define NOT_FOUND_ERROR QString(QLatin1String("cannot load module \"$$URI$$\": File \"%1\" not found"))
 
     QFile file(filePath);
-    if (!QQml_isFileCaseCorrect(filePath)) {
-        ERROR(CASE_MISMATCH_ERROR.arg(filePath));
+    if (!fileExists(filePath)) {
+        ERROR(NOT_FOUND_ERROR.arg(filePath));
     } else if (file.open(QFile::ReadOnly)) {
         QByteArray data = file.readAll();
         qmldir->setContent(filePath, QString::fromUtf8(data));

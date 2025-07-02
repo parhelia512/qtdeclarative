@@ -357,20 +357,8 @@ QTypeRevision QQmlPluginImporter::importDynamicPlugin(
                 if (filePath.isEmpty())
                     return QTypeRevision();
 
-                const QString absoluteFilePath = fileInfo.absoluteFilePath();
-                if (!QQml_isFileCaseCorrect(absoluteFilePath)) {
-                    if (errors) {
-                        QQmlError error;
-                        error.setDescription(
-                                    QQmlImports::tr("File name case mismatch for \"%1\"")
-                                    .arg(absoluteFilePath));
-                        errors->prepend(error);
-                    }
-                    return QTypeRevision();
-                }
-
                 QmlPlugin plugin;
-                plugin.loader = std::make_unique<QPluginLoader>(absoluteFilePath);
+                plugin.loader = std::make_unique<QPluginLoader>(fileInfo.absoluteFilePath());
                 if (!plugin.loader->load()) {
                     if (errors) {
                         QQmlError error;

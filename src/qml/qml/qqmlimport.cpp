@@ -635,35 +635,19 @@ bool QQmlImportInstance::resolveType(QQmlTypeLoader *typeLoader, const QHashedSt
             return false;
 
         QString qmlUrl;
-        bool exists = false;
 
         const QString urlsToTry[2] = {
             typeStr + dotqml_string, // Type -> Type.qml
             typeStr + dotuidotqml_string // Type -> Type.ui.qml
         };
         for (const QString &urlToTry : urlsToTry) {
-            exists = typeLoader->fileExists(localDirectoryPath, urlToTry);
-            if (exists) {
-#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
-                // don't let function.qml confuse the use of "new Function(...)" for example.
-                if (!QQml_isFileCaseCorrect(localDirectoryPath + urlToTry)) {
-                    exists = false;
-                    if (errors) {
-                        QQmlError caseError;
-                        caseError.setDescription(QLatin1String("File name case mismatch"));
-                        errors->append(caseError);
-                    }
-                    break;
-                }
-#else
-                Q_UNUSED(errors);
-#endif
+            if (typeLoader->fileExists(localDirectoryPath, urlToTry)) {
                 qmlUrl = url + urlToTry;
                 break;
             }
         }
 
-        if (exists) {
+        if (!qmlUrl.isEmpty()) {
             const bool recursion = base && *base == qmlUrl;
             if (typeRecursionDetected)
                 *typeRecursionDetected = recursion;

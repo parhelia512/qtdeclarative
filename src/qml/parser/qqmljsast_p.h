@@ -1039,6 +1039,7 @@ public:
     Elision *elision = nullptr;
     PatternElement *element = nullptr;
     PatternElementList *next;
+    SourceLocation commaToken;
 };
 
 class QML_PARSER_EXPORT PatternProperty : public PatternElement

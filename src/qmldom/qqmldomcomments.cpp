@@ -401,12 +401,6 @@ public:
 
     bool visit(FormalParameterList *list) override
     {
-        if (!list->commaToken.isValid())
-            return true;
-
-        // Comments are first attached to some previous element, if possible. Therefore, attach
-        // comments in FormalParameterList to comments so that they don't "jump over commas" during
-        // formatting.
         addSourceLocations(list, list->commaToken);
         return true;
     }

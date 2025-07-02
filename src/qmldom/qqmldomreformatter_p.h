@@ -42,30 +42,69 @@ public:
 
 protected:
     // output functions
-    inline void out(const char *str) { lw.write(QString::fromLatin1(str)); }
-    inline void out(QStringView str) { lw.write(str); }
+    inline void out(const char *str)
+    {
+        ensureDeferredSpacesAndMarkWriteAsNotComment();
+        lw.write(QString::fromLatin1(str));
+    }
+    inline void out(QStringView str)
+    {
+        ensureDeferredSpacesAndMarkWriteAsNotComment();
+        lw.write(str);
+    }
     inline void out(const SourceLocation &loc)
     {
+        ensureDeferredSpacesAndMarkWriteAsNotComment();
         if (loc.length != 0)
             out(m_script->loc2Str(loc));
     }
-    enum CommentOption { NoSpace, SpaceBeforePostComment, OnlyComments };
-    void outWithComments(const SourceLocation &loc, AST::Node *node, CommentOption option = NoSpace)
+    enum CommentOption { TokenAndComment, OnlyComments };
+    void outWithComments(const SourceLocation &loc, AST::Node *node,
+                         CommentOption option = TokenAndComment)
     {
         if (!loc.isValid())
             return;
         const CommentedElement *c = comments->commentForNode(node, CommentAnchor::from(loc));
-        if (c)
+        if (c) {
+            if (!c->preComments().empty())
+                deferredSpaces = 0;
+            else
+                ensureDeferredSpaces();
             c->writePre(lw);
+        }
         if (option != OnlyComments)
             out(loc);
-        if (option == SpaceBeforePostComment)
-            lw.ensureSpace();
         if (c)
             c->writePost(lw);
+
+        if (c && (!c->postComments().empty() || (option == OnlyComments && !c->preComments().empty())))
+            lastWriteWasComment = true;
     }
-    inline void ensureSpace() { lw.ensureSpace(); }
-    inline void ensureNewline(quint32 count = 1) { lw.ensureNewline(count); }
+    inline void ensureSpace()
+    {
+        // Comments contain the spaces before and after them. And, in case the comment doesn't end
+        // with spaces, we still respect the user's formatting choice.
+        if (!lastWriteWasComment)
+            ++deferredSpaces;
+        lastWriteWasComment = false;
+    }
+    inline void ensureNewline(quint32 count = 1)
+    {
+        ensureDeferredSpacesAndMarkWriteAsNotComment();
+        lw.ensureNewline(count);
+    }
+
+    inline void ensureDeferredSpaces()
+    {
+        for (int i = 0; i < deferredSpaces; ++i)
+            lw.ensureSpace();
+        deferredSpaces = 0;
+    }
+    inline void ensureDeferredSpacesAndMarkWriteAsNotComment()
+    {
+        ensureDeferredSpaces();
+        lastWriteWasComment = false;
+    }
 
     // visitor functions
     inline void accept(AST::Node *node) { AST::Node::accept(node, this); }
@@ -230,6 +269,8 @@ private:
     const ScriptExpression *const m_script = nullptr; // outlives this
     QHash<AST::Node *, QList<std::function<void()>>> postOps;
     int expressionDepth = 0;
+    int deferredSpaces = 0;
+    bool lastWriteWasComment = false;
 };
 
 QMLDOM_EXPORT void reformatAst(OutWriter &lw, const QQmlJS::Dom::ScriptExpression *const script);

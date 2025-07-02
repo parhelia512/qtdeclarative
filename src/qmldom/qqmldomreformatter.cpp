@@ -21,8 +21,17 @@ using namespace AST;
 bool ScriptFormatter::preVisit(Node *n)
 {
     if (const CommentedElement *c = comments->commentForNode(n, CommentAnchor{})) {
-        c->writePre(lw);
-        postOps[n].append([c, this]() { c->writePost(lw); });
+        if (!c->preComments().empty()) {
+            deferredSpaces = 0;
+            c->writePre(lw);
+        }
+
+        postOps[n].append([c, this]() {
+            if (!c->postComments().empty()) {
+                deferredSpaces = 0;
+                c->writePost(lw);
+            }
+        });
     }
     return true;
 }
@@ -107,7 +116,7 @@ bool ScriptFormatter::visit(StringLiteral *ast)
 }
 bool ScriptFormatter::visit(NumericLiteral *ast)
 {
-    out(ast->literalToken);
+    outWithComments(ast->literalToken, ast);
     return true;
 }
 bool ScriptFormatter::visit(RegExpLiteral *ast)
@@ -159,13 +168,13 @@ bool ScriptFormatter::visit(PatternElementList *ast)
         if (it->elision)
             accept(it->elision);
         if (it->elision && it->element) {
-            out(",");
+            outWithComments(it->elision->commaToken, it);
             ensureSpace();
         }
         if (it->element)
             accept(it->element);
         if (it->next) {
-            out(",");
+            outWithComments(it->next->commaToken, it);
             ensureSpace();
             if (isObjectInitializer)
                 ensureNewline();
@@ -506,7 +515,7 @@ bool ScriptFormatter::visit(PatternElement *ast)
     if (ast->initializer) {
         if (ast->isVariableDeclaration() || ast->type == AST::PatternElement::Binding) {
             ensureSpace();
-            out("=");
+            outWithComments(ast->equalToken, ast);
             ensureSpace();
         }
         accept(ast->initializer);
@@ -808,11 +817,11 @@ bool ScriptFormatter::visit(FunctionExpression *ast)
 
     // note: qmlformat removes the parentheses for "(x) => x". In that case, we still need
     // to print potential comments attached to `(` or `)` via `OnlyComments` option.
-    outWithComments(ast->lparenToken, ast, removeParentheses ? OnlyComments : NoSpace);
+    outWithComments(ast->lparenToken, ast, removeParentheses ? OnlyComments : TokenAndComment);
     int baseIndent = lw.increaseIndent(1);
     accept(ast->formals);
     lw.decreaseIndent(1, baseIndent);
-    outWithComments(ast->rparenToken, ast, removeParentheses ? OnlyComments : NoSpace);
+    outWithComments(ast->rparenToken, ast, removeParentheses ? OnlyComments : TokenAndComment);
     ensureSpace();
     if (ast->isArrowFunction) {
         out("=>");
@@ -928,7 +937,10 @@ bool ScriptFormatter::visit(FormalParameterList *ast)
 {
     for (FormalParameterList *it = ast; it; it = it->next) {
         accept(it->element);
-        outWithComments(it->commaToken, it, SpaceBeforePostComment);
+        if (it->commaToken.isValid()) {
+            outWithComments(it->commaToken, it);
+            ensureSpace();
+        }
     }
     return false;
 }

@@ -1994,6 +1994,7 @@ ArrayLiteral: T_LBRACKET ElementList T_COMMA ElisionOpt T_RBRACKET;
         auto *list = sym(2).PatternElementList;
         if (sym(4).Elision) {
             AST::PatternElementList *l = new (pool) AST::PatternElementList(sym(4).Elision, nullptr);
+            l->commaToken = loc(3);
             list = list->append(l);
         }
         AST::ArrayPattern *node = new (pool) AST::ArrayPattern(list->finish());
@@ -2008,16 +2009,22 @@ ArrayLiteral: T_LBRACKET ElementList T_COMMA ElisionOpt T_RBRACKET;
 ElementList: AssignmentExpression_In;
 /.
     case $rule_number: {
-        AST::PatternElement *e = new (pool) AST::PatternElement(sym(1).Expression);
+        auto *expression = sym(1).Expression;
+        AST::PatternElement *e = new (pool) AST::PatternElement(expression);
         sym(1).Node = new (pool) AST::PatternElementList(nullptr, e);
+        if (auto *be = expression->binaryExpressionCast(); be && be->op == QSOperator::Assign)
+            e->equalToken = be->operatorToken;
     } break;
 ./
 
 ElementList: Elision AssignmentExpression_In;
 /.
     case $rule_number: {
-        AST::PatternElement *e = new (pool) AST::PatternElement(sym(2).Expression);
+        auto *expression = sym(2).Expression;
+        AST::PatternElement *e = new (pool) AST::PatternElement(expression);
         sym(1).Node = new (pool) AST::PatternElementList(sym(1).Elision->finish(), e);
+        if (auto *be = expression->binaryExpressionCast(); be && be->op == QSOperator::Assign)
+            e->equalToken = be->operatorToken;
     } break;
 ./
 
@@ -2032,9 +2039,13 @@ ElementList: ElisionOpt SpreadElement;
 ElementList: ElementList T_COMMA ElisionOpt AssignmentExpression_In;
 /.
     case $rule_number: {
-        AST::PatternElement *e = new (pool) AST::PatternElement(sym(4).Expression);
+        auto *expression = sym(4).Expression;
+        AST::PatternElement *e = new (pool) AST::PatternElement(expression);
         AST::PatternElementList *node = new (pool) AST::PatternElementList(sym(3).Elision, e);
+        node->commaToken = loc(2);
         sym(1).Node = sym(1).PatternElementList->append(node);
+        if (auto *be = expression->binaryExpressionCast(); be && be->op == QSOperator::Assign)
+            e->equalToken = be->operatorToken;
     } break;
 ./
 
@@ -2042,6 +2053,7 @@ ElementList: ElementList T_COMMA ElisionOpt SpreadElement;
 /.
     case $rule_number: {
         AST::PatternElementList *node = new (pool) AST::PatternElementList(sym(3).Elision, sym(4).PatternElement);
+        node->commaToken = loc(2);
         sym(1).Node = sym(1).PatternElementList->append(node);
     } break;
 ./
@@ -2081,8 +2093,11 @@ ElisionOpt: Elision;
 SpreadElement: T_ELLIPSIS AssignmentExpression;
 /.
     case $rule_number: {
-        AST::PatternElement *node = new (pool) AST::PatternElement(sym(2).Expression, AST::PatternElement::SpreadElement);
+        auto *expression = sym(2).Expression;
+        AST::PatternElement *node = new (pool) AST::PatternElement(expression, AST::PatternElement::SpreadElement);
         sym(1).Node = node;
+        if (auto *be = expression->binaryExpressionCast(); be && be->op == QSOperator::Assign)
+            node->equalToken = be->operatorToken;
     } break;
 ./
 
@@ -3392,6 +3407,7 @@ ArrayBindingPattern: BindingElementList T_COMMA ElisionOpt BindingRestElementOpt
     case $rule_number: {
         if (sym(3).Elision || sym(4).Node) {
             auto *l = new (pool) AST::PatternElementList(sym(3).Elision, sym(4).PatternElement);
+            l->commaToken = loc(2);
             l = sym(1).PatternElementList->append(l);
             sym(1).Node = l;
         }
@@ -3419,6 +3435,7 @@ BindingElementList: BindingElementList T_COMMA BindingElisionElement;
 /.
     case $rule_number: {
         sym(1).PatternElementList = sym(1).PatternElementList->append(sym(3).PatternElementList);
+        sym(3).PatternElementList->commaToken = loc(2);
     } break;
 ./
 

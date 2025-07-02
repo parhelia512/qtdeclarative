@@ -41,6 +41,7 @@ public:
     }
 
 protected:
+    // output functions
     inline void out(const char *str) { lw.write(QString::fromLatin1(str)); }
     inline void out(QStringView str) { lw.write(str); }
     inline void out(const SourceLocation &loc)
@@ -63,8 +64,10 @@ protected:
         if (c)
             c->writePost(lw);
     }
-    inline void newLine(quint32 count = 1) { lw.ensureNewline(count); }
+    inline void ensureSpace() { lw.ensureSpace(); }
+    inline void ensureNewline(quint32 count = 1) { lw.ensureNewline(count); }
 
+    // visitor functions
     inline void accept(AST::Node *node) { AST::Node::accept(node, this); }
     void lnAcceptIndented(AST::Node *node);
     bool acceptBlockOrIndented(AST::Node *ast, bool finishWithSpaceOrNewline = false);

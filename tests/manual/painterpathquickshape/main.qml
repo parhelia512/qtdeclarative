@@ -40,6 +40,10 @@ Window {
             source: "Squircle.qml"
         }
         ListElement {
+            text: "RectangleShape"
+            source: "designhelpers_rectangleshape.qml"
+        }
+        ListElement {
             text: "Intersect"
             source: "Intersect.qml"
         }

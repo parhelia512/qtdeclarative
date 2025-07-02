@@ -50,6 +50,7 @@ set(qml_resource_files
     "capStyles.qml"
     "cubicCurve.qml"
     "dashPattern.qml"
+    "designhelpers_rectangleshape.qml"
     "ellipticalArcs.qml"
     "fillRules.qml"
     "gradientSpreadModes.qml"

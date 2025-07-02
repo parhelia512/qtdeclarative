@@ -357,7 +357,7 @@ public:
     };
     Q_ENUM(Type)
 
-    Q_INVOKABLE Q_REVISION(6, 11) qreal valueForProgress(Type type, qreal progress) const;
+    Q_INVOKABLE qreal valueForProgress(Type type, qreal progress) const;
 };
 
 struct Q_QML_EXPORT QQmlEasingValueType : private QEasingCurve
@@ -376,10 +376,10 @@ struct Q_QML_EXPORT QQmlEasingValueType : private QEasingCurve
 
 public:
     Q_INVOKABLE QQmlEasingValueType() = default;
-    Q_INVOKABLE Q_REVISION(6, 11) QQmlEasingValueType(QQmlEasing::Type type);
+    Q_INVOKABLE QQmlEasingValueType(QQmlEasing::Type type);
     Q_INVOKABLE QQmlEasingValueType(const QEasingCurve &easing) : QEasingCurve(easing) {}
 
-    Q_INVOKABLE Q_REVISION(6, 11) qreal valueForProgress(qreal progress);
+    Q_INVOKABLE qreal valueForProgress(qreal progress);
 
     QQmlEasing::Type type() const;
     qreal amplitude() const;

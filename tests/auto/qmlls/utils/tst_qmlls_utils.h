@@ -79,6 +79,7 @@ private slots:
     void completions();
 
     void cmakeBuildCommand();
+    void maxFilesToSearch();
 
 private:
     using EnvironmentAndFile = std::tuple<QQmlJS::Dom::DomItem, QQmlJS::Dom::DomItem>;

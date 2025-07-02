@@ -169,6 +169,16 @@ your editor should invoke \c{qmlls} as follows:
     \li The \l{QT_QML_GENERATE_QMLLS_INI_NO_CMAKE_CALLS} CMake variable.
 \endlist
 
+\section2 Modifying the maximum amount of files to search
+
+\QMLLS respects a limit of files to search when searching the source
+folders for headers, for example when going to the definition of a QML
+component defined in a C++ header.
+
+To set the maximum amount of files to search, write a numeric value in the
+\c QMLLS_MAX_FILES_TO_SEARCH environment variable. 0 disables the file
+searching feature, 20000 is the default value.
+
 \section1 Configuration File
 
 \QMLLS can be configured via a configuration file \c{.qmlls.ini}.

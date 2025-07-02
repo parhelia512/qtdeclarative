@@ -4536,4 +4536,16 @@ void tst_qmlls_utils::cmakeBuildCommand()
     QCOMPARE(QQmlLSUtils::cmakeBuildCommand(path), expected);
 }
 
+void tst_qmlls_utils::maxFilesToSearch()
+{
+    qputenv("QMLLS_MAX_FILES_TO_SEARCH", "1111");
+    QTest::ignoreMessage(QtInfoMsg,
+                         "Aborting search for \"qt\", \"qwer\" inside "
+                         "\"" QT_QMLLS_BIG_FOLDER
+                         "\" after reaching QMLLS_MAX_FILES_TO_SEARCH (currently set to 1111). Set "
+                         "the environment variable \"QMLLS_MAX_FILES_TO_SEARCH\" to a higher value "
+                         "to spend more time on searching.");
+    QQmlLSUtils::findFilePathsFromFileNames(QT_QMLLS_BIG_FOLDER ""_L1, { "qt"_L1, "qwer"_L1 });
+}
+
 QTEST_MAIN(tst_qmlls_utils)

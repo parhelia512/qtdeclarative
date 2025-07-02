@@ -20,6 +20,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <set>
 #include <stack>
 #include <type_traits>
@@ -2443,20 +2444,63 @@ RenameUsages::RenameUsages(const QList<Edit> &renamesInFile,
     std::sort(m_renamesInFilename.begin(), m_renamesInFilename.end());
 }
 
-QStringList findFilePathsFromFileNames(const QString &rootDir, const QStringList &fileNamesToSearch)
+enum SearchOption { FindFirst, FindAll };
+static QStringList findFilePathsFromFileNamesImpl(const QStringList &rootDirs,
+                                                  const QStringList &fileNamesToSearch,
+                                                  SearchOption option)
 {
-    if (fileNamesToSearch.isEmpty() || rootDir.isEmpty())
+    if (fileNamesToSearch.isEmpty() || rootDirs.isEmpty())
         return {};
 
+    const qint64 maxFilesToSearch =
+            qEnvironmentVariableIntegerValue("QMLLS_MAX_FILES_TO_SEARCH")
+                    .value_or(20'000); // 20'000 entries need around one second on my machine
+    qint64 visitedItems = 0;
+
     QStringList result;
-    QDirIterator it(rootDir, fileNamesToSearch, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        const QFileInfo info = it.nextFileInfo();
-        const QString fileName = info.fileName();
-        result << info.absoluteFilePath();
+    std::queue<QString> toVisit;
+    for (const QString &rootDir : rootDirs)
+        toVisit.push(rootDir);
+
+    while (!toVisit.empty()) {
+        const QString current = toVisit.front();
+        toVisit.pop();
+
+        for (const auto &entry : QDirListing{ current, QDirListing::IteratorFlag::ExcludeOther }) {
+            // timeout to avoid qmlls from recursing too much, in case rootDir is the filesystem
+            // root for example
+            if (++visitedItems > maxFilesToSearch) {
+                qInfo(QQmlLSUtilsLog).noquote().nospace()
+                        << "Aborting search for \"" << fileNamesToSearch.join("\", \""_L1)
+                        << "\" inside \"" << rootDirs.join("\", \""_L1)
+                        << "\" after reaching QMLLS_MAX_FILES_TO_SEARCH (currently set to "
+                        << maxFilesToSearch
+                        << "). Set the environment variable \"QMLLS_MAX_FILES_TO_SEARCH\" to a "
+                           "higher value to spend more time on searching.";
+                return result;
+            }
+
+            if (entry.isDir()) {
+                toVisit.push(entry.filePath());
+                continue;
+            }
+            Q_ASSERT(entry.isFile());
+            if (!fileNamesToSearch.contains(entry.fileName()))
+                continue;
+
+            result << entry.absoluteFilePath();
+            if (option == FindFirst)
+                return result;
+        }
     }
 
     return result;
+}
+
+QStringList findFilePathsFromFileNames(const QString &rootDir,
+                                       const QStringList &fileNamesToSearch)
+{
+    return findFilePathsFromFileNamesImpl({ rootDir }, fileNamesToSearch, FindAll);
 }
 
 } // namespace QQmlLSUtils

@@ -2503,6 +2503,13 @@ QStringList findFilePathsFromFileNames(const QString &rootDir,
     return findFilePathsFromFileNamesImpl({ rootDir }, fileNamesToSearch, FindAll);
 }
 
+QString findFilePathFromFileName(const QStringList &rootDirs, const QString &fileNameToSearch)
+{
+    const QStringList result =
+            findFilePathsFromFileNamesImpl(rootDirs, { fileNameToSearch }, FindFirst);
+    return result.isEmpty() ? QString{} : result.front();
+}
+
 } // namespace QQmlLSUtils
 
 QT_END_NAMESPACE

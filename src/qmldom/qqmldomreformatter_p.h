@@ -80,7 +80,7 @@ protected:
         if (c && (!c->postComments().empty() || (option == OnlyComments && !c->preComments().empty())))
             lastWriteWasComment = true;
     }
-    inline void ensureSpace()
+    inline void ensureSpaceIfNoComment()
     {
         // Comments contain the spaces before and after them. And, in case the comment doesn't end
         // with spaces, we still respect the user's formatting choice.

@@ -23,6 +23,7 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
 QQmlCodeModelManager::WorkspaceIterator
 QQmlCodeModelManager::findWorkspaceForFile(const QByteArray &url)
 {
+    Q_ASSERT(!m_workspaces.empty());
     // if file was already opened before: re-use same CodeModel as last time
     if (auto it = m_file2CodeModel.find(url); it != m_file2CodeModel.end()) {
         const auto result = findWorkspace(it->second);
@@ -161,6 +162,10 @@ void QQmlCodeModelManager::closeOpenFile(const QByteArray &url)
     m_file2CodeModel.erase(url);
     const auto it = findWorkspaceForFile(url);
     it->codeModel->closeOpenFile(url);
+
+    // don't close the default workspace
+    if (it->url.isEmpty())
+        return;
 
     // close empty WS when managed by server or when client marked ws as toBeClosed.
     if ((it->managedByClient && it->toBeClosed) || !it->managedByClient) {

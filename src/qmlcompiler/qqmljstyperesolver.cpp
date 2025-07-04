@@ -1421,10 +1421,12 @@ bool QQmlJSTypeResolver::canPrimitivelyConvertFromTo(
         return true;
     if (isNumeric(from) && isNumeric(to))
         return true;
-    if (isNumeric(from) && to == m_boolType)
+    // We can convert everything to bool.
+    if (to == m_boolType)
         return true;
+
     if (from->accessSemantics() == QQmlJSScope::AccessSemantics::Reference
-            && (to == m_boolType || to == m_stringType)) {
+            && to == m_stringType) {
         return true;
     }
 
@@ -1508,10 +1510,6 @@ bool QQmlJSTypeResolver::canPrimitivelyConvertFromTo(
 
     // We can convert anything that fits into QJSPrimitiveValue
     if (canConvertFromTo(from, m_jsPrimitiveType) && canConvertFromTo(m_jsPrimitiveType, to))
-        return true;
-
-    // We can convert everything to bool.
-    if (to == m_boolType)
         return true;
 
     if (areEquivalentLists(from, to))

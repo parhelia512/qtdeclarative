@@ -293,7 +293,7 @@ private:
                 sharedState->allJavaScriptObjects, ObjectInCreationGCAnchorList(valueScope));
 
         Q_ASSERT(topLevelCreator);
-        QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.alloc());
+        QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.constructUndefined(1));
 
         qt_ptr_swap(_qmlContext, qmlContext);
 

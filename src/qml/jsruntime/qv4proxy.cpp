@@ -52,7 +52,7 @@ ReturnedValue ProxyObject::virtualGet(const Managed *m, PropertyKey id, const Va
     if (hasProperty)
         *hasProperty = true;
 
-    Value *args = scope.alloc(3);
+    Value *args = scope.constructUndefined(3);
     args[0] = target;
     args[1] = id.toStringOrSymbol(scope.engine);
     args[2] = *receiver;
@@ -94,7 +94,7 @@ bool ProxyObject::virtualPut(Managed *m, PropertyKey id, const Value &value, Val
     if (!trap->isFunctionObject())
         return scope.engine->throwTypeError();
 
-    Value *args = scope.alloc(4);
+    Value *args = scope.constructUndefined(4);
     args[0] = target;
     args[1] = id.toStringOrSymbol(scope.engine);
     args[2] = value;
@@ -136,7 +136,7 @@ bool ProxyObject::virtualDeleteProperty(Managed *m, PropertyKey id)
     if (!trap->isFunctionObject())
         return scope.engine->throwTypeError();
 
-    Value *args = scope.alloc(3);
+    Value *args = scope.constructUndefined(3);
     args[0] = target;
     args[1] = id.toStringOrSymbol(scope.engine);
     args[2] = o->d(); // ### fix receiver handling
@@ -173,7 +173,7 @@ bool ProxyObject::virtualHasProperty(const Managed *m, PropertyKey id)
     if (!trap->isFunctionObject())
         return scope.engine->throwTypeError();
 
-    Value *args = scope.alloc(2);
+    Value *args = scope.constructUndefined(2);
     args[0] = target;
     args[1] = id.isArrayIndex() ? Value::fromUInt32(id.asArrayIndex()).toString(scope.engine) : id.asStringOrSymbol();
     JSCallData cdata(handler, args, 2);
@@ -216,7 +216,7 @@ PropertyAttributes ProxyObject::virtualGetOwnProperty(const Managed *m, Property
         return Attr_Invalid;
     }
 
-    Value *args = scope.alloc(2);
+    Value *args = scope.constructUndefined(2);
     args[0] = target;
     args[1] = id.isArrayIndex() ? Value::fromUInt32(id.asArrayIndex()).toString(scope.engine) : id.asStringOrSymbol();
     JSCallData cdata(handler, args, 2);
@@ -292,7 +292,7 @@ bool ProxyObject::virtualDefineOwnProperty(Managed *m, PropertyKey id, const Pro
         return false;
     }
 
-    Value *args = scope.alloc(3);
+    Value *args = scope.constructUndefined(3);
     args[0] = target;
     args[1] = id.isArrayIndex() ? Value::fromUInt32(id.asArrayIndex()).toString(scope.engine) : id.asStringOrSymbol();
     args[2] = ObjectPrototype::fromPropertyDescriptor(scope.engine, p, attrs);
@@ -345,7 +345,7 @@ bool ProxyObject::virtualIsExtensible(const Managed *m)
     if (!trap->isFunctionObject())
         return scope.engine->throwTypeError();
 
-    Value *args = scope.alloc(1);
+    Value *args = scope.constructUndefined(1);
     args[0] = target;
     JSCallData cdata(handler, args, 1);
 
@@ -379,7 +379,7 @@ bool ProxyObject::virtualPreventExtensions(Managed *m)
     if (!trap->isFunctionObject())
         return scope.engine->throwTypeError();
 
-    Value *args = scope.alloc(1);
+    Value *args = scope.constructUndefined(1);
     args[0] = target;
     JSCallData cdata(handler, args, 1);
 
@@ -417,7 +417,7 @@ Heap::Object *ProxyObject::virtualGetPrototypeOf(const Managed *m)
         return nullptr;
     }
 
-    Value *args = scope.alloc(1);
+    Value *args = scope.constructUndefined(1);
     args[0] = target;
     JSCallData cdata(handler, args, 1);
 
@@ -462,7 +462,7 @@ bool ProxyObject::virtualSetPrototypeOf(Managed *m, const Object *p)
         return false;
     }
 
-    Value *args = scope.alloc(2);
+    Value *args = scope.constructUndefined(2);
     args[0] = target;
     args[1] = p ? p->asReturnedValue() : Encode::null();
     JSCallData cdata(handler, args, 2);
@@ -556,7 +556,7 @@ OwnPropertyKeyIterator *ProxyObject::virtualOwnPropertyKeys(const Object *m, Val
         return nullptr;
     }
 
-    Value *args = scope.alloc(1);
+    Value *args = scope.constructUndefined(1);
     args[0] = target;
     JSCallData cdata(handler, args, 1);
     ScopedObject trapResult(scope, static_cast<const FunctionObject *>(trap.ptr)->call(cdata));
@@ -663,7 +663,7 @@ ReturnedValue ProxyConstructorObject::virtualCallAsConstructor(
         return scope.engine->throwTypeError();
 
     ScopedFunctionObject trapFunction(scope, trap);
-    Value *arguments = scope.alloc(3);
+    Value *arguments = scope.constructUndefined(3);
     arguments[0] = target;
     arguments[1] = scope.engine->newArrayObject(argv, argc);
     arguments[2] = newTarget ? *newTarget : Value::undefinedValue();
@@ -696,7 +696,7 @@ ReturnedValue ProxyFunctionObject::virtualCall(const FunctionObject *f, const Va
         return scope.engine->throwTypeError();
 
     ScopedFunctionObject trapFunction(scope, trap);
-    Value *arguments = scope.alloc(3);
+    Value *arguments = scope.constructUndefined(3);
     arguments[0] = target;
     arguments[1] = thisObject ? *thisObject : Value::undefinedValue();
     arguments[2] = scope.engine->newArrayObject(argv, argc);

@@ -1483,7 +1483,7 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
     sharedState->allJavaScriptObjects.trackObject(v4, instance);
 
     QV4::Scope valueScope(v4);
-    QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.alloc());
+    QV4::QmlContext *qmlContext = static_cast<QV4::QmlContext *>(valueScope.constructUndefined(1));
 
     qSwap(_qmlContext, qmlContext);
 

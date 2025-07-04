@@ -1601,13 +1601,13 @@ static CallArgs createSpreadArguments(Scope &scope, Value *argv, int argc)
 
     int argCount = 0;
 
-    Value *v = scope.alloc<Scope::Undefined>();
+    Value *v = scope.constructUndefined(1);
     Value *arguments = v;
     for (int i = 0; i < argc; ++i) {
         if (!argv[i].isEmpty()) {
             *v = argv[i];
             ++argCount;
-            v = scope.alloc<Scope::Undefined>();
+            v = scope.constructUndefined(1);
             continue;
         }
         // spread element
@@ -1628,7 +1628,7 @@ static CallArgs createSpreadArguments(Scope &scope, Value *argv, int argc)
                 scope.engine->throwRangeError(QLatin1String("Too many elements in array to use it with the spread operator"));
                         return { nullptr, 0 };
             }
-            v = scope.alloc<Scope::Undefined>();
+            v = scope.constructUndefined(1);
         }
     }
     return { arguments, argCount };

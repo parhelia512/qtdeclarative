@@ -153,6 +153,23 @@ public:
 
     WTF::PageAllocation *gcStack = nullptr;
 
+    // Using jsAlloca directly can be dangerous as it temporarily, until
+    // some initialization is performed, leaves an element on the
+    // stack that is garbage memory.
+    // That element could be accessed by other parts of the system
+    // before an initialization step is performed, involuntary
+    // interacting with that memory.
+    //
+    // For example, any allocation performed by the MemoryManager
+    // might run the garbage collector, which in turn has a chance of
+    // accessing all current elements on the stack, including the
+    // garbage memory that can be left on the stack by a call to this
+    // method.
+    //
+    // Thus care needs to be taken when using jsAlloca, such that all
+    // allocated stack slots are initialized as soon as possible and
+    // without any heap allocation or other accesses to the new stack
+    // elements in the middle.
     QML_NEARLY_ALWAYS_INLINE Value *jsAlloca(int nValues) {
         Value *ptr = jsStackTop;
         jsStackTop = ptr + nValues;

@@ -915,7 +915,7 @@ ReturnedValue JsonObject::method_stringify(const FunctionObject *b, const Value 
         if (o->isArrayObject()) {
             int arrayLen = scope.engine->safeForAllocLength(o->getLength());
             CHECK_EXCEPTION();
-            stringify.propertyList = static_cast<QV4::String *>(scope.alloc(arrayLen));
+            stringify.propertyList = static_cast<QV4::String *>(scope.constructUndefined(arrayLen));
             for (int i = 0; i < arrayLen; ++i) {
                 Value *v = stringify.propertyList + i;
                 *v = o->get(i);

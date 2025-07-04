@@ -3328,7 +3328,9 @@ bool QQuickTextEdit::contextMenuEvent(QContextMenuEvent *event)
     Q_Q(QQuickTextEdit);
     QContextMenuEvent mapped(event->reason(), q->cursorRectangle().center().toPoint(),
                              event->globalPos(), event->modifiers());
-    return QQuickItemPrivate::handleContextMenuEvent(&mapped);
+    const bool eventProcessed = QQuickItemPrivate::handleContextMenuEvent(&mapped);
+    event->setAccepted(mapped.isAccepted());
+    return eventProcessed;
 }
 
 void QQuickTextEditPrivate::handleFocusEvent(QFocusEvent *event)

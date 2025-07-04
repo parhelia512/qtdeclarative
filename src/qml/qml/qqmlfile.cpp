@@ -25,7 +25,17 @@ QT_BEGIN_NAMESPACE
 static char qrc_string[] = "qrc";
 static char file_string[] = "file";
 
+#if defined(Q_OS_ANDROID)
+static char assets_string[] = "assets";
+static char content_string[] = "content";
+static char authority_externalstorage[] = "com.android.externalstorage.documents";
+static char authority_downloads_documents[] = "com.android.providers.downloads.documents";
+static char authority_media_documents[] = "com.android.providers.media.documents";
+#endif
+
 #if QT_DEPRECATED_SINCE(6, 11)
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_DEPRECATED
 
 /*!
     \internal
@@ -37,15 +47,6 @@ static char file_string[] = "file";
     \value Error
     \value Loading
  */
-
-
-#if defined(Q_OS_ANDROID)
-static char assets_string[] = "assets";
-static char content_string[] = "content";
-static char authority_externalstorage[] = "com.android.externalstorage.documents";
-static char authority_downloads_documents[] = "com.android.providers.downloads.documents";
-static char authority_media_documents[] = "com.android.providers.media.documents";
-#endif
 
 class QQmlFilePrivate;
 
@@ -486,6 +487,7 @@ bool QQmlFile::connectDownloadProgress(QObject *object, int method)
 }
 #endif
 
+QT_WARNING_POP
 #endif // QT_DEPRECATED_SINCE(6, 11)
 
 /*!

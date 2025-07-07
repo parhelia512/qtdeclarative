@@ -19,18 +19,27 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qset.h>
+#include <QtCore/qdir.h>
 
 QT_BEGIN_NAMESPACE
 
 class QQmlToolingSettings
 {
 public:
+    struct SearchResult
+    {
+        enum class ResultType { Found, NotFound, Error };
+        ResultType type = ResultType::NotFound;
+        QString iniFilePath;
+        bool isValid() const { return type == ResultType::Found && !iniFilePath.isEmpty(); }
+    };
     QQmlToolingSettings(const QString &toolName) : m_toolName(toolName) { }
 
     void addOption(const QString &name, const QVariant defaultValue = QVariant());
 
     bool writeDefaults() const;
-    bool search(const QString &path);
+    SearchResult search(const QString &path);
 
     QVariant value(const QString &name) const;
     bool isSet(const QString &name) const;
@@ -41,7 +50,11 @@ private:
     QHash<QString, QString> m_seenDirectories;
     QVariantHash m_values;
 
-    bool read(const QString &settingsFilePath);
+    SearchResult read(const QString &settingsFilePath);
+    SearchResult searchDefaultLocation(QSet<QString> *visitedDirs);
+    SearchResult searchCurrentDirInCache(const QString &dirPath);
+    SearchResult searchDirectoryHierarchy(QSet<QString> *visitedDir, QDir dir,
+                                          const QString &settingsFileName);
 };
 
 class QQmlToolingSharedSettings : private QQmlToolingSettings
@@ -61,7 +74,7 @@ public:
         return QQmlToolingSettings::writeDefaults();
     }
 
-    bool search(const QString &path)
+    SearchResult search(const QString &path)
     {
         QMutexLocker lock(&m_mutex);
         return QQmlToolingSettings::search(path);

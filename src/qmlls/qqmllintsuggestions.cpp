@@ -343,7 +343,7 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
     }
 
     QQmlToolingSettings settings(QLatin1String("qmllint"));
-    if (settings.search(filename)) {
+    if (settings.search(filename).isValid()) {
         QQmlJS::LoggingUtils::updateLogLevels(categories, settings, nullptr);
     }
 

@@ -2343,7 +2343,7 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
 
         if (options.readSettings) {
             QQmlToolingSettings settings(QLatin1String("qmllint"));
-            if (settings.search(lintedFile))
+            if (settings.search(lintedFile).isValid())
                 QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
         }
 

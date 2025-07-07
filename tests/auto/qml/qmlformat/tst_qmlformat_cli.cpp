@@ -388,7 +388,7 @@ void TestQmlformatCli::writeDefaults()
         QCOMPARE(process.exitStatus(), QProcess::NormalExit);
 
         QQmlToolingSettings settings("qmlformat");
-        QVERIFY(settings.search(qmlformatIni));
+        QVERIFY(settings.search(qmlformatIni).isValid());
 
         QCOMPARE(settings.value("UseTabs").toBool(), false);
         QCOMPARE(settings.value("IndentWidth").toInt(), 4);

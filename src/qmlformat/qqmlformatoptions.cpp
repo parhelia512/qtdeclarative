@@ -322,7 +322,7 @@ QQmlFormatOptions QQmlFormatOptions::optionsForFile(const QString &fileName,
     if (hasFiles)
         perFileOptions.setIsInplace(true);
 
-    if (!ignoreSettingsEnabled() && settings->search(fileName))
+    if (!ignoreSettingsEnabled() && settings->search(fileName).isValid())
         perFileOptions.applySettings(*settings);
 
     return perFileOptions;

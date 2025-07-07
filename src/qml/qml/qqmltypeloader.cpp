@@ -1534,15 +1534,10 @@ QString QQmlTypeLoader::absoluteFilePath(const QString &path)
     const qsizetype onePastLastSlash = path.lastIndexOf(QLatin1Char('/')) + 1;
     const QString dirPath(path.left(onePastLastSlash - 1));
     const QString fileName(path.mid(onePastLastSlash, path.size() - onePastLastSlash));
-    QString absoluteFilePath;
 
-    if (fileExists(dirPath, fileName))
-        absoluteFilePath = path;
-
-    if (absoluteFilePath.size() > 2 && absoluteFilePath.at(0) != QLatin1Char('/') && absoluteFilePath.at(1) != QLatin1Char(':'))
-        absoluteFilePath = QFileInfo(absoluteFilePath).absoluteFilePath();
-
-    return absoluteFilePath;
+    return fileExists(dirPath, fileName)
+            ? QFileInfo(path).absoluteFilePath()
+            : QString();
 }
 
 static constexpr QDirListing::IteratorFlags dirListingFlags()

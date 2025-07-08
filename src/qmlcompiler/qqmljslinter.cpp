@@ -506,10 +506,6 @@ void QQmlJSLinter::processMessages(QJsonArray &warnings)
     });
 }
 
-static bool scopeIsBinding(const QQmlJSScope::ConstPtr& scope) {
-    return scope->scopeType() == QQmlJSScope::ScopeType::JSFunctionScope && scope->baseTypeName() == u"binding";
-}
-
 QQmlJSLinter::LintResult QQmlJSLinter::lintFile(const QString &filename,
                                                 const QString *fileContents, const bool silent,
                                                 QJsonArray *json, const QStringList &qmlImportPaths,
@@ -694,7 +690,7 @@ QQmlJSLinter::LintResult QQmlJSLinter::lintFile(const QString &filename,
                         QQmlJS::SourceLocation childLocation = (*it)->sourceLocation();
                         if ( childLocation.offset <= location.offset() &&
                             (childLocation.offset + childLocation.length <= location.offset() + location.length())  ) {
-                            if (!scopeIsBinding(*it))
+                            if ((*it)->scopeType() != QQmlSA::ScopeType::BindingFunctionScope)
                                 return;
                         }
                     }

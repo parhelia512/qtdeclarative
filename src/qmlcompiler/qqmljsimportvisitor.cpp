@@ -1671,7 +1671,7 @@ void QQmlJSImportVisitor::populateRuntimeFunctionIndicesForDocument() const
 bool QQmlJSImportVisitor::visit(QQmlJS::AST::ExpressionStatement *ast)
 {
     if (m_pendingSignalHandler.isValid()) {
-        enterEnvironment(QQmlSA::ScopeType::JSFunctionScope, u"signalhandler"_s,
+        enterEnvironment(QQmlSA::ScopeType::SignalHandlerFunctionScope, u"signalhandler"_s,
                          ast->firstSourceLocation());
         flushPendingSignalParameters();
     }
@@ -1680,8 +1680,7 @@ bool QQmlJSImportVisitor::visit(QQmlJS::AST::ExpressionStatement *ast)
 
 void QQmlJSImportVisitor::endVisit(QQmlJS::AST::ExpressionStatement *)
 {
-    if (m_currentScope->scopeType() == QQmlSA::ScopeType::JSFunctionScope
-        && m_currentScope->baseTypeName() == u"signalhandler"_s) {
+    if (m_currentScope->scopeType() == QQmlSA::ScopeType::SignalHandlerFunctionScope) {
         leaveEnvironment();
     }
 }
@@ -1932,7 +1931,7 @@ bool QQmlJSImportVisitor::visit(UiPublicMember *publicMember)
         if (parseResult == BindingExpressionParseResult::Script) {
             Q_ASSERT(!m_savedBindingOuterScope); // automatically true due to grammar
             m_savedBindingOuterScope = m_currentScope;
-            enterEnvironment(QQmlSA::ScopeType::JSFunctionScope, QStringLiteral("binding"),
+            enterEnvironment(QQmlSA::ScopeType::BindingFunctionScope, QStringLiteral("binding"),
                              publicMember->statement->firstSourceLocation());
         }
 
@@ -2486,9 +2485,15 @@ bool QQmlJSImportVisitor::visit(UiScriptBinding *scriptBinding)
         leaveEnvironment();
     }
 
-    enterEnvironment(QQmlSA::ScopeType::JSFunctionScope,
-                     signal ? u"changeHandler"_s : u"binding"_s,
+    if (signal) {
+        enterEnvironment(QQmlSA::ScopeType::SignalHandlerFunctionScope,
+                     u"signalHandler"_s,
                      scriptBinding->statement->firstSourceLocation());
+    } else {
+        enterEnvironment(QQmlSA::ScopeType::BindingFunctionScope,
+                         u"binding"_s,
+                         scriptBinding->statement->firstSourceLocation());
+    }
 
     return true;
 }

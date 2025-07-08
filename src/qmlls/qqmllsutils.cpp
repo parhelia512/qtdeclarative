@@ -1756,7 +1756,7 @@ std::optional<ExpressionType> resolveExpressionType(const QQmlJS::Dom::DomItem &
 
             // in case scope is the semantic scope for the function bodies: grab the owner's scope
             // this happens for all methods but not for signals (they do not have a body)
-            if (scope.value()->scopeType() == QQmlJSScope::ScopeType::JSFunctionScope)
+            if (QQmlSA::isFunctionScope(scope.value()->scopeType()))
                 scope = scope.value()->parentScope();
 
             if (const auto result = resolveSignalOrPropertyExpressionType(

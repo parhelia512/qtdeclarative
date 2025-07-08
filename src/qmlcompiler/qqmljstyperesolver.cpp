@@ -1610,7 +1610,7 @@ QQmlJSRegisterContent QQmlJSTypeResolver::memberType(
         return result;
 
     for (auto scope = contained;
-         scope && (scope->scopeType() == QQmlSA::ScopeType::JSFunctionScope
+         scope && (QQmlSA::isFunctionScope(scope->scopeType())
                    || scope->scopeType() == QQmlSA::ScopeType::JSLexicalScope);
          scope = scope->parentScope()) {
         if (auto ownIdentifier = scope->ownJSIdentifier(name)) {

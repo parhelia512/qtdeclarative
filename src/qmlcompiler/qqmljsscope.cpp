@@ -70,7 +70,7 @@ void QQmlJSScope::insertJSIdentifier(const QString &name, const JavaScriptIdenti
     Q_ASSERT(m_scopeType != QQmlSA::ScopeType::QMLScope);
     if (identifier.kind == JavaScriptIdentifier::LexicalScoped
         || identifier.kind == JavaScriptIdentifier::Injected
-        || m_scopeType == QQmlSA::ScopeType::JSFunctionScope) {
+        || QQmlSA::isFunctionScope(m_scopeType)) {
         m_jsIdentifiers.insert(name, identifier);
     } else {
         auto targetScope = parentScope();
@@ -303,7 +303,7 @@ std::optional<QQmlJSScope::JavaScriptIdentifier>
 QQmlJSScope::jsIdentifier(const QString &id) const
 {
     for (const auto *scope = this; scope; scope = scope->parentScope().data()) {
-        if (scope->m_scopeType == QQmlSA::ScopeType::JSFunctionScope
+        if (QQmlSA::isFunctionScope(scope->m_scopeType)
             || scope->m_scopeType == QQmlSA::ScopeType::JSLexicalScope) {
             auto it = scope->m_jsIdentifiers.find(id);
             if (it != scope->m_jsIdentifiers.end())

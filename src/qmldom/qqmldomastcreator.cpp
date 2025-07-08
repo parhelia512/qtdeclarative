@@ -3358,7 +3358,7 @@ void QQmlDomAstCreatorWithQQmlJSScope::setScopeInDomBeforeEndvisit()
                         // example), then the property definition scope is the parent of the current
                         // scope.
                         const bool usePropertyDefinitionScopeInsteadOfTheBindingScope =
-                                scope->scopeType() == QQmlSA::ScopeType::JSFunctionScope
+                                QQmlSA::isFunctionScope(scope->scopeType())
                                 && scope->parentScope()
                                 && scope->parentScope()->scopeType() == QQmlSA::ScopeType::QMLScope;
                         e.setSemanticScope(usePropertyDefinitionScopeInsteadOfTheBindingScope

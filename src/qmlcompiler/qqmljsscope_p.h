@@ -696,6 +696,21 @@ private:
 using QQmlJSExportedScope = QQmlJSScope::ExportedScope<QQmlJSScope::Ptr>;
 using QQmlJSImportedScope = QQmlJSScope::ImportedScope<QQmlJSScope::ConstPtr>;
 
+namespace QQmlSA {
+constexpr inline bool isFunctionScope(ScopeType type)
+{
+    switch (type) {
+    case ScopeType::JSFunctionScope:
+    case ScopeType::BindingFunctionScope:
+    case ScopeType::SignalHandlerFunctionScope:
+        return true;
+    default:
+        return false;
+    }
+}
+
+}
+
 QT_END_NAMESPACE
 
 #endif // QQMLJSSCOPE_P_H

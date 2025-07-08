@@ -106,6 +106,12 @@ public:
 
     QPalette parentPalette(const QPalette &fallbackPalette) const override;
 
+    // Only used by QQuickContextMenuAttached for Qt 6.
+    // In Qt 7 this will obsolete Controls' copy of QQuickAttachedPropertyPropagator
+    // and its attached popup logic: QTBUG-138546
+    QtPrivate::QQuickAttachedPropertyPropagator *attachedPropertyPropagator_parent(
+        const QMetaObject *attachedType) override;
+
     int backId = 0;
     int escapeId = 0;
     QQuickPopup *popup = nullptr;

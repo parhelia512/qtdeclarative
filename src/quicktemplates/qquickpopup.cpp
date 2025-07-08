@@ -19,6 +19,7 @@
 #include <QtQml/qqmlinfo.h>
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/private/qquickaccessibleattached_p.h>
+#include <QtQuick/private/qquickattachedpropertypropagator_p.h>
 #include <QtQuick/private/qquicktransition_p.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <qpa/qplatformintegration.h>
@@ -3464,6 +3465,32 @@ void QQuickPopup::setWindowModality(const Qt::WindowModality modality)
 QQuickItem *QQuickPopup::safeAreaAttachmentItem()
 {
     return popupItem();
+}
+
+QQuickItem *QQuickPopup::attacheeItem() const
+{
+    return popupItem();
+}
+
+QtPrivate::QQuickAttachedPropertyPropagator *QQuickPopup::attachedParent(
+    const QMetaObject *ourAttachedType) const
+{
+    auto *popupWindow = popupItem()->window();
+    qCDebug(lcAttachedPropertyPropagator).noquote() << "- attachee is a popup; checking its window"
+        << popupWindow;
+    auto *object = QtPrivate::QQuickAttachedPropertyPropagator::attachedObject(
+        ourAttachedType, popupWindow);
+    if (object)
+        return object;
+
+    if (qobject_cast<QQuickPopupWindow *>(popupWindow)) {
+        qCDebug(lcAttachedPropertyPropagator).noquote() << "- checking its window's transientParent"
+            << popupWindow->transientParent();
+        return QtPrivate::QQuickAttachedPropertyPropagator::attachedObject(ourAttachedType,
+            popupWindow->transientParent());
+    }
+
+    return {};
 }
 
 QT_END_NAMESPACE

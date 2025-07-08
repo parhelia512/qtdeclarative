@@ -29,6 +29,7 @@ private:
     void serveFile(const QString &path, const QByteArray &contents);
 
     QList<QQmlDebugClient *> createClients() override;
+    QQmlDebugProcess *createProcess(const QString &executable) final;
     void verifyProcessOutputContains(const QString &string) const;
 
     QPointer<QQmlPreviewClient> m_client;
@@ -53,6 +54,7 @@ private slots:
     void unhandledFiles_data();
     void unhandledFiles();
     void updateFile();
+    void qqcStyleSelection();
 };
 
 tst_QQmlPreview::tst_QQmlPreview()
@@ -104,6 +106,14 @@ QList<QQmlDebugClient *> tst_QQmlPreview::createClients()
     });
 
     return QList<QQmlDebugClient *>({m_client});
+}
+
+QQmlDebugProcess *tst_QQmlPreview::createProcess(const QString &executable)
+{
+    QQmlDebugProcess *process = QQmlDebugTest::createProcess(executable);
+    if (executable.endsWith("withQQC.qml"))
+        process->addEnvironment("QT_QUICK_CONTROLS_CONF=qqc2.conf");
+    return process;
 }
 
 void tst_QQmlPreview::verifyProcessOutputContains(const QString &string) const
@@ -419,6 +429,22 @@ void tst_QQmlPreview::updateFile()
     serveFile(testFile(file), contents);
     m_client->triggerLoad(testFileUrl(file));
     verifyProcessOutputContains("foozle/barzle");
+
+    m_process->stop();
+    QTRY_COMPARE(m_client->state(), QQmlDebugClient::NotConnected);
+    QVERIFY(m_serviceErrors.isEmpty());
+}
+
+void tst_QQmlPreview::qqcStyleSelection()
+{
+    const QString file("withQQC.qml");
+    QCOMPARE(startQmlProcess(file), ConnectSuccess);
+    QVERIFY(m_client);
+    QTRY_COMPARE(m_client->state(), QQmlDebugClient::Enabled);
+    m_client->triggerLoad(testFileUrl(file));
+    QTRY_VERIFY(m_files.contains(testFile(file)));
+    QTRY_VERIFY(m_files.contains(testFile("qqc2.conf")));
+    verifyProcessOutputContains("loaded");
 
     m_process->stop();
     QTRY_COMPARE(m_client->state(), QQmlDebugClient::NotConnected);

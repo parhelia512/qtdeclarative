@@ -13,6 +13,7 @@
 #include <private/qqmlstringconverters_p.h>
 
 #include <private/qv4dateobject_p.h>
+#include <private/qv4domerrors_p.h>
 #include <private/qv4engine_p.h>
 #include <private/qv4functionobject_p.h>
 #include <private/qv4include_p.h>
@@ -1225,21 +1226,159 @@ QString QtObject::md5(const QString &data) const
 }
 
 /*!
-\qmlmethod string Qt::btoa(data)
-Binary to ASCII - this function returns a base64 encoding of \a data.
+\qmlmethod string Qt::btoa(string data)
+\deprecated [6.11] This method performs a UTF-8 conversion of the string before encoding it.
+
+Binary to ASCII --- this function returns a base64 encoding of \a data.
 */
 QString QtObject::btoa(const QString &data) const
 {
+    qWarning("Qt.btoa(string): This method is deprecated. "
+             "Its output differs from the common Web API. "
+             "Use the overloads that take array-likes.");
     return QLatin1String(data.toUtf8().toBase64());
 }
 
 /*!
-\qmlmethod string Qt::atob(data)
-ASCII to binary - this function decodes the base64 encoded \a data string and returns it.
+\qmlmethod string Qt::atob(string data)
+\deprecated [6.11] This method performs a Latin-1 conversion of the string before decoding it
+                   and then interprets the result as UTF-8.
+
+ASCII to binary --- this function decodes the base64 encoded \a data string and returns it.
 */
 QString QtObject::atob(const QString &data) const
 {
+    qWarning("Qt.atob(string): This method is deprecated. "
+             "Its output differs from the common Web API. "
+             "Use the overloads that take array-likes.");
     return QString::fromUtf8(QByteArray::fromBase64(data.toLatin1()));
+}
+
+/*!
+\qmlmethod ArrayBuffer Qt::btoa(ArrayBuffer data)
+\since 6.11
+
+Binary to ASCII --- this function returns a base64 encoding of \a data.
+
+You can pass any array-like as \a data, and it will try to convert
+it into a byte array. In particular this works with a list of numbers
+and a list of one-character strings. The most efficient way to do this,
+however, is passing either a QByteArray or a JavaScript ArrayBuffer
+object.
+
+If the conversion fails and it turns out that the \a data is not of
+the expected form, an \c{Invalid Character} exception is thrown and an
+empty array is returned.
+
+*/
+QByteArray QtObject::btoa(const QByteArray &data) const
+{
+    return data.toBase64();
+}
+
+static QV4::ReturnedValue throwInvalidCharacter(QV4::ExecutionEngine *engine)
+{
+    QV4::Scope scope(engine);
+    THROW_DOM(DOMEXCEPTION_INVALID_CHARACTER_ERR, "Invalid character");
+}
+
+/*!
+\qmlmethod ArrayBuffer Qt::atob(ArrayBuffer data)
+\since 6.11
+
+ASCII to binary --- this function decodes the base64 encoded \a data and returns it.
+
+You can pass any array-like as \a data, and it will try to convert
+it into a byte array. In particular this works with a list of numbers
+and a list of one-character strings. The most efficient way to do this,
+however, is passing either a QByteArray or a JavaScript ArrayBuffer
+object.
+
+If the conversion fails and it turns out that the \a data is not of
+the expected form, an \c{Invalid Character} exception is thrown and an
+empty array is returned.
+
+*/
+QByteArray QtObject::atob(const QByteArray &data) const
+{
+    const auto result
+            = QByteArray::fromBase64Encoding(data, QByteArray::AbortOnBase64DecodingErrors);
+    if (result.decodingStatus == QByteArray::Base64DecodingStatus::Ok)
+        return result.decoded;
+
+    throwInvalidCharacter(v4Engine());
+    return QByteArray();
+}
+
+static QByteArray convertVariantList(const QVariantList &data, QV4::ExecutionEngine *engine)
+{
+    const auto fail = [&]() {
+        throwInvalidCharacter(engine);
+        return QByteArray();
+    };
+
+    QByteArray result;
+
+    const auto append = [&](auto value) {
+        if (value < 0 || value >= 256)
+            return false;
+        result.append(char(value));
+        return true;
+    };
+
+    for (const QVariant &entry : data) {
+        switch (entry.typeId()) {
+        case QMetaType::Char:
+            result.append(*static_cast<const char *>(entry.constData()));
+            break;
+        case QMetaType::Int: {
+            if (!append(*static_cast<const int *>(entry.constData())))
+                return fail();
+            break;
+        }
+        case QMetaType::Double: {
+            if (!append(*static_cast<const double *>(entry.constData())))
+                return fail();
+            break;
+        }
+        case QMetaType::QString: {
+            const QString *string = static_cast<const QString *>(entry.constData());
+            if (string->length() != 1)
+                return fail();
+            if (!append(string->at(0).unicode()))
+                return fail();
+            break;
+        }
+        default:
+            return fail();
+        }
+    }
+
+    return result;
+}
+
+/*!
+\qmlmethod var Qt::btoa(var data)
+\overload
+\since 6.11
+
+Binary to ASCII --- this function returns a base64 encoding of \a data.
+*/
+QByteArray QtObject::btoa(const QVariantList &data) const
+{
+    return btoa(convertVariantList(data, v4Engine()));
+}
+
+/*!
+\qmlmethod var Qt::atob(var data)
+\overload
+\since 6.11
+
+ASCII to binary --- this function decodes the base64 encoded \a data and returns it.
+*/
+QByteArray QtObject::atob(const QVariantList &data) const
+{
+    return atob(convertVariantList(data, v4Engine()));
 }
 
 /*!

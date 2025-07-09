@@ -456,7 +456,7 @@ bool QQmlContextWrapper::virtualPut(Managed *m, PropertyKey id, const Value &val
     if (!context)
         return false;
 
-    // See QV8ContextWrapper::Getter for resolution order
+    // See QQmlContextWrapper::Getter for resolution order
 
     QObject *scopeObject = wrapper->getScopeObject();
     ScopedString name(scope, id.asStringOrSymbol());

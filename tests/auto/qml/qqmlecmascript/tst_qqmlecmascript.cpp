@@ -5678,7 +5678,7 @@ void tst_qqmlecmascript::propertyVarImplicitOwnership()
     gc(engine, GCFlags::DontSendPostedEvents);
     QPointer<QObject> qobjectGuard(childObject->property("vp").value<QObject*>()); // get the pointer prior to processing deleteLater events.
     QVERIFY(!qobjectGuard.isNull());
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV8QObjectWrapper.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV4::QObjectWrapper.
     QCoreApplication::processEvents();
     QVERIFY(!qobjectGuard.isNull());
     QMetaObject::invokeMethod(object.data(), "deassignCircular");
@@ -5779,7 +5779,7 @@ void tst_qqmlecmascript::propertyVarCircular()
         QVERIFY(canaryResourceVariant.isValid());
     }
 
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV8QObjectWrapper.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV4::QObjectWrapper.
     QCoreApplication::processEvents();
     QCOMPARE(object->property("canaryInt"), QVariant(5));
     QVariant canaryResourceVariant = object->property("canaryResource");
@@ -5805,7 +5805,7 @@ void tst_qqmlecmascript::propertyVarCircular2()
     QScopedPointer<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     QMetaObject::invokeMethod(object.data(), "assignCircular");
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV8QObjectWrapper.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV4::QObjectWrapper.
     QCoreApplication::processEvents();
     QObject *rootObject = object->property("vp").value<QObject*>();
     QVERIFY(rootObject != nullptr);
@@ -5833,7 +5833,7 @@ void tst_qqmlecmascript::propertyVarInheritance()
     QScopedPointer<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     QMetaObject::invokeMethod(object.data(), "assignCircular");    // cause assignment and gc
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV8QObjectWrapper.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV4::QObjectWrapper.
     QCoreApplication::processEvents();
     // we want to be able to track when the varProperties array of the last metaobject is disposed
     QObject *cco5 = object->property("varProperty").value<QObject*>()->property("vp").value<QObject*>()->property("vp").value<QObject*>()->property("vp").value<QObject*>()->property("vp").value<QObject*>();
@@ -5879,7 +5879,7 @@ void tst_qqmlecmascript::propertyVarInheritance2()
     QScopedPointer<QObject> object(component.create());
     QVERIFY2(object, qPrintable(component.errorString()));
     QMetaObject::invokeMethod(object.data(), "assignCircular");
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV8QObjectWrapper.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete); // process deleteLater() events from QV4::QObjectWrapper.
     QCoreApplication::processEvents();
     QObject *rootObject = object->property("vp").value<QObject*>();
     QVERIFY(rootObject != nullptr);

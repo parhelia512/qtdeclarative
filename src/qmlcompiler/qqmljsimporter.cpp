@@ -342,13 +342,17 @@ QQmlJSImporter::Import QQmlJSImporter::readDirectory(const QString &directory)
         return import;
     }
 
-    QDirIterator it {
-        directory,
-        QStringList() << QLatin1String("*.qml"),
-        QDir::NoFilter
-    };
-    while (it.hasNext()) {
-        QString name = it.nextFileInfo().completeBaseName();
+    // The engine doesn't really care whether a file is hidden, so we need to include them
+    QDirListing::IteratorFlags listingFlags = QDirListing::IteratorFlag::Default
+            | QDirListing::IteratorFlag::IncludeHidden
+            | QDirListing::IteratorFlag::FilesOnly;
+    QDirListing dirListing(
+            directory,
+            QStringList() << QLatin1String("*.qml"),
+            listingFlags
+    );
+    for (const QDirListing::DirEntry &entry: dirListing) {
+        QString name = entry.completeBaseName();
 
         // Non-uppercase names cannot be imported anyway.
         if (!name.front().isUpper())
@@ -363,7 +367,7 @@ QQmlJSImporter::Import QQmlJSImporter::readDirectory(const QString &directory)
             continue;
 
         import.objects.append({
-                localFile2QQmlJSScope(it.filePath()),
+                localFile2QQmlJSScope(entry.filePath()),
                 { QQmlJSScope::Export(QString(), name, QTypeRevision(), QTypeRevision()) }
         });
     }

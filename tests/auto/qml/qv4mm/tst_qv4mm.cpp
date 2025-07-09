@@ -910,9 +910,6 @@ void tst_qv4mm::validateIncrementalMarkPhase_data() {
 }
 
 void tst_qv4mm::validateIncrementalMarkPhase() {
-    qputenv("QV4_MM_CROSS_VALIDATE_INCREMENTAL_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_CROSS_VALIDATE_INCREMENTAL_GC"); });
-
     QRandomGenerator& generator = *QRandomGenerator::global();
 
     auto undefined = [](QQmlEngine&) {
@@ -1009,6 +1006,8 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
     };
 
     QQmlEngine engine;
+    auto handle = engine.handle();
+    handle->memoryManager->crossValidateIncrementalGC = true;
 
     std::vector<QJSValue> values;
     {
@@ -1023,7 +1022,6 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
 
     engine.collectGarbage();
 
-    auto handle = engine.handle();
     auto state_machine = handle->memoryManager->gcStateMachine.get();
     QCOMPARE(handle->memoryManager->gcBlocked, QV4::MemoryManager::Unblocked);
     state_machine->reset();
@@ -1091,14 +1089,12 @@ void tst_qv4mm::trackObjectDoesNotAccessGarbageOnTheStackOnAllocation()
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
+
     *engine->jsStackTop = QV4::Value::fromHeapObject(engine->memoryManager->allocManaged<QV4::String>());
 
     jsengine.collectGarbage();
@@ -1116,14 +1112,11 @@ void tst_qv4mm::spreadArgumentDoesNotAccessGarbageOnTheStackOnAllocation()
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
 
     QJSValue function = jsengine.evaluate("function foo(){}; foo");
     QV4::Value* function_value = QJSValuePrivate::takeManagedValue(&function);
@@ -1150,14 +1143,12 @@ void tst_qv4mm::scopedConvertToStringFromReturnedValueDoesNotAccessGarbageOnTheS
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
+
     *engine->jsStackTop = QV4::Value::fromHeapObject(engine->memoryManager->allocManaged<QV4::String>());
 
     jsengine.collectGarbage();
@@ -1172,14 +1163,12 @@ void tst_qv4mm::scopedConvertToObjectFromReturnedValueDoesNotAccessGarbageOnTheS
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
+
     *engine->jsStackTop = QV4::Value::fromHeapObject(engine->memoryManager->allocManaged<QV4::String>());
 
     jsengine.collectGarbage();
@@ -1194,14 +1183,12 @@ void tst_qv4mm::scopedConvertToStringFromValueDoesNotAccessGarbageOnTheStackOnAl
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
+
     *engine->jsStackTop = QV4::Value::fromHeapObject(engine->memoryManager->allocManaged<QV4::String>());
 
     jsengine.collectGarbage();
@@ -1217,14 +1204,12 @@ void tst_qv4mm::scopedConvertToObjectFromValueDoesNotAccessGarbageOnTheStackOnAl
     QSKIP("Our main visibility tool for this test is an assertion. Thus the test needs assertions to be enabled.");
 #endif
 
-    qputenv("QV4_MM_AGGRESSIVE_GC", "1");
-    QScopeGuard env_guard([](){ qunsetenv("QV4_MM_AGGRESSIVE_GC"); });
-
-    qputenv("QV4_GC_TIMELIMIT", "0");
-    QScopeGuard env_guard2([](){ qunsetenv("QV4_GC_TIMELIMIT"); });
-
     QJSEngine jsengine;
     QV4::ExecutionEngine* engine = jsengine.handle();
+
+    engine->memoryManager->aggressiveGC = true;
+    engine->memoryManager->setGCTimeLimit(0);
+
     *engine->jsStackTop = QV4::Value::fromHeapObject(engine->memoryManager->allocManaged<QV4::String>());
 
     jsengine.collectGarbage();

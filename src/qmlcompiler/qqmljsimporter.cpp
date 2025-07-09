@@ -289,7 +289,7 @@ QQmlJSImporter::Import QQmlJSImporter::readQmldir(const QString &modulePath)
 
         auto mo = qmlComponents.find(it->fileName);
         if (mo == qmlComponents.end()) {
-            QQmlJSScope::Ptr imported = localFile2ScopeTree(filePath);
+            QQmlJSScope::Ptr imported = localFile2QQmlJSScope(filePath);
             if (auto *factory = imported.factory()) {
                 if (it->singleton) {
                     factory->setIsSingleton(true);
@@ -309,7 +309,7 @@ QQmlJSImporter::Import QQmlJSImporter::readQmldir(const QString &modulePath)
         const QString filePath = resolvedPath + script.fileName;
         auto mo = result.scripts.find(script.fileName);
         if (mo == result.scripts.end())
-            mo = result.scripts.insert(script.fileName, { localFile2ScopeTree(filePath), {} });
+            mo = result.scripts.insert(script.fileName, { localFile2QQmlJSScope(filePath), {} });
 
         mo->exports.append(QQmlJSScope::Export(
                                reader.typeNamespace(), script.nameSpace,
@@ -329,7 +329,7 @@ QQmlJSImporter::Import QQmlJSImporter::readDirectory(const QString &directory)
                 const QString name = QFileInfo(entry.resourcePath).baseName();
                 if (name.front().isUpper()) {
                     import.objects.append({
-                        localFile2ScopeTree(entry.filePath),
+                        localFile2QQmlJSScope(entry.filePath),
                         { QQmlJSScope::Export(QString(), name, QTypeRevision(), QTypeRevision()) }
                     });
                 }
@@ -363,7 +363,7 @@ QQmlJSImporter::Import QQmlJSImporter::readDirectory(const QString &directory)
             continue;
 
         import.objects.append({
-                localFile2ScopeTree(it.filePath()),
+                localFile2QQmlJSScope(it.filePath()),
                 { QQmlJSScope::Export(QString(), name, QTypeRevision(), QTypeRevision()) }
         });
     }
@@ -876,7 +876,7 @@ bool QQmlJSImporter::importHelper(const QString &module, AvailableTypes *types,
     return false;
 }
 
-QQmlJSScope::Ptr QQmlJSImporter::localFile2ScopeTree(const QString &filePath)
+QQmlJSScope::Ptr QQmlJSImporter::localFile2QQmlJSScope(const QString &filePath)
 {
     const QString sourceFolderFile = preferQmlFilesFromSourceFolder()
             ? QQmlJSUtils::qmlSourcePathFromBuildPath(m_mapper, filePath)
@@ -914,7 +914,7 @@ bool QQmlJSImporter::registerScope(const QQmlJSScope::Ptr &scope)
 
 QQmlJSScope::Ptr QQmlJSImporter::importFile(const QString &file)
 {
-    return localFile2ScopeTree(file);
+    return localFile2QQmlJSScope(file);
 }
 
 QQmlJSImporter::ImportedTypes QQmlJSImporter::importDirectory(

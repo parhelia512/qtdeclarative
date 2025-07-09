@@ -252,7 +252,7 @@ private:
     Import readQmldir(const QString &dirname);
     Import readDirectory(const QString &directory);
 
-    QQmlJSScope::Ptr localFile2ScopeTree(const QString &filePath);
+    QQmlJSScope::Ptr localFile2QQmlJSScope(const QString &filePath);
     static void setQualifiedNamesOn(const Import &import);
 
     QStringList m_importPaths;

@@ -1545,11 +1545,16 @@ QString QQmlTypeLoader::absoluteFilePath(const QString &path)
     return absoluteFilePath;
 }
 
+static constexpr QDirListing::IteratorFlags dirListingFlags()
+{
+    return QDirListing::IteratorFlag::CaseSensitive | QDirListing::IteratorFlag::IncludeHidden;
+}
+
 enum class FileSetPopulateResult { NotFound, Found, Overflow };
 static FileSetPopulateResult populateFileSet(
         QCache<QString, bool> *fileSet, const QString &path, const QString &file)
 {
-    const QDirListing listing(path, QDirListing::IteratorFlag::CaseSensitive);
+    const QDirListing listing(path, dirListingFlags());
     bool seen = false;
     for (const auto &entry : listing) {
         const QString next = entry.fileName();
@@ -1638,7 +1643,7 @@ bool QQmlTypeLoader::fileExists(const QString &dirPath, const QString &file)
 
         }
 
-        const QDirListing singleFile(dir.path(), {file}, QDirListing::IteratorFlag::CaseSensitive);
+        const QDirListing singleFile(dir.path(), {file}, dirListingFlags());
         const bool exists = singleFile.begin() != singleFile.end();
         fileSet->insert(file, new bool(exists));
         Q_ASSERT(fileSet->totalCost() == fileSet->maxCost());

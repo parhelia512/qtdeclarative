@@ -228,9 +228,9 @@ HighlightingVisitor::HighlightingVisitor(const QQmlJS::Dom::DomItem &item,
                                          HighlightingMode mode)
     : m_highlights(mode), m_range(range)
 {
-    item.visitTree(Path(),
-                   [this](Path path, const DomItem &item, bool b) { return this->visitor(path, item, b); },
-                   VisitOption::Default, emptyChildrenVisitor, emptyChildrenVisitor, highlightingFilter());
+    item.visitTree(Path(), [this](const Path &path, const DomItem &item, bool b) {
+        return this->visitor(path, item, b);
+    }, VisitOption::Default, emptyChildrenVisitor, emptyChildrenVisitor, highlightingFilter());
 }
 
 bool HighlightingVisitor::visitor(Path, const DomItem &item, bool)
@@ -684,7 +684,7 @@ void HighlightingVisitor::highlightBySemanticAnalysis(const DomItem &item, QQmlJ
             m_highlights.addHighlight(loc, QmlHighlightKind::Unknown);
             return;
         }
-        const auto objects = resolver->objectsById();
+        const auto &objects = resolver->objectsById();
         if (expression->name.has_value()) {
             const auto &name = expression->name.value();
             const auto boundName =

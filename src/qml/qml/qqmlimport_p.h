@@ -166,13 +166,13 @@ public:
 
     QTypeRevision addFileImport(
             QQmlTypeLoader *typeLoader, const QString &uri, const QString &prefix,
-            QTypeRevision requestedVersion, ImportFlags flags, quint16 precedence,
+            QTypeRevision requestedVersion, ImportFlags flags, quint8 precedence,
             QString *localQmldir, QList<QQmlError> *errors);
 
     QTypeRevision addLibraryImport(
             QQmlTypeLoader *typeLoader, const QString &uri, const QString &prefix,
             QTypeRevision requestedVersion, const QString &qmldirIdentifier,
-            const QString &qmldirUrl, ImportFlags flags, quint16 precedence,
+            const QString &qmldirUrl, ImportFlags flags, quint8 precedence,
             QList<QQmlError> *errors);
 
     QTypeRevision updateQmldirContent(

@@ -1123,12 +1123,10 @@ static void insertImport(QQmlImportNamespace *nameSpace, QQmlImportInstance *imp
 }
 
 static QQmlImportInstance *addImportToNamespace(
-        QQmlImportNamespace *nameSpace, const QString &uri, const QString &url, QTypeRevision version,
-        QV4::CompiledData::Import::ImportType type, QList<QQmlError> *errors, quint16 precedence)
+        QQmlImportNamespace *nameSpace, const QString &uri, const QString &url,
+        QTypeRevision version, QV4::CompiledData::Import::ImportType type, quint8 precedence)
 {
     Q_ASSERT(nameSpace);
-    Q_ASSERT(errors);
-    Q_UNUSED(errors);
     Q_ASSERT(url.isEmpty() || url.endsWith(Slash));
 
     QQmlImportInstance *import = new QQmlImportInstance;
@@ -1188,7 +1186,7 @@ static QTypeRevision finalizeLibraryImport(
 QTypeRevision QQmlImports::addLibraryImport(
         QQmlTypeLoader *typeLoader, const QString &uri, const QString &prefix,
         QTypeRevision requestedVersion, const QString &qmldirIdentifier, const QString &qmldirUrl,
-        ImportFlags flags, quint16 precedence, QList<QQmlError> *errors)
+        ImportFlags flags, quint8 precedence, QList<QQmlError> *errors)
 {
     Q_ASSERT(typeLoader);
     Q_ASSERT(errors);
@@ -1207,8 +1205,7 @@ QTypeRevision QQmlImports::addLibraryImport(
     if (noQmldir || isIncomplete) {
         QQmlImportInstance *inserted = addImportToNamespace(
                 nameSpace, uri, qmldirUrl, requestedVersion,
-                QV4::CompiledData::Import::ImportLibrary, errors,
-                precedence);
+                QV4::CompiledData::Import::ImportLibrary, precedence);
         Q_ASSERT(inserted);
 
         if (noQmldir && !isIncomplete) {
@@ -1253,7 +1250,7 @@ QTypeRevision QQmlImports::addLibraryImport(
         // Even if the precedence stays the same we have to re-insert. The ordering wrt other
         // imports of the same precendence may change.
         nameSpace->imports.removeOne(existing);
-        existing->precedence = std::min(quint8(precedence), existing->precedence);
+        existing->precedence = std::min(precedence, existing->precedence);
         existing->implicitlyImported = existing->precedence >= QQmlImportInstance::Implicit;
         insertImport(nameSpace, existing);
         return finalizeLibraryImport(uri, importedVersion, qmldir, existing, errors);
@@ -1261,8 +1258,7 @@ QTypeRevision QQmlImports::addLibraryImport(
 
     QQmlImportInstance *inserted = addImportToNamespace(
                 nameSpace, resolvedUri, resolvedUrl, requestedVersion,
-                QV4::CompiledData::Import::ImportLibrary, errors,
-                precedence);
+                QV4::CompiledData::Import::ImportLibrary, precedence);
     Q_ASSERT(inserted);
 
     registerBuiltinModuleTypes(qmldir, importedVersion);
@@ -1296,7 +1292,7 @@ QTypeRevision QQmlImports::addLibraryImport(
 */
 QTypeRevision QQmlImports::addFileImport(
         QQmlTypeLoader *typeLoader, const QString &uri, const QString &prefix,
-        QTypeRevision requestedVersion, ImportFlags flags, quint16 precedence, QString *localQmldir,
+        QTypeRevision requestedVersion, ImportFlags flags, quint8 precedence, QString *localQmldir,
         QList<QQmlError> *errors)
 {
     Q_ASSERT(typeLoader);
@@ -1407,7 +1403,7 @@ QTypeRevision QQmlImports::addFileImport(
     if ((flags & QQmlImports::ImportIncomplete) || qmldirIdentifier.isEmpty()) {
         QQmlImportInstance *inserted = addImportToNamespace(
                 nameSpace, importUri, url, requestedVersion, QV4::CompiledData::Import::ImportFile,
-                errors, precedence);
+                precedence);
         Q_ASSERT(inserted);
         return validVersion(requestedVersion);
     }
@@ -1419,7 +1415,7 @@ QTypeRevision QQmlImports::addFileImport(
     if (!qmldir.hasContent()) {
         QQmlImportInstance *inserted = addImportToNamespace(
                 nameSpace, importUri, url, requestedVersion, QV4::CompiledData::Import::ImportFile,
-                errors, precedence);
+                precedence);
         Q_ASSERT(inserted);
         return validVersion(requestedVersion);
     }
@@ -1451,8 +1447,8 @@ QTypeRevision QQmlImports::addFileImport(
     }
 
     QQmlImportInstance *inserted = addImportToNamespace(
-            nameSpace, importUri, resolvedUrl, requestedVersion, QV4::CompiledData::Import::ImportFile,
-            errors, precedence);
+            nameSpace, importUri, resolvedUrl, requestedVersion,
+            QV4::CompiledData::Import::ImportFile, precedence);
     Q_ASSERT(inserted);
 
     registerBuiltinModuleTypes(qmldir, importedVersion);

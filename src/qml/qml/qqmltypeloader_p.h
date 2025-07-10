@@ -119,7 +119,7 @@ public:
 
         bool loadDependentImports(
                 const QList<QQmlDirParser::Import> &imports, const QString &qualifier,
-                QTypeRevision version, quint16 precedence, QQmlImports::ImportFlags flags,
+                QTypeRevision version, quint8 precedence, QQmlImports::ImportFlags flags,
                 QList<QQmlError> *errors);
         virtual QString stringAt(int) const { return QString(); }
 

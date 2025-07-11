@@ -18,13 +18,7 @@ qt_internal_add_test(tst_androidassets
 
 if(ANDROID)
     # TODO: avoid using private API, introduce the public variant instead. See QTBUG-135973.
-    if(QT_USE_ANDROID_MODERN_BUNDLE)
-        # Assets should land in the 'app' directory to be processed by the application gradle
-        # script.
-        _qt_internal_android_get_target_deployment_dir(android_build_dir tst_androidassets)
-    else()
-        _qt_internal_android_get_target_android_build_dir(android_build_dir tst_androidassets)
-    endif()
+    _qt_internal_android_get_target_deployment_dir(android_build_dir tst_androidassets)
 else()
     set(android_build_dir "${CMAKE_CURRENT_BINARY_DIR}/android-build")
 endif()

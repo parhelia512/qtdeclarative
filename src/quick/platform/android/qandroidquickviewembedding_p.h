@@ -50,7 +50,7 @@ namespace QtAndroidQuickViewEmbedding
 
     public:
         explicit QAndroidQuickView(QWindow *parent)
-            : QQuickView(parent), m_signalManager(new QAndroidViewSignalManager())
+            : QQuickView(parent), m_signalManager(new QAndroidViewSignalManager(this))
         {
         }
         inline QAndroidViewSignalManager *signalManager() const { return m_signalManager.get(); };

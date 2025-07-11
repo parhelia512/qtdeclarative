@@ -170,16 +170,16 @@ namespace QtAndroidQuickViewEmbedding
     {
         Q_ASSERT(env);
 
-        auto [view, rootObject] = getViewAndRootObject(windowReference);
-        if (!rootObject) {
+        auto [view, _] = getViewAndRootObject(windowReference);
+        if (!view) {
             qWarning("Cannot connect to signal %s %s",
                      qPrintable(QJniObject(signalName).toString()), uninitializedViewMessage);
-            return -1;
+            return false;
         }
 
         QAndroidViewSignalManager *signalManager = view->signalManager();
         return signalManager->addConnection(QJniObject(signalName).toString(), argTypes,
-                                            QJniObject(listener), *rootObject);
+                                            QJniObject(listener));
     }
 
     bool removeRootObjectSignalListener(JNIEnv *, jobject, jlong windowReference,

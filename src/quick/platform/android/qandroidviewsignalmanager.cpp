@@ -4,11 +4,34 @@
 #include "platform/android/qandroidviewsignalmanager_p.h"
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qmetaobject.h>
+#include <QtQuick/qquickitem.h>
+#include <QtQuick/qquickview.h>
 
 #include <QtCore/private/qandroidtypeconverter_p.h>
 #include <QtQuick/private/qandroidviewsignalmanager_p.h>
 
 QT_BEGIN_NAMESPACE
+
+QAndroidViewSignalManager::QAndroidViewSignalManager(QQuickView *view, QObject *parent)
+    : QObject(parent), m_view(view)
+{
+    connect(m_view, &QQuickView::statusChanged, this,
+            &QAndroidViewSignalManager::onViewStatusChanged);
+}
+
+void QAndroidViewSignalManager::onViewStatusChanged(QQuickView::Status status)
+{
+    if (status == QQuickView::Ready) {
+        QObject::disconnect(m_view, &QQuickView::statusChanged, this,
+                            &QAndroidViewSignalManager::onViewStatusChanged);
+        QMutexLocker lock(&m_queueMutex);
+        for (const auto &info : m_queuedConnections)
+            addConnection(info.signalName, info.argTypes, info.listener);
+        m_queuedConnections.clear();
+    } else if (status == QQuickView::Error) {
+        m_queuedConnections.clear();
+    }
+}
 
 QByteArray qmlTypeArgStringFromJavaTypeArgs(const QJniArray<jclass> &javaArgClasses)
 {
@@ -72,12 +95,28 @@ std::optional<int> propertyIndexForSignal(const QMetaMethod &signal, const QMeta
     return std::nullopt;
 }
 
+QAndroidViewSignalManager::connection_key_t QAndroidViewSignalManager::createNewSignalKey() const
+{
+    connection_key_t key;
+    do {
+        key = QRandomGenerator::global()->generate();
+    } while (m_connections.contains(key));
+    return key;
+}
+
 int QAndroidViewSignalManager::addConnection(const QString &signalName,
                                              const QJniArray<jclass> &argTypes,
-                                             const QJniObject &listener,
-                                             const QObject &rootView)
+                                             const QJniObject &listener)
 {
-    const auto *rootMetaObject = rootView.metaObject();
+    if (m_view->status() == QQuickView::Error) {
+        qWarning("Can not connect to signals due to errors while loading the view");
+        return -1;
+    }
+
+    if (m_view->status() != QQuickView::Ready)
+        return queueConnection(signalName, argTypes, listener);
+
+    const auto *rootMetaObject = m_view->rootObject()->metaObject();
     int signalIndex = indexOfSignal(*rootMetaObject, signalName, argTypes);
     if (signalIndex == -1) {
         qWarning("Failed to find matching signal from root object for signal: %s",
@@ -90,14 +129,15 @@ int QAndroidViewSignalManager::addConnection(const QString &signalName,
 
     // Connect the signal to this class' qt_metacall
     const auto connection =
-            QMetaObject::connect(&rootView, signalIndex, this, QObject::metaObject()->methodCount(),
-                                 Qt::QueuedConnection);
+            QMetaObject::connect(m_view->rootObject(), signalIndex, this,
+                                 QObject::metaObject()->methodCount(), Qt::QueuedConnection);
 
-    const auto signal = rootView.metaObject()->method(signalIndex);
+    const auto signal = rootMetaObject->method(signalIndex);
     const auto propertyIndex = propertyIndexForSignal(signal, *rootMetaObject);
     const auto argumentTypes = metaMethodArgumentTypes(signal);
 
-    m_connections.insert(signalIndex,
+    const auto key = createNewSignalKey();
+    m_connections.insert(key,
                          { .connection = connection,
                            .listenerObject = listener,
                            .qmlSignalName = signalName,
@@ -105,7 +145,22 @@ int QAndroidViewSignalManager::addConnection(const QString &signalName,
                            .isPropertySignal = propertyIndex.has_value(),
                            .qmlPropertyIndex = propertyIndex });
 
-    return signalIndex;
+    return key;
+}
+
+int QAndroidViewSignalManager::queueConnection(const QString &signalName,
+                                               const QJniArray<jclass> &argTypes,
+                                               const QJniObject &listener)
+{
+    auto key = createNewSignalKey();
+    QMutexLocker lock(&m_queueMutex);
+    m_queuedConnections.push_back({
+        .id = key,
+        .signalName = signalName,
+        .argTypes = argTypes,
+        .listener = listener
+    });
+    return key;
 }
 
 QJniObject voidStarToQJniObject(const QMetaType::Type type, const void *data)
@@ -208,18 +263,21 @@ int QAndroidViewSignalManager::qt_metacall(QMetaObject::Call call, int methodId,
     return methodId;
 }
 
-bool QAndroidViewSignalManager::hasConnection(int signalIdx) const
+bool QAndroidViewSignalManager::hasConnection(connection_key_t key) const
 {
-    return m_connections.contains(signalIdx);
+    return m_connections.contains(key);
 }
 
-void QAndroidViewSignalManager::removeConnection(int signalIdx)
+void QAndroidViewSignalManager::removeConnection(connection_key_t key)
 {
-    if (!hasConnection(signalIdx))
-        return;
-    const auto info = m_connections.value(signalIdx);
-    QObject::disconnect(info.connection);
-    m_connections.remove(signalIdx);
+    if (hasConnection(key)) {
+        const auto info = m_connections.value(key);
+        QObject::disconnect(info.connection);
+        m_connections.remove(key);
+    } else {
+        QMutexLocker lock(&m_queueMutex);
+        m_queuedConnections.removeIf([key](const auto &info) { return info.id == key; });
+    }
 }
 
 QT_END_NAMESPACE

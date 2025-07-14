@@ -705,7 +705,7 @@ void QQmlBinding::doUpdate(const DeleteWatcher &watcher, QQmlPropertyData::Write
                 if (returnType.flags() & QMetaType::NeedsDestruction)
                     returnType.destruct(result);
             } else if (canWrite()) {
-                error = !write(QV4::Value::undefinded(), true, flags);
+                error = !write(QV4::Value::undefined(), true, flags);
             }
         }
     } else {

@@ -8,6 +8,8 @@
 #include <array>
 
 QT_BEGIN_NAMESPACE
+
+// Keep in sync with QSsl::SslOption!
 static constexpr std::array<QSsl::SslOption, 8> SslOptions = {
     QSsl::SslOptionDisableEmptyFragments,
     QSsl::SslOptionDisableSessionTickets,
@@ -47,6 +49,16 @@ int QQmlSslConfiguration::peerVerifyDepth() const
 QByteArray QQmlSslConfiguration::sessionTicket() const
 {
     return m_configuration.sessionTicket();
+}
+
+QSsl::SslOptions QQmlSslConfiguration::sslOptionFlags() const
+{
+    QSsl::SslOptions options{};
+    for (auto opt : SslOptions) {
+        if (m_configuration.testSslOption(opt))
+            options |= opt;
+    }
+    return options;
 }
 
 QSslConfiguration const QQmlSslConfiguration::configuration()
@@ -126,6 +138,12 @@ void QQmlSslConfiguration::setSessionTicket(const QByteArray &sessionTicket)
         return;
 
     m_configuration.setSessionTicket(sessionTicket);
+}
+
+void QQmlSslConfiguration::setSslOptionFlags(QSsl::SslOptions options)
+{
+    for (auto opt : SslOptions)
+        m_configuration.setSslOption(opt, options & opt);
 }
 
 void QQmlSslConfiguration::setPrivateKey(const QQmlSslKey &privateKey)

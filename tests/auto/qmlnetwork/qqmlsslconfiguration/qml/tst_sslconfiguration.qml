@@ -13,6 +13,7 @@ Item {
     property sslConfiguration defaultSslObject;
     property sslDtlsConfiguration dtlsDefaultSslObj;
     property sslKey key;
+    property sslConfiguration otherUserSslConf;
 
     TestCase {
         name: "qtSslConfigurationTest"
@@ -153,6 +154,20 @@ Item {
 
         function test_sslConfigurationFields(data) {
             compare(data.field, data.answer)
+        }
+
+        function test_sslConfigurationSslOptionFlags() {
+            // Keep the expected value in sync with QSslConfiguration::defaultSslConfiguration!
+            const defaultSslFlags = Ssl.SslOptionDisableEmptyFragments
+                                  | Ssl.SslOptionDisableLegacyRenegotiation
+                                  | Ssl.SslOptionDisableCompression
+                                  | Ssl.SslOptionDisableSessionPersistence
+            compare(otherUserSslConf.sslOptionFlags, defaultSslFlags)
+
+            const newSslFlags = Ssl.SslOptionDisableLegacyRenegotiation
+                              | Ssl.SslOptionDisableSessionSharing
+            otherUserSslConf.sslOptionFlags = newSslFlags
+            compare(otherUserSslConf.sslOptionFlags, newSslFlags)
         }
     }
 }

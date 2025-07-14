@@ -39,6 +39,7 @@ class Q_QMLNETWORK_EXPORT QQmlSslConfiguration
                        WRITE setPeerVerifyMode)
     Q_PROPERTY(int peerVerifyDepth READ peerVerifyDepth WRITE setPeerVerifyDepth)
     Q_PROPERTY(QByteArray sessionTicket READ sessionTicket WRITE setSessionTicket)
+    Q_PROPERTY(QSsl::SslOptions sslOptionFlags READ sslOptionFlags WRITE setSslOptionFlags REVISION(6, 11))
 
 public:
     Q_INVOKABLE void setCertificateFiles(const QStringList &certificateFiles);
@@ -50,6 +51,7 @@ public:
     QSslSocket::PeerVerifyMode peerVerifyMode() const;
     int peerVerifyDepth() const;
     QByteArray sessionTicket() const;
+    QSsl::SslOptions sslOptionFlags() const;
     QSslConfiguration const configuration();
 
     void setProtocol(QSsl::SslProtocol protocol);
@@ -58,6 +60,7 @@ public:
     void setCiphers(const QString &ciphers);
     void setSslOptions(const QList<QSsl::SslOption> &options);
     void setSessionTicket(const QByteArray &sessionTicket);
+    void setSslOptionFlags(QSsl::SslOptions options);
 
 private:
     inline friend bool operator==(const QQmlSslConfiguration &lval,

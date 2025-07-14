@@ -1752,6 +1752,46 @@ function(_qt_internal_target_enable_qmllint target)
         all_qmllint_json ${lint_target_json})
     _qt_internal_add_all_qmllint_target(QT_QMLLINT_MODULE_ALL_TARGET
         all_qmllint_module ${lint_target_module})
+
+    if(QT_FEATURE_qmlcontextpropertydump)
+        _qt_internal_add_generate_context_property_dump_target(${lint_target})
+    endif()
+endfunction()
+
+function(_qt_internal_add_generate_context_property_dump_target lint_target)
+    set(global_target_name dump_qml_context_properties)
+    set(global_target_clean_name clean_qml_context_properties)
+
+    if(NOT TARGET ${global_target_name})
+        set(qmlcontextpropertydump_file "${CMAKE_BINARY_DIR}/.qt/contextPropertyDump.ini")
+
+        _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
+        add_custom_command(
+            OUTPUT "${qmlcontextpropertydump_file}"
+            COMMAND
+                "${tool_wrapper}"
+                $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::qmlcontextpropertydump>
+                --cpp-source-directory "${CMAKE_SOURCE_DIR}" --build-directory "${CMAKE_BINARY_DIR}"
+            COMMAND_EXPAND_LISTS
+            DEPENDS
+                ${QT_CMAKE_EXPORT_NAMESPACE}::qmlcontextpropertydump
+            COMMENT "Generating ${qmlcontextpropertydump_file} file for qmllint"
+        )
+
+        add_custom_target(${global_target_name}
+            DEPENDS "${qmlcontextpropertydump_file}"
+        )
+
+        add_custom_target(${global_target_clean_name}
+            COMMAND ${CMAKE_COMMAND} -E rm "${qmlcontextpropertydump_file}"
+            COMMENT "Removing ${qmlcontextpropertydump_file} file"
+        )
+    endif()
+
+    if(QT_QMLLINT_CONTEXT_PROPERTY_DUMP)
+        # make the lint target search for context properties
+        add_dependencies(${lint_target} ${global_target_name})
+    endif()
 endfunction()
 
 # Create an 'all_qmllint' target. The target's name can be user-controlled by ${target_var} with the

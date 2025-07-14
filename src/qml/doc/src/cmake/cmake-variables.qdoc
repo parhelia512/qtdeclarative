@@ -159,3 +159,33 @@ set(QT_QML_GENERATE_AOTSTATS OFF)
 \endcode
 
 */
+
+/*!
+\page cmake-variable-qt-qmllint-no-context-property-dump.html
+\ingroup cmake-variables-qtqml
+
+\title QT_QMLLINT_CONTEXT_PROPERTY_DUMP
+
+\brief Enables dumping of context properties in lint targets.
+\cmakevariablesince 6.11
+
+When the \c QT_QMLLINT_CONTEXT_PROPERTY_DUMP variable is enabled, \l{qmllint-auto}{linting targets}
+created by \l{qt_add_qml_module} will run \l qmlcontextpropertydump before running \l qmllint. This
+allows \l qmllint to warn on the usage of context properties in QML.
+
+To enable this feature, set the \c QT_QMLLINT_CONTEXT_PROPERTY_DUMP variable using
+one of the following methods:
+
+\list
+    \li Pass the option to the CMake executable:
+        \badcode
+        -DQT_QMLLINT_CONTEXT_PROPERTY_DUMP=ON
+        \endcode
+
+    \li Add the setting to your \c CMakeLists.txt file before the first call to
+        \l{qt_add_qml_module}:
+        \badcode
+        set(QT_QMLLINT_CONTEXT_PROPERTY_DUMP ON)
+        \endcode
+\endlist
+*/

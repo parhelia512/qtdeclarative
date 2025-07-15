@@ -49,6 +49,7 @@ qt_internal_add_module(QmlCompiler
         qresourcerelocater.cpp qresourcerelocater_p.h
         qqmljstranslationfunctionmismatchcheck_p.h qqmljstranslationfunctionmismatchcheck.cpp
         qqmljscontextproperties_p.h qqmljscontextproperties.cpp
+        qqmljsusercontextproperties_p.h qqmljsusercontextproperties.cpp
     NO_UNITY_BUILD_SOURCES
         qqmljsoptimizations.cpp
     PUBLIC_LIBRARIES

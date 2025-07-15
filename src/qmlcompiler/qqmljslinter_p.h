@@ -19,6 +19,9 @@
 #include <QtQmlCompiler/private/qqmljslogger_p.h>
 #include <QtQmlCompiler/private/qqmljsimporter_p.h>
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
+#include <QtQmlCompiler/private/qqmljsusercontextproperties_p.h>
+
+#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 
 #include <QtQml/private/qqmljssourcelocation_p.h>
 
@@ -140,6 +143,8 @@ private:
     QScopedPointer<QQmlJSLogger> m_logger;
     QString m_fileContents;
     std::vector<Plugin> m_plugins;
+    QQmlToolingSettings m_userContextPropertySettings =
+            QQmlToolingSettings(QStringLiteral("contextProperties"));
 };
 
 QT_END_NAMESPACE

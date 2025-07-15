@@ -90,6 +90,7 @@ private Q_SLOTS:
 
     void contextPropertiesFromRootUrls_data();
     void contextPropertiesFromRootUrls();
+    void contextPropertiesFromUser();
 
     void compilerWarnings_data();
     void compilerWarnings();
@@ -1173,6 +1174,32 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
     QTest::newRow("jsdeclInQmlScope")
             << QStringLiteral("jsdeclInQmlScope.qml")
             << Result{ { { "JavaScript declarations are not allowed in QML elements"_L1 , 4, 13 } } };
+
+    QTest::newRow("contextPropertiesFromUser")
+            << u"ContextProperties/qml/MyUserContextProperties.qml"_s
+            << Result{
+                   {
+                           Message{ "Potential context property access detected. Context "
+                                    "properties are "
+                                    "discouraged in QML: use normal, required, or singleton "
+                                    "properties "
+                                    "instead.\nNote: 'myUserCP1' assumed to be a potential context "
+                                    "property "
+                                    "because it is not declared as required property."_L1,
+                                    6, 22 },
+                           Message{ "Potential context property access detected. Context "
+                                    "properties are "
+                                    "discouraged in QML: use normal, required, or singleton "
+                                    "properties "
+                                    "instead.\nNote: 'myUserCP2' assumed to be a potential context "
+                                    "property "
+                                    "because it is not declared as required property."_L1,
+                                    7, 22 },
+                   },
+                   {
+                           Message{ "Unqualified access"_L1 },
+                   },
+               };
 }
 
 void TestQmllint::dirtyQmlCode()
@@ -1956,6 +1983,29 @@ void TestQmllint::contextPropertiesFromRootUrls()
         QVERIFY(expectedProperties.contains(key));
         QCOMPARE(value.size(), expectedProperties[key]);
     }
+}
+
+void TestQmllint::contextPropertiesFromUser()
+{
+    QQmlToolingSettings settings("contextProperties");
+    settings.addOption(QQmlJS::UserContextProperties::s_unqualifiedAccessDisabledKey,
+                       "myCP1,myCP2"_L1);
+    settings.addOption(QQmlJS::UserContextProperties::s_onUsageWarnedKey, "myCP3,myCP4"_L1);
+    QQmlJS::UserContextProperties properties(settings);
+
+    QCOMPARE(properties.unqualifiedAccessDisabled().size(), 2);
+    QCOMPARE(properties.onUsageWarned().size(), 2);
+
+    QVERIFY(properties.isUnqualifiedAccessDisabled("myCP1"_L1));
+    QVERIFY(!properties.isOnUsageWarned("myCP1"_L1));
+    QVERIFY(properties.isUnqualifiedAccessDisabled("myCP2"_L1));
+
+    QVERIFY(properties.isOnUsageWarned("myCP3"_L1));
+    QVERIFY(!properties.isUnqualifiedAccessDisabled("myCP3"_L1));
+    QVERIFY(properties.isOnUsageWarned("myCP4"_L1));
+
+    QVERIFY(!properties.isUnqualifiedAccessDisabled("doesNotExist"_L1));
+    QVERIFY(!properties.isOnUsageWarned("doesNotExist"_L1));
 }
 
 void TestQmllint::cleanQmlCode_data()

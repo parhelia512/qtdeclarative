@@ -642,8 +642,12 @@ QQmlJSLinter::LintResult QQmlJSLinter::lintFile(const QString &filename,
     const QString resolvedPath =
             (resourcePaths.size() == 1) ? u':' + resourcePaths.first() : filename;
 
+    const QQmlJS::UserContextProperties userContextProperties =
+            m_userContextPropertySettings.search(filename).isValid()
+            ? QQmlJS::UserContextProperties{ m_userContextPropertySettings }
+            : QQmlJS::UserContextProperties{};
     QQmlJSLinterCodegen codegen{ &m_importer, resolvedPath, qmldirFiles, m_logger.get(),
-                                 contextProperties };
+                                 ContextPropertyInfo{ contextProperties, userContextProperties } };
     codegen.setTypeResolver(std::move(typeResolver));
 
     using PassManagerPtr =

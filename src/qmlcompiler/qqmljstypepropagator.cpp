@@ -31,10 +31,10 @@ QQmlJSTypePropagator::QQmlJSTypePropagator(const QV4::Compiler::JSUnitGenerator 
                                            QQmlJSLogger *logger, const BasicBlocks &basicBlocks,
                                            const InstructionAnnotations &annotations,
                                            QQmlSA::PassManager *passManager,
-                                           const QQmlJS::ContextProperties &knownContextProperties)
+                                           const ContextPropertyInfo &contextPropertyInfo)
     : QQmlJSCompilePass(unitGenerator, typeResolver, logger, basicBlocks, annotations),
       m_passManager(passManager),
-      m_knownContextProperties(knownContextProperties)
+      m_contextPropertyInfo(contextPropertyInfo)
 {
 }
 
@@ -569,35 +569,40 @@ static bool shouldMentionRequiredProperties(const QQmlJSScope::ConstPtr &qmlScop
 }
 
 static void warnAboutContextPropertyUsage(const QString name,
-                                          const QQmlJS::ContextProperties &contextProperties,
+                                          const ContextPropertyInfo &contextPropertyInfo,
                                           const QQmlJSScope::ConstPtr &qmlScope,
                                           QQmlJSLogger *logger,
                                           const QQmlJS::SourceLocation &location)
 {
-    Q_ASSERT(qmlScope);
+    const auto warningMessage = [&name, &qmlScope]() {
+        QString result =
+                "Potential context property access detected."
+                " Context properties are discouraged in QML: use normal, required, or singleton properties instead."_L1;
+
+        if (shouldMentionRequiredProperties(qmlScope)) {
+            result.append(
+                    "\nNote: '%1' assumed to be a potential context property because it is not declared as required property."_L1
+                            .arg(name));
+        }
+        return result;
+    };
+
+    if (contextPropertyInfo.userContextProperties.isOnUsageWarned(name)) {
+        logger->log(warningMessage(), qmlContextProperties, location);
+        return;
+    }
 
     // only warn if the property is using the same name as one of the context properties
-    auto it = contextProperties.find(name);
-    if (it == contextProperties.end())
+    const auto it = contextPropertyInfo.knownContextProperties.find(name);
+    if (it == contextPropertyInfo.knownContextProperties.end())
         return;
-
-    QString warningMessage =
-            "Potential context property access detected."
-            " Context properties are discouraged in QML: use normal, required, or singleton properties instead."_L1;
-
-    if (shouldMentionRequiredProperties(qmlScope)) {
-        warningMessage.append(
-                "\nNote: '%1' assumed to be a potential context property because it is not declared as required property."_L1
-                        .arg(name));
-    }
-
+    QString warning = warningMessage();
     for (const auto &candidate : *it) {
-        warningMessage.append(
-                "\nNote: candidate context property declaration '%1' at %2:%3:%4"_L1.arg(
-                        name, candidate.filename, QString::number(candidate.location.startLine),
-                        QString::number(candidate.location.startColumn)));
+        warning.append("\nNote: candidate context property declaration '%1' at %2:%3:%4"_L1.arg(
+                name, candidate.filename, QString::number(candidate.location.startLine),
+                QString::number(candidate.location.startColumn)));
     }
-    logger->log(warningMessage, qmlContextProperties, location);
+    logger->log(warning, qmlContextProperties, location);
 }
 
 void QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(int index)
@@ -624,11 +629,19 @@ void QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(int index)
     if (!accumulatorOut.isValid()) {
         addError(u"Cannot access value for name "_s + name);
 
-        warnAboutContextPropertyUsage(name, m_knownContextProperties,
+        auto guard = qScopeGuard([this]() { setVarAccumulatorAndError(); });
+
+        if (m_contextPropertyInfo.userContextProperties.isUnqualifiedAccessDisabled(name))
+            return;
+
+        warnAboutContextPropertyUsage(name, m_contextPropertyInfo,
                                       m_function->qmlScope.containedType(), m_logger,
                                       currentSourceLocation());
+
+        if (m_contextPropertyInfo.userContextProperties.isOnUsageWarned(name))
+            return;
+
         handleUnqualifiedAccess(name, false);
-        setVarAccumulatorAndError();
         return;
     }
 

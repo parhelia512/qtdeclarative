@@ -3599,20 +3599,16 @@ void Renderer::renderUnmergedBatch(PreparedRenderBatch *renderBatch, bool depthP
     }
 }
 
-void Renderer::setGraphicsPipeline(QRhiCommandBuffer *cb, const Batch *batch, Element *e, bool depthPostPass)
+void Renderer::setViewportAndScissors(QRhiCommandBuffer *cb, const Batch *batch)
 {
-    cb->setGraphicsPipeline(depthPostPass ? e->depthPostPassPs : e->ps);
-
     if (!m_pstate.viewportSet) {
         m_pstate.viewportSet = true;
         cb->setViewport(m_pstate.viewport);
     }
     if (batch->clipState.type & ClipState::ScissorClip) {
-        Q_ASSERT(e->ps->flags().testFlag(QRhiGraphicsPipeline::UsesScissor));
         m_pstate.scissorSet = true;
         cb->setScissor(batch->clipState.scissor);
     } else {
-        Q_ASSERT(!e->ps->flags().testFlag(QRhiGraphicsPipeline::UsesScissor));
         // Regardless of the ps not using scissor, the scissor may need to be
         // reset, depending on the backend. So set the viewport again, which in
         // turn also sets the scissor on backends where a scissor rect is
@@ -3622,6 +3618,15 @@ void Renderer::setGraphicsPipeline(QRhiCommandBuffer *cb, const Batch *batch, El
             cb->setViewport(m_pstate.viewport);
         }
     }
+}
+
+
+void Renderer::setGraphicsPipeline(QRhiCommandBuffer *cb, const Batch *batch, Element *e, bool depthPostPass)
+{
+    cb->setGraphicsPipeline(depthPostPass ? e->depthPostPassPs : e->ps);
+
+    setViewportAndScissors(cb, batch);
+
     if (batch->clipState.type & ClipState::StencilClip) {
         Q_ASSERT(e->ps->flags().testFlag(QRhiGraphicsPipeline::UsesStencilRef));
         cb->setStencilRef(batch->clipState.stencilRef);
@@ -4168,6 +4173,7 @@ void Renderer::renderRhiRenderNode(const Batch *batch)
     const QSGRenderNode::StateFlags changes = e->renderNode->changedStates();
 
     QRhiCommandBuffer *cb = renderTarget().cb;
+    setViewportAndScissors(cb, batch);
     const bool needsExternal = !e->renderNode->flags().testFlag(QSGRenderNode::NoExternalRendering);
     if (needsExternal)
         cb->beginExternal();

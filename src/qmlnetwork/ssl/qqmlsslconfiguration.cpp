@@ -26,10 +26,12 @@ QString QQmlSslConfiguration::ciphers() const
     return m_ciphers;
 }
 
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 QList<QSsl::SslOption> QQmlSslConfiguration::sslOptions() const
 {
     return m_sslOptions;
 }
+#endif // QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 
 QSsl::SslProtocol QQmlSslConfiguration::protocol() const
 {
@@ -122,6 +124,7 @@ void QQmlSslConfiguration::setCiphers(const QString &ciphers)
     m_configuration.setCiphers(ciphers); // split(":") is used inside
 }
 
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 void QQmlSslConfiguration::setSslOptions(const QList<QSsl::SslOption> &options)
 {
     if (m_sslOptions == options)
@@ -131,6 +134,7 @@ void QQmlSslConfiguration::setSslOptions(const QList<QSsl::SslOption> &options)
     for (QSsl::SslOption option: m_sslOptions)
         m_configuration.setSslOption(option, true);
 }
+#endif // QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 
 void QQmlSslConfiguration::setSessionTicket(const QByteArray &sessionTicket)
 {
@@ -151,6 +155,7 @@ void QQmlSslConfiguration::setPrivateKey(const QQmlSslKey &privateKey)
     m_configuration.setPrivateKey(privateKey.getSslKey());
 }
 
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 void QQmlSslConfiguration::setSslOptionsList(const QSslConfiguration &configuration)
 {
     Q_ASSERT(m_sslOptions.isEmpty());
@@ -159,6 +164,7 @@ void QQmlSslConfiguration::setSslOptionsList(const QSslConfiguration &configurat
             m_sslOptions.append(option);
     }
 }
+#endif
 
 void QQmlSslConfiguration::setCiphersList(const QSslConfiguration &configuration)
 {
@@ -176,7 +182,9 @@ QQmlSslDefaultConfiguration::QQmlSslDefaultConfiguration()
     : QQmlSslConfiguration()
 {
     m_configuration = QSslConfiguration::defaultConfiguration();
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
     setSslOptionsList(m_configuration);
+#endif
     setCiphersList(m_configuration);
 }
 
@@ -189,7 +197,9 @@ QQmlSslDefaultDtlsConfiguration::QQmlSslDefaultDtlsConfiguration()
     qWarning() << "No dtls support enabled";
     m_configuration = QSslConfiguration::defaultConfiguration();
 #endif // QT_CONFIG(dtls)
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
     setSslOptionsList(m_configuration);
+#endif
     setCiphersList(m_configuration);
 }
 

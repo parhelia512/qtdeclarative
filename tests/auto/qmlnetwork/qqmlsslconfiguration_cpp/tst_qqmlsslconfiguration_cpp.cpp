@@ -67,6 +67,9 @@ void tst_QQmlSslConfiguration::sslOptionsInSync_data()
 
 void tst_QQmlSslConfiguration::sslOptionsInSync()
 {
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_DEPRECATED
     QFETCH(ConfType, type);
     std::unique_ptr<QQmlSslConfiguration> conf;
 
@@ -95,6 +98,10 @@ void tst_QQmlSslConfiguration::sslOptionsInSync()
     // reading the values from the underlying configuration
     QEXPECT_FAIL("", "QTBUG-137900", Continue);
     QCOMPARE_EQ(getSslOptionsFromConfig(conf->configuration()), newOptions);
+QT_WARNING_POP
+#else
+    QSKIP("This test should be removed in Qt 7!")
+#endif // QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
 }
 
 void tst_QQmlSslConfiguration::sslOptionFlags_data()

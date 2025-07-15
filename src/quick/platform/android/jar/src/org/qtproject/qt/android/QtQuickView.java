@@ -42,8 +42,8 @@ public class QtQuickView extends QtView {
                                 long viewReference, String[] qmlImportPaths);
     native void setRootObjectProperty(long windowReference, String propertyName, Object value);
     native Object getRootObjectProperty(long windowReference, String propertyName);
-    native int addRootObjectSignalListener(long windowReference, String signalName,
-                                           Class<?>[] argTypes, Object listener);
+    native boolean addRootObjectSignalListener(long windowReference, String signalName,
+                                               Class<?>[] argTypes, Object listener, int id);
     native boolean removeRootObjectSignalListener(long windowReference, int signalListenerId);
 
     /**
@@ -242,13 +242,25 @@ public class QtQuickView extends QtView {
      **/
     public int connectSignalListener(String signalName, Class<?>[] argTypes, Object listener)
     {
-        int signalListenerId =
-                addRootObjectSignalListener(windowReference(), signalName, argTypes, listener);
-        if (signalListenerId < 0) {
-            Log.w(TAG, "The signal " + signalName + " does not exist in the root object "
-                                     + "or the arguments do not match with the listener.");
-        }
-        return signalListenerId;
+        final int id = QtQuickViewContent.generateSignalId();
+        if (addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id))
+            return id;
+
+        Log.w(TAG, "The signal " + signalName + " does not exist in the root object "
+                                    + "or the arguments do not match with the listener.");
+        return -1;
+    }
+
+    /**
+     * Convenience function to call the native addRootObjectSignalListener() method from
+     * QtQuickViewContent.
+     * This is provided as a way for QtSignalQueue to call addRootObjectSignalListener() while
+     * providing a pre-generated ID. The regular public API generates its own ID, which is not
+     * desired for queued signal connections.
+     */
+    void connectSignalListener(String signalName, Class<?>[] argTypes, Object listener, int id)
+    {
+        addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id);
     }
 
     /**

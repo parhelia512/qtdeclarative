@@ -7,6 +7,7 @@ import android.util.Log;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 
 /**
  * @Since 6.8
@@ -193,9 +194,10 @@ public abstract class QtQuickViewContent
                           + "QtQuickView.");
             return -1;
         }
-        int signalListenerId = view.connectSignalListener(signalName, argTypes, listener);
-        m_signalListenerIds.add(signalListenerId);
-        return signalListenerId;
+        final int id = QtQuickViewContent.generateSignalId();
+        view.connectSignalListener(signalName, argTypes, listener, id);
+        m_signalListenerIds.add(id);
+        return id;
     }
 
     /**
@@ -219,5 +221,11 @@ public abstract class QtQuickViewContent
         }
         m_signalListenerIds.remove(signalListenerId);
         return view.disconnectSignalListener(signalListenerId);
+    }
+
+    static int generateSignalId()
+    {
+        Random rand = new Random();
+        return rand.nextInt();
     }
 }

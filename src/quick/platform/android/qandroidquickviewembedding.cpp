@@ -165,8 +165,9 @@ namespace QtAndroidQuickViewEmbedding
         return jObject;
     }
 
-    int addRootObjectSignalListener(JNIEnv *env, jobject, jlong windowReference, jstring signalName,
-                                    QJniArray<jclass> argTypes, jobject listener)
+    bool addRootObjectSignalListener(JNIEnv *env, jobject, jlong windowReference,
+                                     jstring signalName, QJniArray<jclass> argTypes,
+                                     jobject listener, jint id)
     {
         Q_ASSERT(env);
 
@@ -179,7 +180,7 @@ namespace QtAndroidQuickViewEmbedding
 
         QAndroidViewSignalManager *signalManager = view->signalManager();
         return signalManager->addConnection(QJniObject(signalName).toString(), argTypes,
-                                            QJniObject(listener));
+                                            QJniObject(listener), id);
     }
 
     bool removeRootObjectSignalListener(JNIEnv *, jobject, jlong windowReference,

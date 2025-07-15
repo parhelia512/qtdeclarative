@@ -35,9 +35,10 @@ public:
     int qt_metacall(QMetaObject::Call call, int methodId, void **args) override;
 
     void removeConnection(connection_key_t signalIdx);
-    int addConnection(const QString &signalName,
+    bool addConnection(const QString &signalName,
                       const QJniArray<jclass> &argTypes,
-                      const QJniObject &listener);
+                      const QJniObject &listener,
+                      int id);
 
 private:
     /*
@@ -54,6 +55,7 @@ private:
         QList<QMetaType::Type> qmlArgumentTypes;
         bool isPropertySignal;
         std::optional<int> qmlPropertyIndex; // Only filled if isPropertySignal
+        int connectionId;
     };
 
     struct QueuedConnectionInfo
@@ -67,9 +69,10 @@ private:
     bool hasConnection(connection_key_t key) const;
     connection_key_t createNewSignalKey() const;
     void onViewStatusChanged(QQuickView::Status status);
-    int queueConnection(const QString &signalName,
-                        const QJniArray<jclass> &argTypes,
-                        const QJniObject &listener);
+    bool queueConnection(const QString &signalName,
+                         const QJniArray<jclass> &argTypes,
+                         const QJniObject &listener,
+                         int id);
 
     QMap<connection_key_t, ConnectionInfo> m_connections;
     QQuickView *m_view;

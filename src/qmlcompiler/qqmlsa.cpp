@@ -146,14 +146,14 @@ static_assert(QQmlJSScope::sizeofQQmlSAElement() == sizeof(Element));
                                                         2 *parent.width <- end
                                                 }
                                                 \endcode
-                                                Before Qt 6.11, tihs was reported as a JSFunctionScope
+                                                Before Qt 6.11, this was reported as a JSFunctionScope
     \value [since 6.11] SignalHandlerFunctionScope     The scope represents a function used as a signal handler:
                                                 \badcode
                                                 Timer {
                                                     onTriggered: <- begin console.log("hi") <- end
                                                 }
                                                 \endcode
-                                                Before Qt 6.11, tihs was reported as a JSFunctionScope
+                                                Before Qt 6.11, this was reported as a JSFunctionScope
 
     Each entry is shown with an example scope of the matching type in QML code.
 */

@@ -24,12 +24,11 @@ public:
     tst_QQmlPreview();
 
 private:
-    ConnectResult startQmlProcess(const QString &qmlFile);
+    ConnectResult startQmlProcess(const QString &qmlFile, QStringList environmentVariables = QStringList());
     void serveRequest(const QString &path);
     void serveFile(const QString &path, const QByteArray &contents);
 
     QList<QQmlDebugClient *> createClients() override;
-    QQmlDebugProcess *createProcess(const QString &executable) final;
     void verifyProcessOutputContains(const QString &string) const;
 
     QPointer<QQmlPreviewClient> m_client;
@@ -62,10 +61,10 @@ tst_QQmlPreview::tst_QQmlPreview()
 {
 }
 
-QQmlDebugTest::ConnectResult tst_QQmlPreview::startQmlProcess(const QString &qmlFile)
+QQmlDebugTest::ConnectResult tst_QQmlPreview::startQmlProcess(const QString &qmlFile, QStringList environmentVariables)
 {
     return QQmlDebugTest::connectTo(QLibraryInfo::path(QLibraryInfo::BinariesPath) + "/qml",
-                                  QStringLiteral("QmlPreview"), testFile(qmlFile), true);
+                                  QStringLiteral("QmlPreview"), testFile(qmlFile), true, environmentVariables);
 }
 
 void tst_QQmlPreview::serveRequest(const QString &path)
@@ -106,14 +105,6 @@ QList<QQmlDebugClient *> tst_QQmlPreview::createClients()
     });
 
     return QList<QQmlDebugClient *>({m_client});
-}
-
-QQmlDebugProcess *tst_QQmlPreview::createProcess(const QString &executable)
-{
-    QQmlDebugProcess *process = QQmlDebugTest::createProcess(executable);
-    if (executable.endsWith("withQQC.qml"))
-        process->addEnvironment("QT_QUICK_CONTROLS_CONF=qqc2.conf");
-    return process;
 }
 
 void tst_QQmlPreview::verifyProcessOutputContains(const QString &string) const
@@ -438,7 +429,8 @@ void tst_QQmlPreview::updateFile()
 void tst_QQmlPreview::qqcStyleSelection()
 {
     const QString file("withQQC.qml");
-    QCOMPARE(startQmlProcess(file), ConnectSuccess);
+    const QString config = testFile("qqc2.conf");
+    QCOMPARE(startQmlProcess(file, {"QT_QUICK_CONTROLS_CONF=" + config}), ConnectSuccess);
     QVERIFY(m_client);
     QTRY_COMPARE(m_client->state(), QQmlDebugClient::Enabled);
     m_client->triggerLoad(testFileUrl(file));

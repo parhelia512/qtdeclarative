@@ -120,19 +120,19 @@ QQmlAttachedPropertiesFunc qmlAttachedPropertiesFunction(QObject *object,
             engine ? QQmlTypeLoader::get(engine) : nullptr, attachedMetaObject);
 }
 
-QObject *qmlAttachedPropertiesObject(QObject *object, QQmlAttachedPropertiesFunc func, bool create)
+QObject *qmlAttachedPropertiesObject(QObject *object, QQmlAttachedPropertiesFunc func, bool createIfMissing)
 {
     if (!object)
         return nullptr;
 
-    QQmlData *data = QQmlData::get(object, create);
+    QQmlData *data = QQmlData::get(object, createIfMissing);
 
     // Attached properties are only on objects created by QML,
     // unless explicitly requested (create==true)
     if (!data)
         return nullptr;
 
-    return resolveAttachedProperties(func, data, object, create);
+    return resolveAttachedProperties(func, data, object, createIfMissing);
 }
 
 /*!
@@ -3417,13 +3417,13 @@ void AOTCompiledContext::initCallValueLookup(
 */
 
 /*!
-    \fn template<typename T> QObject *qmlAttachedPropertiesObject(const QObject *attachee, bool create)
+    \fn template<typename T> QObject *qmlAttachedPropertiesObject(const QObject *attachee, bool createIfMissing)
     \relates <qqml.h>
 
     The form of this template function is:
 
     \code
-    template<typename T> QObject *qmlAttachedPropertiesObject(const QObject *attachee, bool create = true)
+    template<typename T> QObject *qmlAttachedPropertiesObject(const QObject *attachee, bool createIfMissing = true)
     \endcode
 
     This returns the attached object instance that has been attached to the specified
@@ -3432,8 +3432,9 @@ void AOTCompiledContext::initCallValueLookup(
     If \a attachee is \nullptr, returns \nullptr.
 
     If an existing attached object instance of type \e T exists, it will return
-    it. Otherwise, it will return a newly created instance if \a create is
-    \c true and \e T is a valid attaching type, or \nullptr if it's not.
+    it. Otherwise, it will return a newly created instance if
+    \a createIfMissing is \c true and \e T is a valid attaching type, or
+    \nullptr if it's not.
 
     \sa QML_ATTACHED(), {Providing Attached Properties}
 */

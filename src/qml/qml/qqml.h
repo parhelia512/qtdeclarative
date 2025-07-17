@@ -637,7 +637,7 @@ Q_QML_EXPORT QQmlEngine *qmlEngine(const QObject *);
 Q_QML_EXPORT QQmlAttachedPropertiesFunc qmlAttachedPropertiesFunction(QObject *,
                                                                       const QMetaObject *);
 Q_QML_EXPORT QObject *qmlAttachedPropertiesObject(QObject *, QQmlAttachedPropertiesFunc func,
-                                                  bool create = true);
+    bool createIfMissing = true);
 Q_QML_EXPORT QObject *qmlExtendedObject(QObject *);
 
 //The C++ version of protected namespaces in qmldir

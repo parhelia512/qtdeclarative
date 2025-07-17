@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 // Copyright (C) 2024 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
@@ -22,7 +23,7 @@ VerticalHeaderView {
 
     selectionModel: HeaderSelectionModel {
         id: headerSelectionModel
-        selectionModel: spreadSelectionModel
+        selectionModel: root.spreadSelectionModel
         orientation: Qt.Vertical
     }
 
@@ -66,11 +67,11 @@ VerticalHeaderView {
         HeaderViewTapHandler {
             anchors.fill: parent
             onToggleRequested: {
-                spreadSelectionModel.toggleRow(index)
+                root.spreadSelectionModel.toggleRow(headerDelegate.index)
                 headerSelectionModel.setCurrent()
             }
             onSelectRequested: {
-                spreadSelectionModel.selectRow(index)
+                root.spreadSelectionModel.selectRow(headerDelegate.index)
                 headerSelectionModel.setCurrent()
             }
             onContextMenuRequested: headerDelegate.rightClicked()
@@ -120,7 +121,7 @@ VerticalHeaderView {
         }
 
         MenuItem {
-            text: selectionModel.hasSelection ? qsTr("Remove selected rows")
+            text: root.selectionModel.hasSelection ? qsTr("Remove selected rows")
                                               : qsTr("Remove row")
             icon {
                 source: "icons/remove_row.svg"
@@ -128,15 +129,15 @@ VerticalHeaderView {
             }
 
             onClicked: {
-                if (selectionModel.hasSelection)
-                    SpreadModel.removeRows(selectionModel.selectedRows())
+                if (root.selectionModel.hasSelection)
+                    SpreadModel.removeRows(root.selectionModel.selectedRows())
                 else if (rowMenu.row >= 0)
                     SpreadModel.removeRow(rowMenu.row)
             }
         }
 
         MenuItem {
-            text: selectionModel.hasSelection ? qsTr("Hide selected rows")
+            text: root.selectionModel.hasSelection ? qsTr("Hide selected rows")
                                               : qsTr("Hide row")
             icon {
                 source: "icons/hide.svg"
@@ -144,12 +145,12 @@ VerticalHeaderView {
             }
 
             onClicked: {
-                if (selectionModel.hasSelection) {
-                    let rows = selectionModel.selectedRows()
+                if (root.selectionModel.hasSelection) {
+                    let rows = root.selectionModel.selectedRows()
                     rows.sort(function(lhs, rhs){ return rhs.row - lhs.row })
                     for (let i in rows)
                         root.hideRequested(rows[i].row)
-                    spreadSelectionModel.clearSelection()
+                    root.spreadSelectionModel.clearSelection()
                 } else {
                     root.hideRequested(rowMenu.row)
                 }
@@ -166,7 +167,7 @@ VerticalHeaderView {
 
             onClicked: {
                 root.showRequested()
-                spreadSelectionModel.clearSelection()
+                root.spreadSelectionModel.clearSelection()
             }
         }
 

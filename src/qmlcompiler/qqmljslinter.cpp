@@ -506,13 +506,12 @@ void QQmlJSLinter::processMessages(QJsonArray &warnings)
     });
 }
 
-QQmlJSLinter::LintResult QQmlJSLinter::lintFile(const QString &filename,
-                                                const QString *fileContents, const bool silent,
-                                                QJsonArray *json, const QStringList &qmlImportPaths,
-                                                const QStringList &qmldirFiles,
-                                                const QStringList &resourceFiles,
-                                                const QList<QQmlJS::LoggerCategory> &categories,
-                                                const QQmlJS::ContextProperties &contextProperties)
+QQmlJSLinter::LintResult
+QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, const bool silent,
+                       QJsonArray *json, const QStringList &qmlImportPaths,
+                       const QStringList &qmldirFiles, const QStringList &resourceFiles,
+                       const QList<QQmlJS::LoggerCategory> &categories,
+                       const QQmlJS::HeuristicContextProperties &contextProperties)
 {
     // Make sure that we don't expose an old logger if we return before a new one is created.
     m_logger.reset();

@@ -113,7 +113,7 @@ public:
                         QJsonArray *json, const QStringList &qmlImportPaths,
                         const QStringList &qmldirFiles, const QStringList &resourceFiles,
                         const QList<QQmlJS::LoggerCategory> &categories,
-                        const QQmlJS::ContextProperties &contextProperties = {});
+                        const QQmlJS::HeuristicContextProperties &contextProperties = {});
 
     LintResult lintModule(const QString &uri, const bool silent, QJsonArray *json,
                           const QStringList &qmlImportPaths, const QStringList &resourceFiles);

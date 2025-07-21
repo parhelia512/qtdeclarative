@@ -19,26 +19,46 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qlist.h>
+#include <QtCore/private/qflatmap_p.h>
 
 #include <QtQml/private/qqmljssourcelocation_p.h>
-
-#include "qqmljsloggingutils_p.h"
 
 QT_BEGIN_NAMESPACE
 
 namespace QQmlJS {
 class LoggerCategory;
 
-struct ContextProperty;
-using ContextProperties = QHash<QString, QList<ContextProperty>>;
-
-struct Q_QMLCOMPILER_EXPORT ContextProperty
+struct Q_QMLCOMPILER_EXPORT HeuristicContextProperty
 {
-    QString filename;
-    QQmlJS::SourceLocation location;
+    QString filename = {};
+    SourceLocation location = SourceLocation{};
+};
 
-    static ContextProperties collectAllFrom(const QList<QString> &rootUrls);
-    static bool isWarningEnabled(const QList<QQmlJS::LoggerCategory> &categories);
+class Q_QMLCOMPILER_EXPORT HeuristicContextProperties
+{
+public:
+    bool contains(const QString &name) const { return m_properties.contains(name); }
+    qsizetype size() const { return m_properties.size(); }
+    QList<HeuristicContextProperty> definitionsForName(const QString &name) const;
+
+    static HeuristicContextProperties collectFromCppSourceDirs(const QList<QString> &cppSourceDirs);
+
+private:
+    struct Entry
+    {
+        QString name;
+        QList<HeuristicContextProperty> definitions;
+    };
+
+    void add(const QString &name, const HeuristicContextProperty &property);
+    void collectFromDirs(const QList<QString> &dirs);
+    void collectFromFile(const QString &file);
+    void grepFallback(const QList<QString> &rootUrls);
+#if QT_CONFIG(process) && !defined(Q_OS_WINDOWS)
+    void parseGrepOutput(const QString &output);
+#endif
+
+    QFlatMap<QString, QList<HeuristicContextProperty>> m_properties;
 };
 
 } // namespace QQmlJS

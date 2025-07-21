@@ -28,7 +28,7 @@ class PassManager;
 
 struct ContextPropertyInfo
 {
-    QQmlJS::ContextProperties knownContextProperties;
+    QQmlJS::HeuristicContextProperties heuristicContextProperties;
     QQmlJS::UserContextProperties userContextProperties;
 };
 

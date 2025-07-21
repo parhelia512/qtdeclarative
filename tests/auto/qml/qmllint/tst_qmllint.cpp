@@ -1973,15 +1973,16 @@ void TestQmllint::contextPropertiesFromRootUrls()
 
     if (disableGrep)
         qputenv("QT_QML_NO_GREP", "1");
-    const auto properties = QQmlJS::ContextProperty::collectAllFrom(rootUrls);
+    const auto properties = QQmlJS::HeuristicContextProperties::collectFromCppSourceDirs(rootUrls);
+
     if (disableGrep)
         qunsetenv("QT_QML_NO_GREP");
 
     QCOMPARE(properties.size(), expectedProperties.size());
 
-    for (auto [key, value] : properties.asKeyValueRange()) {
-        QVERIFY(expectedProperties.contains(key));
-        QCOMPARE(value.size(), expectedProperties[key]);
+    for (auto [key, value] : expectedProperties.asKeyValueRange()) {
+        QVERIFY(properties.contains(key));
+        QCOMPARE(properties.definitionsForName(key).size(), value);
     }
 }
 
@@ -2455,8 +2456,8 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
                 QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
         }
 
-        const QQmlJS::ContextProperties contextProperties =
-                QQmlJS::ContextProperty::collectAllFrom(options.rootUrls);
+        const auto contextProperties =
+                QQmlJS::HeuristicContextProperties::collectFromCppSourceDirs(options.rootUrls);
         lintResult = m_linter.lintFile(lintedFile, content.isEmpty() ? nullptr : &content, true,
                                        &jsonOutput, resolvedImportPaths, options.qmldirFiles,
                                        options.resources, resolvedCategories, contextProperties);

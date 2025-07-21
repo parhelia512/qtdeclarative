@@ -597,11 +597,12 @@ static void warnAboutContextPropertyUsage(const QString name,
     }
 
     // only warn if the property is using the same name as one of the context properties
-    const auto it = contextPropertyInfo.knownContextProperties.find(name);
-    if (it == contextPropertyInfo.knownContextProperties.end())
+    const QList<QQmlJS::HeuristicContextProperty> definitions =
+            contextPropertyInfo.heuristicContextProperties.definitionsForName(name);
+    if (definitions.isEmpty())
         return;
     QString warning = warningMessage();
-    for (const auto &candidate : *it) {
+    for (const auto &candidate : definitions) {
         warning.append("\nNote: candidate context property declaration '%1' at %2:%3:%4"_L1.arg(
                 name, candidate.filename, QString::number(candidate.location.startLine),
                 QString::number(candidate.location.startColumn)));

@@ -398,7 +398,10 @@ void LinterVisitor::checkCaseFallthrough(StatementList *statements, SourceLocati
         }
     }
 
-    m_logger->log("Unterminated non-empty case block"_L1, qmlUnterminatedCase, errorLoc);
+    m_logger->log(
+            "Non-empty case block potentially falls through to the next case or default statement. "
+            "Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+            qmlUnterminatedCase, errorLoc);
 }
 
 bool LinterVisitor::visit(QQmlJS::AST::CaseBlock *block)

@@ -1951,12 +1951,36 @@ void TestQmllint::dirtyJsSnippet_data()
                 case 4:                 // ok: nothing to fall through to ...
                     1 + 2
                 })"_s
-            << Result{ { { "Unterminated non-empty case block"_L1, 6, 17 },
-                         { "Unterminated non-empty case block"_L1, 8, 17 } },
-                       { { "Unterminated non-empty case block"_L1, 3, 17 },
-                         { "Unterminated non-empty case block"_L1, 4, 17 },
-                         { "Unterminated non-empty case block"_L1, 10, 17 },
-                         { "Unterminated non-empty case block"_L1, 13, 17 } } }
+            << Result{ {
+                               { "Non-empty case block potentially falls through to the next case "
+                                 "or default "
+                                 "statement. Add \"// fallthrough\" at the end of the block to "
+                                 "silence this "
+                                 "warning."_L1,
+                                 6, 17 },
+                               { "Non-empty case block potentially falls through to the next case "
+                                 "or default "
+                                 "statement. Add \"// fallthrough\" at the end of the block to "
+                                 "silence this "
+                                 "warning."_L1,
+                                 8, 17 },
+                       },
+                       { { "Non-empty case block potentially falls through to the next case or "
+                           "default"
+                           " statement. Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           3, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement."
+                           " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           4, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement."
+                           " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           10, 17 },
+                         { "Non-empty case block potentially falls through to the next case or "
+                           "default statement. "
+                           "Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           13, 17 } } }
             << defaultOptions;
     QTest::newRow("unterminatedCaseBlockNested")
             << uR"(switch (0) {
@@ -1976,27 +2000,62 @@ void TestQmllint::dirtyJsSnippet_data()
                 case -1: return // dummy
                 })"_s
             << Result{ {
-                       { "Unterminated non-empty case block"_L1, 2, 17 },
-                       { "Unterminated non-empty case block"_L1, 4, 25 },
-                       { "Unterminated non-empty case block"_L1, 5, 25 },
-                       { "Unterminated non-empty case block"_L1, 6, 25 },
-                       { "Unterminated non-empty case block"_L1, 7, 25 },
-                       { "Unterminated non-empty case block"_L1, 8, 25 },
-                       { "Unterminated non-empty case block"_L1, 9, 25 },
-                       { "Unterminated non-empty case block"_L1, 10, 25 },
-                       { "Unterminated non-empty case block"_L1, 11, 25 },
-                       { "Unterminated non-empty case block"_L1, 12, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         2, 17 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         4, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         5, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         6, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         7, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         8, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         9, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         10, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         11, 25 },
+                       { "Non-empty case block potentially falls through to the next case or "
+                         "default statement."
+                         " Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                         12, 25 },
                } }
             << defaultOptions;
-    QTest::newRow("unterminatedCaseBlockNested2") << uR"(switch (0) {
+    QTest::newRow("unterminatedCaseBlockNested2")
+            << uR"(switch (0) {
                 case 0: // one case is KO, so this one too
                     switch (2) {
                         case 1: return;
                         default: f(); // not ok
                     }
                 case -1: return // dummy
-                })"_s << Result{ { { "Unterminated non-empty case block"_L1, 2, 17 } } }
-                                                  << defaultOptions;
+                })"_s
+            << Result{ { { "Non-empty case block potentially falls through to the next case or "
+                           "default "
+                           "statement. Add \"// fallthrough\" at the end of the block to silence this warning."_L1,
+                           2, 17 } } }
+            << defaultOptions;
     {
         CallQmllintOptions options;
         options.enableCategories.append(qmlVoid.name().toString());

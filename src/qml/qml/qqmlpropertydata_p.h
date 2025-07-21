@@ -378,7 +378,7 @@ public:
             : metaObject->property(m_coreIndex).name());
     }
 
-    bool markAsOverrideOf(QQmlPropertyData *predecessor);
+    void markAsOverrideOf(QQmlPropertyData *predecessor);
 
     inline void readProperty(QObject *target, void *property) const
     {

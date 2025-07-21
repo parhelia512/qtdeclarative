@@ -210,9 +210,9 @@ QQmlPropertyCache::Ptr QQmlPropertyCache::copyAndReserve(
     \a notifyIndex MUST be in the signal index range (see QObjectPrivate::signalIndex()).
     This is different from QMetaMethod::methodIndex().
 */
-void QQmlPropertyCache::appendProperty(const QString &name, QQmlPropertyData::Flags flags,
-                                       int coreIndex, QMetaType propType, QTypeRevision version,
-                                       int notifyIndex)
+QQmlPropertyCache::OverrideResult
+QQmlPropertyCache::appendProperty(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
+                                  QMetaType propType, QTypeRevision version, int notifyIndex)
 {
     QQmlPropertyData data;
     data.setPropType(propType);
@@ -221,12 +221,12 @@ void QQmlPropertyCache::appendProperty(const QString &name, QQmlPropertyData::Fl
     data.setFlags(flags);
     data.setTypeVersion(version);
 
-    doAppendPropertyData(name, std::move(data));
+    return doAppendPropertyData(name, std::move(data));
 }
 
-void QQmlPropertyCache::appendAlias(
-        const QString &name, QQmlPropertyData::Flags flags, int coreIndex, QMetaType propType,
-        QTypeRevision version, int notifyIndex, int encodedTargetIndex)
+void QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags,
+                                    int coreIndex, QMetaType propType, QTypeRevision version,
+                                    int notifyIndex, int encodedTargetIndex)
 {
     QQmlPropertyData data;
     data.setPropType(propType);
@@ -719,21 +719,15 @@ const QQmlPropertyData *QQmlPropertyCache::findProperty(
     return nullptr;
 }
 
-
-
-
-
-bool QQmlPropertyData::markAsOverrideOf(QQmlPropertyData *predecessor)
+void QQmlPropertyData::markAsOverrideOf(QQmlPropertyData *predecessor)
 {
     Q_ASSERT(predecessor != this);
-    if (predecessor->isFinal())
-        return false;
 
     setOverrideIndexIsProperty(!predecessor->isFunction());
     setOverrideIndex(predecessor->coreIndex());
     predecessor->m_flags.setIsOverridden(true);
     Q_ASSERT(predecessor->isOverridden());
-    return true;
+    return;
 }
 
 QQmlPropertyCacheMethodArguments *QQmlPropertyCache::createArgumentsObject(

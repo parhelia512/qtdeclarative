@@ -340,17 +340,6 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
 {   
     QQmlPropertyResolver resolver(baseTypeCache);
 
-    auto p = obj->propertiesBegin();
-    auto pend = obj->propertiesEnd();
-    for (; p != pend; ++p) {
-        bool notInRevision = false;
-        const QQmlPropertyData *d = resolver.property(stringAt(p->nameIndex()), &notInRevision);
-        if (d && d->isFinal())
-            return qQmlCompileError(
-                    p->location,
-                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
-    }
-
     auto a = obj->aliasesBegin();
     auto aend = obj->aliasesEnd();
     for (; a != aend; ++a) {
@@ -409,8 +398,8 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
     }
 
     // Set up notify signals for properties - first normal, then alias
-    p = obj->propertiesBegin();
-    pend = obj->propertiesEnd();
+    auto p = obj->propertiesBegin();
+    auto pend = obj->propertiesEnd();
     for (; p != pend; ++p) {
         auto flags = QQmlPropertyData::defaultSignalFlags();
 
@@ -611,9 +600,15 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
         QString propertyName = stringAt(p->nameIndex());
         if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
             cache->_defaultPropertyName = propertyName;
-        cache->appendProperty(propertyName, propertyFlags, effectivePropertyIndex++, propertyType,
-                              propertyTypeVersion, effectiveSignalIndex);
-
+        const auto overrideResult =
+                cache->appendProperty(propertyName, propertyFlags, effectivePropertyIndex++,
+                                      propertyType, propertyTypeVersion, effectiveSignalIndex);
+        if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
+            return qQmlCompileError(
+                    p->location,
+                    // TODO improve error message
+                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+        }
         effectiveSignalIndex++;
     }
     return cache;

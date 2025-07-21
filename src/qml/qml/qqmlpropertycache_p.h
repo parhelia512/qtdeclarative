@@ -151,8 +151,10 @@ public:
 
     QQmlPropertyCache::Ptr copyAndReserve(
             int propertyCount, int methodCount, int signalCount, int enumCount) const;
-    void appendProperty(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
-                        QMetaType propType, QTypeRevision revision, int notifyIndex);
+
+    enum OverrideResult { NoOverride, InvalidOverride, ValidOverride };
+    OverrideResult appendProperty(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
+                                  QMetaType propType, QTypeRevision revision, int notifyIndex);
     void appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
                      QMetaType propType, QTypeRevision version, int notifyIndex,
                      int encodedTargetIndex);
@@ -277,20 +279,21 @@ private:
     }
 
 private:
-    enum OverrideResult { NoOverride, InvalidOverride, ValidOverride };
-
     template<typename String>
     OverrideResult handleOverride(const String &name, QQmlPropertyData *data, QQmlPropertyData *old)
     {
         if (!old)
             return NoOverride;
 
-        if (data->markAsOverrideOf(old))
-            return ValidOverride;
+        if (old->isFinal()) {
+            // TODO improve warning message
+            qWarning("Final member %s is overridden in class %s. The override won't be used.",
+                     qPrintable(name), className());
+            return InvalidOverride;
+        }
 
-        qWarning("Final member %s is overridden in class %s. The override won't be used.",
-                 qPrintable(name), className());
-        return InvalidOverride;
+        data->markAsOverrideOf(old);
+        return ValidOverride;
     }
 
     template<typename String>
@@ -299,20 +302,21 @@ private:
         return handleOverride(name, data, findNamedProperty(name));
     }
 
-    void doAppendPropertyData(const QString &name, QQmlPropertyData &&data)
+    OverrideResult doAppendPropertyData(const QString &name, QQmlPropertyData &&data)
     {
         QQmlPropertyData *old = findNamedProperty(name);
         const OverrideResult overrideResult = handleOverride(name, &data, old);
         if (overrideResult == InvalidOverride) {
             // Insert the overridden member once more, to keep the counts in sync
             propertyIndexCache.append(*old);
-            return;
+            return overrideResult;
         }
 
         const int index = propertyIndexCache.size();
         propertyIndexCache.append(std::move(data));
 
         setNamedProperty(name, index + propertyOffset(), propertyIndexCache.data() + index);
+        return overrideResult;
     }
 
     int propertyIndexCacheStart = 0; // placed here to avoid gap between QQmlRefCount and _parent

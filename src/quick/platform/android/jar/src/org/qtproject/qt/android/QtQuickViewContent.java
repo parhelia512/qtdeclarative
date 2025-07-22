@@ -24,6 +24,7 @@ public abstract class QtQuickViewContent
     private WeakReference<QtQuickView> m_viewReference;
     private QtQmlStatusChangeListener m_statusChangeListener = null;
     private HashSet<Integer> m_signalListenerIds = new HashSet<>();
+    private QtSignalQueue m_signalQueue = new QtSignalQueue();
 
     /**
      * Implement this to return the library name that this component belongs to.
@@ -77,8 +78,10 @@ public abstract class QtQuickViewContent
     protected void attachView(QtQuickView view)
     {
         m_viewReference = new WeakReference<>(view);
-        if (view != null)
+        if (view != null) {
             view.setStatusChangeListener(m_statusChangeListener);
+            m_signalQueue.connectQueuedSignalListeners(view);
+        }
     }
 
     /**
@@ -187,16 +190,14 @@ public abstract class QtQuickViewContent
      **/
     protected int connectSignalListener(String signalName, Class<?>[] argTypes, Object listener)
     {
-        QtQuickView view = getQuickView();
-        if (view == null) {
-            Log.w(TAG,
-                  "Cannot connect signal listener as the QQmlComponent is not loaded in a "
-                          + "QtQuickView.");
-            return -1;
-        }
         final int id = QtQuickViewContent.generateSignalId();
-        view.connectSignalListener(signalName, argTypes, listener, id);
-        m_signalListenerIds.add(id);
+        if (isViewAttached()) {
+            QtQuickView view = getQuickView();
+            view.connectSignalListener(signalName, argTypes, listener, id);
+            m_signalListenerIds.add(id);
+        } else {
+            m_signalQueue.add(signalName, argTypes, listener, id);
+        }
         return id;
     }
 
@@ -212,15 +213,13 @@ public abstract class QtQuickViewContent
      **/
     public boolean disconnectSignalListener(int signalListenerId)
     {
-        QtQuickView view = getQuickView();
-        if (view == null) {
-            Log.w(TAG,
-                  "Cannot disconnect signal listener as the QQmlComponent is not loaded in a "
-                          + "QtQuickView.");
-            return false;
+        if (isViewAttached()) {
+            QtQuickView view = getQuickView();
+            m_signalListenerIds.remove(signalListenerId);
+            return view.disconnectSignalListener(signalListenerId);
+        } else {
+            return m_signalQueue.remove(signalListenerId);
         }
-        m_signalListenerIds.remove(signalListenerId);
-        return view.disconnectSignalListener(signalListenerId);
     }
 
     static int generateSignalId()

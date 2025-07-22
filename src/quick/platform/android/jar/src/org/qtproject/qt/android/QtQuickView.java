@@ -37,6 +37,7 @@ public class QtQuickView extends QtView {
     private QtQmlStatus m_lastStatus = QtQmlStatus.NULL;
     private boolean m_hasQueuedStatus = false;
     private WeakReference<QtQuickViewContent> m_loadedComponent;
+    private QtSignalQueue m_signalQueue = new QtSignalQueue();
 
     native void createQuickView(String qmlUri, int width, int height, long parentWindowReference,
                                 long viewReference, String[] qmlImportPaths);
@@ -151,6 +152,16 @@ public class QtQuickView extends QtView {
         }
     }
 
+    @Override
+    void setWindowReference(long windowReference) {
+        super.setWindowReference(windowReference);
+        m_signalQueue.connectQueuedSignalListeners(this);
+    }
+
+    private boolean hasUnderlyingView() {
+        return m_windowReference != 0L;
+    }
+
     /**
      * Loads QML content represented by a QtQuickViewContent. The library name and the qrc path of
      * the QML content will be extracted from the QtQuickViewContent to load the QML component.
@@ -243,24 +254,28 @@ public class QtQuickView extends QtView {
     public int connectSignalListener(String signalName, Class<?>[] argTypes, Object listener)
     {
         final int id = QtQuickViewContent.generateSignalId();
-        if (addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id))
-            return id;
-
-        Log.w(TAG, "The signal " + signalName + " does not exist in the root object "
-                                    + "or the arguments do not match with the listener.");
-        return -1;
+        connectSignalListener(signalName, argTypes, listener, id);
+        return id;
     }
 
     /**
      * Convenience function to call the native addRootObjectSignalListener() method from
      * QtQuickViewContent.
+     *
+     * If the underlying C++ QAndroidQuickView has not been set yet, this connection is queued
+     * until that happens. This is because the QAndroidQuickView does not exist yet, so we cannot
+     * connect to its signals.
+     *
      * This is provided as a way for QtSignalQueue to call addRootObjectSignalListener() while
      * providing a pre-generated ID. The regular public API generates its own ID, which is not
      * desired for queued signal connections.
      */
     void connectSignalListener(String signalName, Class<?>[] argTypes, Object listener, int id)
     {
-        addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id);
+        if (hasUnderlyingView())
+            addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id);
+        else
+            m_signalQueue.add(signalName, argTypes, listener, id);
     }
 
     /**
@@ -275,7 +290,10 @@ public class QtQuickView extends QtView {
      **/
     public boolean disconnectSignalListener(int signalListenerId)
     {
-        return removeRootObjectSignalListener(windowReference(), signalListenerId);
+        if (hasUnderlyingView())
+            return removeRootObjectSignalListener(windowReference(), signalListenerId);
+        else
+            return m_signalQueue.remove(signalListenerId);
     }
 
     /**

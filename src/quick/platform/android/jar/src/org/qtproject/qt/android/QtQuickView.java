@@ -226,14 +226,17 @@ public class QtQuickView extends QtView {
     }
 
     /**
-     * Connects a SignalListener to a signal of the QML root object.
+     * Connects a SignalListener to a signal of the QML root object. This will delay forming a
+     * connection until the root object is ready.
      *
      * @param signalName the name of the root object signal
      * @param argType    the Class type of the signal argument
      * @param listener   an instance of the QtSignalListener interface
      * @return a connection id between signal and listener or the existing connection id if there is
      *         an existing connection between the same signal and listener. Return a negative value
-     *         if the signal does not exists on the QML root object.
+     *         if the signal does not exists on the QML root object. Always returns
+     *         <code>true</code> if the root object is not ready, as the connection is queued until
+     *         the root object is ready.
      **/
     public <T> int connectSignalListener(String signalName, Class<T> argType,
                                          QtSignalListener<T> listener)
@@ -242,7 +245,8 @@ public class QtQuickView extends QtView {
     }
 
     /**
-     * Connects a SignalListener to a signal of the QML root object.
+     * Connects a SignalListener to a signal of the QML root object. Will delay forming a
+     * connection until the root object is ready.
      *
      * @param signalName the name of the root object's signal
      * @param argTypes   the Class types of the signal arguments
@@ -250,6 +254,7 @@ public class QtQuickView extends QtView {
      * @return a connection id between signal and listener or the existing connection id if there
      *         is an existing connection between the same signal and listener. Otherwise, a
      *         negative value is returned if the signal does not exist on the QML root object.
+     *         Always returns <code>true</code> if the root object is not ready.
      **/
     public int connectSignalListener(String signalName, Class<?>[] argTypes, Object listener)
     {

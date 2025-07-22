@@ -162,14 +162,16 @@ public abstract class QtQuickViewContent
 
     /**
      * Connects a SignalListener to a signal of the QML component if it has already been attached
-     * and loaded by a QtQuickView instance.
+     * and loaded by a QtQuickView instance. Otherwise, the connection is executed once the
+     * component is attached to a view.
      *
      * @param signalName the name of the root object signal
      * @param argType    the Class type of the signal argument
      * @param listener   an instance of the QtSignalListener interface
      * @return a connection ID between signal and listener or the existing connection ID if there is
      *         an existing connection between the same signal and listener. Return a negative value
-     *         if the signal does not exist on the QML root object.
+     *         if the signal does not exist on the QML root object. Always returns
+     *         <code>true</code> if the component is not yet attached to a QtQuickView instance.
      **/
     protected <T> int connectSignalListener(String signalName, Class<T> argType,
                                             QtSignalListener<T> listener)
@@ -179,14 +181,16 @@ public abstract class QtQuickViewContent
 
     /**
      * Connects a SignalListener to a signal of the QML component if it has already been attached
-     * and loaded by a QtQuickView instance.
+     * and loaded by a QtQuickView instance. Otherwise, the connection is executed once the
+     * component is attached to a view.
      *
      * @param signalName the name of the root object signal
      * @param argTypes   the Class types of the signal arguments
      * @param listener   an instance of the QtSignalListener interface
      * @return a connection ID between signal and listener or the existing connection ID if there is
      *         an existing connection between the same signal and listener. Return a negative value
-     *         if the signal does not exist on the QML root object.
+     *         if the signal does not exist on the QML root object. Always returns
+     *         <code>true</code> if the component is not yet attached to a QtQuickView instance.
      **/
     protected int connectSignalListener(String signalName, Class<?>[] argTypes, Object listener)
     {

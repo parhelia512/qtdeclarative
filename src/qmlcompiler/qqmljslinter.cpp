@@ -4,6 +4,7 @@
 #include "qqmljslinter_p.h"
 
 #include "qqmljslintercodegen_p.h"
+#include "qqmljsutils_p.h"
 
 #include <QtQmlCompiler/private/qqmljsimporter_p.h>
 #include <QtQmlCompiler/private/qqmljsimportvisitor_p.h>
@@ -25,6 +26,10 @@
 #if QT_CONFIG(library)
 #    include <QtCore/qdiriterator.h>
 #    include <QtCore/qlibrary.h>
+#endif
+
+#if QT_CONFIG(qmlcontextpropertydump)
+#  include <QtCore/qsettings.h>
 #endif
 
 #include <QtQml/private/qqmljslexer_p.h>
@@ -492,12 +497,41 @@ void QQmlJSLinter::processMessages(QJsonArray &warnings)
     });
 }
 
+ContextPropertyInfo QQmlJSLinter::contextPropertiesFor(
+        const QString &filename, QQmlJSResourceFileMapper *mapper,
+        const QQmlJS::HeuristicContextProperties &heuristicContextProperties)
+{
+    ContextPropertyInfo result;
+    if (m_userContextPropertySettings.search(filename).isValid()) {
+        result.userContextProperties =
+                QQmlJS::UserContextProperties{ m_userContextPropertySettings };
+    }
+
+    if (heuristicContextProperties.isValid()) {
+        result.heuristicContextProperties = heuristicContextProperties;
+        return result;
+    }
+
+#if QT_CONFIG(qmlcontextpropertydump)
+    const QString buildPath = QQmlJSUtils::qmlBuildPathFromSourcePath(mapper, filename);
+    if (const auto searchResult = m_heuristicContextPropertySearcher.search(buildPath);
+        searchResult.isValid()) {
+        QSettings settings(searchResult.iniFilePath, QSettings::IniFormat);
+        result.heuristicContextProperties =
+                QQmlJS::HeuristicContextProperties::collectFrom(&settings);
+    }
+#else
+    Q_UNUSED(mapper);
+#endif
+    return result;
+}
+
 QQmlJSLinter::LintResult
 QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, const bool silent,
                        QJsonArray *json, const QStringList &qmlImportPaths,
                        const QStringList &qmldirFiles, const QStringList &resourceFiles,
                        const QList<QQmlJS::LoggerCategory> &categories,
-                       const QQmlJS::HeuristicContextProperties &contextProperties)
+                       const QQmlJS::HeuristicContextProperties &heuristicContextProperties)
 {
     // Make sure that we don't expose an old logger if we return before a new one is created.
     m_logger.reset();
@@ -627,12 +661,9 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
     const QString resolvedPath =
             (resourcePaths.size() == 1) ? u':' + resourcePaths.first() : filename;
 
-    const QQmlJS::UserContextProperties userContextProperties =
-            m_userContextPropertySettings.search(filename).isValid()
-            ? QQmlJS::UserContextProperties{ m_userContextPropertySettings }
-            : QQmlJS::UserContextProperties{};
     QQmlJSLinterCodegen codegen{ &m_importer, resolvedPath, qmldirFiles, m_logger.get(),
-                                 ContextPropertyInfo{ contextProperties, userContextProperties } };
+                                 contextPropertiesFor(filename, mapper ? &*mapper : nullptr,
+                                                      heuristicContextProperties) };
     codegen.setTypeResolver(std::move(typeResolver));
 
     using PassManagerPtr =

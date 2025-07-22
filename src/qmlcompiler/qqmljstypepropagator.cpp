@@ -604,7 +604,8 @@ static void warnAboutContextPropertyUsage(const QString name,
     QString warning = warningMessage();
     for (const auto &candidate : definitions) {
         warning.append("\nNote: candidate context property declaration '%1' at %2:%3:%4"_L1.arg(
-                name, candidate.filename, QString::number(candidate.location.startLine),
+                name, QDir::cleanPath(candidate.filename),
+                QString::number(candidate.location.startLine),
                 QString::number(candidate.location.startColumn)));
     }
     logger->log(warning, qmlContextProperties, location);

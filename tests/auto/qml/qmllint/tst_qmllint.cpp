@@ -10,11 +10,14 @@
 #include <QtQmlCompiler/private/qqmljslinter_p.h>
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
 #include <QtQmlCompiler/private/qqmlsa_p.h>
+#include <QtQml/private/qtqml-config_p.h>
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 #include <QtCore/qplugin.h>
 #include <QtCore/qcomparehelpers.h>
 #include <QtCore/qdiriterator.h>
 #include <QtCore/qlibraryinfo.h>
+#include <QtCore/qxmlstream.h>
+#include <QtCore/qtemporaryfile.h>
 
 #if QT_CONFIG(qmlcontextpropertydump)
 #  include <QtCore/qsettings.h>
@@ -99,6 +102,7 @@ private Q_SLOTS:
 #if QT_CONFIG(qmlcontextpropertydump)
     void contextPropertiesFromHeuristicWrite();
     void contextPropertiesFromHeuristicRead();
+    void contextPropertiesFromHeuristicLint();
 #endif
 
     void compilerWarnings_data();
@@ -219,6 +223,7 @@ private:
         bool readSettings = false;
         QStringList enableCategories = {};
         QStringList rootUrls = {};
+        QHash<QString, QString> qrcToFilePaths = {};
     };
 
     QJsonArray callQmllintImpl(const QString &fileToLint, const QString &fileCpntent,
@@ -2090,6 +2095,32 @@ void TestQmllint::contextPropertiesFromHeuristicRead()
     const auto readBack = QQmlJS::HeuristicContextProperties::collectFrom(&settings);
     QCOMPARE(readBack, properties);
 }
+
+void TestQmllint::contextPropertiesFromHeuristicLint()
+{
+    const QString filename = testFile("ContextProperties/qml/MyContextProperties.qml"_L1);
+
+    CallQmllintOptions options;
+    options.qrcToFilePaths.insert("qt/qml/MyModule/file.qml"_L1, filename);
+    options.qrcToFilePaths.insert("qt/qml/MyModule/qmldir"_L1,
+                                  testFile("ContextProperties/build/qmldir"_L1));
+
+    const QJsonArray warnings = callQmllint(filename, options, CallQmllintCheck::ShouldFail);
+    checkResult(
+            warnings,
+            Result{ {
+                    Message{ "Potential context property access detected. Context properties are "
+                             "discouraged in QML: use normal, required, or singleton properties "
+                             "instead.\nNote: 'myContextProperty1' assumed to be a potential "
+                             "context property because it is not declared as required "
+                             "property.\nNote: candidate context property declaration "
+                             "'myContextProperty1' at myPath1/myFile1.cpp:3:4"_L1,
+                             4, 21 },
+            }
+
+            },
+            [] { }, [] { }, [] { });
+}
 #endif
 
 void TestQmllint::cleanQmlCode_data()
@@ -2503,6 +2534,27 @@ QString TestQmllint::runQmllint(const QString &fileToLint, bool shouldSucceed,
             extraArgs, ignoreSettings, addImportDirs, absolutePath, env);
 }
 
+static void writeQrcFileMapping(const QHash<QString, QString> &mapping, const QString &outputFile)
+{
+    QFile file(outputFile);
+    QVERIFY(file.open(QFile::WriteOnly));
+
+    QXmlStreamWriter writer(&file);
+    writer.writeStartDocument();
+    writer.writeStartElement("RCC"_L1);
+    writer.writeStartElement("qresource"_L1);
+    writer.writeAttribute("prefix"_L1, ""_L1);
+    for (const auto &pair : mapping.asKeyValueRange()) {
+        writer.writeStartElement("file"_L1);
+        writer.writeAttribute("alias"_L1, pair.first);
+        writer.writeCharacters(pair.second);
+        writer.writeEndElement();
+    }
+    writer.writeEndElement();
+    writer.writeEndElement();
+    writer.writeEndDocument();
+}
+
 QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString &content,
                                         const CallQmllintOptions &options, CallQmllintChecks checks)
 {
@@ -2540,11 +2592,21 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
                 QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
         }
 
+        QList<QString> resourceFiles = options.resources;
+        QTemporaryDir qrcFileDir;
+        if (!options.qrcToFilePaths.isEmpty()) {
+            [&qrcFileDir] { QVERIFY(qrcFileDir.isValid()); }();
+            const QString qrcFile = qrcFileDir.filePath("a.qrc");
+            writeQrcFileMapping(options.qrcToFilePaths, qrcFile);
+            resourceFiles.append(qrcFile);
+        }
+
         const auto contextProperties =
                 QQmlJS::HeuristicContextProperties::collectFromCppSourceDirs(options.rootUrls);
+
         lintResult = m_linter.lintFile(lintedFile, content.isEmpty() ? nullptr : &content, true,
                                        &jsonOutput, resolvedImportPaths, options.qmldirFiles,
-                                       options.resources, resolvedCategories, contextProperties);
+                                       resourceFiles, resolvedCategories, contextProperties);
     } else {
         lintResult = m_linter.lintModule(fileToLint, true, &jsonOutput, resolvedImportPaths,
                                          options.resources);

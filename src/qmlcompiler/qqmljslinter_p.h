@@ -20,6 +20,7 @@
 #include <QtQmlCompiler/private/qqmljsimporter_p.h>
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
 #include <QtQmlCompiler/private/qqmljsusercontextproperties_p.h>
+#include <QtQmlCompiler/private/qqmljstypepropagator_p.h>
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 
@@ -136,6 +137,9 @@ public:
 private:
     void parseComments(QQmlJSLogger *logger, const QList<QQmlJS::SourceLocation> &comments);
     void processMessages(QJsonArray &warnings);
+    ContextPropertyInfo
+    contextPropertiesFor(const QString &fileName, QQmlJSResourceFileMapper *mapper,
+                         const QQmlJS::HeuristicContextProperties &heuristicContextProperties);
 
     bool m_useAbsolutePath;
     bool m_enablePlugins;
@@ -145,6 +149,9 @@ private:
     std::vector<Plugin> m_plugins;
     QQmlToolingSettings m_userContextPropertySettings =
             QQmlToolingSettings(QStringLiteral("contextProperties"));
+    QQmlToolingSettings::Searcher m_heuristicContextPropertySearcher =
+            QQmlToolingSettings::Searcher(QStringLiteral(".qt/contextPropertyDump.ini"),
+                                          QStringLiteral("contextPropertyDump.ini"));
 };
 
 QT_END_NAMESPACE

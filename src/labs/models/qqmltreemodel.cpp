@@ -524,7 +524,7 @@ void QQmlTreeModel::removeRow(QModelIndex rowIndex)
     \qmlmethod bool TreeModel::setData(QModelIndex index, string role, variant value)
 
     Inserts or updates the data field named by \a role in the TreeRow at the
-    given \a index with \a value. Returns true if sucessful, false if not.
+    given \a index with \a value. Returns true if successful, false if not.
 
     \sa data(), index()
 */

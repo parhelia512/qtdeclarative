@@ -793,7 +793,7 @@ QVariant QQmlTableModel::data(const QModelIndex &index, int role) const
     \qmlmethod bool TableModel::setData(QModelIndex index, string role, variant value)
 
     Inserts or updates the data field named by \a role in the table cell at the
-    given \a index with \a value. Returns true if sucessful, false if not.
+    given \a index with \a value. Returns true if successful, false if not.
 
     \sa index()
 */

@@ -20,7 +20,11 @@ TestActivityCommunicator::TestActivityCommunicator(QObject *parent)
               Q_JNI_NATIVE_SCOPED_METHOD(onBoolSignal, TestActivityCommunicator),
               Q_JNI_NATIVE_SCOPED_METHOD(onDoubleSignal, TestActivityCommunicator),
               Q_JNI_NATIVE_SCOPED_METHOD(onStringSignal, TestActivityCommunicator),
-              Q_JNI_NATIVE_SCOPED_METHOD(onManyTypeSignal, TestActivityCommunicator) });
+              Q_JNI_NATIVE_SCOPED_METHOD(onManyTypeSignal, TestActivityCommunicator),
+              Q_JNI_NATIVE_SCOPED_METHOD(onEarlyRegistrationQuickViewContentSignal,
+                                         TestActivityCommunicator),
+              Q_JNI_NATIVE_SCOPED_METHOD(onEarlyRegistrationQuickViewSignal,
+                                         TestActivityCommunicator) });
 }
 
 TestActivityCommunicator::~TestActivityCommunicator()
@@ -75,6 +79,19 @@ void TestActivityCommunicator::onManyTypeSignal(JNIEnv *, jclass,
             boolValue.callMethod<jboolean>("booleanValue"),
             doubleValue.callMethod<jdouble>("doubleValue"),
             stringValue.toString());
+}
+
+void TestActivityCommunicator::onEarlyRegistrationQuickViewContentSignal(JNIEnv *, jclass,
+                                                                         Integer value)
+{
+    Q_ASSERT(s_instance);
+    emit s_instance->earlyRegistrationQuickViewContentSignal(value.callMethod<jint>("intValue"));
+}
+
+void TestActivityCommunicator::onEarlyRegistrationQuickViewSignal(JNIEnv *, jclass, Integer value)
+{
+    Q_ASSERT(s_instance);
+    emit s_instance->earlyRegistrationQuickViewSignal(value.callMethod<jint>("intValue"));
 }
 
 void TestActivityCommunicator::registerSignals() const

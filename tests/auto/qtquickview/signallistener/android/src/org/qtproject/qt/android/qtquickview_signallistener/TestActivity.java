@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 import org.qtproject.qt.android.QtQmlStatus;
 import org.qtproject.qt.android.QtQmlStatusChangeListener;
 import org.qtproject.qt.android.QtQuickView;
+import org.qtproject.qt.android.QtSignalListener;
 import org.qtproject.qt.android.qtquickview_signallistener_qml.tst_qtquickview_signallistener_qml.TestViewModule.TestView;
 
 public class TestActivity extends Activity implements QtQmlStatusChangeListener
@@ -24,6 +25,9 @@ public class TestActivity extends Activity implements QtQmlStatusChangeListener
     native void onDoubleSignal(Double value);
     native void onStringSignal(String value);
     native void onManyTypeSignal(Integer i, Boolean v, Double d, String s);
+
+    native void onEarlyRegistrationQuickViewContentSignal(Integer v);
+    native void onEarlyRegistrationQuickViewSignal(Integer v);
 
     private final TestView m_testView = new TestView();
     private QtQuickView m_quickView;
@@ -38,6 +42,13 @@ public class TestActivity extends Activity implements QtQmlStatusChangeListener
         m_instance = this;
         m_quickView = new QtQuickView(this);
         m_testView.setStatusChangeListener(this);
+
+        m_testView.connectEarlyRegistrationQuickViewContentSignalListener(
+                (String unused, Integer v) -> onEarlyRegistrationQuickViewContentSignal(v));
+
+        m_quickView.connectSignalListener(
+                "earlyRegistrationQuickViewSignal", Integer.class,
+                (String unused, Integer v) -> onEarlyRegistrationQuickViewSignal(v));
 
         final FrameLayout qmlFrame = findViewById(R.id.qmlFrame);
         final ViewGroup.LayoutParams params = new FrameLayout.LayoutParams(

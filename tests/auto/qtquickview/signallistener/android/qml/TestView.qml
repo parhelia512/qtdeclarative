@@ -18,6 +18,10 @@ Item {
         doubleValue: double,
         stringValue: string)
 
+    // Early register QtQuickView, QtQuickViewContent
+    signal earlyRegistrationQuickViewSignal(value: int)
+    signal earlyRegistrationQuickViewContentSignal(value: int)
+
     readonly property int signalWaitTime: 1000
 
     TestActivityCommunicator {
@@ -53,6 +57,16 @@ Item {
         id: manyTypeSpy
         target: communicator
         signalName: "manyTypeSignal"
+    }
+    SignalSpy {
+        id: earlyRegistrationQuickViewSignalSpy
+        target: communicator
+        signalName: "earlyRegistrationQuickViewSignal"
+    }
+    SignalSpy {
+        id: earlyRegistrationQuickViewContentSignalSpy
+        target: communicator
+        signalName: "earlyRegistrationQuickViewContentSignal"
     }
 
     function wipeSpies() {
@@ -382,6 +396,29 @@ Item {
 
         function cleanup() {
             communicator.registerSignals()
+        }
+    }
+
+    TestCase {
+        name: "earlySignals"
+        when: windowShown
+
+        function test_quickView() {
+            earlyRegistrationQuickViewSignalSpy.clear()
+            root.earlyRegistrationQuickViewSignal(512)
+            earlyRegistrationQuickViewSignalSpy.wait(root.signalWatTime)
+            compare(earlyRegistrationQuickViewSignalSpy.count, 1)
+            compare(earlyRegistrationQuickViewSignalSpy.signalArguments.length, 1)
+            compare(earlyRegistrationQuickViewSignalSpy.signalArguments[0][0], 512)
+        }
+
+        function test_quickViewContent() {
+            earlyRegistrationQuickViewContentSignalSpy.clear()
+            root.earlyRegistrationQuickViewContentSignal(512)
+            earlyRegistrationQuickViewContentSignalSpy.wait(root.signalWatTime)
+            compare(earlyRegistrationQuickViewContentSignalSpy.count, 1)
+            compare(earlyRegistrationQuickViewContentSignalSpy.signalArguments.length, 1)
+            compare(earlyRegistrationQuickViewContentSignalSpy.signalArguments[0][0], 512)
         }
     }
 

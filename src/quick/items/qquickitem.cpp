@@ -2876,6 +2876,13 @@ void QQuickItem::setParentItem(QQuickItem *parentItem)
         emit parentChanged(d->parentItem);
     if (isVisible() && d->parentItem && !QQuickItemPrivate::get(d->parentItem)->inDestructor)
         emit d->parentItem->visibleChildrenChanged();
+
+#if QT_CONFIG(accessibility)
+    if (QGuiApplicationPrivate::is_app_running && !QGuiApplicationPrivate::is_app_closing && d->isAccessible && QAccessible::isActive()) {
+        QAccessibleEvent qaEvent(this, QAccessible::ParentChanged);
+        QAccessible::updateAccessibility(&qaEvent);
+    }
+#endif
 }
 
 /*!

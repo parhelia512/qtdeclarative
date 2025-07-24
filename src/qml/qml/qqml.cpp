@@ -2190,7 +2190,7 @@ bool AOTCompiledContext::callQmlContextPropertyLookup(uint index, void **args, i
     return false;
 }
 
-enum MatchScore { NoMatch, VariantMatch, ExactMatch, };
+enum MatchScore { NoMatch, ExactMatch, };
 
 static MatchScore resolveQObjectMethodOverload(
         QV4::QObjectMethod *method, QV4::Lookup *lookup, int relativeMethodIndex)

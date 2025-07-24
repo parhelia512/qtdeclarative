@@ -143,7 +143,7 @@ private:
     // General usage of alloc is dangerous, and thus generally
     // avoided, but in this case some more complex initialization
     // patterns are used that don't sensibly fit into the various
-    // construct methods and further want to avoid the uneccessary
+    // construct methods and further want to avoid the unnecessary
     // writes that initializing the memory with a common value such as
     // undefined would require.
     friend FunctionPrototype;

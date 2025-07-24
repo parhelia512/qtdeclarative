@@ -17,7 +17,6 @@
 #include <private/qqmlvaluetype_p.h>
 #include <private/qqmlengine_p.h>
 #include <private/qqmlmetaobject_p.h>
-#include <private/qqmlpropertyresolver_p.h>
 #include <private/qqmltypedata_p.h>
 #include <private/inlinecomponentutils_p.h>
 #include <private/qqmlsourcecoordinate_p.h>
@@ -217,6 +216,8 @@ public:
         \internal
         Tries to creates a property cache for the CompiledObject based on the cache of a base type.
         Returns QQmlError in case of invalid overrides
+
+        \note: Aliases are added separately in appendAliasToPropertyCache
       */
     [[nodiscard]] PropertyCacheOrError
     tryDeriveCacheFrom(const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
@@ -337,20 +338,7 @@ template <typename ObjectContainer>
 auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
         const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
         QByteArray dynamicClassName) const -> PropertyCacheOrError
-{   
-    QQmlPropertyResolver resolver(baseTypeCache);
-
-    auto a = obj->aliasesBegin();
-    auto aend = obj->aliasesEnd();
-    for (; a != aend; ++a) {
-        bool notInRevision = false;
-        const QQmlPropertyData *d = resolver.property(stringAt(a->nameIndex()), &notInRevision);
-        if (d && d->isFinal())
-            return qQmlCompileError(
-                    a->location,
-                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
-    }
-
+{
     QQmlPropertyCache::Ptr cache = baseTypeCache->copyAndReserve(
             obj->propertyCount() + obj->aliasCount(),
             obj->functionCount() + obj->propertyCount() + obj->aliasCount() + obj->signalCount(),
@@ -410,8 +398,8 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
         cache->appendSignal(changedSigName, flags, effectiveMethodIndex++);
     }
 
-    a = obj->aliasesBegin();
-    aend = obj->aliasesEnd();
+    auto a = obj->aliasesBegin();
+    auto aend = obj->aliasesEnd();
     for (; a != aend; ++a) {
         auto flags = QQmlPropertyData::defaultSignalFlags();
 
@@ -1067,8 +1055,14 @@ inline QQmlError QQmlPropertyCacheAliasCreator<ObjectContainer>::appendAliasToPr
     if (object.hasAliasAsDefaultProperty() && aliasIndex == object.indexOfDefaultPropertyOrAlias)
         propertyCache->_defaultPropertyName = propertyName;
 
-    propertyCache->appendAlias(propertyName, propertyFlags, effectivePropertyIndex,
-                               type, version, effectiveSignalIndex, encodedMetaPropertyIndex);
+    const auto overrideResult =
+            propertyCache->appendAlias(propertyName, propertyFlags, effectivePropertyIndex, type,
+                                       version, effectiveSignalIndex, encodedMetaPropertyIndex);
+    if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
+        return qQmlCompileError(alias.location,
+                                // TODO improve error message
+                                QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+    }
     return QQmlError();
 }
 

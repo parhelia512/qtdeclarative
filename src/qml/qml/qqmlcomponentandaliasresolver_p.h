@@ -21,6 +21,7 @@
 #include <QtCore/qhash.h>
 
 #include <private/qqmltypeloader_p.h>
+#include <private/qqmlpropertyresolver_p.h>
 #include <private/qqmlpropertycachecreator_p.h>
 
 QT_BEGIN_NAMESPACE

@@ -224,9 +224,10 @@ QQmlPropertyCache::appendProperty(const QString &name, QQmlPropertyData::Flags f
     return doAppendPropertyData(name, std::move(data));
 }
 
-void QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags,
-                                    int coreIndex, QMetaType propType, QTypeRevision version,
-                                    int notifyIndex, int encodedTargetIndex)
+QQmlPropertyCache::OverrideResult
+QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
+                               QMetaType propType, QTypeRevision version, int notifyIndex,
+                               int encodedTargetIndex)
 {
     QQmlPropertyData data;
     data.setPropType(propType);
@@ -237,7 +238,7 @@ void QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags
     data.setAliasTarget(encodedTargetIndex);
     data.setTypeVersion(version);
 
-    doAppendPropertyData(name, std::move(data));
+    return doAppendPropertyData(name, std::move(data));
 }
 
 void QQmlPropertyCache::appendSignal(const QString &name, QQmlPropertyData::Flags flags,

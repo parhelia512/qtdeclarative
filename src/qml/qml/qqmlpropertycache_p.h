@@ -155,9 +155,9 @@ public:
     enum OverrideResult { NoOverride, InvalidOverride, ValidOverride };
     OverrideResult appendProperty(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
                                   QMetaType propType, QTypeRevision revision, int notifyIndex);
-    void appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
-                     QMetaType propType, QTypeRevision version, int notifyIndex,
-                     int encodedTargetIndex);
+    OverrideResult appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
+                               QMetaType propType, QTypeRevision version, int notifyIndex,
+                               int encodedTargetIndex);
     void appendSignal(const QString &, QQmlPropertyData::Flags, int coreIndex,
                       const QMetaType *types = nullptr,
                       const QList<QByteArray> &names = QList<QByteArray>());

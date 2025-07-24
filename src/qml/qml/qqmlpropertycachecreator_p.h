@@ -212,16 +212,27 @@ public:
      */
     QQmlError verifyNoICCycle();
 
-    enum class VMEMetaObjectIsRequired {
-        Maybe,
-        Always
-    };
+    using PropertyCacheOrError = std::variant<QQmlPropertyCache::Ptr, QQmlError>;
+    /*!
+        \internal
+        Tries to creates a property cache for the CompiledObject based on the cache of a base type.
+        Returns QQmlError in case of invalid overrides
+      */
+    [[nodiscard]] PropertyCacheOrError
+    tryDeriveCacheFrom(const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
+                       QByteArray dynamicClassName = QByteArray()) const;
+
 protected:
-    QQmlError buildMetaObjectRecursively(int objectIndex, const QQmlBindingInstantiationContext &context, VMEMetaObjectIsRequired isVMERequired);
+    enum class VMEMetaObjectIsRequired { Maybe, Always };
+
+    QQmlError buildMetaObjectRecursively(int objectIndex,
+                                         const QQmlBindingInstantiationContext &context,
+                                         VMEMetaObjectIsRequired isVMERequired);
     QQmlPropertyCache::ConstPtr propertyCacheForObject(const CompiledObject *obj, const QQmlBindingInstantiationContext &context, QQmlError *error) const;
     QQmlError createMetaObject(int objectIndex, const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache);
 
-    QMetaType metaTypeForParameter(const QV4::CompiledData::ParameterType &param, QString *customTypeName = nullptr);
+    QMetaType metaTypeForParameter(const QV4::CompiledData::ParameterType &param,
+                                   QString *customTypeName = nullptr) const;
 
     QString stringAt(int index) const { return objectContainer->stringAt(index); }
 
@@ -321,6 +332,292 @@ QQmlPropertyCacheCreator<ObjectContainer>::buildMetaObjectsIncrementally()
     auto diag = buildMetaObjectRecursively(/*root object*/0, m_context, VMEMetaObjectIsRequired::Maybe);
     return {diag, false, 0};
 }
+
+template <typename ObjectContainer>
+auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
+        const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
+        QByteArray dynamicClassName) const -> PropertyCacheOrError
+{   
+    QQmlPropertyResolver resolver(baseTypeCache);
+
+    auto p = obj->propertiesBegin();
+    auto pend = obj->propertiesEnd();
+    for (; p != pend; ++p) {
+        bool notInRevision = false;
+        const QQmlPropertyData *d = resolver.property(stringAt(p->nameIndex()), &notInRevision);
+        if (d && d->isFinal())
+            return qQmlCompileError(
+                    p->location,
+                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+    }
+
+    auto a = obj->aliasesBegin();
+    auto aend = obj->aliasesEnd();
+    for (; a != aend; ++a) {
+        bool notInRevision = false;
+        const QQmlPropertyData *d = resolver.property(stringAt(a->nameIndex()), &notInRevision);
+        if (d && d->isFinal())
+            return qQmlCompileError(
+                    a->location,
+                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+    }
+
+    QQmlPropertyCache::Ptr cache = baseTypeCache->copyAndReserve(
+            obj->propertyCount() + obj->aliasCount(),
+            obj->functionCount() + obj->propertyCount() + obj->aliasCount() + obj->signalCount(),
+            obj->signalCount() + obj->propertyCount() + obj->aliasCount(), obj->enumCount());
+    cache->_dynamicClassName = std::move(dynamicClassName);
+
+    int effectivePropertyIndex = cache->propertyIndexCacheStart;
+    int effectiveMethodIndex = cache->methodIndexCacheStart;
+
+    // For property change signal override detection.
+    // We prepopulate a set of signal names which already exist in the object,
+    // and throw an error if there is a signal/method defined as an override.
+    // TODO: Remove AllowOverride once we can. No override should be allowed.
+    enum class AllowOverride { No, Yes };
+    QHash<QString, AllowOverride> seenSignals{
+        { QStringLiteral("destroyed"), AllowOverride::No },
+        { QStringLiteral("parentChanged"), AllowOverride::No },
+        { QStringLiteral("objectNameChanged"), AllowOverride::No }
+    };
+    const QQmlPropertyCache *parentCache = cache.data();
+    while ((parentCache = parentCache->parent().data())) {
+        if (int pSigCount = parentCache->signalCount()) {
+            int pSigOffset = parentCache->signalOffset();
+            for (int i = pSigOffset; i < pSigCount; ++i) {
+                const QQmlPropertyData *currPSig = parentCache->signal(i);
+                // XXX TODO: find a better way to get signal name from the property data :-/
+                for (QQmlPropertyCache::StringCache::ConstIterator iter =
+                             parentCache->stringCache.begin();
+                     iter != parentCache->stringCache.end(); ++iter) {
+                    if (currPSig == (*iter).second) {
+                        if (currPSig->isOverridableSignal()) {
+                            const qsizetype oldSize = seenSignals.size();
+                            AllowOverride &entry = seenSignals[iter.key()];
+                            if (seenSignals.size() != oldSize)
+                                entry = AllowOverride::Yes;
+                        } else {
+                            seenSignals[iter.key()] = AllowOverride::No;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Set up notify signals for properties - first normal, then alias
+    p = obj->propertiesBegin();
+    pend = obj->propertiesEnd();
+    for (; p != pend; ++p) {
+        auto flags = QQmlPropertyData::defaultSignalFlags();
+
+        const QString changedSigName =
+                QQmlSignalNames::propertyNameToChangedSignalName(stringAt(p->nameIndex()));
+        seenSignals[changedSigName] = AllowOverride::No;
+
+        cache->appendSignal(changedSigName, flags, effectiveMethodIndex++);
+    }
+
+    a = obj->aliasesBegin();
+    aend = obj->aliasesEnd();
+    for (; a != aend; ++a) {
+        auto flags = QQmlPropertyData::defaultSignalFlags();
+
+        const QString changedSigName =
+                QQmlSignalNames::propertyNameToChangedSignalName(stringAt(a->nameIndex()));
+        seenSignals[changedSigName] = AllowOverride::No;
+
+        cache->appendSignal(changedSigName, flags, effectiveMethodIndex++);
+    }
+
+    auto e = obj->enumsBegin();
+    auto eend = obj->enumsEnd();
+    for (; e != eend; ++e) {
+        const int enumValueCount = e->enumValueCount();
+        QVector<QQmlEnumValue> values;
+        values.reserve(enumValueCount);
+
+        auto enumValue = e->enumValuesBegin();
+        auto end = e->enumValuesEnd();
+        for (; enumValue != end; ++enumValue)
+            values.append(QQmlEnumValue(stringAt(enumValue->nameIndex), enumValue->value));
+
+        cache->appendEnum(stringAt(e->nameIndex), values);
+    }
+
+    // Dynamic signals
+    auto s = obj->signalsBegin();
+    auto send = obj->signalsEnd();
+    for (; s != send; ++s) {
+        const int paramCount = s->parameterCount();
+
+        QList<QByteArray> names;
+        names.reserve(paramCount);
+        QVarLengthArray<QMetaType, 10> paramTypes(paramCount);
+
+        if (paramCount) {
+
+            int i = 0;
+            auto param = s->parametersBegin();
+            auto end = s->parametersEnd();
+            for (; param != end; ++param, ++i) {
+                names.append(stringAt(param->nameIndex).toUtf8());
+
+                QString customTypeName;
+                QMetaType type = metaTypeForParameter(param->type, &customTypeName);
+                if (!type.isValid())
+                    return qQmlCompileError(
+                            s->location,
+                            QQmlPropertyCacheCreatorBase::tr("Invalid signal parameter type: %1")
+                                    .arg(customTypeName));
+
+                paramTypes[i] = type;
+            }
+        }
+
+        auto flags = QQmlPropertyData::defaultSignalFlags();
+        if (paramCount)
+            flags.setHasArguments(true);
+
+        QString signalName = stringAt(s->nameIndex);
+        const auto it = seenSignals.find(signalName);
+        if (it == seenSignals.end()) {
+            seenSignals[signalName] = AllowOverride::No;
+        } else {
+            // TODO: Remove the AllowOverride::Yes branch once we can.
+            QQmlError message = qQmlCompileError(
+                    s->location,
+                    QQmlPropertyCacheCreatorBase::tr(
+                            "Duplicate signal name: "
+                            "invalid override of property change signal or superclass signal"));
+            switch (*it) {
+            case AllowOverride::No:
+                return message;
+            case AllowOverride::Yes:
+                message.setUrl(objectContainer->url());
+                qCWarning(invalidOverride).noquote() << message.toString();
+                *it = AllowOverride::No; // No further overriding allowed.
+                break;
+            }
+        }
+        cache->appendSignal(signalName, flags, effectiveMethodIndex++,
+                            paramCount ? paramTypes.constData() : nullptr, names);
+    }
+
+    // Dynamic slots
+    auto function = objectContainer->objectFunctionsBegin(obj);
+    auto fend = objectContainer->objectFunctionsEnd(obj);
+    for (; function != fend; ++function) {
+        auto flags = QQmlPropertyData::defaultSlotFlags();
+
+        const QString slotName = stringAt(function->nameIndex);
+        const auto it = seenSignals.constFind(slotName);
+        if (it != seenSignals.constEnd()) {
+            // TODO: Remove the AllowOverride::Yes branch once we can.
+            QQmlError message = qQmlCompileError(
+                    function->location,
+                    QQmlPropertyCacheCreatorBase::tr(
+                            "Duplicate method name: "
+                            "invalid override of property change signal or superclass signal"));
+            switch (*it) {
+            case AllowOverride::No:
+                return message;
+            case AllowOverride::Yes:
+                message.setUrl(objectContainer->url());
+                qCWarning(invalidOverride).noquote() << message.toString();
+                break;
+            }
+        }
+        // Note: we don't append slotName to the seenSignals list, since we don't
+        // protect against overriding change signals or methods with properties.
+
+        QList<QByteArray> parameterNames;
+        QVector<QMetaType> parameterTypes;
+        auto formal = function->formalsBegin();
+        auto end = function->formalsEnd();
+        for (; formal != end; ++formal) {
+            flags.setHasArguments(true);
+            parameterNames << stringAt(formal->nameIndex).toUtf8();
+            QMetaType type = metaTypeForParameter(formal->type);
+            if (!type.isValid())
+                type = QMetaType::fromType<QVariant>();
+            parameterTypes << type;
+        }
+
+        QMetaType returnType = metaTypeForParameter(function->returnType);
+        if (!returnType.isValid())
+            returnType = QMetaType::fromType<QVariant>();
+
+        cache->appendMethod(slotName, flags, effectiveMethodIndex++, returnType, parameterNames,
+                            parameterTypes);
+    }
+
+    // Dynamic properties
+    int effectiveSignalIndex = cache->signalHandlerIndexCacheStart;
+    int propertyIdx = 0;
+    p = obj->propertiesBegin();
+    pend = obj->propertiesEnd();
+    for (; p != pend; ++p, ++propertyIdx) {
+        QMetaType propertyType;
+        QTypeRevision propertyTypeVersion = QTypeRevision::zero();
+        QQmlPropertyData::Flags propertyFlags;
+
+        const QV4::CompiledData::CommonType type = p->commonType();
+
+        if (p->isList())
+            propertyFlags.setType(QQmlPropertyData::Flags::QListType);
+        else if (type == QV4::CompiledData::CommonType::Var)
+            propertyFlags.setType(QQmlPropertyData::Flags::VarPropertyType);
+
+        if (type != QV4::CompiledData::CommonType::Invalid) {
+            propertyType =
+                    p->isList() ? listTypeForPropertyType(type) : metaTypeForPropertyType(type);
+        } else {
+            Q_ASSERT(!p->isCommonType());
+
+            QQmlType qmltype;
+            bool selfReference = false;
+            QList<QQmlError> errors;
+            const QString typeName = stringAt(p->commonTypeOrTypeNameIndex());
+            if (!imports->resolveType(typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
+                                      QQmlType::AnyRegistrationType, &selfReference)) {
+                Q_ASSERT(!errors.isEmpty());
+                return qQmlCompileError(p->location, typeName + u' ' + errors[0].description());
+            }
+
+            Q_ASSERT(qmltype.isValid());
+            if (p->isList())
+                propertyType = qmltype.qListTypeId();
+            else
+                propertyType = qmltype.typeId();
+
+            if (!qmltype.isComposite() && !qmltype.isInlineComponentType())
+                propertyTypeVersion = qmltype.version();
+
+            if (p->isList())
+                propertyFlags.setType(QQmlPropertyData::Flags::QListType);
+            else if (propertyType.flags().testFlag(QMetaType::PointerToQObject))
+                propertyFlags.setType(QQmlPropertyData::Flags::QObjectDerivedType);
+        }
+
+        if (!p->isReadOnly() && !propertyType.flags().testFlag(QMetaType::IsQmlList))
+            propertyFlags.setIsWritable(true);
+        if (p->isFinal())
+            propertyFlags.setIsFinal(true);
+
+        QString propertyName = stringAt(p->nameIndex());
+        if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
+            cache->_defaultPropertyName = propertyName;
+        cache->appendProperty(propertyName, propertyFlags, effectivePropertyIndex++, propertyType,
+                              propertyTypeVersion, effectiveSignalIndex);
+
+        effectiveSignalIndex++;
+    }
+    return cache;
+};
 
 template <typename ObjectContainer>
 inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::buildMetaObjectRecursively(int objectIndex, const QQmlBindingInstantiationContext &context, VMEMetaObjectIsRequired isVMERequired)
@@ -483,27 +780,23 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
         int objectIndex, const CompiledObject *obj,
         const QQmlPropertyCache::ConstPtr &baseTypeCache)
 {
-    QQmlPropertyCache::Ptr cache = baseTypeCache->copyAndReserve(
-            obj->propertyCount() + obj->aliasCount(),
-            obj->functionCount() + obj->propertyCount() + obj->aliasCount() + obj->signalCount(),
-            obj->signalCount() + obj->propertyCount() + obj->aliasCount(),
-            obj->enumCount());
+    const auto dynamicClassName = [this](int objectIndex, const auto &baseTypeCache) -> QByteArray {
+        const auto isComponentRoot = objectIndex == 0 /*root object*/
+                || objectIndex == int(currentRoot) /*root object of IC*/;
+        if (isComponentRoot && !typeClassName.isEmpty()) {
+            return typeClassName;
+        }
+        return QByteArray(QQmlMetaObject(baseTypeCache).className())
+                .append("_QML_")
+                .append(QByteArray::number(classIndexCounter.fetchAndAddRelaxed(1)));
+    };
 
-    propertyCaches->setOwn(objectIndex, cache);
-    propertyCaches->setNeedsVMEMetaObject(objectIndex);
-
-    QByteArray newClassName;
-
-    if (objectIndex == /*root object*/0 || int(currentRoot) == objectIndex) {
-        newClassName = typeClassName;
+    const auto cacheOrError =
+            tryDeriveCacheFrom(obj, baseTypeCache, dynamicClassName(objectIndex, baseTypeCache));
+    if (std::holds_alternative<QQmlError>(cacheOrError)) {
+        return std::get<QQmlError>(cacheOrError);
     }
-    if (newClassName.isEmpty()) {
-        newClassName = QQmlMetaObject(baseTypeCache).className();
-        newClassName.append("_QML_");
-        newClassName.append(QByteArray::number(classIndexCounter.fetchAndAddRelaxed(1)));
-    }
-
-    cache->_dynamicClassName = newClassName;
+    auto cache = std::get<QQmlPropertyCache::Ptr>(cacheOrError);
 
     using ListPropertyAssignBehavior = typename ObjectContainer::ListPropertyAssignBehavior;
     switch (objectContainer->listPropertyAssignBehavior()) {
@@ -517,282 +810,14 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
         break;
     }
 
-    QQmlPropertyResolver resolver(baseTypeCache);
-
-    auto p = obj->propertiesBegin();
-    auto pend = obj->propertiesEnd();
-    for ( ; p != pend; ++p) {
-        bool notInRevision = false;
-        const QQmlPropertyData *d = resolver.property(stringAt(p->nameIndex()), &notInRevision);
-        if (d && d->isFinal())
-            return qQmlCompileError(p->location, QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
-    }
-
-    auto a = obj->aliasesBegin();
-    auto aend = obj->aliasesEnd();
-    for ( ; a != aend; ++a) {
-        bool notInRevision = false;
-        const QQmlPropertyData *d = resolver.property(stringAt(a->nameIndex()), &notInRevision);
-        if (d && d->isFinal())
-            return qQmlCompileError(a->location, QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
-    }
-
-    int effectivePropertyIndex = cache->propertyIndexCacheStart;
-    int effectiveMethodIndex = cache->methodIndexCacheStart;
-
-    // For property change signal override detection.
-    // We prepopulate a set of signal names which already exist in the object,
-    // and throw an error if there is a signal/method defined as an override.
-    // TODO: Remove AllowOverride once we can. No override should be allowed.
-    enum class AllowOverride { No, Yes };
-    QHash<QString, AllowOverride> seenSignals {
-        { QStringLiteral("destroyed"), AllowOverride::No },
-        { QStringLiteral("parentChanged"), AllowOverride::No },
-        { QStringLiteral("objectNameChanged"), AllowOverride::No }
-    };
-    const QQmlPropertyCache *parentCache = cache.data();
-    while ((parentCache = parentCache->parent().data())) {
-        if (int pSigCount = parentCache->signalCount()) {
-            int pSigOffset = parentCache->signalOffset();
-            for (int i = pSigOffset; i < pSigCount; ++i) {
-                const QQmlPropertyData *currPSig = parentCache->signal(i);
-                // XXX TODO: find a better way to get signal name from the property data :-/
-                for (QQmlPropertyCache::StringCache::ConstIterator iter = parentCache->stringCache.begin();
-                     iter != parentCache->stringCache.end(); ++iter) {
-                    if (currPSig == (*iter).second) {
-                        if (currPSig->isOverridableSignal()) {
-                            const qsizetype oldSize = seenSignals.size();
-                            AllowOverride &entry = seenSignals[iter.key()];
-                            if (seenSignals.size() != oldSize)
-                                entry = AllowOverride::Yes;
-                        } else {
-                            seenSignals[iter.key()] = AllowOverride::No;
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // Set up notify signals for properties - first normal, then alias
-    p = obj->propertiesBegin();
-    pend = obj->propertiesEnd();
-    for (  ; p != pend; ++p) {
-        auto flags = QQmlPropertyData::defaultSignalFlags();
-
-        const QString changedSigName =
-                QQmlSignalNames::propertyNameToChangedSignalName(stringAt(p->nameIndex()));
-        seenSignals[changedSigName] = AllowOverride::No;
-
-        cache->appendSignal(changedSigName, flags, effectiveMethodIndex++);
-    }
-
-    a = obj->aliasesBegin();
-    aend = obj->aliasesEnd();
-    for ( ; a != aend; ++a) {
-        auto flags = QQmlPropertyData::defaultSignalFlags();
-
-        const QString changedSigName =
-                QQmlSignalNames::propertyNameToChangedSignalName(stringAt(a->nameIndex()));
-        seenSignals[changedSigName] = AllowOverride::No;
-
-        cache->appendSignal(changedSigName, flags, effectiveMethodIndex++);
-    }
-
-    auto e = obj->enumsBegin();
-    auto eend = obj->enumsEnd();
-    for ( ; e != eend; ++e) {
-        const int enumValueCount = e->enumValueCount();
-        QVector<QQmlEnumValue> values;
-        values.reserve(enumValueCount);
-
-        auto enumValue = e->enumValuesBegin();
-        auto end = e->enumValuesEnd();
-        for ( ; enumValue != end; ++enumValue)
-            values.append(QQmlEnumValue(stringAt(enumValue->nameIndex), enumValue->value));
-
-        cache->appendEnum(stringAt(e->nameIndex), values);
-    }
-
-    // Dynamic signals
-    auto s = obj->signalsBegin();
-    auto send = obj->signalsEnd();
-    for ( ; s != send; ++s) {
-        const int paramCount = s->parameterCount();
-
-        QList<QByteArray> names;
-        names.reserve(paramCount);
-        QVarLengthArray<QMetaType, 10> paramTypes(paramCount);
-
-        if (paramCount) {
-
-            int i = 0;
-            auto param = s->parametersBegin();
-            auto end = s->parametersEnd();
-            for ( ; param != end; ++param, ++i) {
-                names.append(stringAt(param->nameIndex).toUtf8());
-
-                QString customTypeName;
-                QMetaType type = metaTypeForParameter(param->type, &customTypeName);
-                if (!type.isValid())
-                    return qQmlCompileError(s->location, QQmlPropertyCacheCreatorBase::tr("Invalid signal parameter type: %1").arg(customTypeName));
-
-                paramTypes[i] = type;
-            }
-        }
-
-        auto flags = QQmlPropertyData::defaultSignalFlags();
-        if (paramCount)
-            flags.setHasArguments(true);
-
-        QString signalName = stringAt(s->nameIndex);
-        const auto it = seenSignals.find(signalName);
-        if (it == seenSignals.end()) {
-            seenSignals[signalName] = AllowOverride::No;
-        } else {
-            // TODO: Remove the AllowOverride::Yes branch once we can.
-            QQmlError message = qQmlCompileError(
-                    s->location,
-                    QQmlPropertyCacheCreatorBase::tr(
-                            "Duplicate signal name: "
-                            "invalid override of property change signal or superclass signal"));
-            switch (*it) {
-            case AllowOverride::No:
-                return message;
-            case AllowOverride::Yes:
-                message.setUrl(objectContainer->url());
-                qCWarning(invalidOverride).noquote() << message.toString();
-                *it = AllowOverride::No; // No further overriding allowed.
-                break;
-            }
-        }
-        cache->appendSignal(signalName, flags, effectiveMethodIndex++,
-                            paramCount?paramTypes.constData():nullptr, names);
-    }
-
-
-    // Dynamic slots
-    auto function = objectContainer->objectFunctionsBegin(obj);
-    auto fend = objectContainer->objectFunctionsEnd(obj);
-    for ( ; function != fend; ++function) {
-        auto flags = QQmlPropertyData::defaultSlotFlags();
-
-        const QString slotName = stringAt(function->nameIndex);
-        const auto it = seenSignals.constFind(slotName);
-        if (it != seenSignals.constEnd()) {
-            // TODO: Remove the AllowOverride::Yes branch once we can.
-            QQmlError message = qQmlCompileError(
-                function->location,
-                QQmlPropertyCacheCreatorBase::tr(
-                        "Duplicate method name: "
-                        "invalid override of property change signal or superclass signal"));
-            switch (*it) {
-            case AllowOverride::No:
-                return message;
-            case AllowOverride::Yes:
-                message.setUrl(objectContainer->url());
-                qCWarning(invalidOverride).noquote() << message.toString();
-                break;
-            }
-        }
-        // Note: we don't append slotName to the seenSignals list, since we don't
-        // protect against overriding change signals or methods with properties.
-
-        QList<QByteArray> parameterNames;
-        QVector<QMetaType> parameterTypes;
-        auto formal = function->formalsBegin();
-        auto end = function->formalsEnd();
-        for ( ; formal != end; ++formal) {
-            flags.setHasArguments(true);
-            parameterNames << stringAt(formal->nameIndex).toUtf8();
-            QMetaType type = metaTypeForParameter(formal->type);
-            if (!type.isValid())
-                type = QMetaType::fromType<QVariant>();
-            parameterTypes << type;
-        }
-
-        QMetaType returnType = metaTypeForParameter(function->returnType);
-        if (!returnType.isValid())
-            returnType = QMetaType::fromType<QVariant>();
-
-        cache->appendMethod(slotName, flags, effectiveMethodIndex++, returnType, parameterNames, parameterTypes);
-    }
-
-
-    // Dynamic properties
-    int effectiveSignalIndex = cache->signalHandlerIndexCacheStart;
-    int propertyIdx = 0;
-    p = obj->propertiesBegin();
-    pend = obj->propertiesEnd();
-    for ( ; p != pend; ++p, ++propertyIdx) {
-        QMetaType propertyType;
-        QTypeRevision propertyTypeVersion = QTypeRevision::zero();
-        QQmlPropertyData::Flags propertyFlags;
-
-        const QV4::CompiledData::CommonType type = p->commonType();
-
-        if (p->isList())
-            propertyFlags.setType(QQmlPropertyData::Flags::QListType);
-        else if (type == QV4::CompiledData::CommonType::Var)
-            propertyFlags.setType(QQmlPropertyData::Flags::VarPropertyType);
-
-        if (type != QV4::CompiledData::CommonType::Invalid) {
-            propertyType = p->isList()
-                    ? listTypeForPropertyType(type)
-                    : metaTypeForPropertyType(type);
-        } else {
-            Q_ASSERT(!p->isCommonType());
-
-            QQmlType qmltype;
-            bool selfReference = false;
-            QList<QQmlError> errors;
-            const QString typeName = stringAt(p->commonTypeOrTypeNameIndex());
-            if (!imports->resolveType(
-                        typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
-                        QQmlType::AnyRegistrationType, &selfReference)) {
-                Q_ASSERT(!errors.isEmpty());
-                return qQmlCompileError(p->location, typeName + u' ' + errors[0].description());
-            }
-
-            Q_ASSERT(qmltype.isValid());
-            if (p->isList())
-                propertyType = qmltype.qListTypeId();
-            else
-                propertyType = qmltype.typeId();
-
-            if (!qmltype.isComposite() && !qmltype.isInlineComponentType())
-                propertyTypeVersion = qmltype.version();
-
-            if (p->isList())
-                propertyFlags.setType(QQmlPropertyData::Flags::QListType);
-            else if (propertyType.flags().testFlag(QMetaType::PointerToQObject))
-                propertyFlags.setType(QQmlPropertyData::Flags::QObjectDerivedType);
-        }
-
-        if (!p->isReadOnly() && !propertyType.flags().testFlag(QMetaType::IsQmlList))
-            propertyFlags.setIsWritable(true);
-        if (p->isFinal())
-            propertyFlags.setIsFinal(true);
-
-
-        QString propertyName = stringAt(p->nameIndex());
-        if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
-            cache->_defaultPropertyName = propertyName;
-        cache->appendProperty(propertyName, propertyFlags, effectivePropertyIndex++,
-                              propertyType, propertyTypeVersion, effectiveSignalIndex);
-
-        effectiveSignalIndex++;
-    }
-
-    QQmlError noError;
-    return noError;
+    propertyCaches->setOwn(objectIndex, cache);
+    propertyCaches->setNeedsVMEMetaObject(objectIndex);
+    return QQmlError();
 }
 
 template <typename ObjectContainer>
 inline QMetaType QQmlPropertyCacheCreator<ObjectContainer>::metaTypeForParameter(
-    const QV4::CompiledData::ParameterType &param, QString *customTypeName)
+        const QV4::CompiledData::ParameterType &param, QString *customTypeName) const
 {
     const quint32 typeId = param.typeNameIndexOrCommonType();
     if (param.indexIsCommonType()) {

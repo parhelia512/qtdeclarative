@@ -4,6 +4,7 @@
 #include "qv4qobjectwrapper_p.h"
 
 #include <private/qjsvalue_p.h>
+#include <private/qjsmanagedvalue_p.h>
 
 #include <private/qqmlbinding_p.h>
 #include <private/qqmlbuiltinfunctions_p.h>
@@ -1636,6 +1637,7 @@ private:
                                   QString,
                                   QList<QObject *>,
                                   QJSValue,
+                                  QJSManagedValue,
                                   QJsonArray,
                                   QJsonObject,
                                   QJsonValue>];
@@ -1649,6 +1651,7 @@ private:
         QVariant *qvariantPtr;
         QList<QObject *> *qlistPtr;
         QJSValue *qjsValuePtr;
+        QJSManagedValue *qjsManagedValuePtr;
         QJsonArray *jsonArrayPtr;
         QJsonObject *jsonObjectPtr;
         QJsonValue *jsonValuePtr;
@@ -2303,6 +2306,11 @@ void CallArgument::cleanup()
             break;
         }
 
+        if (type == qMetaTypeId<QJSManagedValue>()) {
+            qjsManagedValuePtr->~QJSManagedValue();
+            break;
+        }
+
         if (type == qMetaTypeId<QList<QObject *> >()) {
             qlistPtr->~QList<QObject *>();
             break;
@@ -2380,6 +2388,11 @@ void CallArgument::initAsType(QMetaType metaType)
     default: {
         if (metaType == QMetaType::fromType<QJSValue>()) {
             qjsValuePtr = new (&allocData) QJSValue();
+            break;
+        }
+
+        if (metaType == QMetaType::fromType<QJSManagedValue>()) {
+            qjsManagedValuePtr = new (&allocData) QJSManagedValue();
             break;
         }
 
@@ -2496,6 +2509,15 @@ bool CallArgument::fromValue(QMetaType metaType, ExecutionEngine *engine, const 
             Scope scope(engine);
             ScopedValue v(scope, value);
             QJSValuePrivate::setValue(qjsValuePtr, v);
+            return true;
+        }
+
+        if (type == qMetaTypeId<QJSManagedValue>()) {
+            Scope scope(engine);
+            ScopedValue v(scope, value);
+            qjsManagedValuePtr = new (&allocData) QJSManagedValue;
+            // This points to a JS heap object that cannot be immutable. const_cast-ing is fine here.
+            *QJSManagedValuePrivate::memberPtr(qjsManagedValuePtr) = const_cast<Value *>(&value);
             return true;
         }
 
@@ -2644,6 +2666,9 @@ ReturnedValue CallArgument::toValue(ExecutionEngine *engine)
         QJSValuePrivate::manageStringOnV4Heap(engine, qjsValuePtr);
         return QJSValuePrivate::asReturnedValue(qjsValuePtr);
     }
+
+    if (type == qMetaTypeId<QJSManagedValue>())
+        return QJSManagedValuePrivate::member(qjsManagedValuePtr)->asReturnedValue();
 
     if (type == qMetaTypeId<QList<QObject *> >()) {
         // XXX Can this be made more by using Array as a prototype and implementing

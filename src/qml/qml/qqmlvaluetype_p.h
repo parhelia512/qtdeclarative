@@ -357,7 +357,7 @@ public:
     };
     Q_ENUM(Type)
 
-    Q_INVOKABLE qreal valueForProgress(Type type, qreal progress) const;
+    Q_INVOKABLE qreal valueForProgress(QQmlEasing::Type type, qreal progress) const;
 };
 
 struct Q_QML_EXPORT QQmlEasingValueType : private QEasingCurve

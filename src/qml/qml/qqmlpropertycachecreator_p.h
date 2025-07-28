@@ -237,6 +237,23 @@ protected:
 
     QString stringAt(int index) const { return objectContainer->stringAt(index); }
 
+private:
+    struct PropertyType
+    {
+        QMetaType metaType;
+        QTypeRevision revision = QTypeRevision::zero();
+        QV4::CompiledData::CommonType commonType = QV4::CompiledData::CommonType::Invalid;
+    };
+
+    using PropertyTypeOrError = std::variant<PropertyType, QQmlError>;
+    [[nodiscard]] PropertyTypeOrError
+    tryResolvePropertyType(const QV4::CompiledData::Property &propertyIR) const;
+
+    [[nodiscard]] QQmlPropertyData::Flags
+    propertyDataFlags(const QV4::CompiledData::Property &propertyIR,
+                      const PropertyType &resolvedPropertyType) const;
+
+protected:
     QQmlTypeLoader *const typeLoader;
     const ObjectContainer * const objectContainer;
     const QQmlImports * const imports;
@@ -538,59 +555,20 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
     p = obj->propertiesBegin();
     pend = obj->propertiesEnd();
     for (; p != pend; ++p, ++propertyIdx) {
-        QMetaType propertyType;
-        QTypeRevision propertyTypeVersion = QTypeRevision::zero();
-        QQmlPropertyData::Flags propertyFlags;
-
-        const QV4::CompiledData::CommonType type = p->commonType();
-
-        if (p->isList())
-            propertyFlags.setType(QQmlPropertyData::Flags::QListType);
-        else if (type == QV4::CompiledData::CommonType::Var)
-            propertyFlags.setType(QQmlPropertyData::Flags::VarPropertyType);
-
-        if (type != QV4::CompiledData::CommonType::Invalid) {
-            propertyType =
-                    p->isList() ? listTypeForPropertyType(type) : metaTypeForPropertyType(type);
-        } else {
-            Q_ASSERT(!p->isCommonType());
-
-            QQmlType qmltype;
-            bool selfReference = false;
-            QList<QQmlError> errors;
-            const QString typeName = stringAt(p->commonTypeOrTypeNameIndex());
-            if (!imports->resolveType(typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
-                                      QQmlType::AnyRegistrationType, &selfReference)) {
-                Q_ASSERT(!errors.isEmpty());
-                return qQmlCompileError(p->location, typeName + u' ' + errors[0].description());
-            }
-
-            Q_ASSERT(qmltype.isValid());
-            if (p->isList())
-                propertyType = qmltype.qListTypeId();
-            else
-                propertyType = qmltype.typeId();
-
-            if (!qmltype.isComposite() && !qmltype.isInlineComponentType())
-                propertyTypeVersion = qmltype.version();
-
-            if (p->isList())
-                propertyFlags.setType(QQmlPropertyData::Flags::QListType);
-            else if (propertyType.flags().testFlag(QMetaType::PointerToQObject))
-                propertyFlags.setType(QQmlPropertyData::Flags::QObjectDerivedType);
+        const auto maybeResolvedPropertyType = tryResolvePropertyType(*p);
+        if (const auto *error = std::get_if<QQmlError>(&maybeResolvedPropertyType)) {
+            return *error;
         }
-
-        if (!p->isReadOnly() && !propertyType.flags().testFlag(QMetaType::IsQmlList))
-            propertyFlags.setIsWritable(true);
-        if (p->isFinal())
-            propertyFlags.setIsFinal(true);
+        const auto resolvedPropertyType =
+                std::get<PropertyType>(std::move(maybeResolvedPropertyType));
 
         QString propertyName = stringAt(p->nameIndex());
         if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
             cache->_defaultPropertyName = propertyName;
-        const auto overrideResult =
-                cache->appendProperty(propertyName, propertyFlags, effectivePropertyIndex++,
-                                      propertyType, propertyTypeVersion, effectiveSignalIndex);
+
+        const auto overrideResult = cache->appendProperty(
+                propertyName, propertyDataFlags(*p, resolvedPropertyType), effectivePropertyIndex++,
+                resolvedPropertyType.metaType, resolvedPropertyType.revision, effectiveSignalIndex);
         if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
             return qQmlCompileError(
                     p->location,
@@ -776,10 +754,10 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
 
     const auto cacheOrError =
             tryDeriveCacheFrom(obj, baseTypeCache, dynamicClassName(objectIndex, baseTypeCache));
-    if (std::holds_alternative<QQmlError>(cacheOrError)) {
-        return std::get<QQmlError>(cacheOrError);
+    if (const auto *error = std::get_if<QQmlError>(&cacheOrError)) {
+        return *error;
     }
-    auto cache = std::get<QQmlPropertyCache::Ptr>(cacheOrError);
+    auto cache = std::get<QQmlPropertyCache::Ptr>(std::move(cacheOrError));
 
     using ListPropertyAssignBehavior = typename ObjectContainer::ListPropertyAssignBehavior;
     switch (objectContainer->listPropertyAssignBehavior()) {
@@ -837,6 +815,69 @@ inline QMetaType QQmlPropertyCacheCreator<ObjectContainer>::metaTypeForParameter
     }
 
     return param.isList() ? qmltype.qListTypeId() : qmltype.typeId();
+}
+
+template <typename ObjectContainer>
+inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
+        const QV4::CompiledData::Property &propertyIR) const -> PropertyTypeOrError
+{
+    PropertyType propertyType;
+    propertyType.commonType = propertyIR.commonType();
+
+    if (propertyType.commonType != QV4::CompiledData::CommonType::Invalid) {
+        // common type
+        propertyType.metaType = propertyIR.isList()
+                ? listTypeForPropertyType(propertyType.commonType)
+                : metaTypeForPropertyType(propertyType.commonType);
+        return propertyType;
+    }
+
+    // needs to be resolved
+    Q_ASSERT(!propertyIR.isCommonType());
+    QQmlType qmltype;
+    bool selfReference = false;
+    QList<QQmlError> errors;
+    const QString typeName = stringAt(propertyIR.commonTypeOrTypeNameIndex());
+    if (!imports->resolveType(typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
+                              QQmlType::AnyRegistrationType, &selfReference)) {
+        Q_ASSERT(!errors.isEmpty());
+        return qQmlCompileError(propertyIR.location, typeName + u' ' + errors[0].description());
+    }
+
+    Q_ASSERT(qmltype.isValid());
+
+    propertyType.metaType = propertyIR.isList() ? qmltype.qListTypeId() : qmltype.typeId();
+
+    if (!qmltype.isComposite() && !qmltype.isInlineComponentType())
+        propertyType.revision = qmltype.version();
+
+    return propertyType;
+}
+
+template <typename ObjectContainer>
+inline QQmlPropertyData::Flags QQmlPropertyCacheCreator<ObjectContainer>::propertyDataFlags(
+        const QV4::CompiledData::Property &propertyIR,
+        const PropertyType &resolvedPropertyType) const
+{
+    QQmlPropertyData::Flags flags;
+
+    // set type flag
+    if (propertyIR.isList()) {
+        flags.setType(QQmlPropertyData::Flags::QListType);
+    } else if (resolvedPropertyType.commonType == QV4::CompiledData::CommonType::Var) {
+        flags.setType(QQmlPropertyData::Flags::VarPropertyType);
+    } else if (resolvedPropertyType.metaType.flags().testFlag(QMetaType::PointerToQObject)) {
+        flags.setType(QQmlPropertyData::Flags::QObjectDerivedType);
+    }
+
+    // set attributes
+    if (!propertyIR.isReadOnly()
+        && !resolvedPropertyType.metaType.flags().testFlag(QMetaType::IsQmlList))
+        flags.setIsWritable(true);
+    if (propertyIR.isFinal())
+        flags.setIsFinal(true);
+
+    return flags;
 }
 
 template <typename ObjectContainer, typename CompiledObject>

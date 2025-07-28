@@ -821,7 +821,7 @@ public:
     }
 
     CommonType commonType() const {
-        if (data.get<IsCommonTypeField>() != 0)
+        if (isCommonType())
             return CommonType(data.get<CommonTypeOrTypeNameIndexField>());
         return CommonType::Invalid;
     }

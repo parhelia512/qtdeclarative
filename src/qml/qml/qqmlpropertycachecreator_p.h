@@ -21,6 +21,7 @@
 #include <private/inlinecomponentutils_p.h>
 #include <private/qqmlsourcecoordinate_p.h>
 #include <private/qqmlsignalnames_p.h>
+#include <private/qexpected_p.h>
 
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qscopedvaluerollback.h>
@@ -211,7 +212,6 @@ public:
      */
     QQmlError verifyNoICCycle();
 
-    using PropertyCacheOrError = std::variant<QQmlPropertyCache::Ptr, QQmlError>;
     /*!
         \internal
         Tries to creates a property cache for the CompiledObject based on the cache of a base type.
@@ -219,7 +219,7 @@ public:
 
         \note: Aliases are added separately in appendAliasToPropertyCache
       */
-    [[nodiscard]] PropertyCacheOrError
+    [[nodiscard]] q23::expected<QQmlPropertyCache::Ptr, QQmlError>
     tryDeriveCacheFrom(const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
                        QByteArray dynamicClassName = QByteArray()) const;
 
@@ -245,8 +245,7 @@ private:
         QV4::CompiledData::CommonType commonType = QV4::CompiledData::CommonType::Invalid;
     };
 
-    using PropertyTypeOrError = std::variant<PropertyType, QQmlError>;
-    [[nodiscard]] PropertyTypeOrError
+    [[nodiscard]] q23::expected<PropertyType, QQmlError>
     tryResolvePropertyType(const QV4::CompiledData::Property &propertyIR) const;
 
     [[nodiscard]] QQmlPropertyData::Flags
@@ -352,9 +351,10 @@ QQmlPropertyCacheCreator<ObjectContainer>::buildMetaObjectsIncrementally()
 }
 
 template <typename ObjectContainer>
-auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
+q23::expected<QQmlPropertyCache::Ptr, QQmlError>
+QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
         const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
-        QByteArray dynamicClassName) const -> PropertyCacheOrError
+        QByteArray dynamicClassName) const
 {
     QQmlPropertyCache::Ptr cache = baseTypeCache->copyAndReserve(
             obj->propertyCount() + obj->aliasCount(),
@@ -463,10 +463,10 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
                 QString customTypeName;
                 QMetaType type = metaTypeForParameter(param->type, &customTypeName);
                 if (!type.isValid())
-                    return qQmlCompileError(
+                    return q23::make_unexpected(qQmlCompileError(
                             s->location,
                             QQmlPropertyCacheCreatorBase::tr("Invalid signal parameter type: %1")
-                                    .arg(customTypeName));
+                                    .arg(customTypeName)));
 
                 paramTypes[i] = type;
             }
@@ -489,7 +489,7 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
                             "invalid override of property change signal or superclass signal"));
             switch (*it) {
             case AllowOverride::No:
-                return message;
+                return q23::make_unexpected(std::move(message));
             case AllowOverride::Yes:
                 message.setUrl(objectContainer->url());
                 qCWarning(invalidOverride).noquote() << message.toString();
@@ -518,7 +518,7 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
                             "invalid override of property change signal or superclass signal"));
             switch (*it) {
             case AllowOverride::No:
-                return message;
+                return q23::make_unexpected(std::move(message));
             case AllowOverride::Yes:
                 message.setUrl(objectContainer->url());
                 qCWarning(invalidOverride).noquote() << message.toString();
@@ -555,25 +555,24 @@ auto QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
     p = obj->propertiesBegin();
     pend = obj->propertiesEnd();
     for (; p != pend; ++p, ++propertyIdx) {
-        const auto maybeResolvedPropertyType = tryResolvePropertyType(*p);
-        if (const auto *error = std::get_if<QQmlError>(&maybeResolvedPropertyType)) {
-            return *error;
+        const auto propertyTypeOrError = tryResolvePropertyType(*p);
+        if (!propertyTypeOrError.has_value()) {
+            return q23::make_unexpected(propertyTypeOrError.error());
         }
-        const auto resolvedPropertyType =
-                std::get<PropertyType>(std::move(maybeResolvedPropertyType));
+        const auto &propertyType = propertyTypeOrError.value();
 
         QString propertyName = stringAt(p->nameIndex());
         if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
             cache->_defaultPropertyName = propertyName;
 
         const auto overrideResult = cache->appendProperty(
-                propertyName, propertyDataFlags(*p, resolvedPropertyType), effectivePropertyIndex++,
-                resolvedPropertyType.metaType, resolvedPropertyType.revision, effectiveSignalIndex);
+                propertyName, propertyDataFlags(*p, propertyType), effectivePropertyIndex++,
+                propertyType.metaType, propertyType.revision, effectiveSignalIndex);
         if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
-            return qQmlCompileError(
+            return q23::make_unexpected(qQmlCompileError(
                     p->location,
                     // TODO improve error message
-                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property")));
         }
         effectiveSignalIndex++;
     }
@@ -754,10 +753,10 @@ inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::createMetaObject(
 
     const auto cacheOrError =
             tryDeriveCacheFrom(obj, baseTypeCache, dynamicClassName(objectIndex, baseTypeCache));
-    if (const auto *error = std::get_if<QQmlError>(&cacheOrError)) {
-        return *error;
+    if (!cacheOrError.has_value()) {
+        return cacheOrError.error();
     }
-    auto cache = std::get<QQmlPropertyCache::Ptr>(std::move(cacheOrError));
+    auto &cache = cacheOrError.value();
 
     using ListPropertyAssignBehavior = typename ObjectContainer::ListPropertyAssignBehavior;
     switch (objectContainer->listPropertyAssignBehavior()) {
@@ -819,7 +818,8 @@ inline QMetaType QQmlPropertyCacheCreator<ObjectContainer>::metaTypeForParameter
 
 template <typename ObjectContainer>
 inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
-        const QV4::CompiledData::Property &propertyIR) const -> PropertyTypeOrError
+        const QV4::CompiledData::Property &propertyIR) const
+        -> q23::expected<PropertyType, QQmlError>
 {
     PropertyType propertyType;
     propertyType.commonType = propertyIR.commonType();
@@ -841,7 +841,8 @@ inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
     if (!imports->resolveType(typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
                               QQmlType::AnyRegistrationType, &selfReference)) {
         Q_ASSERT(!errors.isEmpty());
-        return qQmlCompileError(propertyIR.location, typeName + u' ' + errors[0].description());
+        return q23::make_unexpected(
+                qQmlCompileError(propertyIR.location, typeName + u' ' + errors[0].description()));
     }
 
     Q_ASSERT(qmltype.isValid());

@@ -20,8 +20,6 @@ qt_internal_add_qml_module(QuickControls2Impl
         qquickchecklabel_p.h
         qquickclippedtext.cpp
         qquickclippedtext_p.h
-        qquickcolor.cpp
-        qquickcolor_p.h
         qquickcolorimage.cpp
         qquickcolorimage_p.h
         qquickiconimage.cpp

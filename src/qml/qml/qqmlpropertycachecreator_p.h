@@ -223,6 +223,20 @@ public:
     tryDeriveCacheFrom(const CompiledObject *obj, const QQmlPropertyCache::ConstPtr &baseTypeCache,
                        QByteArray dynamicClassName = QByteArray()) const;
 
+    /*!
+        \internal
+        Tries to create a QQmlPropertyData based on IR of a property.
+        This involves property type resolution and property flags creation
+
+        \a notifyIndex MUST be in the signal index range (see QObjectPrivate::signalIndex()).
+        This is different from QMetaMethod::methodIndex()
+
+        return error in case of failed type resolution
+    */
+    [[nodiscard]] q23::expected<QQmlPropertyData, QQmlError>
+    tryCreateQQmlPropertyData(const QV4::CompiledData::Property &propertyIR, int coreIndex,
+                              int notifyIndex) const;
+
 protected:
     enum class VMEMetaObjectIsRequired { Maybe, Always };
 
@@ -248,9 +262,10 @@ private:
     [[nodiscard]] q23::expected<PropertyType, QQmlError>
     tryResolvePropertyType(const QV4::CompiledData::Property &propertyIR) const;
 
-    [[nodiscard]] QQmlPropertyData::Flags
+    // can be made a free function
+    [[nodiscard]] static QQmlPropertyData::Flags
     propertyDataFlags(const QV4::CompiledData::Property &propertyIR,
-                      const PropertyType &resolvedPropertyType) const;
+                      const PropertyType &resolvedPropertyType);
 
 protected:
     QQmlTypeLoader *const typeLoader;
@@ -362,7 +377,6 @@ QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
             obj->signalCount() + obj->propertyCount() + obj->aliasCount(), obj->enumCount());
     cache->_dynamicClassName = std::move(dynamicClassName);
 
-    int effectivePropertyIndex = cache->propertyIndexCacheStart;
     int effectiveMethodIndex = cache->methodIndexCacheStart;
 
     // For property change signal override detection.
@@ -550,34 +564,52 @@ QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
     }
 
     // Dynamic properties
-    int effectiveSignalIndex = cache->signalHandlerIndexCacheStart;
-    int propertyIdx = 0;
+    int propertyIndex = cache->propertyIndexCacheStart;
+    int notifyIndex = cache->signalHandlerIndexCacheStart;
+    int objPropertyIdx = 0;
     p = obj->propertiesBegin();
     pend = obj->propertiesEnd();
-    for (; p != pend; ++p, ++propertyIdx) {
-        const auto propertyTypeOrError = tryResolvePropertyType(*p);
-        if (!propertyTypeOrError.has_value()) {
-            return q23::make_unexpected(propertyTypeOrError.error());
+    for (; p != pend; ++p, ++objPropertyIdx, propertyIndex++, notifyIndex++) {
+        auto propertyDataOrError = tryCreateQQmlPropertyData(*p, propertyIndex, notifyIndex);
+        if (!propertyDataOrError.has_value()) {
+            return q23::make_unexpected(propertyDataOrError.error());
         }
-        const auto &propertyType = propertyTypeOrError.value();
 
         QString propertyName = stringAt(p->nameIndex());
-        if (!obj->hasAliasAsDefaultProperty() && propertyIdx == obj->indexOfDefaultPropertyOrAlias)
+        if (!obj->hasAliasAsDefaultProperty()
+            && objPropertyIdx == obj->indexOfDefaultPropertyOrAlias)
             cache->_defaultPropertyName = propertyName;
 
-        const auto overrideResult = cache->appendProperty(
-                propertyName, propertyDataFlags(*p, propertyType), effectivePropertyIndex++,
-                propertyType.metaType, propertyType.revision, effectiveSignalIndex);
-        if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
+        if (cache->doAppendPropertyData(propertyName, std::move(propertyDataOrError).value())
+            == QQmlPropertyCache::OverrideResult::InvalidOverride) {
             return q23::make_unexpected(qQmlCompileError(
                     p->location,
                     // TODO improve error message
                     QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property")));
         }
-        effectiveSignalIndex++;
     }
     return cache;
 };
+
+template <typename ObjectContainer>
+q23::expected<QQmlPropertyData, QQmlError>
+QQmlPropertyCacheCreator<ObjectContainer>::tryCreateQQmlPropertyData(
+        const QV4::CompiledData::Property &propertyIR, int coreIndex, int notifyIndex) const
+{
+    const auto propertyTypeOrError = tryResolvePropertyType(propertyIR);
+    if (!propertyTypeOrError.has_value()) {
+        return q23::make_unexpected(propertyTypeOrError.error());
+    }
+    const auto propertyType = propertyTypeOrError.value();
+
+    QQmlPropertyData propertyData;
+    propertyData.setPropType(propertyType.metaType);
+    propertyData.setCoreIndex(coreIndex);
+    propertyData.setNotifyIndex(notifyIndex);
+    propertyData.setFlags(QQmlPropertyCacheCreator::propertyDataFlags(propertyIR, propertyType));
+    propertyData.setTypeVersion(propertyType.revision);
+    return propertyData;
+}
 
 template <typename ObjectContainer>
 inline QQmlError QQmlPropertyCacheCreator<ObjectContainer>::buildMetaObjectRecursively(int objectIndex, const QQmlBindingInstantiationContext &context, VMEMetaObjectIsRequired isVMERequired)
@@ -833,6 +865,8 @@ inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
     }
 
     // needs to be resolved
+    // can be extracted and passed to tryResolvePropertyType as a function object to simplify
+    // dependency injection (imports / typeLoader)
     Q_ASSERT(!propertyIR.isCommonType());
     QQmlType qmltype;
     bool selfReference = false;
@@ -857,8 +891,7 @@ inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
 
 template <typename ObjectContainer>
 inline QQmlPropertyData::Flags QQmlPropertyCacheCreator<ObjectContainer>::propertyDataFlags(
-        const QV4::CompiledData::Property &propertyIR,
-        const PropertyType &resolvedPropertyType) const
+        const QV4::CompiledData::Property &propertyIR, const PropertyType &resolvedPropertyType)
 {
     QQmlPropertyData::Flags flags;
 

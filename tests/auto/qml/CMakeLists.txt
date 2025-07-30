@@ -122,6 +122,7 @@ if(QT_FEATURE_private_tests)
     add_subdirectory(qqmlopenmetaobject)
     add_subdirectory(qqmlproperty)
     add_subdirectory(qqmlpropertycache)
+    add_subdirectory(qqmlpropertycachecreator)
     add_subdirectory(qqmlpropertymap)
 # special case begin
     if (TARGET Qt::Sql)

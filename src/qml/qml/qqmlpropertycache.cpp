@@ -205,25 +205,6 @@ QQmlPropertyCache::Ptr QQmlPropertyCache::copyAndReserve(
     return rv;
 }
 
-/*! \internal
-
-    \a notifyIndex MUST be in the signal index range (see QObjectPrivate::signalIndex()).
-    This is different from QMetaMethod::methodIndex().
-*/
-QQmlPropertyCache::OverrideResult
-QQmlPropertyCache::appendProperty(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
-                                  QMetaType propType, QTypeRevision version, int notifyIndex)
-{
-    QQmlPropertyData data;
-    data.setPropType(propType);
-    data.setCoreIndex(coreIndex);
-    data.setNotifyIndex(notifyIndex);
-    data.setFlags(flags);
-    data.setTypeVersion(version);
-
-    return doAppendPropertyData(name, std::move(data));
-}
-
 QQmlPropertyCache::OverrideResult
 QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
                                QMetaType propType, QTypeRevision version, int notifyIndex,

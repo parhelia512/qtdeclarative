@@ -153,8 +153,6 @@ public:
             int propertyCount, int methodCount, int signalCount, int enumCount) const;
 
     enum OverrideResult { NoOverride, InvalidOverride, ValidOverride };
-    OverrideResult appendProperty(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
-                                  QMetaType propType, QTypeRevision revision, int notifyIndex);
     OverrideResult appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
                                QMetaType propType, QTypeRevision version, int notifyIndex,
                                int encodedTargetIndex);
@@ -302,6 +300,7 @@ private:
         return handleOverride(name, data, findNamedProperty(name));
     }
 
+    // TODO consider making public
     OverrideResult doAppendPropertyData(const QString &name, QQmlPropertyData &&data)
     {
         QQmlPropertyData *old = findNamedProperty(name);

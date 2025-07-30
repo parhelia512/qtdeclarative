@@ -128,10 +128,18 @@ void HeuristicContextProperties::collectFromDirs(const QList<QString> &dirs)
     arguments.append(dirs);
     grep.start("grep"_L1, arguments);
     grep.waitForFinished();
-    if (grep.exitStatus() == QProcess::NormalExit && grep.exitCode() == 0) {
-        const QString output = QString::fromUtf8(grep.readAllStandardOutput());
-        parseGrepOutput(output);
-        return;
+    if (grep.exitStatus() == QProcess::NormalExit) {
+        switch (grep.exitCode()) {
+        case 0: { // success
+            const QString output = QString::fromUtf8(grep.readAllStandardOutput());
+            parseGrepOutput(output);
+            return;
+        }
+        case 1: // success but no context properties found
+            return;
+        default: // grep error
+            break;
+        }
     }
 #endif
     grepFallback(dirs);

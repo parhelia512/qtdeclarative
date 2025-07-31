@@ -1948,13 +1948,15 @@ static QQmlJS::SourceLocation sourceLocationOrDefault(const QQmlJS::SourceLocati
     return location.startLine == 0 ? QQmlJS::SourceLocation{ 0, 0, 1, 1 } : location;
 }
 
-static std::optional<Location> fallbackLocationForCppType(const QQmlJSScope::ConstPtr &type,
-                                                          const QStringList &headerLocations,
-                                                          const QQmlJS::SourceLocation &location)
+static std::optional<Location> createCppTypeLocation(const QQmlJSScope::ConstPtr &type,
+                                                     const QStringList &headerLocations,
+                                                     const QQmlJS::SourceLocation &location)
 {
     const QString filePath = findFilePathFromFileName(headerLocations, type->filePath());
-    if (filePath.isEmpty())
+    if (filePath.isEmpty()) {
+        qCWarning(QQmlLSUtilsLog) << "Couldn't find the C++ file '%1'."_L1.arg(type->filePath());
         return {};
+    }
 
     const TextPosition endPosition{ static_cast<int>(location.startLine) + 1, 1 };
     return Location{ filePath, location, endPosition };
@@ -1969,8 +1971,8 @@ static std::optional<Location> findDefinitionOfType(const QQmlJSScope::ConstPtr 
     if (scope->isComposite())
         if (const auto result = Location::tryFrom(scope->filePath(), scope->sourceLocation(), item))
             return result;
-    return fallbackLocationForCppType(scope, headerDirectories,
-                                      sourceLocationOrDefault(scope->sourceLocation()));
+    return createCppTypeLocation(scope, headerDirectories,
+                                 sourceLocationOrDefault(scope->sourceLocation()));
 }
 
 std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList &headerDirectories)
@@ -1996,6 +1998,12 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
     }
 
     case PropertyIdentifier: {
+        if (!resolvedExpression->semanticScope->isComposite()) {
+            return createCppTypeLocation(
+                    resolvedExpression->semanticScope, headerDirectories,
+                    resolvedExpression->semanticScope->property(*resolvedExpression->name)
+                            .sourceLocation());
+        }
         const DomItem ownerFile = item.goToFile(resolvedExpression->semanticScope->filePath());
         const QQmlJS::SourceLocation ownerLocation =
                 resolvedExpression->semanticScope->sourceLocation();

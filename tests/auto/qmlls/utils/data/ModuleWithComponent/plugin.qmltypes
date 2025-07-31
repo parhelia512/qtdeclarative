@@ -12,5 +12,15 @@ Module {
             name: "myValue"
             type: "int"
         }
+        Property {
+            name: "myProperty"
+            type: "int"
+            read: "myProperty"
+            write: "setMyProperty"
+            notify: "myPropertyChanged"
+            lineNumber: 12
+            index: 0
+        }
+        Signal { name: "myPropertyChanged" }
     }
 }

@@ -1979,6 +1979,15 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
     QTest::addRow("componentFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 3
                                       << 1 << componentFromCppHeaderPath << 42 << 1 << strlen("")
                                       << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("propertyFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 4
+                                     << 6 << componentFromCppHeaderPath << 12 << 1 << strlen("")
+                                     << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("propertyFromCpp2") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 5
+                                      << 47 << componentFromCppHeaderPath << 12 << 1 << strlen("")
+                                      << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("propertyFromCppInNonUserFolder")
+            << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 6 << 12 << noResultExpected
+            << 1 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
 }
 
 void tst_qmlls_utils::findDefinitionFromLocation()

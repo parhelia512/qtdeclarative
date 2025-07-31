@@ -2000,6 +2000,7 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
                                  jsIdentifier->location, item);
     }
 
+    case GroupedPropertyIdentifier:
     case PropertyIdentifier: {
         if (!resolvedExpression->semanticScope->isComposite()) {
             return createCppTypeLocation(
@@ -2072,7 +2073,6 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
     }
     case EnumeratorIdentifier:
     case EnumeratorValueIdentifier:
-    case GroupedPropertyIdentifier:
     case LambdaMethodIdentifier:
     case NotAnIdentifier:
         qCDebug(QQmlLSUtilsLog) << "QQmlLSUtils::findDefinitionOf was not implemented for type"

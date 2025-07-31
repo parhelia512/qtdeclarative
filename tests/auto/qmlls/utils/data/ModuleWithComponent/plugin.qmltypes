@@ -22,8 +22,45 @@ Module {
             index: 0
         }
         Signal { name: "myPropertyChanged" }
+        Property {
+            name: "gadget"
+            type: "myGadget"
+            read: "gadget"
+            write: "setGadget"
+            notify: "gadgetChanged"
+            lineNumber: 13
+            index: 1
+        }
+        Signal { name: "myPropertyChanged" }
+        Signal { name: "gadgetChanged" }
         Signal { name: "someSignal"; lineNumber: 654321 }
         Method { name: "mySlot"; type: "int"; lineNumber: 29 }
         Method { name: "myInvokable"; type: "int"; lineNumber: 23 }
+
+    }
+    Component {
+        file: "mycomponentfromcppheader.h"
+        lineNumber: 32
+        name: "myGadget"
+        accessSemantics: "value"
+        exports: ["ModuleWithComponent/MyGadget 1.0"]
+        isCreatable: false
+        exportMetaObjectRevisions: [256]
+        Property {
+            name: "myProperty"
+            type: "int"
+            read: "myProperty"
+            write: "setMyProperty"
+            index: 0
+            lineNumber: 37
+        }
+        Property {
+            name: "myProperty2"
+            type: "int"
+            read: "myProperty2"
+            write: "setMyProperty2"
+            index: 1
+            lineNumber: 38
+        }
     }
 }

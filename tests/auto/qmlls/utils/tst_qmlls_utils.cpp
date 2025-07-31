@@ -1998,6 +1998,20 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
     QTest::addRow("invokableFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 7
                                       << 60 << componentFromCppHeaderPath << 23 << 1 << strlen("")
                                       << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("groupedFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 8 << 8
+                                    << componentFromCppHeaderPath << 13 << 1 << strlen("")
+                                    << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("groupedFromCpp2") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 9
+                                     << 8 << componentFromCppHeaderPath << 13 << 1 << strlen("")
+                                     << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("groupedPropertyFromCpp")
+            << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 8 << 18
+            << componentFromCppHeaderPath << 37 << 1 << strlen("")
+            << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("groupedPropertyFromCpp2")
+            << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 9 << 18
+            << componentFromCppHeaderPath << 38 << 1 << strlen("")
+            << QStringList{ testFile("findDefinition"_L1) };
 
     const QString attachedHeaderPath = testFile("findDefinition/SomeIncludeFolder/attached.h"_L1);
     QTest::addRow("attachedTypeFromCpp")

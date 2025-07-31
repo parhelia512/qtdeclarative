@@ -1972,8 +1972,8 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
     }
 
     QTest::addRow("singletonFromQml") << testFile("findDefinition/UseMySingletons.qml"_L1) << 5
-                                      << 31 << testFile("findDefinition/MySingleton.qml"_L1) << 4
-                                      << 1 << strlen("Item") << noExtraBuildDir;
+                                      << 31 << testFile("ModuleWithSingleton/MySingleton.qml"_L1)
+                                      << 4 << 1 << strlen("Item") << noExtraBuildDir;
     QTest::addRow("singletonFromCpp") << testFile("findDefinition/UseMySingletons.qml"_L1) << 6
                                       << 31 << "mysingletonfromcppheader.h" << 42 << 1 << strlen("")
                                       << QStringList{ testFile("findDefinition"_L1) };

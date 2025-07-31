@@ -119,6 +119,28 @@ void tst_qqmlpropertycachecreator::tryCreateQQmlPropertyData_commonType_data()
         QTest::newRow("final property var")
                 << irProperty << expectedPropertyData << propertyDataComparator::onlyFlags;
     }
+    {
+        auto [irProperty, flags] = defaultIrPropertyAndFlags();
+        irProperty.setIsVirtual(true);
+        flags.setIsVirtual(true);
+
+        QQmlPropertyData expectedPropertyData{};
+        expectedPropertyData.setFlags(flags);
+
+        QTest::newRow("virtual property var")
+                << irProperty << expectedPropertyData << propertyDataComparator::onlyFlags;
+    }
+    {
+        auto [irProperty, flags] = defaultIrPropertyAndFlags();
+        irProperty.setIsOverride(true);
+        flags.setDoesOverride(true);
+
+        QQmlPropertyData expectedPropertyData{};
+        expectedPropertyData.setFlags(flags);
+
+        QTest::newRow("override property var")
+                << irProperty << expectedPropertyData << propertyDataComparator::onlyFlags;
+    }
 }
 
 void tst_qqmlpropertycachecreator::tryCreateQQmlPropertyData_commonType()

@@ -917,6 +917,10 @@ inline QQmlPropertyData::Flags QQmlPropertyCacheCreator<ObjectContainer>::proper
         flags.setIsWritable(true);
     if (propertyIR.isFinal())
         flags.setIsFinal(true);
+    if (propertyIR.isVirtual())
+        flags.setIsVirtual(true);
+    if (propertyIR.isOverride())
+        flags.setDoesOverride(true);
 
     return flags;
 }

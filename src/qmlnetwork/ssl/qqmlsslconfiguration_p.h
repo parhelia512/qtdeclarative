@@ -76,7 +76,9 @@ private:
     {
         return lval.m_certificateFiles == rval.m_certificateFiles
                 && lval.m_ciphers == rval.m_ciphers
+#if QT_REMOVAL_QT7_DEPRECATED_SINCE(6, 11)
                 && lval.m_sslOptions == rval.m_sslOptions
+#endif
                 && lval.m_configuration == rval.m_configuration;
     }
 

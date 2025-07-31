@@ -2014,6 +2014,14 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
     case SignalIdentifier:
     case SignalHandlerIdentifier:
     case MethodIdentifier: {
+        if (!resolvedExpression->semanticScope->isComposite()) {
+            const auto methods =
+                    resolvedExpression->semanticScope->methods(*resolvedExpression->name);
+            if (methods.isEmpty())
+                return {};
+            return createCppTypeLocation(resolvedExpression->semanticScope, headerDirectories,
+                                         methods.front().sourceLocation());
+        }
         const DomItem ownerFile = item.goToFile(resolvedExpression->semanticScope->filePath());
         const QQmlJS::SourceLocation ownerLocation =
                 resolvedExpression->semanticScope->sourceLocation();

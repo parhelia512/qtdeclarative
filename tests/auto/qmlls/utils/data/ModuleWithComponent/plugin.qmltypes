@@ -22,5 +22,8 @@ Module {
             index: 0
         }
         Signal { name: "myPropertyChanged" }
+        Signal { name: "someSignal"; lineNumber: 654321 }
+        Method { name: "mySlot"; type: "int"; lineNumber: 29 }
+        Method { name: "myInvokable"; type: "int"; lineNumber: 23 }
     }
 }

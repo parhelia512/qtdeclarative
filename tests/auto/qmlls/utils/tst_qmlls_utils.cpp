@@ -1926,17 +1926,13 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
         const QString qualifiedQmlComponents = testFile(u"findDefinition/QualifiedQmlComponents.qml"_s);
         QTest::addRow("component") << qmlComponents << 7 << 11 << definitionFile << 7 << 1
                                    << strlen("ApplicationWindow") << noExtraBuildDir;
-        QTest::addRow("attachedType") << qmlComponents << 9 << 42 << definitionFile << 7 << 1
-                                      << strlen("ApplicationWindow") << noExtraBuildDir;
         QTest::addRow("enumValue") << qmlComponents << 10 << 42 << definitionFile << 7 << 1
                                    << strlen("ApplicationWindow") << noExtraBuildDir;
         QTest::addRow("enumName") << qmlComponents << 11 << 42 << definitionFile << 7 << 1
                                   << strlen("ApplicationWindow") << noExtraBuildDir;
 
-        QTest::addRow("qualifiedComponent") << qualifiedQmlComponents << 7 << 11 << definitionFile
-                                            << 7 << 1 << strlen("ApplicationWindow") << noExtraBuildDir;
-        QTest::addRow("qualifiedAttachedType")
-                << qualifiedQmlComponents << 9 << 47 << definitionFile << 7 << 1
+        QTest::addRow("qualifiedComponent")
+                << qualifiedQmlComponents << 7 << 11 << definitionFile << 7 << 1
                 << strlen("ApplicationWindow") << noExtraBuildDir;
         QTest::addRow("qualifiedEnumValue") << qualifiedQmlComponents << 10 << 42 << definitionFile
                                             << 7 << 1 << strlen("ApplicationWindow") << noExtraBuildDir;

@@ -111,6 +111,7 @@ HelpManager::extractDocumentationForIdentifiers(const DomItem &item,
     }
     case QQmlLSUtils::SingletonIdentifier:
     case QQmlLSUtils::AttachedTypeIdentifier:
+    case QQmlLSUtils::AttachedTypeIdentifierInBindingTarget:
     case QQmlLSUtils::QmlComponentIdentifier: {
         const auto &keyword = item.field(Fields::identifier).value().toString();
         // The keyword is a qmlobject. Keyword search should be sufficient.

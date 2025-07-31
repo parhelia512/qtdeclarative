@@ -58,6 +58,9 @@ enum IdentifierType : quint8 {
     EnumeratorIdentifier,
     EnumeratorValueIdentifier,
     AttachedTypeIdentifier,
+    // qqmljsimportvisitor creates extra attached type scopes for `Type.property: ...` compared to
+    // other usages of attached types, like for example `p: Type.property`
+    AttachedTypeIdentifierInBindingTarget,
     GroupedPropertyIdentifier,
     QmlComponentIdentifier,
     QualifiedModuleIdentifier,

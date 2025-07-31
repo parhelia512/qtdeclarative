@@ -712,6 +712,7 @@ void HighlightingVisitor::highlightBySemanticAnalysis(const DomItem &item, QQmlJ
         m_highlights.addHighlight(loc, QmlHighlightKind::QmlEnumMember);
         return;
     case QQmlLSUtils::AttachedTypeIdentifier:
+    case QQmlLSUtils::AttachedTypeIdentifierInBindingTarget:
         m_highlights.addHighlight(loc, QmlHighlightKind::QmlType);
         return;
     case QQmlLSUtils::GroupedPropertyIdentifier:

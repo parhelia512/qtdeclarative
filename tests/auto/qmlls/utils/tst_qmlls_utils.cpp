@@ -2198,7 +2198,7 @@ void tst_qmlls_utils::resolveExpressionType_data()
 
         QTest::addRow("ownerOfAttachedProperty")
                 << derivedType << 29 << 6 << ResolveOwnerType << derivedType << keysLine
-                << AttachedTypeIdentifier << u"Keys"_s;
+                << AttachedTypeIdentifierInBindingTarget << u"Keys"_s;
         QTest::addRow("ownerOfAttachedProperty2")
                 << derivedType << 29 << 14 << ResolveOwnerType << qQuickKeysAttachedType << noLine
                 << SignalHandlerIdentifier << u"onBackPressed"_s;

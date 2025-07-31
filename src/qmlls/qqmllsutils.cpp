@@ -1184,7 +1184,7 @@ propertyBindingFromReferrerScope(const QQmlJSScope::ConstPtr &referrerScope, con
     }
 
     const auto typeIdentifier =
-            bindingIsAttached ? AttachedTypeIdentifier : GroupedPropertyIdentifier;
+            bindingIsAttached ? AttachedTypeIdentifierInBindingTarget : GroupedPropertyIdentifier;
 
     const auto getScope = [bindingIsAttached, binding]() -> QQmlJSScope::ConstPtr {
         if (bindingIsAttached)
@@ -2048,6 +2048,7 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
 
         return fallbackLocationForCppType(*resolvedExpression, headerDirectories);
     }
+    case AttachedTypeIdentifierInBindingTarget: // TODO
     case EnumeratorIdentifier:
     case EnumeratorValueIdentifier:
     case GroupedPropertyIdentifier:
@@ -2126,6 +2127,7 @@ static QQmlJSScope::ConstPtr expressionTypeWithDefinition(const ExpressionType &
     case EnumeratorIdentifier:
     case EnumeratorValueIdentifier:
     case AttachedTypeIdentifier:
+    case AttachedTypeIdentifierInBindingTarget:
     case GroupedPropertyIdentifier:
     case QmlComponentIdentifier:
     case LambdaMethodIdentifier:

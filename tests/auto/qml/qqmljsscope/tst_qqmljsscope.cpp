@@ -1128,6 +1128,11 @@ void tst_qqmljsscope::lineNumber()
     const auto baseFromCpp = jsscope->baseType();
     QVERIFY(baseFromCpp);
     QCOMPARE(baseFromCpp->lineNumber(), 13);
+    QCOMPARE(baseFromCpp->property("a").sourceLocation().startLine, 18);
+    QCOMPARE(baseFromCpp->methods("myInvokable").front().sourceLocation().startLine, 26);
+    QCOMPARE(baseFromCpp->enumeration("MyEnum").lineNumber(), 28);
+    QCOMPARE(baseFromCpp->methods("aChanged").front().sourceLocation().startLine, 32);
+    QCOMPARE(baseFromCpp->methods("mySlot").front().sourceLocation().startLine, 34);
 }
 
 QTEST_MAIN(tst_qqmljsscope)

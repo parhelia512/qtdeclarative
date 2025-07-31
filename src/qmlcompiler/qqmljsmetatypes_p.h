@@ -59,6 +59,7 @@ class QQmlJSMetaEnum
     QString m_alias;
     QString m_typeName;
     QSharedPointer<const QQmlJSScope> m_type;
+    int m_lineNumber = 0;
     bool m_isFlag = false;
     bool m_isScoped = false;
     bool m_isQml = false;
@@ -99,6 +100,9 @@ public:
 
     QSharedPointer<const QQmlJSScope> type() const { return m_type; }
     void setType(const QSharedPointer<const QQmlJSScope> &type) { m_type = type; }
+
+    int lineNumber() const { return m_lineNumber; }
+    void setLineNumber(int lineNumber) { m_lineNumber = lineNumber; }
 
     friend bool operator==(const QQmlJSMetaEnum &a, const QQmlJSMetaEnum &b)
     {

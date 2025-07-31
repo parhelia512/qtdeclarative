@@ -1991,12 +1991,30 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
     QTest::addRow("signalFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 7 << 34
                                    << componentFromCppHeaderPath << 654321 << 1 << strlen("")
                                    << QStringList{ testFile("findDefinition"_L1) };
+
     QTest::addRow("slotFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 7 << 46
                                  << componentFromCppHeaderPath << 29 << 1 << strlen("")
                                  << QStringList{ testFile("findDefinition"_L1) };
     QTest::addRow("invokableFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 7
                                       << 60 << componentFromCppHeaderPath << 23 << 1 << strlen("")
                                       << QStringList{ testFile("findDefinition"_L1) };
+
+    const QString attachedHeaderPath = testFile("findDefinition/SomeIncludeFolder/attached.h"_L1);
+    QTest::addRow("attachedTypeFromCpp")
+            << testFile("findDefinition/UseMyAttachedType.qml"_L1) << 5 << 11 << attachedHeaderPath
+            << 42 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("attachedPropertyFromCpp")
+            << testFile("findDefinition/UseMyAttachedType.qml"_L1) << 5 << 21 << attachedHeaderPath
+            << 88 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("attachedSignalFromCpp")
+            << testFile("findDefinition/UseMyAttachedType.qml"_L1) << 7 << 25 << attachedHeaderPath
+            << 12345 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("attachedTypeFromCpp2")
+            << testFile("findDefinition/UseMyAttachedType.qml"_L1) << 8 << 23 << attachedHeaderPath
+            << 42 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("attachedPropertyFromCpp2")
+            << testFile("findDefinition/UseMyAttachedType.qml"_L1) << 8 << 30 << attachedHeaderPath
+            << 88 << 1 << strlen("") << QStringList{ testFile("findDefinition"_L1) };
 }
 
 void tst_qmlls_utils::findDefinitionFromLocation()

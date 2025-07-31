@@ -1309,8 +1309,11 @@ resolveTypeName(const std::shared_ptr<QQmlJSTypeResolver> &resolver, const QStri
     if (fieldMemberAccessName.isEmpty() || !fieldMemberAccessName.front().isLower())
         return ExpressionType{ name, scope, QmlComponentIdentifier };
 
-    return ExpressionType{ name, options == ResolveOwnerType ? scope : scope->attachedType(),
-                           IdentifierType::AttachedTypeIdentifier };
+    if (scope->attachedType()) {
+        return ExpressionType{ name, options == ResolveOwnerType ? scope : scope->attachedType(),
+                               IdentifierType::AttachedTypeIdentifier };
+    }
+    return {};
 }
 
 static std::optional<ExpressionType> resolveFieldMemberExpressionType(const DomItem &item,
@@ -2046,6 +2049,11 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
                                  FileLocations::treeOf(domId)->info().fullRegion, domId);
     }
     case AttachedTypeIdentifier:
+        return findDefinitionOfType(resolvedExpression->semanticScope->attachedType(), item,
+                                    headerDirectories);
+    case AttachedTypeIdentifierInBindingTarget:
+        return findDefinitionOfType(resolvedExpression->semanticScope->baseType(), item,
+                                    headerDirectories);
     case QmlComponentIdentifier:
     case SingletonIdentifier:
         return findDefinitionOfType(resolvedExpression->semanticScope, item, headerDirectories);
@@ -2062,7 +2070,6 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
         }
         return {};
     }
-    case AttachedTypeIdentifierInBindingTarget: // TODO
     case EnumeratorIdentifier:
     case EnumeratorValueIdentifier:
     case GroupedPropertyIdentifier:

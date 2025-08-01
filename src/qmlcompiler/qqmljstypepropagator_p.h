@@ -201,6 +201,7 @@ private:
     };
 
     void handleUnqualifiedAccess(const QString &name, bool isMethod) const;
+    void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const;
     void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const;
     bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const;
 

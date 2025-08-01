@@ -1191,7 +1191,7 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
                                     "instead.\nNote: 'myUserCP1' assumed to be a potential context "
                                     "property "
                                     "because it is not declared as required property."_L1,
-                                    6, 22 },
+                                    7, 22 },
                            Message{ "Potential context property access detected. Context "
                                     "properties are "
                                     "discouraged in QML: use normal, required, or singleton "
@@ -1199,7 +1199,7 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
                                     "instead.\nNote: 'myUserCP2' assumed to be a potential context "
                                     "property "
                                     "because it is not declared as required property."_L1,
-                                    7, 22 },
+                                    8, 22 },
                    },
                    {
                            Message{ "Unqualified access"_L1 },

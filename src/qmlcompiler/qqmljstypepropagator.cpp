@@ -572,18 +572,18 @@ static bool shouldMentionRequiredProperties(const QQmlJSScope::ConstPtr &qmlScop
                         });
 }
 
-static void warnAboutContextPropertyUsage(const QString name,
-                                          const ContextPropertyInfo &contextPropertyInfo,
-                                          const QQmlJSScope::ConstPtr &qmlScope,
-                                          QQmlJSLogger *logger,
-                                          const QQmlJS::SourceLocation &location)
+void QQmlJSTypePropagator::handleUnqualifiedAccessAndContextProperties(const QString &name,
+                                                                       bool isMethod) const
 {
-    const auto warningMessage = [&name, &qmlScope]() {
+    if (m_contextPropertyInfo.userContextProperties.isUnqualifiedAccessDisabled(name))
+        return;
+
+    const auto warningMessage = [&name, this]() {
         QString result =
                 "Potential context property access detected."
                 " Context properties are discouraged in QML: use normal, required, or singleton properties instead."_L1;
 
-        if (shouldMentionRequiredProperties(qmlScope)) {
+        if (shouldMentionRequiredProperties(m_function->qmlScope.containedType())) {
             result.append(
                     "\nNote: '%1' assumed to be a potential context property because it is not declared as required property."_L1
                             .arg(name));
@@ -591,14 +591,16 @@ static void warnAboutContextPropertyUsage(const QString name,
         return result;
     };
 
-    if (contextPropertyInfo.userContextProperties.isOnUsageWarned(name)) {
-        logger->log(warningMessage(), qmlContextProperties, location);
+    if (m_contextPropertyInfo.userContextProperties.isOnUsageWarned(name)) {
+        m_logger->log(warningMessage(), qmlContextProperties, currentSourceLocation());
         return;
     }
 
-    // only warn if the property is using the same name as one of the context properties
+    // name is not the name of a user context property, so emit the unqualified warning.
+    handleUnqualifiedAccess(name, isMethod);
+
     const QList<QQmlJS::HeuristicContextProperty> definitions =
-            contextPropertyInfo.heuristicContextProperties.definitionsForName(name);
+            m_contextPropertyInfo.heuristicContextProperties.definitionsForName(name);
     if (definitions.isEmpty())
         return;
     QString warning = warningMessage();
@@ -608,7 +610,7 @@ static void warnAboutContextPropertyUsage(const QString name,
                 QString::number(candidate.location.startLine),
                 QString::number(candidate.location.startColumn)));
     }
-    logger->log(warning, qmlContextProperties, location);
+    m_logger->log(warning, qmlContextProperties, currentSourceLocation());
 }
 
 void QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(int index)
@@ -634,20 +636,8 @@ void QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(int index)
 
     if (!accumulatorOut.isValid()) {
         addError(u"Cannot access value for name "_s + name);
-
-        auto guard = qScopeGuard([this]() { setVarAccumulatorAndError(); });
-
-        if (m_contextPropertyInfo.userContextProperties.isUnqualifiedAccessDisabled(name))
-            return;
-
-        warnAboutContextPropertyUsage(name, m_contextPropertyInfo,
-                                      m_function->qmlScope.containedType(), m_logger,
-                                      currentSourceLocation());
-
-        if (m_contextPropertyInfo.userContextProperties.isOnUsageWarned(name))
-            return;
-
-        handleUnqualifiedAccess(name, false);
+        handleUnqualifiedAccessAndContextProperties(name, false);
+        setVarAccumulatorAndError();
         return;
     }
 
@@ -2110,7 +2100,7 @@ void QQmlJSTypePropagator::propagateScopeLookupCall(const QString &functionName,
 
     addError(u"Cannot find function '%1'"_s.arg(functionName));
 
-    handleUnqualifiedAccess(functionName, true);
+    handleUnqualifiedAccessAndContextProperties(functionName, true);
 }
 
 void QQmlJSTypePropagator::generate_CallGlobalLookup(int index, int argc, int argv)

@@ -54,7 +54,6 @@ public:
     void removeNativeMenu();
     void syncWithNativeMenu();
     void syncWithUseNativeMenu();
-    static void recursivelyDestroyNativeSubMenus(QQuickMenu *menu);
     void setNativeMenuVisible(bool visible);
 
     void makeEditMenu();
@@ -69,7 +68,11 @@ public:
     };
     void removeItem(int index, QQuickItem *item,
         DestructionPolicy destructionPolicy = DestructionPolicy::DoNotDestroy);
-    void removeNativeItem(int index);
+    enum class SyncPolicy {
+        Sync,
+        DoNotSync
+    };
+    void removeNativeItem(int index, SyncPolicy syncPolicy = SyncPolicy::Sync);
     void resetNativeData();
 
     static void recursivelyCreateNativeMenuItems(QQuickMenu *menu);

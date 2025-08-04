@@ -5,6 +5,8 @@
 #include <QtCore/private/qandroidtypes_p.h>
 #include <QtQuick/private/qandroidquickviewembedding_p.h>
 #include <QtQuick/private/qandroidviewsignalmanager_p.h>
+#include <QtCore/private/qmetaobject_p.h>
+#include <QtCore/qmetatype.h>
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qjnienvironment.h>
@@ -14,6 +16,8 @@
 #include <QtQml/qqmlengine.h>
 #include <QtQuick/qquickitem.h>
 #include <functional>
+#include <jni.h>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -196,6 +200,126 @@ namespace QtAndroidQuickViewEmbedding
         return true;
     }
 
+    QVariant jobjectToVariant(QMetaType::Type type, jobject &obj)
+    {
+        switch (type) {
+        case QMetaType::Bool:
+            return QVariant::fromValue(
+                    QtJniTypes::Boolean::construct(obj).callMethod<bool>("booleanValue"));
+            break;
+        case QMetaType::Int:
+            return QVariant::fromValue(
+                    QtJniTypes::Integer::construct(obj).callMethod<int>("intValue"));
+            break;
+        case QMetaType::Double:
+            return QVariant::fromValue(
+                    QtJniTypes::Double::construct(obj).callMethod<double>("doubleValue"));
+            break;
+        case QMetaType::Float:
+            return QVariant::fromValue(
+                    QtJniTypes::Float::construct(obj).callMethod<float>("floatValue"));
+            break;
+        case QMetaType::QString:
+            return QVariant::fromValue(QJniObject(obj).toString());
+            break;
+        default:
+            qWarning("Unsupported metatype: %s", QMetaType(type).name());
+            return QVariant();
+        }
+    }
+
+    QMetaMethod findMethod(const QString &name, int paramCount, const QMetaObject &object)
+    {
+        for (auto i = object.methodOffset(); i < object.methodCount(); ++i) {
+            QMetaMethod method = object.method(i);
+            const auto paramMatch = method.parameterCount() == paramCount;
+            const auto nameMatch = method.name() == name.toUtf8();
+            if (paramMatch && nameMatch)
+                return method;
+        }
+        return QMetaMethod();
+    }
+
+    void invokeMethod(JNIEnv *, jobject, jlong viewReference, QtJniTypes::String methodName,
+                      QJniArray<jobject> jniParams)
+    {
+        auto [_, rootObject] = getViewAndRootObject(viewReference);
+        if (!rootObject) {
+            qWarning() << "Cannot invoke QML method" << methodName.toString()
+                       << "as the QML view has not been loaded yet.";
+            return;
+        }
+
+        const auto paramCount = jniParams.size();
+        QMetaMethod method =
+                findMethod(methodName.toString(), paramCount, *rootObject->metaObject());
+        if (!method.isValid()) {
+            qWarning() << "Failed to find method" << QJniObject(methodName).toString()
+                       << "in QQuickView";
+            return;
+        }
+
+        // Invoke and leave early if there are no params to pass on
+        if (paramCount == 0) {
+            method.invoke(rootObject, Qt::QueuedConnection);
+            return;
+        }
+
+        QList<QVariant> variants;
+        variants.reserve(jniParams.size());
+        variants.emplace_back(QVariant{}); // "Data" for the return value
+
+        for (auto i = 0; i < paramCount; ++i) {
+            const auto type = method.parameterType(i);
+            if (type == QMetaType::UnknownType) {
+                qWarning("Unknown metatypes are not supported.");
+                return;
+            }
+
+            jobject rawParam = jniParams.at(i);
+            auto variant = variants.emplace_back(
+                    jobjectToVariant(static_cast<QMetaType::Type>(type), rawParam));
+            if (variant.isNull()) {
+                auto className = QJniObject(rawParam).className();
+                qWarning("Failed to convert param with class name '%s' to QVariant",
+                         className.constData());
+                return;
+            }
+        }
+
+        // Initialize the data arrays for params, typenames and type conversion interfaces.
+        // Note that this is adding an element, this is for the return value which is at idx 0.
+        const int paramsCount = method.parameterCount() + 1;
+        const auto paramTypes = std::make_unique<const char *[]>(paramsCount);
+        const auto params = std::make_unique<const void *[]>(paramsCount);
+        const auto metaTypes =
+                std::make_unique<const QtPrivate::QMetaTypeInterface *[]>(paramsCount);
+
+        // We're not expecting a return value, so index 0 can be all nulls.
+        paramTypes[0] = nullptr;
+        params[0] = nullptr;
+        metaTypes[0] = nullptr;
+
+        for (auto i = 1; i < variants.size(); ++i) {
+            const auto &variant = variants.at(i);
+            paramTypes[i] = variant.typeName();
+            params[i] = variant.data();
+            metaTypes[i] = variant.metaType().iface();
+        }
+
+        auto reason = QMetaMethodInvoker::invokeImpl(method,
+                                                     rootObject,
+                                                     Qt::QueuedConnection,
+                                                     paramsCount,
+                                                     params.get(),
+                                                     paramTypes.get(),
+                                                     metaTypes.get());
+
+        if (reason != QMetaMethodInvoker::InvokeFailReason::None)
+            qWarning() << "Failed to invoke function" << methodName.toString()
+                       << ", Reason:" << int(reason);
+    }
+
     bool registerNatives(QJniEnvironment& env) {
         return env.registerNativeMethods(QtJniTypes::Traits<QtJniTypes::QtQuickView>::className(),
                                          {Q_JNI_NATIVE_SCOPED_METHOD(createQuickView,
@@ -207,6 +331,8 @@ namespace QtAndroidQuickViewEmbedding
                                           Q_JNI_NATIVE_SCOPED_METHOD(addRootObjectSignalListener,
                                                                      QtAndroidQuickViewEmbedding),
                                           Q_JNI_NATIVE_SCOPED_METHOD(removeRootObjectSignalListener,
+                                                                     QtAndroidQuickViewEmbedding),
+                                          Q_JNI_NATIVE_SCOPED_METHOD(invokeMethod,
                                                                      QtAndroidQuickViewEmbedding)});
     }
 }

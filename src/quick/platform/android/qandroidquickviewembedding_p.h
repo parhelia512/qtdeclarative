@@ -43,6 +43,9 @@ namespace QtAndroidQuickViewEmbedding
     bool removeRootObjectSignalListener(JNIEnv *env, jobject, jlong parentWindowReference,
                                        jint signalListenerId);
     Q_DECLARE_JNI_NATIVE_METHOD_IN_CURRENT_SCOPE(removeRootObjectSignalListener)
+    void invokeMethod(JNIEnv *, jobject, jlong viewReference, QtJniTypes::String methodName,
+                      QJniArray<jobject> params);
+    Q_DECLARE_JNI_NATIVE_METHOD_IN_CURRENT_SCOPE(invokeMethod)
 
     class QAndroidQuickView : public QQuickView
     {

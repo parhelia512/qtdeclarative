@@ -46,6 +46,7 @@ public class QtQuickView extends QtView {
     native boolean addRootObjectSignalListener(long windowReference, String signalName,
                                                Class<?>[] argTypes, Object listener, int id);
     native boolean removeRootObjectSignalListener(long windowReference, int signalListenerId);
+    native void invokeMethod(long windowReference, String methodName, Object[] params);
 
     /**
      * Creates a QtQuickView to load and view a QML component. Instantiating a QtQuickView will load
@@ -334,6 +335,41 @@ public class QtQuickView extends QtView {
             sendStatusChanged(m_lastStatus);
             m_hasQueuedStatus = false;
         }
+    }
+
+    /**
+     * Invokes a QML method of the root object.
+     *
+     * Supported parameter types are {@link java.lang.Integer},{@link java.lang.Double},
+     * {@link java.lang.Float}, {@link java.lang.Boolean} and {@link java.lang.String}.
+     * These types get converted to their corresponding types: <code>int</code>,
+     * <code>double</code>, <code>real</code>, <code>bool</code>, and <code>string</code>,
+     * respectively.
+     *
+     * @param methodName name of the method
+     * @param params array of parameters that are passed to the method
+     *
+     * @see <a href="https://doc.qt.io/qt-6/qml-int.html">QML int</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-double.html">QML double</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-real.html">QML real</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-bool.html">QML bool</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-string.html">QML string</a>
+     **/
+    public void invokeMethod(String methodName, Object[] params)
+    {
+        invokeMethod(windowReference(), methodName, params);
+    }
+
+    /**
+     * Invokes a QML method of the root object.
+     *
+     * @param methodName name of the method
+     *
+     * @see QtQuickView#invokeMethod(String, Object[])
+     */
+    public void invokeMethod(String methodName)
+    {
+        invokeMethod(windowReference(), methodName, new Object[] {});
     }
 
     private void handleStatusChange(int status)

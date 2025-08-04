@@ -231,4 +231,53 @@ public abstract class QtQuickViewContent
         Random rand = new Random();
         return rand.nextInt();
     }
+
+    /**
+     * Invokes a QML method of the root object.
+     *
+     * Supported parameter types are {@link java.lang.Integer},{@link java.lang.Double},
+     * {@link java.lang.Float}, {@link java.lang.Boolean} and {@link java.lang.String}.
+     * These types get converted to their corresponding types: <code>int</code>,
+     * <code>double</code>, <code>real</code>, <code>bool</code>, and <code>string</code>,
+     * respectively.
+     *
+     * @param name name of the method
+     * @param params array of parameters that are passed to the method
+     *
+     * @see <a href="https://doc.qt.io/qt-6/qml-int.html">QML int</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-double.html">QML double</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-real.html">QML real</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-bool.html">QML bool</a>
+     * @see <a href="https://doc.qt.io/qt-6/qml-string.html">QML string</a>
+     **/
+    public void invokeMethod(String name, Object[] params)
+    {
+        QtQuickView view = getQuickView();
+        if (view != null) {
+            view.invokeMethod(name, params);
+        } else {
+            Log.w(TAG,
+                  "Cannot call method " + name +
+                  " as the QQmlComponent is not loaded in a QtQuickView.");
+        }
+    }
+
+    /**
+     * Invokes a QML method of the root object.
+     *
+     * @param name name of the method
+     *
+     * @see QtQuickViewContent#invokeMethod(String, Object[])
+     **/
+    public void invokeMethod(String name)
+    {
+        QtQuickView view = getQuickView();
+        if (view != null) {
+            view.invokeMethod(name);
+        } else {
+            Log.w(TAG,
+                  "Cannot call method " + name +
+                  " as the QQmlComponent is not loaded in a QtQuickView.");
+        }
+    }
 }

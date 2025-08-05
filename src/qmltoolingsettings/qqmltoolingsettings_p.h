@@ -29,7 +29,7 @@ class QQmlToolingSettings
 public:
     struct SearchResult
     {
-        enum class ResultType { Found, NotFound, Error };
+        enum class ResultType { Found, NotFound };
         ResultType type = ResultType::NotFound;
         QString iniFilePath;
         bool isValid() const { return type == ResultType::Found && !iniFilePath.isEmpty(); }

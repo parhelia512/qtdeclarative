@@ -42,7 +42,7 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::read(const QString &setti
     return { SearchResult::ResultType::Found, settingsFilePath };
 #else
     Q_UNUSED(settingsFilePath);
-    return { SearchResult::ResultType::Error, {} };
+    return SearchResult();
 #endif
 }
 
@@ -111,7 +111,6 @@ QQmlToolingSettings::Searcher::searchDefaultLocation(const QSet<QString> *visite
 QQmlToolingSettings::SearchResult
 QQmlToolingSettings::Searcher::searchDirectoryHierarchy(QSet<QString> *visitedDirs, QDir dir)
 {
-    SearchResult result = { SearchResult::ResultType::NotFound, {} };
     while (dir.exists() && dir.isReadable()) {
         const QString dirPath = dir.absolutePath();
 
@@ -120,55 +119,54 @@ QQmlToolingSettings::Searcher::searchDirectoryHierarchy(QSet<QString> *visitedDi
         // to avoid unnecessary file system operations
         // This is useful for large directory trees where the settings file might be in a parent
         // directory
-        result = searchCurrentDirInCache(dirPath);
-        if (result.isValid())
+        if (const SearchResult result = searchCurrentDirInCache(dirPath); result.isValid())
             return result;
 
         visitedDirs->insert(dirPath);
 
         // Check if the settings file exists in the current directory
         // If it does, read it and update the seen directories cache
-        const QString iniFile = dir.absoluteFilePath(m_localSettingsFile);
-        if (QFileInfo::exists(iniFile)) {
-            for (const QString &visitedDir : *visitedDirs)
-                m_seenDirectories[visitedDir] = iniFile;
+        if (QString ini = dir.absoluteFilePath(m_localSettingsFile); QFileInfo::exists(ini)) {
+            for (const QString &visitedDir : std::as_const(*visitedDirs))
+                m_seenDirectories[visitedDir] = ini;
 
-            return { SearchResult::ResultType::Found, iniFile };
+            return { SearchResult::ResultType::Found, std::move(ini) };
         }
 
         if (!dir.cdUp())
             break;
     }
 
-    return result;
+    return SearchResult();
 }
 
 QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QString &path)
 {
-    SearchResult result;
 #if QT_CONFIG(settings)
     QFileInfo fileInfo(path);
     QDir dir(fileInfo.isDir() ? path : fileInfo.dir());
     QSet<QString> visitedDirs;
 
     // Try to find settings in directory hierarchy
-    if (result = searchDirectoryHierarchy(&visitedDirs, dir); result.isValid())
+    if (const SearchResult result = searchDirectoryHierarchy(&visitedDirs, dir); result.isValid())
         return result;
 
     // If we didn't find the settings file in the current directory or any parent directories,
     // try to locate the settings file in the standard locations
-    if (result = searchDefaultLocation(&visitedDirs); result.isValid())
+    if (const SearchResult result = searchDefaultLocation(&visitedDirs); result.isValid())
         return result;
 
 #endif
     Q_UNUSED(path);
-    return result;
+    return SearchResult();
 }
 
 QQmlToolingSettings::SearchResult QQmlToolingSettings::search(const QString &path)
 {
-    const SearchResult result = m_searcher.search(path);
-    return result.isValid() ? read(result.iniFilePath) : result;
+    if (const SearchResult result = m_searcher.search(path); result.isValid())
+        return read(result.iniFilePath);
+
+    return SearchResult();
 }
 
 QVariant QQmlToolingSettings::value(const QString &name) const

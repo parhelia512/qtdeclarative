@@ -80,27 +80,32 @@ QQmlToolingSettings::Searcher::searchCurrentDirInCache(const QString &dirPath)
             : SearchResult{ SearchResult::ResultType::NotFound, {} };
 }
 
-QQmlToolingSettings::SearchResult
-QQmlToolingSettings::Searcher::searchDefaultLocation(QSet<QString> *visitedDirs)
+static QString findIniFile(const QString &local, const QString &global)
 {
     // If we reach here, we didn't find the settings file in the current directory or any parent
     // directories. Now we will try to locate the settings file in the standard locations. First try
     // to locate settings file with the standard name.
-    QString iniFile =
-            QStandardPaths::locate(QStandardPaths::GenericConfigLocation, m_localSettingsFile);
+    const QString iniFile = QStandardPaths::locate(QStandardPaths::GenericConfigLocation, local);
+    if (!iniFile.isEmpty())
+        return iniFile;
+
     // If not found, try alternate name format
-    if (iniFile.isEmpty()) {
-        iniFile =
-                QStandardPaths::locate(QStandardPaths::GenericConfigLocation, m_globalSettingsFile);
-    }
+    return QStandardPaths::locate(QStandardPaths::GenericConfigLocation, global);
+}
+
+QQmlToolingSettings::SearchResult
+QQmlToolingSettings::Searcher::searchDefaultLocation(const QSet<QString> *visitedDirs)
+{
+    QString iniFile = findIniFile(m_localSettingsFile, m_globalSettingsFile);
 
     // Update the seen directories cache unconditionally with the current result
-    for (auto &dir : *visitedDirs)
+    for (const QString &dir : *visitedDirs)
         m_seenDirectories[dir] = iniFile;
 
-    return SearchResult{ iniFile.isEmpty() ? SearchResult::ResultType::NotFound
-                                           : SearchResult::ResultType::Found,
-                iniFile };
+    const SearchResult::ResultType found = iniFile.isEmpty()
+            ? SearchResult::ResultType::NotFound
+            : SearchResult::ResultType::Found;
+    return SearchResult { found, std::move(iniFile) };
 }
 
 QQmlToolingSettings::SearchResult

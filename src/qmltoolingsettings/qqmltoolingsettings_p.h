@@ -47,7 +47,7 @@ public:
         QString localSettingsFile() const { return m_localSettingsFile; }
 
     private:
-        SearchResult searchDefaultLocation(QSet<QString> *visitedDirs);
+        SearchResult searchDefaultLocation(const QSet<QString> *visitedDirs);
         SearchResult searchCurrentDirInCache(const QString &dirPath);
         SearchResult searchDirectoryHierarchy(QSet<QString> *visitedDir, QDir dir);
 

@@ -36,6 +36,7 @@ public:
     void setError(const QQmlJS::DiagnosticMessage &);
     QList<QQmlJS::DiagnosticMessage> errors(const QString &uri) const;
 
+    bool hasTypeNamespace() const { return !_typeNamespace.isEmpty(); }
     QString typeNamespace() const { return _typeNamespace; }
     void setTypeNamespace(const QString &s) { _typeNamespace = s; }
 

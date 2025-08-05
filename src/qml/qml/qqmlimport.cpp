@@ -1405,9 +1405,8 @@ QTypeRevision QQmlImports::addFileImport(
     }
 
     // Prefer the qmldir URI. Unless it doesn't exist.
-    const QString qmldirUri = qmldir.typeNamespace();
-    if (!qmldirUri.isEmpty())
-        importUri = qmldirUri;
+    if (qmldir.hasTypeNamespace())
+        importUri = qmldir.typeNamespace();
 
     // Load the plugin before redirecting. Otherwise we might not find the qmldir we're looking for.
     const QTypeRevision importedVersion

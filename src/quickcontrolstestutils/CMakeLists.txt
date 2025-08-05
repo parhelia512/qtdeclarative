@@ -14,6 +14,7 @@ qt_internal_add_module(QuickControlsTestUtilsPrivate
     PUBLIC_LIBRARIES
         Qt::Core
         Qt::Test
+        Qt::TestPrivate
         Qt::Qml
         Qt::QmlPrivate
         Qt::Quick

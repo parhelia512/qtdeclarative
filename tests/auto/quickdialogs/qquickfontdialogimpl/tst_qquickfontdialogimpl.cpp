@@ -388,7 +388,12 @@ void tst_QQuickFontDialogImpl::changeDialogTitle()
     QQuickAbstractButton *cancelButton = findDialogButton(dialogButtonBox, "Cancel");
     QVERIFY(cancelButton);
 
-    const QQuickLabel *titleLabel = dialogHelper.quickDialog->header()->findChild<QQuickLabel *>();
+    const auto *header = dialogHelper.quickDialog->header();
+    const QQuickLabel *titleLabel = [header]() {
+        if (auto *label = qobject_cast<const QQuickLabel *>(header))
+            return label;
+        return header->findChild<const QQuickLabel *>();
+    }();
     QVERIFY(titleLabel);
 
     QCOMPARE(titleLabel->text(), QString());

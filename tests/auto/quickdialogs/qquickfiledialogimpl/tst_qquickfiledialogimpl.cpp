@@ -39,15 +39,6 @@ class tst_QQuickFileDialogImpl : public QQmlDataTest
 
 public:
     tst_QQuickFileDialogImpl();
-    static void initMain()
-    {
-        // We need to set this attribute.
-        QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
-        // We also don't want to run this for every style, as each one will have
-        // different ways of implementing the dialogs.
-        // For now we only test one style.
-        QQuickStyle::setStyle("Basic");
-    }
 
 private slots:
     void initTestCase() override;
@@ -159,6 +150,7 @@ tst_QQuickFileDialogImpl::tst_QQuickFileDialogImpl()
 
 void tst_QQuickFileDialogImpl::initTestCase()
 {
+    QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
     QQmlDataTest::initTestCase();
 
     qputenv("QT_QUICK_DIALOGS_PRESELECT_FIRST_FILE", "1");
@@ -1953,6 +1945,6 @@ void tst_QQuickFileDialogImpl::checkModality()
     QCOMPARE(cmaMouseSpy.size(), expectedChildWindowClickCount);
 }
 
-QTEST_MAIN(tst_QQuickFileDialogImpl)
+QTEST_QUICKDIALOGS_MAIN(tst_QQuickFileDialogImpl)
 
 #include "tst_qquickfiledialogimpl.moc"

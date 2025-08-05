@@ -1415,9 +1415,8 @@ QTypeRevision QQmlImports::addFileImport(
     if (!importedVersion.isValid())
         return QTypeRevision();
 
-    QString resolvedUrl;
     if (qmldir.hasRedirection()) {
-        resolvedUrl = redirectQmldirContent(typeLoader, &qmldir);
+        const QString resolvedUrl = redirectQmldirContent(typeLoader, &qmldir);
         importUri = qmldir.typeNamespace();
         if (resolvedUrl != url) {
             if (QQmlImportInstance *existing
@@ -1425,19 +1424,18 @@ QTypeRevision QQmlImports::addFileImport(
                 // We've alraedy seen this import. No need to add another entry.
                 return validVersion(existing->version);
             }
+            url = resolvedUrl;
         }
-    } else {
-        resolvedUrl = url;
     }
 
     QQmlImportInstance *inserted = addImportToNamespace(
-            nameSpace, importUri, resolvedUrl, requestedVersion,
+            nameSpace, importUri, url, requestedVersion,
             QV4::CompiledData::Import::ImportFile, precedence);
     Q_ASSERT(inserted);
 
     registerBuiltinModuleTypes(qmldir, importedVersion);
 
-    if (!inserted->setQmldirContent(resolvedUrl, qmldir, nameSpace, errors))
+    if (!inserted->setQmldirContent(url, qmldir, nameSpace, errors))
         return QTypeRevision();
 
     Q_ASSERT(importedVersion.isValid());

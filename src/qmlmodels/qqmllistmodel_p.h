@@ -140,7 +140,6 @@ private:
     void updateTranslations();
 };
 
-// ### FIXME
 class QQmlListElement : public QObject
 {
     Q_OBJECT

@@ -169,7 +169,7 @@ private:
     const QmlIR::Function *m_function = nullptr;
 };
 
-bool qCompileQmlFile(const QString &inputFileName, QQmlJSSaveFunction saveFunction,
+bool qCompileQmlFile(const QString &inputFileName, const QQmlJSSaveFunction &saveFunction,
                      QQmlJSAotCompiler *aotCompiler, QQmlJSCompileError *error,
                      bool storeSourceLocation, QV4::Compiler::CodegenWarningInterface *wInterface,
                      const QString *fileContents)
@@ -180,7 +180,7 @@ bool qCompileQmlFile(const QString &inputFileName, QQmlJSSaveFunction saveFuncti
 }
 
 bool qCompileQmlFile(QmlIR::Document &irDocument, const QString &inputFileName,
-                     QQmlJSSaveFunction saveFunction, QQmlJSAotCompiler *aotCompiler,
+                     const QQmlJSSaveFunction &saveFunction, QQmlJSAotCompiler *aotCompiler,
                      QQmlJSCompileError *error, bool storeSourceLocation,
                      QV4::Compiler::CodegenWarningInterface *wInterface, const QString *fileContents)
 {
@@ -371,8 +371,8 @@ bool qCompileQmlFile(QmlIR::Document &irDocument, const QString &inputFileName,
 }
 
 bool qCompileJSFile(
-        const QString &inputFileName, const QString &inputFileUrl, QQmlJSSaveFunction saveFunction,
-        QQmlJSCompileError *error)
+        const QString &inputFileName, const QString &inputFileUrl,
+        const QQmlJSSaveFunction &saveFunction, QQmlJSCompileError *error)
 {
     Q_UNUSED(inputFileUrl);
 

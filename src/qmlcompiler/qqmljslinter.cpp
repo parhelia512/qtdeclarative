@@ -719,11 +719,10 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
     } else if (m_logger->hasWarnings())
         success = HasWarnings;
 
-    if (passMan) {
-        // passMan now has a pointer to the moved from type resolver
-        // we fix this in setPassManager
-        codegen.setPassManager(passMan.get());
-    }
+    // passMan now has a pointer to the moved from type resolver
+    // we fix this in setPassManager
+    codegen.setPassManager(passMan.get());
+
     QQmlJSSaveFunction saveFunction = [](const QV4::CompiledData::SaveableUnitPointer &,
                                          const QQmlJSAotFunctionMap &, QString *) { return true; };
 

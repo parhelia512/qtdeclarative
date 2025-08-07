@@ -1093,38 +1093,6 @@ QQmlImportNamespace *QQmlImports::importNamespace(const QString &prefix)
     return nameSpace;
 }
 
-static void insertImport(QQmlImportNamespace *nameSpace, QQmlImportInstance *import)
-{
-    for (auto it = nameSpace->imports.cbegin(), end = nameSpace->imports.cend();
-         it != end; ++it) {
-        if ((*it)->precedence < import->precedence)
-            continue;
-
-        nameSpace->imports.insert(it, import);
-        return;
-    }
-    nameSpace->imports.append(import);
-}
-
-static QQmlImportInstance *addImportToNamespace(
-        QQmlImportNamespace *nameSpace, const QString &uri, const QString &url,
-        QTypeRevision version, QV4::CompiledData::Import::ImportType type, quint8 precedence)
-{
-    Q_ASSERT(nameSpace);
-    Q_ASSERT(url.isEmpty() || url.endsWith(Slash));
-
-    QQmlImportInstance *import = new QQmlImportInstance;
-    import->uri = uri;
-    import->url = url;
-    import->version = version;
-    import->isLibrary = (type == QV4::CompiledData::Import::ImportLibrary);
-    import->precedence = precedence;
-    import->implicitlyImported = precedence >= QQmlImportInstance::Implicit;
-
-    insertImport(nameSpace, import);
-    return import;
-}
-
 static QString getVersionInfo(QTypeRevision version) {
     return version.isValid() ? QDebug::toString(version) : u"(latest)"_s;
 }
@@ -1187,9 +1155,8 @@ QTypeRevision QQmlImports::addLibraryImport(
     const bool noQmldir = qmldirIdentifier.isEmpty();
     const bool isIncomplete = (flags & QQmlImports::ImportIncomplete);
     if (noQmldir || isIncomplete) {
-        QQmlImportInstance *inserted = addImportToNamespace(
-                nameSpace, uri, qmldirUrl, requestedVersion,
-                QV4::CompiledData::Import::ImportLibrary, precedence);
+        QQmlImportInstance *inserted = addImportToNamespace<IsLibrary::Yes>(
+                nameSpace, uri, qmldirUrl, requestedVersion, precedence);
         Q_ASSERT(inserted);
 
         if (noQmldir && !isIncomplete) {
@@ -1240,17 +1207,11 @@ QTypeRevision QQmlImports::addLibraryImport(
         return finalizeLibraryImport(uri, importedVersion, qmldir, existing, errors);
     }
 
-    QQmlImportInstance *inserted = addImportToNamespace(
-                nameSpace, resolvedUri, resolvedUrl, requestedVersion,
-                QV4::CompiledData::Import::ImportLibrary, precedence);
-    Q_ASSERT(inserted);
-
-    registerBuiltinModuleTypes(qmldir, importedVersion);
-
-    if (!inserted->setQmldirContent(resolvedUrl, qmldir, nameSpace, errors))
-        return QTypeRevision();
-
-    return finalizeLibraryImport(uri, importedVersion, qmldir, inserted, errors);
+    return finalizeImport<IsLibrary::Yes>(
+            nameSpace, qmldir, resolvedUri, resolvedUrl, precedence, requestedVersion,
+            importedVersion, errors, [&](QQmlImportInstance *inserted) {
+        return finalizeLibraryImport(uri, importedVersion, qmldir, inserted, errors);
+    });
 }
 
 /*!
@@ -1385,9 +1346,8 @@ QTypeRevision QQmlImports::addFileImport(
     }
 
     if ((flags & QQmlImports::ImportIncomplete) || qmldirIdentifier.isEmpty()) {
-        QQmlImportInstance *inserted = addImportToNamespace(
-                nameSpace, importUri, url, requestedVersion, QV4::CompiledData::Import::ImportFile,
-                precedence);
+        QQmlImportInstance *inserted = addImportToNamespace<IsLibrary::No>(
+                nameSpace, importUri, url, requestedVersion, precedence);
         Q_ASSERT(inserted);
         return validVersion(requestedVersion);
     }
@@ -1397,9 +1357,8 @@ QTypeRevision QQmlImports::addFileImport(
         return QTypeRevision();
 
     if (!qmldir.hasContent()) {
-        QQmlImportInstance *inserted = addImportToNamespace(
-                nameSpace, importUri, url, requestedVersion, QV4::CompiledData::Import::ImportFile,
-                precedence);
+        QQmlImportInstance *inserted = addImportToNamespace<IsLibrary::No>(
+                nameSpace, importUri, url, requestedVersion, precedence);
         Q_ASSERT(inserted);
         return validVersion(requestedVersion);
     }
@@ -1423,22 +1382,16 @@ QTypeRevision QQmlImports::addFileImport(
                 // We've alraedy seen this import. No need to add another entry.
                 return validVersion(existing->version);
             }
-            url = resolvedUrl;
         }
+
+        return finalizeImport<IsLibrary::No>(
+                nameSpace, qmldir, importUri, resolvedUrl, precedence, requestedVersion,
+                importedVersion, errors);
     }
 
-    QQmlImportInstance *inserted = addImportToNamespace(
-            nameSpace, importUri, url, requestedVersion,
-            QV4::CompiledData::Import::ImportFile, precedence);
-    Q_ASSERT(inserted);
-
-    registerBuiltinModuleTypes(qmldir, importedVersion);
-
-    if (!inserted->setQmldirContent(url, qmldir, nameSpace, errors))
-        return QTypeRevision();
-
-    Q_ASSERT(importedVersion.isValid());
-    return importedVersion;
+    return finalizeImport<IsLibrary::No>(
+            nameSpace, qmldir, importUri, url, precedence, requestedVersion,
+            importedVersion, errors);
 }
 
 static QTypeRevision qmldirContentError(const QString &uri, QList<QQmlError> *errors)

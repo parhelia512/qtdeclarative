@@ -37,6 +37,18 @@ Module {
         Method { name: "mySlot"; type: "int"; lineNumber: 29 }
         Method { name: "myInvokable"; type: "int"; lineNumber: 23 }
 
+        Enum {
+            name: "MyEnum"
+            lineNumber: 150
+            values: ["HelloWorld", "HelloEnum", "HelloSun"]
+        }
+        Enum {
+            name: "MyFlags"
+            alias: "MyFlag"
+            isFlag: true
+            lineNumber: 555
+            values: ["HelloFlag", "RedFlag", "GreenFlag"]
+        }
     }
     Component {
         file: "mycomponentfromcppheader.h"

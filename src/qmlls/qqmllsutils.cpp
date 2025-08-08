@@ -1361,9 +1361,11 @@ static std::optional<ExpressionType> resolveFieldMemberExpressionType(const DomI
         // Enumerations should live under the root element scope of the file that defines the enum,
         // therefore use the DomItem to find the root element of the qml file instead of directly
         // using owner->semanticScope.
-        if (const auto scope = item.goToFile(owner->semanticScope->filePath())
-                                       .rootQmlObject(GoTo::MostLikely)
-                                       .semanticScope()) {
+        if (const auto scope = owner->semanticScope->isComposite()
+                    ? item.goToFile(owner->semanticScope->filePath())
+                              .rootQmlObject(GoTo::MostLikely)
+                              .semanticScope()
+                    : owner->semanticScope) {
             if (scope->hasEnumerationKey(name)) {
                 return ExpressionType{ name, scope, EnumeratorValueIdentifier };
             }
@@ -1909,6 +1911,43 @@ DomItem sourceLocationToDomItem(const DomItem &file, const QQmlJS::SourceLocatio
 }
 
 static std::optional<Location>
+findEnumDefinitionOf(const DomItem &file, QQmlJS::SourceLocation location, const QString &name)
+{
+    const DomItem enumeration = [&file, &location, &name]() -> DomItem {
+        const DomItem enumerations = QQmlLSUtils::sourceLocationToDomItem(file, location)
+                                             .qmlObject()
+                                             .component()
+                                             .field(Fields::enumerations);
+        const QSet<QString> enumerationNames = enumerations.keys();
+        for (const QString &enumName : enumerationNames) {
+            const DomItem currentKey = enumerations.key(enumName).index(0);
+            if (enumName == name)
+                return currentKey;
+            const DomItem values = currentKey.field(Fields::values);
+            for (int i = 0, end = values.size(); i < end; ++i) {
+                const DomItem currentValue = values.index(i);
+                if (currentValue.field(Fields::name).value().toStringView() == name)
+                    return currentValue;
+            }
+        }
+        return {};
+    }();
+
+    auto fileLocation = FileLocations::treeOf(enumeration);
+
+    if (!fileLocation)
+        return {};
+
+    auto regions = fileLocation->info().regions;
+
+    if (auto it = regions.constFind(IdentifierRegion); it != regions.constEnd()) {
+        return Location::tryFrom(enumeration.canonicalFilePath(), *it, file);
+    }
+
+    return {};
+}
+
+static std::optional<Location>
 findMethodDefinitionOf(const DomItem &file, QQmlJS::SourceLocation location, const QString &name)
 {
     DomItem owner = QQmlLSUtils::sourceLocationToDomItem(file, location).qmlObject();
@@ -2072,7 +2111,26 @@ std::optional<Location> findDefinitionOf(const DomItem &item, const QStringList 
         return {};
     }
     case EnumeratorIdentifier:
-    case EnumeratorValueIdentifier:
+    case EnumeratorValueIdentifier: {
+        if (!resolvedExpression->semanticScope->isComposite()) {
+            const auto enumerations = resolvedExpression->semanticScope->enumerations();
+            for (const auto &enumeration : enumerations) {
+                if (enumeration.hasKey(*resolvedExpression->name)
+                    || enumeration.name() == *resolvedExpression->name) {
+                    return createCppTypeLocation(
+                            resolvedExpression->semanticScope, headerDirectories,
+                            sourceLocationOrDefault(QQmlJS::SourceLocation::fromQSizeType(
+                                    0, 0, enumeration.lineNumber(), 1)));
+                }
+            }
+            return {};
+        }
+        const DomItem ownerFile = item.goToFile(resolvedExpression->semanticScope->filePath());
+        const QQmlJS::SourceLocation ownerLocation =
+                resolvedExpression->semanticScope->sourceLocation();
+        return findEnumDefinitionOf(ownerFile, ownerLocation, *resolvedExpression->name);
+    }
+
     case LambdaMethodIdentifier:
     case NotAnIdentifier:
         qCDebug(QQmlLSUtilsLog) << "QQmlLSUtils::findDefinitionOf was not implemented for type"

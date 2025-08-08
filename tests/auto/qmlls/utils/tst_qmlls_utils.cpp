@@ -2012,6 +2012,28 @@ void tst_qmlls_utils::findDefinitionFromLocation_data()
             << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 9 << 18
             << componentFromCppHeaderPath << 38 << 1 << strlen("")
             << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("enumFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 10 << 52
+                                 << componentFromCppHeaderPath << 150 << 1 << strlen("")
+                                 << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("enumFromCpp2") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 11 << 60
+                                  << componentFromCppHeaderPath << 150 << 1 << strlen("")
+                                  << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("scopedEnumFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 11
+                                       << 56 << componentFromCppHeaderPath << 150 << 1 << strlen("")
+                                       << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("enumFromQml") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 14 << 51
+                                 << "UseMyCppComponent.qml" << 13 << 42 << strlen("ByeEnumFromQml")
+                                 << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("enumFromQml2") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 15 << 68
+                                  << "UseMyCppComponent.qml" << 13 << 42 << strlen("ByeEnumFromQml")
+                                  << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("scopedEnumFromQml")
+            << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 15 << 59
+            << "UseMyCppComponent.qml" << 13 << 10 << strlen("EnumFromQml")
+            << QStringList{ testFile("findDefinition"_L1) };
+    QTest::addRow("flagFromCpp") << testFile("findDefinition/UseMyCppComponent.qml"_L1) << 12 << 53
+                                 << componentFromCppHeaderPath << 555 << 1 << strlen("")
+                                 << QStringList{ testFile("findDefinition"_L1) };
 
     const QString attachedHeaderPath = testFile("findDefinition/SomeIncludeFolder/attached.h"_L1);
     QTest::addRow("attachedTypeFromCpp")

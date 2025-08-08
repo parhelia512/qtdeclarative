@@ -40,6 +40,8 @@ private slots:
     {
         QQmlEngine engine;  // ensure types are registered
         QQmlDataTest::initTestCase();
+        // 1 second is not quite enough, since many animations are 1 second long.
+        QTest::defaultTryTimeout.store(std::chrono::seconds(2));
     }
 
     void simpleProperty();

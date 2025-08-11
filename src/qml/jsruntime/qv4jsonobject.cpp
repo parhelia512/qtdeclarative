@@ -729,8 +729,8 @@ QString Stringify::Str(const QString &key, const Value &v)
         return QStringLiteral("null");
     if (value->isBoolean())
         return value->booleanValue() ? QStringLiteral("true") : QStringLiteral("false");
-    if (value->isString())
-        return quote(value->stringValue()->toQString());
+    if (QV4::String *stringValue = value->stringValue())
+        return quote(stringValue->toQString());
 
     if (value->isNumber()) {
         double d = value->toNumber();

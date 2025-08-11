@@ -407,7 +407,7 @@ Heap::Module *ExecutableCompilationUnit::instantiate()
 }
 
 const Value *ExecutableCompilationUnit::resolveExportRecursively(
-        QV4::String *exportName, QVector<ResolveSetEntry> *resolveSet)
+        QV4::String *exportName, QVector<ResolveSetEntry> *resolveSet) const
 {
     if (!module())
         return nullptr;

@@ -143,7 +143,7 @@ public:
     Heap::Object *templateObjectAt(int index) const;
 
     Heap::Module *instantiate();
-    const Value *resolveExport(QV4::String *exportName)
+    const Value *resolveExport(QV4::String *exportName) const
     {
         QVector<ResolveSetEntry> resolveSet;
         return resolveExportRecursively(exportName, &resolveSet);
@@ -254,9 +254,9 @@ private:
     struct ResolveSetEntry
     {
         ResolveSetEntry() {}
-        ResolveSetEntry(ExecutableCompilationUnit *module, QV4::String *exportName)
+        ResolveSetEntry(const ExecutableCompilationUnit *module, QV4::String *exportName)
             : module(module), exportName(exportName) {}
-        ExecutableCompilationUnit *module = nullptr;
+        const ExecutableCompilationUnit *module = nullptr;
         QV4::String *exportName = nullptr;
     };
 
@@ -269,7 +269,7 @@ private:
             ExecutionEngine *engine);
 
     const Value *resolveExportRecursively(QV4::String *exportName,
-                                          QVector<ResolveSetEntry> *resolveSet);
+                                          QVector<ResolveSetEntry> *resolveSet) const;
 
     QUrl urlAt(int index) const { return QUrl(stringAt(index)); }
 

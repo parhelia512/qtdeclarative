@@ -142,13 +142,14 @@ QQmlAbstractColumnModel::ColumnRoleMetadata QQmlAbstractColumnModel::fetchColumn
                                      << row.typeName() << " instead: " << row;
             return roleData;
         }
-        const QString rolePropertyName = columnRoleGetter.toString();
+
+        QString rolePropertyName = columnRoleGetter.toString();
         const QVariant roleProperty = row.toMap().value(rolePropertyName);
 
         roleData.columnRole = ColumnRole::StringRole;
-        roleData.name = rolePropertyName;
         roleData.type = roleProperty.userType();
         roleData.typeName = QString::fromLatin1(roleProperty.typeName());
+        roleData.name = std::move(rolePropertyName);
     } else if (columnRoleGetter.isCallable()) {
         // The role is provided via a function, which means the row is complex and
         // the user needs to provide the data for it.

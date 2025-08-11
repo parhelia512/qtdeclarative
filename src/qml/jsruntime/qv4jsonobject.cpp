@@ -820,7 +820,7 @@ QString Stringify::JO(Object *o)
                  + stepback + u'}';
     }
 
-    indent = stepback;
+    indent = std::move(stepback);
     stack.pop();
     return result;
 }
@@ -864,7 +864,7 @@ QString Stringify::JA(Object *a)
         result = QLatin1String("[\n") + indent + partial.join(separator) + u'\n' + stepback + u']';
     }
 
-    indent = stepback;
+    indent = std::move(stepback);
     stack.pop();
     return result;
 }

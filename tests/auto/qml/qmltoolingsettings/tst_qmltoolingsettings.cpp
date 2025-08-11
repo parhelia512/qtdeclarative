@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
 
 #include <QtTest/QTest>
+#include <QtLogging>
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
@@ -16,6 +17,9 @@ public:
 private Q_SLOTS:
     void searchConfig_data();
     void searchConfig();
+
+    void reportConfigForFiles_data();
+    void reportConfigForFiles();
 };
 
 tst_qmltoolingsettings::tst_qmltoolingsettings() : QQmlDataTest(QT_QMLTEST_DATADIR) { }
@@ -60,6 +64,41 @@ void tst_qmltoolingsettings::searchConfig()
 
     QCOMPARE(actualResult.type, expectedResult.type);
     QCOMPARE(actualResult.iniFilePath, expectedResult.iniFilePath);
+}
+
+void tst_qmltoolingsettings::reportConfigForFiles_data()
+{
+    QTest::addColumn<QStringList>("files");
+    QTest::addColumn<QString>("expectedResultCapture"); // string captured from output
+
+    QStringList files = { testFile("B/B1/test.qml"), testFile("B/B2/test.qml") };
+    QTest::newRow("validFiles") << files << "B/B2/test.qml";
+}
+
+void tst_qmltoolingsettings::reportConfigForFiles()
+{
+    QFETCH(QStringList, files);
+    QFETCH(QString, expectedResultCapture);
+
+    static QString out;
+
+    QtMessageHandler handler([](QtMsgType type, const QMessageLogContext &, const QString &msg) {
+        if (type == QtWarningMsg) {
+            QTextStream stream(&out);
+            stream << msg << Qt::endl;
+        }
+    });
+
+    const auto oldMessageHandler = qInstallMessageHandler(handler);
+    const auto guard =
+            qScopeGuard([&oldMessageHandler]() { qInstallMessageHandler(oldMessageHandler); });
+
+    QQmlToolingSettings settings("qmlformat");
+    settings.reportConfigForFiles(files);
+
+    QVERIFY(out.contains("File"));
+    QVERIFY(out.contains("Settings File"));
+    QVERIFY(out.contains(expectedResultCapture));
 }
 
 QTEST_MAIN(tst_qmltoolingsettings)

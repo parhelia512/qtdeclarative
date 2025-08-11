@@ -7,6 +7,7 @@
 #include <QtCore/qdir.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qset.h>
+#include <QtCore/qtextstream.h>
 #if QT_CONFIG(settings)
 #include <QtCore/qsettings.h>
 #endif
@@ -161,8 +162,13 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QS
     return SearchResult();
 }
 
-QQmlToolingSettings::SearchResult QQmlToolingSettings::search(const QString &path)
+QQmlToolingSettings::SearchResult QQmlToolingSettings::search(const QString &path, SearchOptions options)
 {
+    const auto maybeReport = qScopeGuard([&]() {
+        if (options.verbose)
+            reportConfigForFiles({ path });
+    });
+
     if (const SearchResult result = m_searcher.search(path); result.isValid())
         return read(result.iniFilePath);
 
@@ -183,4 +189,49 @@ bool QQmlToolingSettings::isSet(const QString &name) const
 
     // Unset is encoded as an empty string
     return !(variant.canConvert(QMetaType(QMetaType::QString)) && variant.toString().isEmpty());
+}
+
+bool QQmlToolingSettings::reportConfigForFiles(const QStringList &files)
+{
+    constexpr int maxAllowedFileLength = 255;
+    constexpr int minAllowedFileLength = 40;
+    bool headerPrinted = false;
+    auto lengthForFile = [maxAllowedFileLength](const QString &file) {
+        return std::min(int(file.length()), maxAllowedFileLength);
+    };
+
+    int maxFileLength =
+            std::accumulate(files.begin(), files.end(), 0, [&](int acc, const QString &file) {
+                return std::max(acc, lengthForFile(file));
+            });
+
+    if (maxFileLength < minAllowedFileLength)
+        maxFileLength = minAllowedFileLength;
+
+    for (const auto &file : files) {
+        if (file.isEmpty()) {
+            qWarning().noquote() << "Error: Could not find file" << file;
+            return false;
+        }
+
+        QString displayFile = file;
+        if (displayFile.length() > maxAllowedFileLength) {
+            displayFile = "..." + displayFile.right(maxAllowedFileLength - 3);
+        }
+
+        const auto result = search(file);
+
+        if (!headerPrinted) {
+            QString header =
+                    QStringLiteral("%1 | %2").arg("File", -maxFileLength).arg("Settings File");
+            qWarning().noquote() << header;
+            qWarning().noquote() << QString(header.length(), u'-');
+            headerPrinted = true;
+        }
+        QString line =
+                QStringLiteral("%1 | %2").arg(displayFile, -maxFileLength).arg(result.iniFilePath);
+        qWarning().noquote() << line;
+    }
+
+    return true;
 }

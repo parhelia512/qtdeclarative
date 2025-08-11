@@ -301,6 +301,7 @@ int qmllsMain(int argv, char *argc[])
     if (parser.isSet(writeDefaultsOption)) {
         return settings.writeDefaults() ? 0 : 1;
     }
+
     if (parser.isSet(logFileOption)) {
         QString fileName = parser.value(logFileOption);
         qInfo() << "will log to" << fileName;
@@ -319,8 +320,6 @@ int qmllsMain(int argv, char *argc[])
             logFile->flush();
         });
     }
-    if (parser.isSet(verboseOption))
-        QLoggingCategory::setFilterRules("qt.languageserver*.debug=true\n"_L1);
     if (parser.isSet(waitOption)) {
         int waitSeconds = parser.value(waitOption).toInt();
         if (waitSeconds > 0)
@@ -337,6 +336,10 @@ int qmllsMain(int argv, char *argc[])
             },
             (parser.isSet(ignoreSettings) ? nullptr : &settings));
 
+    if (parser.isSet(verboseOption)) {
+        QLoggingCategory::setFilterRules("qt.languageserver*.debug=true\n"_L1);
+        qmlServer.codeModelManager()->setVerbose(true);
+    }
     if (parser.isSet(docDir))
         qmlServer.codeModelManager()->setDocumentationRootPath(
                 QString::fromUtf8(parser.value(docDir).toUtf8()));

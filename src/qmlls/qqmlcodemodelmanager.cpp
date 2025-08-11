@@ -242,6 +242,13 @@ void QQmlCodeModelManager::setDocumentationRootPath(const QString &path)
         ws.codeModel->setDocumentationRootPath(path);
 }
 
+void QQmlCodeModelManager::setVerbose(bool verbose)
+{
+    m_verbose = verbose;
+    for (const auto &ws : m_workspaces)
+        ws.codeModel->setVerbose(verbose);
+}
+
 void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths)
 {
     m_buildInformation.loadSettingsFrom(paths);

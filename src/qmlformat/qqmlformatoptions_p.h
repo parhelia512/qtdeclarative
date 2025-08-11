@@ -126,6 +126,8 @@ public:
 
     bool indentWidthSet() const { return m_indentWidthSet; }
     void setIndentWidthSet(bool newIndentWidthSet) { m_indentWidthSet = newIndentWidthSet; }
+    bool dryRun() const { return m_dryRun; }
+    void setDryRun(bool newDryRun) { m_dryRun = newDryRun; }
     QStringList errors() const { return m_errors; }
     void addError(const QString &newError) { m_errors.append(newError); };
 
@@ -171,6 +173,7 @@ private:
     bool m_writeDefaultSettings = false;
     bool m_indentWidthSet = false;
     std::bitset<SettingsCount> m_settingBits;
+    bool m_dryRun = false;
 };
 
 QT_END_NAMESPACE

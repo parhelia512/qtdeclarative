@@ -188,6 +188,13 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
             "rule"_L1, "always"_L1);
     parser.addOption(semicolonRuleOption);
 
+    QCommandLineOption dryrunOption(
+            QStringList() << "dry-run"_L1,
+            QStringLiteral("Prints the settings file that would be used for this instance."
+                           "This is useful to see what settings would be used "
+                           "without actually performing anything."));
+    parser.addOption(dryrunOption);
+
     parser.addPositionalArgument("filenames"_L1, "files to be processed by qmlformat"_L1);
 
     parser.process(args);
@@ -250,6 +257,7 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
         }
     }
 
+    options.setDryRun(parser.isSet(dryrunOption));
     options.setIsVerbose(parser.isSet("verbose"_L1));
     options.setIsInplace(parser.isSet("inplace"_L1));
     options.setForceEnabled(parser.isSet("force"_L1));
@@ -322,7 +330,7 @@ QQmlFormatOptions QQmlFormatOptions::optionsForFile(const QString &fileName,
     if (hasFiles)
         perFileOptions.setIsInplace(true);
 
-    if (!ignoreSettingsEnabled() && settings->search(fileName).isValid())
+    if (!ignoreSettingsEnabled() && settings->search(fileName, { m_verbose }).isValid())
         perFileOptions.applySettings(*settings);
 
     return perFileOptions;

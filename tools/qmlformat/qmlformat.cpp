@@ -136,6 +136,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    if (options.dryRun()) {
+        settings.reportConfigForFiles(options.arguments());
+        return 0;
+    }
+
     if (options.writeDefaultSettingsEnabled())
         return settings.writeDefaults() ? 0 : -1;
 

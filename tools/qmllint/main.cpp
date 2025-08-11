@@ -165,7 +165,8 @@ All warnings can be set to three levels:
 
     QCommandLineOption dryRun(QStringList() << "dry-run",
                               QLatin1String("Only print out the contents of the file after fix "
-                                            "suggestions without applying them"));
+                                            "suggestions without applying them. Also prints the "
+                                            "settings file that would be used for this instance."));
     parser.addOption(dryRun);
 
     QCommandLineOption listPluginsOption(QStringList() << "list-plugins",
@@ -332,6 +333,9 @@ All warnings can be set to three levels:
     if (positionalArguments.isEmpty()) {
         parser.showHelp(-1);
     }
+
+    if (parser.isSet(dryRun))
+        settings.reportConfigForFiles(positionalArguments);
 
     QJsonArray jsonFiles;
 

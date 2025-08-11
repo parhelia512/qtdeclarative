@@ -135,6 +135,9 @@ public:
     QSet<QString> ignoreForWatching() const { return m_ignoreForWatching; }
     HelpManager *helpManager() { return &m_helpManager; }
 
+    void setVerbose(bool verbose) { m_verbose = verbose; }
+    bool verbose() const { return m_verbose; }
+
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url);
     void documentationRootPathChanged(const QString &path);
@@ -174,6 +177,7 @@ private:
     QString m_documentationRootPath;
     QSet<QString> m_ignoreForWatching;
     HelpManager m_helpManager;
+    bool m_verbose = false;
 private slots:
     void onCppFileChanged(const QString &);
 };

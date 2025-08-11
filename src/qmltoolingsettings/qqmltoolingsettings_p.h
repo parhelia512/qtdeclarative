@@ -27,6 +27,11 @@ QT_BEGIN_NAMESPACE
 class QQmlToolingSettings
 {
 public:
+    QQmlToolingSettings(const QString &toolName);
+    struct SearchOptions
+    {
+        bool verbose;
+    };
     struct SearchResult
     {
         enum class ResultType { Found, NotFound };
@@ -56,15 +61,14 @@ public:
         QHash<QString, QString> m_seenDirectories;
     };
 
-    QQmlToolingSettings(const QString &toolName);
-
     void addOption(const QString &name, const QVariant defaultValue = QVariant());
-
+    SearchResult search(const QString &path, SearchOptions options = {});
     bool writeDefaults() const;
-    SearchResult search(const QString &path);
 
     QVariant value(const QString &name) const;
     bool isSet(const QString &name) const;
+
+    bool reportConfigForFiles(const QStringList &files);
 
 private:
     QString m_currentSettingsPath;
@@ -91,10 +95,10 @@ public:
         return QQmlToolingSettings::writeDefaults();
     }
 
-    SearchResult search(const QString &path)
+    SearchResult search(const QString &path, SearchOptions options = {})
     {
         QMutexLocker lock(&m_mutex);
-        return QQmlToolingSettings::search(path);
+        return QQmlToolingSettings::search(path, options);
     }
 
     QVariant value(const QString &name) const

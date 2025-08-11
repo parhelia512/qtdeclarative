@@ -277,7 +277,7 @@ void QQmlCodeModel::initializeCMakeStatus(const QString &pathForSettings)
 {
     if (m_settings) {
         const QString cmakeCalls = u"no-cmake-calls"_s;
-        m_settings->search(pathForSettings);
+        m_settings->search(pathForSettings, { m_verbose });
         if (m_settings->isSet(cmakeCalls) && m_settings->value(cmakeCalls).toBool()) {
             qWarning() << "Disabling CMake calls via .qmlls.ini setting.";
             m_cmakeStatus = DoesNotHaveCMake;
@@ -553,7 +553,8 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
     QStringList result = importPaths();
 
     const QString importPaths = u"importPaths"_s;
-    if (m_settings && m_settings->search(fileName).isValid() && m_settings->isSet(importPaths)) {
+    if (m_settings && m_settings->search(fileName, { m_verbose }).isValid()
+        && m_settings->isSet(importPaths)) {
         result.append(m_settings->value(importPaths).toString().split(QDir::listSeparator()));
     }
 
@@ -628,7 +629,7 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
     // look in the settings.
     // This is the one that is passed via the .qmlls.ini file.
     if (buildPaths.isEmpty() && m_settings) {
-        m_settings->search(path);
+        m_settings->search(path, { m_verbose });
         QString buildDir = QStringLiteral(u"buildDir");
         if (m_settings->isSet(buildDir))
             buildPaths += m_settings->value(buildDir).toString().split(QDir::listSeparator(),

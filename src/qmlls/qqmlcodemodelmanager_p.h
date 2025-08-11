@@ -71,6 +71,8 @@ public:
     void setDocumentationRootPath(const QString &path);
     HelpManager *helpManagerForUrl(const QByteArray &);
 
+    void setVerbose(bool verbose);
+
 protected:
     using Workspaces = std::vector<QQmlWorkspace>;
     using WorkspaceIterator = Workspaces::const_iterator;
@@ -96,6 +98,7 @@ protected:
     QStringList m_defaultImportPaths;
     bool m_defaultDisableCMakeCalls = false;
     QString m_defaultDocumentationRootPath;
+    bool m_verbose = false;
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url);

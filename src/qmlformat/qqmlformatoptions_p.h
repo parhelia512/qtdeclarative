@@ -128,6 +128,8 @@ public:
     void setIndentWidthSet(bool newIndentWidthSet) { m_indentWidthSet = newIndentWidthSet; }
     bool dryRun() const { return m_dryRun; }
     void setDryRun(bool newDryRun) { m_dryRun = newDryRun; }
+    QString settingsFile() const { return m_settingsFile; }
+    void setSettingsFile(const QString &newSettingsFile) { m_settingsFile = newSettingsFile; }
     QStringList errors() const { return m_errors; }
     void addError(const QString &newError) { m_errors.append(newError); };
 
@@ -147,6 +149,7 @@ public:
         FunctionsSpacing,
         SortImports,
         SemicolonRule,
+        SettingsFile,
         SettingsCount
     };
 
@@ -174,6 +177,7 @@ private:
     bool m_indentWidthSet = false;
     std::bitset<SettingsCount> m_settingBits;
     bool m_dryRun = false;
+    QString m_settingsFile;
 };
 
 QT_END_NAMESPACE

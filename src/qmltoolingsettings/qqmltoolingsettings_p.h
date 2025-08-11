@@ -30,6 +30,7 @@ public:
     QQmlToolingSettings(const QString &toolName);
     struct SearchOptions
     {
+        QString settingsFileName;
         bool verbose;
     };
     struct SearchResult

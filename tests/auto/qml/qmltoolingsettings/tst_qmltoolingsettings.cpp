@@ -20,6 +20,9 @@ private Q_SLOTS:
 
     void reportConfigForFiles_data();
     void reportConfigForFiles();
+
+    void searchOptions_data();
+    void searchOptions();
 };
 
 tst_qmltoolingsettings::tst_qmltoolingsettings() : QQmlDataTest(QT_QMLTEST_DATADIR) { }
@@ -28,26 +31,29 @@ void tst_qmltoolingsettings::searchConfig_data()
 {
     QTest::addColumn<QString>("fileName");
     QTest::addColumn<QString>("toolName");
+    QTest::addColumn<QQmlToolingSettings::SearchOptions>("options");
     QTest::addColumn<QQmlToolingSettings::SearchResult>("expectedResult");
 
-    QTest::newRow("sameFolderConfig") << testFile("B/B1/test.qml") << "qmlformat"
+    QQmlToolingSettings::SearchOptions options;
+    QTest::newRow("sameFolderConfig") << testFile("B/B1/test.qml") << "qmlformat" << options
                                       << QQmlToolingSettings::SearchResult{
                                              QQmlToolingSettings::SearchResult::ResultType::Found,
                                              testFile("B/B1/.qmlformat.ini")
                                          };
-    QTest::newRow("parentFolderConfig") << testFile("B/B2/test.qml") << "qmlformat"
+    QTest::newRow("parentFolderConfig") << testFile("B/B2/test.qml") << "qmlformat" << options
                                         << QQmlToolingSettings::SearchResult{
                                                QQmlToolingSettings::SearchResult::ResultType::Found,
                                                testFile("B/.qmlformat.ini")
                                            };
     QTest::newRow("parentFolderConfigDifferentTool")
-            << testFile("B/B2/test.qml") << "qmlls"
+            << testFile("B/B2/test.qml") << "qmlls" << options
             << QQmlToolingSettings::SearchResult{
                    QQmlToolingSettings::SearchResult::ResultType::NotFound, QString()
                };
 
     QTest::newRow("missingConfig")
             << testFile("A/test.qml") << "qmlformat"
+            << QQmlToolingSettings::SearchOptions{ "A/test.ini", false }
             << QQmlToolingSettings::SearchResult{
                    QQmlToolingSettings::SearchResult::ResultType::NotFound, QString()
                };
@@ -57,10 +63,11 @@ void tst_qmltoolingsettings::searchConfig()
 {
     QFETCH(QString, fileName);
     QFETCH(QString, toolName);
+    QFETCH(QQmlToolingSettings::SearchOptions, options);
     QFETCH(QQmlToolingSettings::SearchResult, expectedResult);
 
     QQmlToolingSettings settings(toolName);
-    QQmlToolingSettings::SearchResult actualResult = settings.search(fileName);
+    QQmlToolingSettings::SearchResult actualResult = settings.search(fileName, options);
 
     QCOMPARE(actualResult.type, expectedResult.type);
     QCOMPARE(actualResult.iniFilePath, expectedResult.iniFilePath);
@@ -99,6 +106,42 @@ void tst_qmltoolingsettings::reportConfigForFiles()
     QVERIFY(out.contains("File"));
     QVERIFY(out.contains("Settings File"));
     QVERIFY(out.contains(expectedResultCapture));
+}
+
+void tst_qmltoolingsettings::searchOptions_data()
+{
+    QTest::addColumn<QString>("fileName");
+    QTest::addColumn<QString>("toolName");
+    QTest::addColumn<QQmlToolingSettings::SearchOptions>("options");
+    QTest::addColumn<QQmlToolingSettings::SearchResult>("expectedResult");
+
+    QTest::newRow("validAlternative")
+            << testFile("B/B1/test.qml") << "qmlformat"
+            << QQmlToolingSettings::SearchOptions{ testFile("B/.qmlformat.ini"), false }
+            << QQmlToolingSettings::SearchResult{
+                   QQmlToolingSettings::SearchResult::ResultType::Found,
+                   testFile("B/.qmlformat.ini")
+               };
+    QTest::newRow("invalidAlternative")
+            << testFile("B/B1/test.qml") << "qmlformat"
+            << QQmlToolingSettings::SearchOptions{ "invalid/.qmlformat.ini", false }
+            << QQmlToolingSettings::SearchResult{
+                   QQmlToolingSettings::SearchResult::ResultType::NotFound, QString()
+               };
+}
+
+void tst_qmltoolingsettings::searchOptions()
+{
+    QFETCH(QString, fileName);
+    QFETCH(QString, toolName);
+    QFETCH(QQmlToolingSettings::SearchOptions, options);
+    QFETCH(QQmlToolingSettings::SearchResult, expectedResult);
+
+    QQmlToolingSettings settings(toolName);
+    QQmlToolingSettings::SearchResult actualResult = settings.search(fileName, options);
+
+    QCOMPARE(actualResult.type, expectedResult.type);
+    QCOMPARE(actualResult.iniFilePath, expectedResult.iniFilePath);
 }
 
 QTEST_MAIN(tst_qmltoolingsettings)

@@ -195,6 +195,13 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
                            "without actually performing anything."));
     parser.addOption(dryrunOption);
 
+    QCommandLineOption settingsOption(
+            { "s"_L1, "settings"_L1 },
+            QStringLiteral("Use the specified .qmlformat.ini file as the only configuration source."
+                           "Overrides any per-directory configuration lookup."),
+            "file"_L1);
+    parser.addOption(settingsOption);
+
     parser.addPositionalArgument("filenames"_L1, "files to be processed by qmlformat"_L1);
 
     parser.process(args);
@@ -293,6 +300,20 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
         options.setNewline(QQmlFormatOptions::parseEndings(parser.value("newline"_L1)));
     }
 
+    if (parser.isSet(settingsOption)) {
+        options.mark(Settings::SettingsFile);
+        const auto value = parser.value(settingsOption);
+        if (value.isEmpty()) {
+            options.addError("Error: No settings file specified for option -s."_L1);
+            return options;
+        }
+        if (!QFile::exists(value)) {
+            options.addError("Error: Could not find file \""_L1 + value + "\"."_L1);
+            return options;
+        }
+        options.setSettingsFile(value);
+    }
+
     if (parser.isSet(semicolonRuleOption)) {
         options.mark(Settings::SemicolonRule);
         const auto value = parser.value(semicolonRuleOption);
@@ -330,7 +351,8 @@ QQmlFormatOptions QQmlFormatOptions::optionsForFile(const QString &fileName,
     if (hasFiles)
         perFileOptions.setIsInplace(true);
 
-    if (!ignoreSettingsEnabled() && settings->search(fileName, { m_verbose }).isValid())
+    if (!ignoreSettingsEnabled()
+        && settings->search(fileName, { m_settingsFile, m_verbose }).isValid())
         perFileOptions.applySettings(*settings);
 
     return perFileOptions;

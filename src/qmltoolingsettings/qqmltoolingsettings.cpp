@@ -169,6 +169,12 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::search(const QString &pat
             reportConfigForFiles({ path });
     });
 
+    // If a specific settings file is provided, read it directly
+    if (!options.settingsFileName.isEmpty()) {
+        QFileInfo fileInfo(options.settingsFileName);
+        return fileInfo.exists() ? read(fileInfo.absoluteFilePath()) : SearchResult();
+    }
+
     if (const SearchResult result = m_searcher.search(path); result.isValid())
         return read(result.iniFilePath);
 

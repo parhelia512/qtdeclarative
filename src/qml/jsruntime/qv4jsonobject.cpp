@@ -801,8 +801,6 @@ QString Stringify::JO(Object *o)
         for (int i = 0; i < propertyListSize; ++i) {
             bool exists;
             String *s = propertyList + i;
-            if (!s)
-                continue;
             v = o->get(s, &exists);
             if (!exists)
                 continue;

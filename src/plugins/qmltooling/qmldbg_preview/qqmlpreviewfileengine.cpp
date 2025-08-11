@@ -302,13 +302,6 @@ bool QQmlPreviewFileEngine::isRelativePath() const
     return m_fallback ? m_fallback->isRelativePath() : isRelative(m_name);
 }
 
-QStringList QQmlPreviewFileEngine::entryList(QDir::Filters filters,
-                                             const QStringList &filterNames) const
-{
-    return m_fallback ? m_fallback->entryList(filters, filterNames)
-                      : QAbstractFileEngine::entryList(filters, filterNames);
-}
-
 bool QQmlPreviewFileEngine::setPermissions(uint perms)
 {
     return m_fallback ? m_fallback->setPermissions(perms) : false;

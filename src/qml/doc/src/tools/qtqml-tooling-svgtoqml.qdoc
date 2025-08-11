@@ -60,6 +60,9 @@ In addition, it supports the following options:
     \li Display a preview of the Qt Quick item as it will be generated.
 \endtable
 
+The tool can be invoked automatically from the build by using the \l{qt_target_qml_from_svg()}
+cmake function.
+
 \section1 Comparison to other options
 There are multiple options for including SVG content in Qt Quick. The following will give an
 overview of where \c svgtoqml fits into the story.

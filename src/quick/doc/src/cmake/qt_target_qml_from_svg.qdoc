@@ -35,6 +35,10 @@ qt_target_qml_from_svg(target
 
 \versionlessCMakeCommandsNote qt6_target_qml_from_svg()
 
+Example:
+
+\snippet vectorimage/CMakeLists.txt svgtoqml
+
 \section1 Description
 
 qt_target_qml_from_svg() creates the build steps to run \l{svgtoqml} on the list of SVG images in

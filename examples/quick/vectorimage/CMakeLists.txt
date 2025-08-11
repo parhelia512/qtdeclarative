@@ -25,10 +25,20 @@ qt_add_qml_module(vectorimageexample
     URI vectorimage
     QML_FILES
         "Main.qml"
-        "Heart.qml"
     RESOURCES
         "heart.svg"
 )
+
+#![svgtoqml]
+qt_target_qml_from_svg(vectorimageexample
+    CURVE_RENDERER
+    OPTIMIZE_PATHS
+    FILES heart.svg
+    OUTPUTS Heart.qml
+    COPYRIGHT_STATEMENT
+        "Copyright © 2024 The Qt Company Ltd.\\nSPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause"
+)
+#![svgtoqml]
 
 install(TARGETS vectorimageexample
     BUNDLE  DESTINATION .

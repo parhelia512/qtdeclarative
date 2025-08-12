@@ -37,7 +37,7 @@ void QQmlDocumentSymbolSupport::process(QQmlDocumentSymbolSupport::RequestPointe
     const auto qmlFileItem = doc.snapshot.validDoc.fileObject(QQmlJS::Dom::GoTo::MostLikely);
     QList<QLspSpecification::DocumentSymbol> results;
     ResponseScopeGuard guard(results, request->m_response);
-    if (!qmlFileItem)
+    if (qmlFileItem.internalKind() != QQmlJS::Dom::DomType::QmlFile)
         return;
     results = DocumentSymbolUtils::assembleSymbolsForQmlFile(qmlFileItem);
     DocumentSymbolUtils::reorganizeForOutlineView(results);

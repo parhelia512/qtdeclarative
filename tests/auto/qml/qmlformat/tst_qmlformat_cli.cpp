@@ -377,30 +377,41 @@ void TestQmlformatCli::commandLineOptions()
 
 void TestQmlformatCli::writeDefaults()
 {
-    auto verify = [&]() {
-        QTemporaryDir tempDir;
-        const QString qmlformatIni = tempDir.path() + QDir::separator() + ".qmlformat.ini";
+    QTemporaryDir tempDir;
+    const QString qmlformatIni = tempDir.path() + QDir::separator() + ".qmlformat.ini";
 
-        QProcess process;
-        process.setWorkingDirectory(tempDir.path());
-        process.start(m_qmlformatPath, QStringList{ "--write-defaults" });
-        QVERIFY(process.waitForFinished());
-        QCOMPARE(process.exitStatus(), QProcess::NormalExit);
+    QProcess process;
+    process.setWorkingDirectory(tempDir.path());
+    process.start(m_qmlformatPath, QStringList{ "--write-defaults" });
+    QVERIFY(process.waitForFinished());
+    QCOMPARE(process.exitStatus(), QProcess::NormalExit);
 
-        QQmlToolingSettings settings("qmlformat");
-        QVERIFY(settings.search(qmlformatIni).isValid());
+    QQmlToolingSettings settings("qmlformat");
+    QVERIFY(settings.search(qmlformatIni).isValid());
 
-        QCOMPARE(settings.value("UseTabs").toBool(), false);
-        QCOMPARE(settings.value("IndentWidth").toInt(), 4);
-        QCOMPARE(settings.value("MaxColumnWidth").toInt(), -1);
-        QCOMPARE(settings.value("NormalizeOrder").toBool(), false);
-        QCOMPARE(settings.value("NewlineType").toString(), "native");
-        QCOMPARE(settings.value("ObjectSpacing").toBool(), false);
-        QCOMPARE(settings.value("FunctionsSpacing").toBool(), false);
-        QCOMPARE(settings.value("SortImports").toBool(), false);
-    };
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_useTabsSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_useTabsSetting).toBool(), false);
 
-    verify();
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_indentWidthSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_indentWidthSetting).toInt(), 4);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_maxColumnWidthSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_maxColumnWidthSetting).toInt(), -1);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_normalizeSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_normalizeSetting).toBool(), false);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_newlineSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_newlineSetting).toString(), "native");
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_objectsSpacingSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_objectsSpacingSetting).toBool(), false);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_functionsSpacingSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_functionsSpacingSetting).toBool(), false);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_sortImportsSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool(), false);
 }
 
 void TestQmlformatCli::settingsFromFileOrCommandLine_data()

@@ -66,6 +66,8 @@ private Q_SLOTS:
 
     void writeDefaults();
 
+    void settingsKeysStayStable();
+
     void settingsFromFileOrCommandLine_data();
     void settingsFromFileOrCommandLine();
 
@@ -415,6 +417,19 @@ void TestQmlformatCli::writeDefaults()
 
     QVERIFY(settings.isSet(QQmlFormatSettings::s_semiColonRuleSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_semiColonRuleSetting).toString(), "always"_L1);
+}
+
+void TestQmlformatCli::settingsKeysStayStable()
+{
+    QCOMPARE(QQmlFormatSettings::s_useTabsSetting, "UseTabs"_L1);
+    QCOMPARE(QQmlFormatSettings::s_indentWidthSetting, "IndentWidth"_L1);
+    QCOMPARE(QQmlFormatSettings::s_maxColumnWidthSetting, "MaxColumnWidth"_L1);
+    QCOMPARE(QQmlFormatSettings::s_normalizeSetting, "NormalizeOrder"_L1);
+    QCOMPARE(QQmlFormatSettings::s_newlineSetting, "NewlineType"_L1);
+    QCOMPARE(QQmlFormatSettings::s_objectsSpacingSetting, "ObjectsSpacing"_L1);
+    QCOMPARE(QQmlFormatSettings::s_functionsSpacingSetting, "FunctionsSpacing"_L1);
+    QCOMPARE(QQmlFormatSettings::s_sortImportsSetting, "SortImports"_L1);
+    QCOMPARE(QQmlFormatSettings::s_semiColonRuleSetting, "SemicolonRule"_L1);
 }
 
 void TestQmlformatCli::settingsFromFileOrCommandLine_data()

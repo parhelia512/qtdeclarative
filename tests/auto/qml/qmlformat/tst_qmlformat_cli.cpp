@@ -412,6 +412,9 @@ void TestQmlformatCli::writeDefaults()
 
     QVERIFY(settings.isSet(QQmlFormatSettings::s_sortImportsSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool(), false);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_semiColonRuleSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_semiColonRuleSetting).toString(), "always"_L1);
 }
 
 void TestQmlformatCli::settingsFromFileOrCommandLine_data()

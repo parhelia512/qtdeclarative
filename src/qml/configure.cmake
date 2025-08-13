@@ -186,6 +186,13 @@ qt_feature("qml-python" PRIVATE
     LABEL "python"
     CONDITION Python_Interpreter_FOUND
 )
+
+qt_feature("qmlcontextpropertydump" PRIVATE
+    LABEL "qmlcontextpropertydump"
+    PURPOSE "Enables qmlcontextpropertydump tooling"
+    CONDITION QT_FEATURE_settings
+)
+
 qt_configure_add_summary_section(NAME "Qt QML")
 qt_configure_add_summary_entry(ARGS "qml-network")
 qt_configure_add_summary_entry(ARGS "qml-debug")

@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qqmljscontextproperties_p.h"
+#include <private/qtqml-config_p.h>
+
 #include <QtCore/qtconfigmacros.h>
 #include <QtCore/qregularexpression.h>
 #include <QtCore/qdirlisting.h>
 #include <QtCore/qfile.h>
 
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
 #  include <QtCore/qsettings.h>
 #endif
 
@@ -149,7 +151,7 @@ void HeuristicContextProperties::collectFromDirs(const QList<QString> &dirs)
     grepFallback(dirs);
 }
 
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
 static SourceLocation deserializeSourceLocation(const QString &string)
 {
     constexpr int size = 4;
@@ -188,7 +190,7 @@ static constexpr auto cachedHeuristicListKey = "cachedHeuristicList"_L1;
 
 HeuristicContextProperties HeuristicContextProperties::collectFrom(QSettings *settings)
 {
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
     HeuristicContextProperties result;
     std::vector<QString> names;
 
@@ -221,9 +223,8 @@ HeuristicContextProperties HeuristicContextProperties::collectFrom(QSettings *se
 
 void HeuristicContextProperties::writeCache(const QString &folder) const
 {
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
     QSettings settings(folder + "/.qt/contextPropertyDump.ini"_L1, QSettings::IniFormat);
-
     settings.beginWriteArray(cachedHeuristicListKey);
     int index = 0;
     for (const auto &[name, _] : m_properties) {

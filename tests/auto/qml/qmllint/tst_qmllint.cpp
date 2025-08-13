@@ -5,6 +5,7 @@
 #include <QtTest/QTest>
 #include <QProcess>
 #include <QString>
+#include <QtQml/private/qtqml-config_p.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
 #include <QtQmlCompiler/private/qqmljslinter_p.h>
 #include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
@@ -15,7 +16,7 @@
 #include <QtCore/qdiriterator.h>
 #include <QtCore/qlibraryinfo.h>
 
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
 #  include <QtCore/qsettings.h>
 #endif
 
@@ -95,7 +96,7 @@ private Q_SLOTS:
     void contextPropertiesFromRootUrls_data();
     void contextPropertiesFromRootUrls();
     void contextPropertiesFromUser();
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
     void contextPropertiesFromHeuristicWrite();
     void contextPropertiesFromHeuristicRead();
 #endif
@@ -2008,7 +2009,7 @@ void TestQmllint::contextPropertiesFromUser()
     QVERIFY(!properties.isOnUsageWarned("doesNotExist"_L1));
 }
 
-#if QT_CONFIG(settings)
+#if QT_CONFIG(qmlcontextpropertydump)
 void TestQmllint::contextPropertiesFromHeuristicWrite()
 {
     using namespace QQmlJS;

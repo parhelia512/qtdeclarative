@@ -19,8 +19,10 @@
 #include <QtQuick/private/qquicklistview_p.h>
 #include <QtQuick/private/qquickmousearea_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
+#include <QtQuick/private/qquickloader_p.h>
 #include <QtQuickTest/quicktest.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
+#include <QtQuickTestUtils/private/viewtestutils_p.h>
 #include <QtQuickTestUtils/private/visualtestutils_p.h>
 #include <QtQuickControlsTestUtils/private/controlstestutils_p.h>
 #include <QtQuickControlsTestUtils/private/qtest_quickcontrols_p.h>
@@ -127,6 +129,7 @@ private slots:
     void shortcutInNestedSubMenuAction();
     void animationOnHeight();
     void dontDeleteDelegates();
+    void loadMenuAsynchronously();
 
 private:
     bool nativeMenuSupported = false;
@@ -3560,6 +3563,40 @@ void tst_QQuickMenu::dontDeleteDelegates()
     // The same goes for the new delegate: it shouldn't be destroyed when setting the old one.
     menu->setDelegate(delegateComponent1);
     QVERIFY(delegateComponent2);
+}
+
+void tst_QQuickMenu::loadMenuAsynchronously()
+{
+    QQuickView window(testFileUrl("loadMenuAsynchronously.qml"));
+    QCOMPARE(window.status(), QQuickView::Ready);
+    window.show();
+    window.requestActivate();
+    QVERIFY(QTest::qWaitForWindowActive(&window));
+
+    auto *rootItem = window.rootObject();
+    QVERIFY(rootItem);
+
+    auto *loader = rootItem->property("loader").value<QQuickLoader*>();
+    QVERIFY(loader);
+    QCOMPARE(loader->active(), false);
+    QCOMPARE(loader->asynchronous(), true);
+
+    auto activateLoader = rootItem->property("activateLoader").value<bool>();
+    QCOMPARE(activateLoader, false);
+    QVERIFY(rootItem->setProperty("activateLoader", true));
+    activateLoader = rootItem->property("activateLoader").value<bool>();
+    QCOMPARE(activateLoader, true);
+
+    QTRY_COMPARE(loader->active(), false);
+
+    rootItem->setProperty("activateLoader", false);
+    activateLoader = rootItem->property("activateLoader").value<bool>();
+    QCOMPARE(activateLoader, false);
+    QVERIFY(rootItem->setProperty("activateLoader", true));
+    activateLoader = rootItem->property("activateLoader").value<bool>();
+    QCOMPARE(activateLoader, true);
+
+    QTRY_COMPARE(loader->active(), false);
 }
 
 QTEST_QUICKCONTROLS_MAIN(tst_QQuickMenu)

@@ -131,6 +131,8 @@ public:
     QPalette defaultPalette() const override;
     virtual QQuickPopup::PopupType resolvedPopupType() const override;
 
+    void resetContentItem();
+
     bool cascade = false;
     bool triedToCreateNativeMenu = false;
     int hoverTimer = 0;
@@ -139,9 +141,9 @@ public:
     qreal textPadding = 0;
     QPointer<QQuickMenu> parentMenu;
     QPointer<QQuickMenuItem> currentItem;
-    QQuickItem *contentItem = nullptr; // TODO: cleanup
+    QPointer<QQuickItem> contentItem;
     QList<QObject *> contentData;
-    QQmlObjectModel *contentModel;
+    QPointer<QQmlObjectModel> contentModel;
     QQmlComponent *delegate = nullptr;
     QString title;
     QQuickIcon icon;

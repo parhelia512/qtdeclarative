@@ -166,6 +166,11 @@ QByteArray QuickTestResultPrivate::intern(const QString &str)
     return *(internedStrings.insert(bstr));
 }
 
+
+/*!
+    \qmltype TestResult
+    \internal
+*/
 QuickTestResult::QuickTestResult(QObject *parent)
     : QObject(parent), d_ptr(new QuickTestResultPrivate)
 {

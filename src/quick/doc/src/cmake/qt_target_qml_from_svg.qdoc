@@ -27,7 +27,7 @@ qt_target_qml_from_svg(target
                        [OPTIMIZE_PATHS]
                        [OUTLINE_STROKE_MODE]
                        [TYPE_NAME "MyShapeName"]
-                       [COPYRIGHT_STATEMENT "Copyright (C) Company1"]
+                       [COPYRIGHT_STATEMENT "Copyright © Company1"]
                        FILES file1.svg [file2.svg ...]
                        OUTPUTS File1.qml [File2.qml ...]
                        )
@@ -48,6 +48,9 @@ The generated QML files will be added to the QML module of \c{target}. You must 
 
 Optionally, a \c COPYRIGHT_STATEMENT argument can be provided to insert copyright information
 into the generated files.
+
+\note Certain characters must be escaped for command line use or you may see build errors on
+some platforms.
 
 \c TYPE_NAME is also optional, and can be used to replace all instances of the \l{Shape} type in
 the generated file with a custom type. This can be useful to make general customizations to all

@@ -1058,8 +1058,8 @@ void tst_QJSValue::toVariant()
         QVERIFY(object.isObject());
 
         QVariant retained = object.toVariant(QJSValue::RetainJSObjects);
-        QCOMPARE(retained.metaType(), QMetaType::fromType<QJSValue>());
-        QVERIFY(retained.value<QJSValue>().strictlyEquals(object));
+        QCOMPARE(retained.metaType(), QMetaType::fromType<QVariantMap>());
+        QCOMPARE(retained, mapIn);
 
         QVariant ret = object.toVariant();
         QCOMPARE(ret.typeId(), QMetaType::QVariantMap);

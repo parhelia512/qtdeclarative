@@ -632,6 +632,8 @@ QVariant QJSValue::toVariant() const
     \row    \li Number     \li A QVariant containing the value of the number.
     \row    \li String     \li A QVariant containing the value of the string.
     \row    \li QVariant Object \li The result is the QVariant value of the object (no conversion).
+    \row    \li QVariantMap Object \li A QVariant containing the QVariantMap stored in the object (no conversion).
+    \row    \li QVariantHash Object \li A QVariant containing the QVariantHash stored in the object (no conversion).
     \row    \li QObject Object \li A QVariant containing a pointer to the QObject.
     \row    \li Date Object \li A QVariant containing the date value (toDateTime()).
     \row    \li RegularExpression Object \li A QVariant containing the regular expression value.
@@ -672,11 +674,6 @@ QVariant QJSValue::toVariant(QJSValue::ObjectConversionBehavior behavior) const
         return QVariant(val.toQString());
 
     if (behavior == RetainJSObjects) {
-        // For historical reasons we don't want to retrieve the actual container here.
-        // ### Qt7: change this
-        if (val.as<QV4::VariantAssociationObject>())
-            return QVariant::fromValue(QJSValuePrivate::fromReturnedValue(val.asReturnedValue()));
-
         return QV4::ExecutionEngine::toVariant(
                 val, /*typeHint*/ QMetaType{}, /*createJSValueForObjectsAndSymbols=*/ true);
     } else {

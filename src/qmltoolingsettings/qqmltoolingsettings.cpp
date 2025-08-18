@@ -15,7 +15,7 @@
 
 using namespace Qt::StringLiterals;
 
-void QQmlToolingSettings::addOption(const QString &name, QVariant defaultValue)
+void QQmlToolingSettings::addOption(const QString &name, const QVariant &defaultValue)
 {
     if (defaultValue.isValid()) {
         m_values[name] = defaultValue;
@@ -110,8 +110,12 @@ QQmlToolingSettings::Searcher::searchDefaultLocation(const QSet<QString> *visite
 }
 
 QQmlToolingSettings::SearchResult
-QQmlToolingSettings::Searcher::searchDirectoryHierarchy(QSet<QString> *visitedDirs, QDir dir)
+QQmlToolingSettings::Searcher::searchDirectoryHierarchy(
+        QSet<QString> *visitedDirs, const QString &path)
 {
+    const QFileInfo fileInfo(path);
+    QDir dir(fileInfo.isDir() ? path : fileInfo.dir());
+
     while (dir.exists() && dir.isReadable()) {
         const QString dirPath = dir.absolutePath();
 
@@ -144,12 +148,10 @@ QQmlToolingSettings::Searcher::searchDirectoryHierarchy(QSet<QString> *visitedDi
 QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QString &path)
 {
 #if QT_CONFIG(settings)
-    QFileInfo fileInfo(path);
-    QDir dir(fileInfo.isDir() ? path : fileInfo.dir());
     QSet<QString> visitedDirs;
 
     // Try to find settings in directory hierarchy
-    if (const SearchResult result = searchDirectoryHierarchy(&visitedDirs, dir); result.isValid())
+    if (const SearchResult result = searchDirectoryHierarchy(&visitedDirs, path); result.isValid())
         return result;
 
     // If we didn't find the settings file in the current directory or any parent directories,
@@ -162,7 +164,8 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QS
     return SearchResult();
 }
 
-QQmlToolingSettings::SearchResult QQmlToolingSettings::search(const QString &path, SearchOptions options)
+QQmlToolingSettings::SearchResult QQmlToolingSettings::search(
+        const QString &path, const SearchOptions &options)
 {
     const auto maybeReport = qScopeGuard([&]() {
         if (options.verbose)

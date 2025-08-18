@@ -55,15 +55,15 @@ public:
     private:
         SearchResult searchDefaultLocation(const QSet<QString> *visitedDirs);
         SearchResult searchCurrentDirInCache(const QString &dirPath);
-        SearchResult searchDirectoryHierarchy(QSet<QString> *visitedDir, QDir dir);
+        SearchResult searchDirectoryHierarchy(QSet<QString> *visitedDir, const QString &path);
 
         const QString m_localSettingsFile;
         const QString m_globalSettingsFile;
         QHash<QString, QString> m_seenDirectories;
     };
 
-    void addOption(const QString &name, const QVariant defaultValue = QVariant());
-    SearchResult search(const QString &path, SearchOptions options = {});
+    void addOption(const QString &name, const QVariant &defaultValue = QVariant());
+    SearchResult search(const QString &path, const SearchOptions &options = {});
     bool writeDefaults() const;
 
     QVariant value(const QString &name) const;
@@ -84,7 +84,7 @@ class QQmlToolingSharedSettings : private QQmlToolingSettings
 public:
     QQmlToolingSharedSettings(const QString &toolName) : QQmlToolingSettings(toolName) { }
 
-    void addOption(const QString &name, const QVariant defaultValue = QVariant())
+    void addOption(const QString &name, const QVariant &defaultValue = QVariant())
     {
         QMutexLocker lock(&m_mutex);
         QQmlToolingSettings::addOption(name, defaultValue);
@@ -96,7 +96,7 @@ public:
         return QQmlToolingSettings::writeDefaults();
     }
 
-    SearchResult search(const QString &path, SearchOptions options = {})
+    SearchResult search(const QString &path, const SearchOptions &options = {})
     {
         QMutexLocker lock(&m_mutex);
         return QQmlToolingSettings::search(path, options);

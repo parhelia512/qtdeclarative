@@ -113,6 +113,9 @@ HeuristicContextProperties::collectFromCppSourceDirs(const QList<QString> &cppSo
 */
 void HeuristicContextProperties::collectFromDirs(const QList<QString> &dirs)
 {
+    if (dirs.isEmpty())
+        return;
+
 #if QT_CONFIG(process) && !defined(Q_OS_WINDOWS)
     if (qEnvironmentVariableIsSet("QT_QML_NO_GREP")) {
         grepFallback(dirs);

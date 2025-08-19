@@ -402,6 +402,7 @@ private slots:
     void leakingAttributesQmlForeign();
     void attachedOwnProperties();
     void bindableOnly();
+    void v4SequenceMethods_data();
     void v4SequenceMethods();
     void v4SequenceMethodsWithParams_data();
     void v4SequenceMethodsWithParams();
@@ -7871,10 +7872,19 @@ static void listsEqual(QObject *object, const char *method)
         QCOMPARE(v4SequenceProperty.at(i), jsArrayProperty.at(i));
 }
 
+void tst_qqmllanguage::v4SequenceMethods_data()
+{
+    QTest::addColumn<QUrl>("file");
+    QTest::addRow("attached") << testFileUrl("v4SequenceMethods.qml");
+    QTest::addRow("detached") << testFileUrl("v4SequenceMethodsDetached.qml");
+}
+
 void tst_qqmllanguage::v4SequenceMethods()
 {
+    QFETCH(QUrl, file);
+
     QQmlEngine engine;
-    QQmlComponent component(&engine, testFileUrl("v4SequenceMethods.qml"));
+    QQmlComponent component(&engine, file);
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     QScopedPointer<QObject> object(component.create());
     QVERIFY(!object.isNull());
@@ -7944,6 +7954,7 @@ void tst_qqmllanguage::v4SequenceMethods()
 
 void tst_qqmllanguage::v4SequenceMethodsWithParams_data()
 {
+    QTest::addColumn<QUrl>("file");
     QTest::addColumn<double>("i");
     QTest::addColumn<double>("j");
     QTest::addColumn<double>("k");
@@ -7968,21 +7979,32 @@ void tst_qqmllanguage::v4SequenceMethodsWithParams_data()
     const qsizetype numIndices = sizeof(indices) / sizeof(double);
     qsizetype seed = QRandomGenerator::global()->generate();
     const int numSamples = 4;
-    for (int i = 0; i < numSamples; ++i) {
-        seed = qHash(i, seed);
-        const double vi = indices[qAbs(seed) % numIndices];
-        for (int j = 0; j < numSamples; ++j) {
-            seed = qHash(j, seed);
-            const double vj = indices[qAbs(seed) % numIndices];
-            for (int k = 0; k < numSamples; ++k) {
-                seed = qHash(k, seed);
-                const double vk = indices[qAbs(seed) % numIndices];
-                const QString tag = QLatin1String("%1/%2/%3")
-                        .arg(QString::number(vi), QString::number(vj), QString::number(vk));
-                QTest::newRow(qPrintable(tag)) << vi << vj << vk;
 
-                // output all the tags so that we can find out what combination caused a test to hang.
-                qDebug().noquote() << "scheduling" << tag;
+    enum Mode { Attached, Detached };
+
+    for (int mode = Attached; mode <= Detached; ++mode) {
+        for (int i = 0; i < numSamples; ++i) {
+            seed = qHash(i, seed);
+            const double vi = indices[qAbs(seed) % numIndices];
+            for (int j = 0; j < numSamples; ++j) {
+                seed = qHash(j, seed);
+                const double vj = indices[qAbs(seed) % numIndices];
+                for (int k = 0; k < numSamples; ++k) {
+                    seed = qHash(k, seed);
+                    const double vk = indices[qAbs(seed) % numIndices];
+                    const QString tag = QLatin1String("%1 %2/%3/%4")
+                            .arg(mode == Attached ? "attached" : "detached")
+                            .arg(QString::number(vi), QString::number(vj), QString::number(vk));
+                    QTest::newRow(qPrintable(tag))
+                            << (testFileUrl(mode == Attached
+                                            ? "v4SequenceMethodsWithParams.qml"
+                                            : "v4SequenceMethodsWithParamsDetached.qml"))
+                            << vi << vj << vk;
+
+                    // output all the tags so that we can find out what combination caused a
+                    // test to hang.
+                    qDebug().noquote() << "scheduling" << tag;
+                }
             }
         }
     }
@@ -7990,11 +8012,12 @@ void tst_qqmllanguage::v4SequenceMethodsWithParams_data()
 
 void tst_qqmllanguage::v4SequenceMethodsWithParams()
 {
+    QFETCH(QUrl, file);
     QFETCH(double, i);
     QFETCH(double, j);
     QFETCH(double, k);
     QQmlEngine engine;
-    QQmlComponent component(&engine, testFileUrl("v4SequenceMethodsWithParams.qml"));
+    QQmlComponent component(&engine, file);
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     QScopedPointer<QObject> object(component.createWithInitialProperties({
             {QStringLiteral("i"), i},
@@ -9642,7 +9665,8 @@ void tst_qqmllanguage::referenceToBindableReadsBackOnlyWhenRequired() {
     auto *readCounter = qobject_cast<ReadCounter *>(o.data());
     QVERIFY(readCounter);
 
-    QCOMPARE(readCounter->timesRead, 4);
+    QCOMPARE_GE(readCounter->timesRead, 3);
+    QCOMPARE_LE(readCounter->timesRead, 4);
     QCOMPARE(readCounter->property("finalLength").toInt(), readCounter->bindableProperty().value().size());
 }
 

@@ -99,6 +99,13 @@ static void *createVariantData(QMetaType type, QVariant *variant)
     return variant->data();
 }
 
+static const void *retrieveVariantData(QMetaType type, const QVariant *variant)
+{
+    if (type == QMetaType::fromType<QVariant>())
+        return variant;
+    return variant->constData();
+}
+
 // helper function to generate valid warnings if errors occur during sequence operations.
 static void generateWarning(QV4::ExecutionEngine *v4, const QString& description)
 {
@@ -179,8 +186,8 @@ void Heap::Sequence::init(QMetaType listType, QMetaSequence metaSequence, const 
 }
 
 void Heap::Sequence::init(
-    QMetaType listType, QMetaSequence metaSequence, const void *container,
-    Heap::Object *object, int propertyIndex, Heap::ReferenceObject::Flags flags)
+        QMetaType listType, QMetaSequence metaSequence, const void *container,
+        Heap::Object *object, int propertyIndex, Heap::ReferenceObject::Flags flags)
 {
     ReferenceObject::init(object, propertyIndex, flags | IsDirty);
     initTypes(listType, metaSequence);
@@ -696,9 +703,13 @@ void SequencePrototype::init()
     defineDefaultProperty(engine()->id_valueOf(), method_valueOf, 0);
     defineAccessorProperty(QStringLiteral("length"), method_getLength, method_setLength);
     defineDefaultProperty(QStringLiteral("shift"), method_shift, 0);
+    defineDefaultProperty(QStringLiteral("unshift"), method_unshift, 1);
+    defineDefaultProperty(QStringLiteral("push"), method_push, 1);
+    defineDefaultProperty(QStringLiteral("pop"), method_pop, 0);
 }
 
-ReturnedValue SequencePrototype::method_valueOf(const FunctionObject *f, const Value *thisObject, const Value *, int)
+ReturnedValue SequencePrototype::method_valueOf(
+        const FunctionObject *f, const Value *thisObject, const Value *, int)
 {
     return Encode(thisObject->toString(f->engine()));
 }
@@ -752,9 +763,136 @@ ReturnedValue SequencePrototype::method_shift(
     return scope.engine->fromVariant(shifted);
 }
 
+ReturnedValue SequencePrototype::method_unshift(
+        const FunctionObject *f, const Value *thisObject, const Value *argv, int argc)
+{
+    Scope scope(f);
+    Scoped<Sequence> s(scope, thisObject);
+    if (!s)
+        return ArrayPrototype::method_unshift(f, thisObject, argv, argc);
+
+    Heap::Sequence *p = s->d();
+    if (p->isReadOnly())
+        THROW_TYPE_ERROR();
+
+    if (!p->isStoredInline())
+        return ArrayPrototype::method_unshift(f, thisObject, argv, argc);
+
+    if (p->isReference() && !p->loadReference())
+        RETURN_UNDEFINED();
+
+    qsizetype size;
+    if (qAddOverflow(sizeInline(p), qsizetype(argc), &size) || !qIsAtMostUintLimit(size)) {
+        generateWarning(scope.engine, QLatin1String("Index out of range during unshift"));
+        RETURN_UNDEFINED();
+    }
+
+    void *storage = p->storagePointer();
+    Q_ASSERT(storage); // Must readReference() before
+    const QMetaType v = p->valueMetaType();
+    const QMetaSequence m = p->metaSequence();
+
+    if (m.canAddValueAtBegin()) {
+        for (int i = argc - 1; i >= 0; --i) {
+            const QVariant item = scope.engine->toVariant(argv[i], p->valueMetaType(), false);
+            m.addValueAtBegin(storage, retrieveVariantData(v, &item));
+        }
+    } else {
+        QVariant t;
+        void *tData = createVariantData(v, &t);
+
+        const qsizetype oldSize = m.size(storage);
+
+        // Resize array by appending values to the end
+        for (qsizetype i = argc; i > 0; --i) {
+            if (i < oldSize)
+                m.valueAtIndex(storage, oldSize - i, tData);
+            m.addValueAtEnd(storage, tData);
+        }
+
+        // Move other existing values into now vacant storage
+        for (qsizetype i = oldSize - argc; i >= 0; --i) {
+            m.valueAtIndex(storage, i, tData);
+            m.setValueAtIndex(storage, i + argc, tData);
+        }
+
+        // Insert new values into vacant storage at front
+        for (qsizetype i = 0; i < argc; ++i) {
+            const QVariant item = scope.engine->toVariant(argv[i], p->valueMetaType(), false);
+            m.setValueAtIndex(storage, i, retrieveVariantData(v, &item));
+        }
+    }
+
+    if (p->isReference())
+        p->storeReference();
+    return Encode(uint(size));
+}
+
+ReturnedValue SequencePrototype::method_push(
+        const FunctionObject *f, const Value *thisObject, const Value *argv, int argc)
+{
+    Scope scope(f);
+    Scoped<Sequence> s(scope, thisObject);
+    if (!s)
+        return ArrayPrototype::method_push(f, thisObject, argv, argc);
+
+    Heap::Sequence *p = s->d();
+    if (p->isReadOnly())
+        THROW_TYPE_ERROR();
+
+    if (!p->isStoredInline())
+        return ArrayPrototype::method_push(f, thisObject, argv, argc);
+
+    if (p->isReference() && !p->loadReference())
+        RETURN_UNDEFINED();
+
+    qsizetype size;
+    if (qAddOverflow(sizeInline(p), qsizetype(argc), &size) || !qIsAtMostUintLimit(size)) {
+        generateWarning(scope.engine, QLatin1String("Index out of range during push"));
+        RETURN_UNDEFINED();
+    }
+
+    for (int i = 0; i < argc; ++i)
+        appendInline(p, scope.engine->toVariant(argv[i], p->valueMetaType(), false));
+
+    if (p->isReference())
+        p->storeReference();
+    return Encode(uint(size));
+}
+
+ReturnedValue SequencePrototype::method_pop(
+        const FunctionObject *f, const Value *thisObject, const Value *argv, int argc)
+{
+    Scope scope(f);
+    Scoped<Sequence> s(scope, thisObject);
+    if (!s)
+        return ArrayPrototype::method_pop(f, thisObject, argv, argc);
+
+    Heap::Sequence *p = s->d();
+    if (p->isReadOnly())
+        THROW_TYPE_ERROR();
+
+    if (!p->isStoredInline())
+        return ArrayPrototype::method_pop(f, thisObject, argv, argc);
+
+    if (p->isReference() && !p->loadReference())
+        RETURN_UNDEFINED();
+
+    const qsizetype len = sizeInline(p);
+    if (!len)
+        RETURN_UNDEFINED();
+
+    ScopedValue result(scope, doGetIndexed(p, len - 1));
+    removeLastInline(p, 1);
+
+    if (p->isReference())
+        p->storeReference();
+    return result->asReturnedValue();
+}
+
 ReturnedValue SequencePrototype::newSequence(
-    QV4::ExecutionEngine *engine, QMetaType type, QMetaSequence metaSequence, const void *data,
-    Heap::Object *object, int propertyIndex, Heap::ReferenceObject::Flags flags)
+        QV4::ExecutionEngine *engine, QMetaType type, QMetaSequence metaSequence, const void *data,
+        Heap::Object *object, int propertyIndex, Heap::ReferenceObject::Flags flags)
 {
     // This function is called when the property is a QObject Q_PROPERTY of
     // the given sequence type.  Internally we store a sequence

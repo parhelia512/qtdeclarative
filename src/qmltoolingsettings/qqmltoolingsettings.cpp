@@ -147,7 +147,6 @@ QQmlToolingSettings::Searcher::searchDirectoryHierarchy(
 
 QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QString &path)
 {
-#if QT_CONFIG(settings)
     QSet<QString> visitedDirs;
 
     // Try to find settings in directory hierarchy
@@ -159,8 +158,6 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::Searcher::search(const QS
     if (const SearchResult result = searchDefaultLocation(&visitedDirs); result.isValid())
         return result;
 
-#endif
-    Q_UNUSED(path);
     return SearchResult();
 }
 

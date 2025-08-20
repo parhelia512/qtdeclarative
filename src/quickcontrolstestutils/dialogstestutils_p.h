@@ -100,6 +100,11 @@ public:
         appHelper.window->requestActivate();
     }
 
+    ~DialogTestHelper()
+    {
+        dialog->close();
+    }
+
     Q_REQUIRED_RESULT bool isWindowInitialized() const
     {
         return appHelper.ready;

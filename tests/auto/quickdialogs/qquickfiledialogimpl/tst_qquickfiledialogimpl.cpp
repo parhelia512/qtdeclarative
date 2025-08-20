@@ -1063,7 +1063,9 @@ void tst_QQuickFileDialogImpl::changeNameFilters()
         QTRY_VERIFY(findViewDelegateItem(comboBoxPopupListView, 1, htmlDelegate));
         QVERIFY(clickButton(htmlDelegate));
     }
-    QTRY_VERIFY(!comboBoxPopup->isOpened());
+    QTRY_VERIFY(!comboBoxPopup->isVisible());
+    QVERIFY(QQuickTest::qWaitForPolish(comboBox));
+
     // Use QTRY_VERIFY2 here to fix a failure on QEMU armv7 (QT_QPA_PLATFORM=offscreen).
     // Not sure why it's necessary.
     QTRY_VERIFY2(verifyFileDialogDelegates(dialogHelper.fileDialogListView,
@@ -1609,7 +1611,7 @@ void tst_QQuickFileDialogImpl::selectExistingFileShouldWarnUserWhenFileModeEqual
     QVERIFY(clickButton(openButton));
 
     QTRY_VERIFY(confirmationDialog->isOpened());
-    QVERIFY(dialogHelper.dialog->isVisible());
+    QVERIFY(dialogHelper.isQuickDialogOpen());
 
     QVERIFY(QQuickTest::qWaitForPolish(confirmationDialog->popupItem()));
     QTRY_COMPARE(dialogHelper.popupWindow()->activeFocusItem(), confirmationButtonBox->standardButton(QPlatformDialogHelper::Yes));
@@ -1617,7 +1619,8 @@ void tst_QQuickFileDialogImpl::selectExistingFileShouldWarnUserWhenFileModeEqual
     // Yes button should have focus by default
     QTest::keyClick(dialogHelper.popupWindow(), Qt::Key_Space, Qt::NoModifier);
 
-    QTRY_VERIFY(!confirmationDialog->isOpened());
+    QTRY_VERIFY(!confirmationDialog->isVisible());
+    QTRY_VERIFY(!QQuickPopupPrivate::get(confirmationDialog)->transitionManager.isRunning());
     QVERIFY(!dialogHelper.dialog->isVisible());
     QCOMPARE(acceptedSpy.count(), 1);
 
@@ -1637,7 +1640,8 @@ void tst_QQuickFileDialogImpl::selectExistingFileShouldWarnUserWhenFileModeEqual
     QVERIFY(clickButton(confirmationNoButton));
 
     // FileDialog is still opened
-    QTRY_VERIFY(!confirmationDialog->isOpened());
+    QTRY_VERIFY(!confirmationDialog->isVisible());
+    QTRY_VERIFY(!QQuickPopupPrivate::get(confirmationDialog)->transitionManager.isRunning());
     QVERIFY(dialogHelper.dialog->isVisible());
     QCOMPARE(acceptedSpy.count(), 1);
 
@@ -1651,7 +1655,8 @@ void tst_QQuickFileDialogImpl::selectExistingFileShouldWarnUserWhenFileModeEqual
     QTRY_COMPARE(dialogHelper.popupWindow()->focusObject(), static_cast<QQuickDialogButtonBox *>(confirmationDialog->footer())->standardButton(QPlatformDialogHelper::Yes));
     QTest::keyClick(dialogHelper.popupWindow(), Qt::Key_Space, Qt::NoModifier);
 
-    QTRY_VERIFY(!confirmationDialog->isOpened());
+    QTRY_VERIFY(!confirmationDialog->isVisible());
+    QTRY_VERIFY(!QQuickPopupPrivate::get(confirmationDialog)->transitionManager.isRunning());
     QVERIFY(!dialogHelper.dialog->isVisible());
     QCOMPARE(acceptedSpy.count(), 2);
 

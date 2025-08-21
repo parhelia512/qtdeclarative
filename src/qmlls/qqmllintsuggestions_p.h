@@ -37,15 +37,12 @@ public:
 
     QString name() const override { return QLatin1StringView("QmlLint Suggestions"); }
 public Q_SLOTS:
-    void diagnose(const QByteArray &uri);
-    void forceDiagnose(const QByteArray &uri);
+    void diagnose(const QByteArray &uri, UpdatePolicy policy);
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;
 
 private:
-    void diagnoseImpl(const QByteArray &url, bool force);
-
     struct VersionedDocument
     {
         std::optional<int> version;
@@ -61,8 +58,8 @@ private:
 
     using VersionToDiagnose = std::variant<VersionedDocument, TryAgainLater, NoDocumentAvailable>;
 
-    VersionToDiagnose chooseVersionToDiagnose(const QByteArray &url, bool force = false);
-    VersionToDiagnose chooseVersionToDiagnoseHelper(const QByteArray &url, bool force = false);
+    VersionToDiagnose chooseVersionToDiagnose(const QByteArray &url, UpdatePolicy policy);
+    VersionToDiagnose chooseVersionToDiagnoseHelper(const QByteArray &url, UpdatePolicy policy);
     void diagnoseHelper(const QByteArray &uri, const VersionedDocument &document);
 
     QMutex m_mutex;

@@ -179,7 +179,7 @@ void tst_qmlls_qqmlcodemodel::openFiles()
         QCOMPARE(fileAComponents.size(), 1);
     }
 
-    model.newDocForOpenFile(fileAUrl, 1, readFile(u"FileA2.qml"_s));
+    model.newDocForOpenFile(fileAUrl, 1, readFile(u"FileA2.qml"_s), QmlLsp::NormalUpdate);
 
     {
         const DomItem fileAComponents = model.validEnv()
@@ -286,8 +286,8 @@ static void reloadLotsOfFileMethod()
     }
 
     // update one file
-    model.newDocForOpenFile(QUrl::fromLocalFile(fileNames.front()).toEncoded(), 1,
-                            content + "\n\n");
+    model.newDocForOpenFile(QUrl::fromLocalFile(fileNames.front()).toEncoded(), 1, content + "\n\n",
+                            QmlLsp::NormalUpdate);
 }
 
 void tst_qmlls_qqmlcodemodel::reloadLotsOfFiles()

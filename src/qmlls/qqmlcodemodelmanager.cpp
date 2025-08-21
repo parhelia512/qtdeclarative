@@ -260,7 +260,7 @@ void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const 
 
 void QQmlCodeModelManager::addOpenToUpdate(const QByteArray &url)
 {
-    findCodeModelForFile(url)->addOpenToUpdate(url);
+    findCodeModelForFile(url)->addOpenToUpdate(url, NormalUpdate);
 }
 void QQmlCodeModelManager::setImportPaths(const QStringList &paths)
 {

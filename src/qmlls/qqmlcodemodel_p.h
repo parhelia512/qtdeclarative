@@ -92,6 +92,8 @@ private:
     QSet<QString> m_seenSettings;
 };
 
+enum UpdatePolicy { NormalUpdate, ForceUpdate };
+
 class QQmlCodeModel : public QObject
 {
     Q_OBJECT
@@ -108,11 +110,12 @@ public:
     OpenDocument openDocumentByUrl(const QByteArray &url);
     bool isEmpty() const;
 
-    void addOpenToUpdate(const QByteArray &);
+    void addOpenToUpdate(const QByteArray &, UpdatePolicy policy);
     void removeDirectory(const QByteArray &);
     // void updateDocument(const OpenDocument &doc);
     void newOpenFile(const QByteArray &url, int version, const QString &docText);
-    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText);
+    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText,
+                           UpdatePolicy policy);
     void closeOpenFile(const QByteArray &url);
     QByteArray rootUrl() const;
     QStringList buildPathsForRootUrl(const QByteArray &url);
@@ -154,7 +157,7 @@ public:
     }
 
 Q_SIGNALS:
-    void updatedSnapshot(const QByteArray &url);
+    void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
     void documentationRootPathChanged(const QString &path);
 
 private:
@@ -162,7 +165,7 @@ private:
     bool openUpdateSome();
     void openUpdateStart();
     void openUpdateEnd();
-    void openUpdate(const QByteArray &);
+    void openUpdate(const QByteArray &, UpdatePolicy policy);
     void openNeedUpdate();
     QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
@@ -189,7 +192,7 @@ private:
     QQmlToolingSharedSettings *m_settings; // note: access without m_mutex. has thread-safe API
     HelpManager m_helpManager; // note: access without m_mutex, has thread-safe API
 
-    QSet<QByteArray> m_openDocumentsToUpdate;
+    QHash<QByteArray, UpdatePolicy> m_openDocumentsToUpdate;
     QHash<QByteArray, QStringList> m_buildPathsForRootUrl;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;

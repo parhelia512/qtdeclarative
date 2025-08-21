@@ -100,7 +100,7 @@ protected:
     bool m_verbose = false;
 
 Q_SIGNALS:
-    void updatedSnapshot(const QByteArray &url);
+    void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
 };
 
 } // namespace QmlLsp

@@ -178,7 +178,7 @@ void QQmlCodeModel::newOpenFile(const QByteArray &url, int version, const QStrin
         openDoc.textDocument->setVersion(version);
         openDoc.textDocument->setPlainText(docText);
     }
-    addOpenToUpdate(url);
+    addOpenToUpdate(url, NormalUpdate);
     openNeedUpdate();
 }
 
@@ -226,6 +226,7 @@ bool QQmlCodeModel::openUpdateSome()
 {
     qCDebug(codeModelLog) << "openUpdateSome start";
     QByteArray toUpdate;
+    UpdatePolicy policy;
     {
         QMutexLocker l(&m_mutex);
         if (m_openDocumentsToUpdate.isEmpty()) {
@@ -234,7 +235,8 @@ bool QQmlCodeModel::openUpdateSome()
             return false;
         }
         const auto it = m_openDocumentsToUpdate.begin();
-        toUpdate = *it;
+        toUpdate = it.key();
+        policy = it.value();
         m_openDocumentsToUpdate.erase(it);
     }
     bool hasMore = false;
@@ -249,7 +251,7 @@ bool QQmlCodeModel::openUpdateSome()
                 hasMore = true;
             }
         });
-        openUpdate(toUpdate);
+        openUpdate(toUpdate, policy);
     }
     return hasMore;
 }
@@ -478,9 +480,10 @@ static VersionCheckResultForValidDocument checkVersionForValidDocument(const Ope
 }
 
 static void updateItemInSnapshot(const DomItem &item, const DomItem &validItem,
-                                 const QByteArray &url, OpenDocument *doc, int version)
+                                 const QByteArray &url, OpenDocument *doc, int version,
+                                 UpdatePolicy policy)
 {
-    switch (checkVersion(*doc, version)) {
+    switch (policy == ForceUpdate ? VersionOk : checkVersion(*doc, version)) {
     case ClosedDocument:
         qCWarning(lspServerLog) << "Ignoring update to closed document" << QString::fromUtf8(url);
         return;
@@ -504,7 +507,8 @@ static void updateItemInSnapshot(const DomItem &item, const DomItem &validItem,
         return;
     }
 
-    switch (checkVersionForValidDocument(*doc, version)) {
+    switch (policy == ForceUpdate ? VersionOkForValidDocument
+                                  : checkVersionForValidDocument(*doc, version)) {
     case VersionLowerThanValidSnapshot:
         qCWarning(lspServerLog) << "Skipping update of valid doc to obsolete version" << version
                                 << "of document" << QString::fromUtf8(url);
@@ -516,7 +520,8 @@ static void updateItemInSnapshot(const DomItem &item, const DomItem &validItem,
     }
 }
 
-void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const QString &docText)
+void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const QString &docText,
+                                      QmlLsp::UpdatePolicy policy)
 {
     qCDebug(codeModelLog) << "updating doc" << url << "to version" << version << "("
                           << docText.size() << "chars)";
@@ -561,7 +566,8 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
     if (p) {
         newCurrent.commitToBase(m_validEnv.ownerAs<DomEnvironment>());
         QMutexLocker l(&m_mutex);
-        updateItemInSnapshot(m_currentEnv.path(p), m_validEnv.path(p), url, &m_openDocuments[url], version);
+        updateItemInSnapshot(m_currentEnv.path(p), m_validEnv.path(p), url, &m_openDocuments[url],
+                             version, policy);
     }
     if (codeModelLog().isDebugEnabled()) {
         qCDebug(codeModelLog) << "Finished update doc of " << url << "to version" << version;
@@ -569,7 +575,7 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
                                 OpenDocumentSnapshot::DumpOption::AllCode);
     }
     // we should update the scope in the future thus call addOpen(url)
-    emit updatedSnapshot(url);
+    emit updatedSnapshot(url, policy);
 }
 
 void QQmlCodeModel::closeOpenFile(const QByteArray &url)
@@ -746,7 +752,7 @@ void QQmlCodeModel::setBuildPathsForRootUrl(QByteArray url, const QStringList &p
         m_buildPathsForRootUrl.insert(url, paths);
 }
 
-void QQmlCodeModel::openUpdate(const QByteArray &url)
+void QQmlCodeModel::openUpdate(const QByteArray &url, UpdatePolicy policy)
 {
     std::optional<int> rNow = 0;
     QString docText;
@@ -761,8 +767,11 @@ void QQmlCodeModel::openUpdate(const QByteArray &url)
             QMutexLocker l2(document->mutex());
             rNow = document->version();
         }
-        if (!rNow || (doc.snapshot.docVersion && *doc.snapshot.docVersion == *rNow))
+        if (!rNow
+            || (policy != ForceUpdate && doc.snapshot.docVersion
+                && *doc.snapshot.docVersion == *rNow)) {
             return;
+        }
 
         {
             QMutexLocker l2(doc.textDocument->mutex());
@@ -770,14 +779,14 @@ void QQmlCodeModel::openUpdate(const QByteArray &url)
             docText = doc.textDocument->toPlainText();
         }
     }
-    newDocForOpenFile(url, *rNow, docText);
+    newDocForOpenFile(url, *rNow, docText, policy);
 }
 
-void QQmlCodeModel::addOpenToUpdate(const QByteArray &url)
+void QQmlCodeModel::addOpenToUpdate(const QByteArray &url, UpdatePolicy policy)
 {
     {
         QMutexLocker l(&m_mutex);
-        m_openDocumentsToUpdate.insert(url);
+        m_openDocumentsToUpdate[url] = policy;
     }
     openNeedUpdate();
 }

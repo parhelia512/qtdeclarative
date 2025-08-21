@@ -14,11 +14,51 @@ namespace QmlLsp {
 using namespace QQmlJS::Dom;
 using namespace Qt::StringLiterals;
 
+void QQmlCodeModelManager::onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    if (m_cmakeStatus == DoesNotHaveCMake)
+        return;
+
+    if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+        disableCMakeCalls();
+        return;
+    }
+    m_cmakeStatus = HasCMake;
+    for (const auto &ws : m_workspaces)
+        ws.codeModel->tryEnableCMakeCalls(&m_processScheduler);
+}
+
+/*!
+\internal
+Enable and initialize the functionality that uses CMake, if CMake exists.
+
+\note Set the buildpaths before calling this method!
+*/
+void QQmlCodeModelManager::tryEnableCMakeCalls()
+{
+    m_cmakeStatus = IsProbingCMake;
+
+    m_cmakeProber.setProgram(u"cmake"_s);
+    m_cmakeProber.setArguments({ u"--version"_s });
+    QObject::connect(&m_cmakeProber, &QProcess::finished, this,
+                     &QQmlCodeModelManager::onCMakeProberFinished);
+    QObject::connect(&m_cmakeProber, &QProcess::errorOccurred, this,
+                     &QQmlCodeModelManager::disableCMakeCalls);
+
+    m_cmakeProber.start();
+}
+
 QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSettings *settings)
     : QObject{ parent }, m_settings(settings), m_pluginLoader(QmlLSPluginInterface_iid, u"/qmlls"_s)
 {
     const QByteArray defaultCodeModel;
     appendWorkspace(defaultCodeModel, ManagedByServer);
+}
+
+QQmlCodeModelManager::~QQmlCodeModelManager()
+{
+    m_cmakeProber.kill();
+    m_cmakeProber.waitForFinished();
 }
 
 QQmlCodeModelManager::WorkspaceIterator
@@ -86,8 +126,7 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
     // set default values
     if (!m_defaultImportPaths.isEmpty())
         ws.codeModel->setImportPaths(m_defaultImportPaths);
-    if (m_defaultDisableCMakeCalls)
-        ws.codeModel->disableCMakeCalls();
+
     if (!m_defaultDocumentationRootPath.isEmpty())
         ws.codeModel->setDocumentationRootPath(m_defaultDocumentationRootPath);
 
@@ -101,6 +140,18 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
     QObject::connect(ws.codeModel.get(), &QQmlCodeModel::updatedSnapshot, this,
                      &QQmlCodeModelManager::updatedSnapshot);
     ws.managedByClient = managedBy == ManagedByClient;
+
+    switch (m_cmakeStatus) {
+    case DoesNotHaveCMake:
+        ws.codeModel->disableCMakeCalls();
+        break;
+    case HasCMake:
+        ws.codeModel->tryEnableCMakeCalls(&m_processScheduler);
+        break;
+    case IsProbingCMake:
+        // will be enabled once the CMake probing process finishes
+        break;
+    }
     m_workspaces.emplace_back(std::move(ws));
 }
 
@@ -119,7 +170,7 @@ QQmlCodeModelManager::workspaceFromBuildFolder(const QString &fileName,
 
 void QQmlCodeModelManager::disableCMakeCalls()
 {
-    m_defaultDisableCMakeCalls = true;
+    m_cmakeStatus = DoesNotHaveCMake;
     for (const auto &ws : m_workspaces)
         ws.codeModel->disableCMakeCalls();
 }

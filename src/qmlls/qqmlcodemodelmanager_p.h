@@ -45,6 +45,7 @@ class QQmlCodeModelManager : public QObject
     Q_OBJECT
 public:
     QQmlCodeModelManager(QObject *parent = nullptr, QQmlToolingSharedSettings *settings = nullptr);
+    ~QQmlCodeModelManager();
 
     OpenDocumentSnapshot snapshotByUrl(const QByteArray &url);
     OpenDocument openDocumentByUrl(const QByteArray &url);
@@ -71,11 +72,17 @@ public:
     void setDocumentationRootPath(const QString &path);
     HelpManager *helpManagerForUrl(const QByteArray &);
 
+    void tryEnableCMakeCalls();
+
     void setVerbose(bool verbose);
+
+private slots:
+    void onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 protected:
     using Workspaces = std::vector<QQmlWorkspace>;
     using WorkspaceIterator = Workspaces::const_iterator;
+    enum CMakeStatus { HasCMake, DoesNotHaveCMake, IsProbingCMake };
 
     QQmlCodeModel *findCodeModelForFile(const QByteArray &url);
     WorkspaceIterator findWorkspaceForFile(const QByteArray &url);
@@ -91,13 +98,15 @@ protected:
 
     Workspaces m_workspaces;
     QQmllsBuildInformation m_buildInformation;
+    QProcessScheduler m_processScheduler;
 
     std::map<QByteArray, QByteArray> m_file2CodeModel;
 
     // defaults to apply to new codemodels:
     QStringList m_defaultImportPaths;
-    bool m_defaultDisableCMakeCalls = false;
     QString m_defaultDocumentationRootPath;
+    QProcess m_cmakeProber;
+    CMakeStatus m_cmakeStatus = IsProbingCMake;
     bool m_verbose = false;
 
 Q_SIGNALS:

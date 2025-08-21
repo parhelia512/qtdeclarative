@@ -18,6 +18,7 @@
 
 #include "qlanguageserver_p.h"
 #include "qtextdocument_p.h"
+#include "qprocessscheduler_p.h"
 #include "qqmllshelputils_p.h"
 
 #include <QObject>
@@ -131,6 +132,7 @@ public:
                                            const QSet<QString> &alreadyWatchedFiles);
     static QStringList fileNamesToWatch(const QQmlJS::Dom::DomItem &qmlFile);
     void disableCMakeCalls();
+    void tryEnableCMakeCalls(QProcessScheduler *scheduler);
 
     RegisteredSemanticTokens &registeredTokens();
     const RegisteredSemanticTokens &registeredTokens() const;
@@ -172,7 +174,9 @@ private:
     void openNeedUpdate();
     QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
-    static bool callCMakeBuild(const QStringList &buildPaths);
+    void callCMakeBuild(QProcessScheduler *scheduler);
+    void onCMakeProcessFinished(const QByteArray &id);
+
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);
     enum CMakeStatus { RequiresInitialization, HasCMake, DoesNotHaveCMake };
     CMakeStatus cmakeStatus() const
@@ -180,11 +184,10 @@ private:
         QMutexLocker guard(&m_mutex);
         return m_cmakeStatus;
     }
-    void initializeCMakeStatus(const QString &);
-    bool rebuildRequired() const
+    void setCMakeStatus(CMakeStatus status)
     {
         QMutexLocker guard(&m_mutex);
-        return m_rebuildRequired;
+        m_cmakeStatus = status;
     }
 
     mutable QMutex m_mutex;
@@ -207,10 +210,7 @@ private:
     QSet<QString> m_ignoreForWatching;
     int m_nUpdateInProgress = 0;
     CMakeStatus m_cmakeStatus = RequiresInitialization;
-    bool m_rebuildRequired = true; // always trigger a rebuild on start
     bool m_verbose = false;
-private slots:
-    void onCppFileChanged(const QString &);
 };
 
 } // namespace QmlLsp

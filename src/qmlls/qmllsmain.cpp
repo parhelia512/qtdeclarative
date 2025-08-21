@@ -394,19 +394,6 @@ int qmllsMain(int argv, char *argc[])
         qmlServer.codeModelManager()->setDocumentationRootPath(
                 QString::fromUtf8(parser.value(docDir).toUtf8()));
 
-    const bool disableCMakeCallsViaEnvironment =
-            qmlGetConfigOption<bool, qmlConvertBoolConfigOption>("QMLLS_NO_CMAKE_CALLS");
-
-    if (disableCMakeCallsViaEnvironment || parser.isSet(noCMakeCallsOption)) {
-        if (disableCMakeCallsViaEnvironment) {
-            qWarning() << "Disabling CMake calls via QMLLS_NO_CMAKE_CALLS environment variable.";
-        } else {
-            qWarning() << "Disabling CMake calls via command line switch.";
-        }
-
-        qmlServer.codeModelManager()->disableCMakeCalls();
-    }
-
     if (parser.isSet(buildDirOption)) {
         const QStringList dirs =
                 QQmlToolingUtils::getAndWarnForInvalidDirsFromOption(parser, buildDirOption);
@@ -433,6 +420,21 @@ int qmllsMain(int argv, char *argc[])
 
     qmlServer.codeModelManager()->setImportPaths(
             collectImportPaths(parser, qmlImportPathOption, environmentOption, qmlImportNoDefault));
+
+    const bool disableCMakeCallsViaEnvironment =
+            qmlGetConfigOption<bool, qmlConvertBoolConfigOption>("QMLLS_NO_CMAKE_CALLS");
+
+    if (disableCMakeCallsViaEnvironment || parser.isSet(noCMakeCallsOption)) {
+        if (disableCMakeCallsViaEnvironment) {
+            qWarning() << "Disabling CMake calls via QMLLS_NO_CMAKE_CALLS environment variable.";
+        } else {
+            qWarning() << "Disabling CMake calls via command line switch.";
+        }
+
+        qmlServer.codeModelManager()->disableCMakeCalls();
+    } else {
+        qmlServer.codeModelManager()->tryEnableCMakeCalls();
+    }
 
     auto r = parser.isSet(inputFile) && parser.value(inputFile) != "-"_L1
             ? std::unique_ptr<AbstractReader>(std::make_unique<FileReader>(parser.value(inputFile)))

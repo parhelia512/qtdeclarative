@@ -103,6 +103,35 @@ QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
 
 /*!
 \internal
+Enable and initialize the functionality that uses CMake, if CMake exists.
+*/
+void QQmlCodeModel::tryEnableCMakeCalls(QProcessScheduler *scheduler)
+{
+    Q_ASSERT(scheduler);
+    if (cmakeStatus() == DoesNotHaveCMake)
+        return;
+
+    if (m_settings) {
+        const QString cmakeCalls = u"no-cmake-calls"_s;
+        m_settings->search(url2Path(m_rootUrl), { QString(), verbose() });
+        if (m_settings->isSet(cmakeCalls) && m_settings->value(cmakeCalls).toBool()) {
+            disableCMakeCalls();
+            return;
+        }
+    }
+
+    QObject::connect(scheduler, &QProcessScheduler::done, this,
+                     &QQmlCodeModel::onCMakeProcessFinished);
+    QObject::connect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, scheduler,
+                     [this, scheduler] { callCMakeBuild(scheduler); });
+
+    setCMakeStatus(HasCMake);
+
+    // TODO: call CMake build here, to automatically build on the initial workspace opening
+}
+
+/*!
+\internal
 Disable the functionality that uses CMake, and remove the already watched paths if there are some.
 */
 void QQmlCodeModel::disableCMakeCalls()
@@ -267,80 +296,6 @@ void QQmlCodeModel::openUpdateEnd()
     qCDebug(codeModelLog) << "openUpdateEnd";
 }
 
-/*!
-\internal
-Performs initialization for m_cmakeStatus, including testing for CMake on the current system.
-*/
-void QQmlCodeModel::initializeCMakeStatus(const QString &pathForSettings)
-{
-    if (m_settings) {
-        const QString cmakeCalls = u"no-cmake-calls"_s;
-        m_settings->search(pathForSettings, { QString(), verbose() });
-        if (m_settings->isSet(cmakeCalls) && m_settings->value(cmakeCalls).toBool()) {
-            qWarning() << "Disabling CMake calls via .qmlls.ini setting.";
-            QMutexLocker guard(&m_mutex);
-            m_cmakeStatus = DoesNotHaveCMake;
-            return;
-        }
-    }
-
-    QProcess process;
-    process.setProgram(u"cmake"_s);
-    process.setArguments({ u"--version"_s });
-    process.start();
-    process.waitForFinished();
-
-    {
-        QMutexLocker guard(&m_mutex);
-        m_cmakeStatus = process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
-                ? HasCMake
-                : DoesNotHaveCMake;
-
-        if (m_cmakeStatus == DoesNotHaveCMake) {
-            qWarning() << "Disabling CMake calls because CMake was not found.";
-            return;
-        }
-    }
-
-    QObject::connect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, this,
-                     &QQmlCodeModel::onCppFileChanged);
-}
-
-/*!
-\internal
-For each build path that is a also a CMake build path, call CMake with \l cmakeBuildCommand to
-generate/update the .qmltypes, qmldir and .qrc files.
-It is assumed here that the number of build folders is usually no more than one, so execute the
-CMake builds one at a time.
-
-If CMake cannot be executed, false is returned. This may happen when CMake does not exist on the
-current system, when the target executed by CMake does not exist (for example when something else
-than qt_add_qml_module is used to setup the module in CMake), or the when the CMake build itself
-fails.
-*/
-bool QQmlCodeModel::callCMakeBuild(const QStringList &buildPaths)
-{
-    bool success = true;
-    for (const auto &path : buildPaths) {
-        if (!QFileInfo::exists(path + u"/.cmake"_s))
-            continue;
-
-        QProcess process;
-        const auto command = QQmlLSUtils::cmakeBuildCommand(path);
-        process.setProgram(command.first);
-        process.setArguments(command.second);
-        qCDebug(codeModelLog) << "Running" << process.program() << process.arguments();
-        process.start();
-
-        // TODO: run process concurrently instead of blocking qmlls
-        success &= process.waitForFinished();
-        success &= (process.exitCode() == 0);
-        qCDebug(codeModelLog) << process.program() << process.arguments() << "terminated with"
-                              << process.exitCode();
-    }
-    return success;
-}
-
 QStringList QQmlCodeModel::buildPathsForOpenedFiles()
 {
     QStringList result;
@@ -359,6 +314,35 @@ QStringList QQmlCodeModel::buildPathsForOpenedFiles()
     std::sort(result.begin(), result.end());
     result.erase(std::unique(result.begin(), result.end()), result.end());
     return result;
+}
+
+void QQmlCodeModel::callCMakeBuild(QProcessScheduler *scheduler)
+{
+    const QStringList buildPaths = buildPathsForOpenedFiles();
+
+    QList<QProcessScheduler::Command> commands;
+    for (const auto &path : buildPaths) {
+        if (!QFileInfo::exists(path + u"/.cmake"_s))
+            continue;
+
+        const auto [program, arguments] = QQmlLSUtils::cmakeBuildCommand(path);
+        commands.append({ program, arguments });
+    }
+    if (commands.isEmpty())
+        return;
+    scheduler->schedule(commands, m_rootUrl);
+}
+
+void QQmlCodeModel::onCMakeProcessFinished(const QByteArray &id)
+{
+    if (id != m_rootUrl)
+        return;
+
+    QMutexLocker guard(&m_mutex);
+    for (auto it = m_openDocuments.begin(), end = m_openDocuments.end(); it != end; ++it)
+        m_openDocumentsToUpdate[it.key()] = ForceUpdate;
+    guard.unlock();
+    openNeedUpdate();
 }
 
 /*!
@@ -465,12 +449,6 @@ void QQmlCodeModel::addFileWatches(const DomItem &qmlFile)
     }
 }
 
-void QQmlCodeModel::onCppFileChanged(const QString &)
-{
-    QMutexLocker guard(&m_mutex);
-    m_rebuildRequired = true;
-}
-
 enum VersionCheckResult {
     ClosedDocument,
     VersionLowerThanDocument,
@@ -557,19 +535,9 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
                           << docText.size() << "chars)";
 
     const QString fPath = url2Path(url, UrlLookup::ForceLookup);
-    if (cmakeStatus() == RequiresInitialization)
-        initializeCMakeStatus(fPath);
-
     DomItem newCurrent = m_currentEnv.makeCopy(DomItem::CopyOption::EnvConnected).item();
-    QStringList loadPaths = buildPathsForFileUrl(url);
+    const QStringList loadPaths = buildPathsForFileUrl(url) + importPathsForUrl(url);
 
-    if (cmakeStatus() == HasCMake && !loadPaths.isEmpty() && rebuildRequired()) {
-        callCMakeBuild(loadPaths);
-        QMutexLocker guard(&m_mutex);
-        m_rebuildRequired = false;
-    }
-
-    loadPaths.append(importPathsForUrl(url));
     if (std::shared_ptr<DomEnvironment> newCurrentPtr = newCurrent.ownerAs<DomEnvironment>()) {
         newCurrentPtr->setLoadPaths(loadPaths);
     }

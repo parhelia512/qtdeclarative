@@ -4,11 +4,15 @@
 #include "tst_qmlls_qqmlcodemodel.h"
 
 #include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
+#include <QtQmlLS/private/qprocessscheduler_p.h>
 #include <QtQmlLS/private/qqmlcodemodel_p.h>
 #include <QtQmlLS/private/qqmlcodemodelmanager_p.h>
 #include <QtQmlLS/private/qqmllsutils_p.h>
 #include <QtQmlDom/private/qqmldomitem_p.h>
 #include <QtQmlDom/private/qqmldomtop_p.h>
+
+#include <QtCore/qstringlist.h>
+#include <QtTest/qsignalspy.h>
 
 struct TestCodeModelManager final : public QmlLsp::QQmlCodeModelManager
 {
@@ -682,6 +686,126 @@ void tst_qmlls_qqmlcodemodel::shortestRootUrlForFile()
     QmlLsp::QQmlCodeModelManager empty;
     QCOMPARE(empty.shortestRootUrlForFile(testFileUrl("rootD/sub/rootC/MyFile.qml").toEncoded()),
              QByteArray{});
+}
+
+const constexpr char *filenameKey = "QT_TST_QMLLS_QQMLCODEMODEL_WRITE_FILES";
+
+void tst_qmlls_qqmlcodemodel::qprocessSchedulerProcess()
+{
+    if (!qEnvironmentVariableIsSet(filenameKey))
+        return;
+
+    QFile f(qEnvironmentVariable(filenameKey));
+    QVERIFY(f.open(QFile::ReadWrite | QFile::Text | QFile::Append));
+
+    f.write("X\n");
+}
+
+void tst_qmlls_qqmlcodemodel::qprocessScheduler_data()
+{
+    QTest::addColumn<QStringList>("fileNames");
+
+    QTest::addRow("empty") << QStringList{};
+    QTest::addRow("two") << QStringList{ "a"_L1, "b"_L1 };
+    QTest::addRow("five") << QStringList{ "a"_L1, "b"_L1, "c"_L1, "d"_L1, "e"_L1 };
+}
+
+void tst_qmlls_qqmlcodemodel::qprocessScheduler()
+{
+    using QmlLsp::QProcessScheduler;
+    QFETCH(QStringList, fileNames);
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    QList<QProcessScheduler::Command> list;
+    for (const QString &fileName : fileNames) {
+        QProcessScheduler::Command command{
+            QCoreApplication::applicationFilePath(),
+            { "qprocessSchedulerProcess"_L1 },
+        };
+        command.customEnvironment.insert(filenameKey, dir.filePath(fileName));
+        list.append(command);
+    }
+
+    QProcessScheduler scheduler;
+    QSignalSpy spy(&scheduler, &QProcessScheduler::done);
+    QCOMPARE(spy.count(), 0);
+
+    scheduler.schedule(list, QByteArray());
+
+    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
+
+    // verify that the processes really ran and wrote something to disk:
+    for (const QString &fileName : fileNames)
+        QVERIFY(QFile::exists(dir.filePath(fileName)));
+}
+
+using Hash = QHash<QByteArray, QStringList>;
+
+void tst_qmlls_qqmlcodemodel::multipleQProcessScheduler_data()
+{
+    QTest::addColumn<Hash>("fileNamesById");
+
+    QTest::addRow("empty") << Hash{};
+    QTest::addRow("empty2") << Hash{
+        { "url", {} },
+    };
+    QTest::addRow("two") << Hash{
+        { "url1", { "a"_L1, "b"_L1 } },
+        { "url2", { "a"_L1, "b"_L1 } },
+    };
+    QTest::addRow("five") << Hash{
+        { "url1", { "a"_L1, "b"_L1 } },
+        { "url2", { "a"_L1, "b"_L1 } },
+        { "url3", { "a"_L1, "b"_L1, "e"_L1 } },
+        { "url4", { "a"_L1, "b"_L1 } },
+        { "url5", { "e"_L1, "b"_L1, "c"_L1, "d"_L1, "a"_L1 } },
+    };
+    QTest::addRow("duplicate") << Hash{
+        { "url1", { "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1 } },
+    };
+}
+
+void tst_qmlls_qqmlcodemodel::multipleQProcessScheduler()
+{
+    using QmlLsp::QProcessScheduler;
+    QFETCH(Hash, fileNamesById);
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    QProcessScheduler scheduler;
+    QSignalSpy spy(&scheduler, &QProcessScheduler::done);
+    QCOMPARE(spy.count(), 0);
+
+    for (const auto &[id, fileNames] : fileNamesById.asKeyValueRange()) {
+        QList<QProcessScheduler::Command> list;
+        for (const QString &fileName : fileNames) {
+            QProcessScheduler::Command command{
+                QCoreApplication::applicationFilePath(),
+                { "qprocessSchedulerProcess"_L1 },
+            };
+            command.customEnvironment.insert(filenameKey, dir.filePath(fileName));
+            list.append(command);
+        }
+
+        scheduler.schedule(list, id);
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), fileNamesById.size(), 5000);
+
+    for (const auto &[id, fileNames] : fileNamesById.asKeyValueRange()) {
+        for (const QString &fileName : fileNames)
+            QVERIFY(QFile::exists(dir.filePath(fileName)));
+    }
+
+    // ensure that duplicates were filtered away and that the file was appended to only once
+    if (QTest::currentTestFunction() == "duplicate"_L1) {
+        QFile file(dir.filePath("a"_L1));
+        QVERIFY(file.open(QFile::ReadOnly | QFile::Text));
+        QCOMPARE(file.readAll().count("X"_L1), 1);
+    }
 }
 
 QTEST_MAIN(tst_qmlls_qqmlcodemodel)

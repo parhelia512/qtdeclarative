@@ -48,6 +48,11 @@ private slots:
     void withQmllsBuildIni();
     void withQmllsBuildIniWithoutRootUrls();
     void shortestRootUrlForFile();
+    void qprocessScheduler_data();
+    void qprocessScheduler();
+    void qprocessSchedulerProcess();
+    void multipleQProcessScheduler_data();
+    void multipleQProcessScheduler();
 };
 
 #endif // TST_QMLLS_QQMLCODEMODEL_H

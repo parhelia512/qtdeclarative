@@ -426,6 +426,83 @@ void QQmlCodeModel::onCppFileChanged(const QString &)
     m_rebuildRequired = true;
 }
 
+enum VersionCheckResult {
+    ClosedDocument,
+    VersionLowerThanDocument,
+    VersionLowerThanSnapshot,
+    VersionOk,
+};
+
+enum VersionCheckResultForValidDocument {
+    VersionLowerThanValidSnapshot,
+    VersionOkForValidDocument,
+};
+
+VersionCheckResult checkVersion(const OpenDocument& doc, int version)
+{
+    if (!doc.textDocument)
+        return ClosedDocument;
+
+    {
+        QMutexLocker guard2(doc.textDocument->mutex());
+        if (doc.textDocument->version() && *doc.textDocument->version() > version)
+            return VersionLowerThanDocument;
+    }
+
+    if (doc.snapshot.docVersion && *doc.snapshot.docVersion >= version)
+        return VersionLowerThanSnapshot;
+
+    return VersionOk;
+}
+
+static VersionCheckResultForValidDocument checkVersionForValidDocument(const OpenDocument &doc,
+                                                                       int version)
+{
+    if (doc.snapshot.validDocVersion && *doc.snapshot.validDocVersion >= version)
+        return VersionLowerThanValidSnapshot;
+
+    return VersionOkForValidDocument;
+}
+
+static void updateItemInSnapshot(const DomItem &item, const DomItem &validItem,
+                                 const QByteArray &url, OpenDocument *doc, int version)
+{
+    switch (checkVersion(*doc, version)) {
+    case ClosedDocument:
+        qCWarning(lspServerLog) << "Ignoring update to closed document" << QString::fromUtf8(url);
+        return;
+    case VersionLowerThanDocument:
+        qCWarning(lspServerLog) << "Version" << version << "of document" << QString::fromUtf8(url)
+                                << "is not the latest anymore";
+        return;
+    case VersionLowerThanSnapshot:
+        qCWarning(lspServerLog) << "Skipping update of current doc to obsolete version" << version
+                                << "of document" << QString::fromUtf8(url);
+        return;
+    case VersionOk:
+        doc->snapshot.docVersion = version;
+        doc->snapshot.doc = item;
+        break;
+    }
+
+    if (!item.field(Fields::isValid).value().toBool(false)) {
+        qCWarning(lspServerLog) << "avoid update of validDoc to " << version << "of document"
+                                << QString::fromUtf8(url) << "as it is invalid";
+        return;
+    }
+
+    switch (checkVersionForValidDocument(*doc, version)) {
+    case VersionLowerThanValidSnapshot:
+        qCWarning(lspServerLog) << "Skipping update of valid doc to obsolete version" << version
+                                << "of document" << QString::fromUtf8(url);
+        return;
+    case VersionOkForValidDocument:
+        doc->snapshot.validDocVersion = version;
+        doc->snapshot.validDoc = validItem;
+        break;
+    }
+}
+
 void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const QString &docText)
 {
     qCDebug(codeModelLog) << "updating doc" << url << "to version" << version << "("
@@ -469,48 +546,11 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
     newCurrentPtr->loadPendingDependencies();
     if (p) {
         newCurrent.commitToBase(m_validEnv.ownerAs<DomEnvironment>());
-        DomItem item = m_currentEnv.path(p);
-        {
-            QMutexLocker l(&m_mutex);
-            OpenDocument &doc = m_openDocuments[url];
-            if (!doc.textDocument) {
-                qCWarning(lspServerLog)
-                        << "ignoring update to closed document" << QString::fromUtf8(url);
-                return;
-            } else {
-                QMutexLocker l(doc.textDocument->mutex());
-                if (doc.textDocument->version() && *doc.textDocument->version() > version) {
-                    qCWarning(lspServerLog)
-                            << "docUpdate: version" << version << "of document"
-                            << QString::fromUtf8(url) << "is not the latest anymore";
-                    return;
-                }
-            }
-            if (!doc.snapshot.docVersion || *doc.snapshot.docVersion < version) {
-                doc.snapshot.docVersion = version;
-                doc.snapshot.doc = item;
-            } else {
-                qCWarning(lspServerLog) << "skipping update of current doc to obsolete version"
-                                        << version << "of document" << QString::fromUtf8(url);
-            }
-            if (item.field(Fields::isValid).value().toBool(false)) {
-                if (!doc.snapshot.validDocVersion || *doc.snapshot.validDocVersion < version) {
-                    DomItem vDoc = m_validEnv.path(p);
-                    doc.snapshot.validDocVersion = version;
-                    doc.snapshot.validDoc = vDoc;
-                } else {
-                    qCWarning(lspServerLog) << "skippig update of valid doc to obsolete version"
-                                            << version << "of document" << QString::fromUtf8(url);
-                }
-            } else {
-                qCWarning(lspServerLog)
-                        << "avoid update of validDoc to " << version << "of document"
-                        << QString::fromUtf8(url) << "as it is invalid";
-            }
-        }
+        QMutexLocker l(&m_mutex);
+        updateItemInSnapshot(m_currentEnv.path(p), m_validEnv.path(p), url, &m_openDocuments[url], version);
     }
     if (codeModelLog().isDebugEnabled()) {
-        qCDebug(codeModelLog) << "finished update doc of " << url << "to version" << version;
+        qCDebug(codeModelLog) << "Finished update doc of " << url << "to version" << version;
         snapshotByUrl(url).dump(qDebug() << "postSnapshot",
                                 OpenDocumentSnapshot::DumpOption::AllCode);
     }

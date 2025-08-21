@@ -1464,31 +1464,11 @@ QRectF QQuickTextInput::positionToRectangle(int pos) const
            Returns the position before the character that is nearest x.
 */
 
-void QQuickTextInput::positionAt(QQmlV4FunctionPtr args) const
+int QQuickTextInput::positionAt(qreal x, qreal y, QQuickTextInput::CursorPosition positionQuick) const
 {
     Q_D(const QQuickTextInput);
 
-    qreal x = 0;
-    qreal y = 0;
-    QTextLine::CursorPosition position = QTextLine::CursorBetweenCharacters;
-
-    if (args->length() < 1)
-        return;
-
-    int i = 0;
-    QV4::Scope scope(args->v4engine());
-    QV4::ScopedValue arg(scope, (*args)[0]);
-    x = arg->toNumber();
-
-    if (++i < args->length()) {
-        arg = (*args)[i];
-        y = arg->toNumber();
-    }
-
-    if (++i < args->length()) {
-        arg = (*args)[i];
-        position = QTextLine::CursorPosition(arg->toInt32());
-    }
+    QTextLine::CursorPosition position = QTextLine::CursorPosition(positionQuick);
 
     int pos = d->positionAt(x, y, position);
     const int cursor = d->m_cursor;
@@ -1502,7 +1482,7 @@ void QQuickTextInput::positionAt(QQmlV4FunctionPtr args) const
         pos = cursor;
 #endif
     }
-    args->setReturnValue(QV4::Encode(pos));
+    return pos;
 }
 
 int QQuickTextInputPrivate::positionAt(qreal x, qreal y, QTextLine::CursorPosition position) const

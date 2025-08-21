@@ -246,7 +246,7 @@ const QList<QQmlJS::LoggerCategory> &QQmlJSLogger::builtinCategories()
 bool QQmlJSFixSuggestion::operator==(const QQmlJSFixSuggestion &other) const
 {
     return m_location == other.m_location && m_description == other.m_description
-            && m_replacement == other.m_replacement && m_filename == other.m_filename
+            && m_documentEdits == other.m_documentEdits && m_filename == other.m_filename
             && m_autoApplicable == other.m_autoApplicable;
 }
 
@@ -465,42 +465,69 @@ void QQmlJSLogger::printFix(const QQmlJSFixSuggestion &fixItem)
         currentFile = filename;
     }
 
-    IssueLocationWithContext issueLocationWithContext { code, fixItem.location() };
+    const auto &documentEdits = fixItem.documentEdits();
+    if (!documentEdits.empty()) {
+        m_output.write(documentEdits.size() == 1 ? "Suggested change:\n"_L1
+                                                 : "Suggested changes:\n"_L1);
+        for (const auto &documentEdit: documentEdits) {
+            if (!documentEdit.m_location.isValid())
+                continue;
 
-    if (const QStringView beforeText = issueLocationWithContext.beforeText();
-        !beforeText.isEmpty()) {
-        m_output.write(beforeText);
-    }
+            IssueLocationWithContext issueLocationWithContext { code, documentEdit.m_location };
 
-    // The replacement string can be empty if we're only pointing something out to the user
-    const QString replacement = fixItem.replacement();
-    QStringView replacementString = replacement.isEmpty()
-            ? issueLocationWithContext.issueText()
-            : replacement;
+            if (const QStringView beforeText = issueLocationWithContext.beforeText();
+                !beforeText.isEmpty()) {
+                m_output.write(beforeText);
+            }
 
-    // But if there's nothing to change it cannot be auto-applied
-    Q_ASSERT(!replacement.isEmpty() || !fixItem.isAutoApplicable());
+            // The replacement string can be empty if we're only pointing something out to the user
+            const QString replacement = documentEdit.m_replacement;
+            QStringView replacementString = replacement.isEmpty()
+                    ? issueLocationWithContext.issueText()
+                    : replacement;
 
-    if (!replacementString.isEmpty())
-        m_output.write(replacementString, QtDebugMsg);
-    m_output.write(issueLocationWithContext.afterText().toString() + u'\n');
+            // But if there's nothing to change it cannot be auto-applied
+            Q_ASSERT(!replacement.isEmpty() || !fixItem.isAutoApplicable());
 
-    int tabCount = issueLocationWithContext.beforeText().count(u'\t');
+            if (!replacementString.isEmpty())
+                m_output.write(replacementString, QtDebugMsg);
+            m_output.write(issueLocationWithContext.afterText().toString() + u'\n');
 
-    // Do not draw location indicator for multiline replacement strings
-    if (!replacementString.contains(u'\n')) {
-        m_output.write(u" "_s.repeated(
-                               issueLocationWithContext.beforeText().size() - tabCount)
-                       + u"\t"_s.repeated(tabCount)
-                       + u"^"_s.repeated(replacement.size()) + u'\n');
+            int tabCount = issueLocationWithContext.beforeText().count(u'\t');
+
+            // Do not draw location indicator for multiline replacement strings
+            if (!replacementString.contains(u'\n')) {
+                m_output.write(u" "_s.repeated(
+                                       issueLocationWithContext.beforeText().size() - tabCount)
+                               + u"\t"_s.repeated(tabCount)
+                               + u"^"_s.repeated(replacement.size()) + u'\n');
+            }
+        }
     }
 }
 
 QQmlJSFixSuggestion::QQmlJSFixSuggestion(const QString &description,
                                          const QQmlJS::SourceLocation &location,
-                                         const QString &replacement)
-    : m_location{ location }, m_description{ description }, m_replacement{ replacement }
+                                         const QQmlJSDocumentEdit &documentEdit)
+    : QQmlJSFixSuggestion(description, location, QList{ documentEdit })
 {
+}
+
+QQmlJSFixSuggestion::QQmlJSFixSuggestion(const QString &description,
+                                         const QQmlJS::SourceLocation &location,
+                                         const QList<QQmlJSDocumentEdit> &documentEdits)
+    : m_description{ description }, m_location{ location }, m_documentEdits(documentEdits)
+{
+}
+
+void QQmlJSFixSuggestion::addDocumentEdit(const QQmlJSDocumentEdit &documentEdit)
+{
+    m_documentEdits.append(documentEdit);
+}
+
+void QQmlJSFixSuggestion::setDocumentEdits(const QList<QQmlJSDocumentEdit> &documentEdits)
+{
+    m_documentEdits = documentEdits;
 }
 
 QT_END_NAMESPACE

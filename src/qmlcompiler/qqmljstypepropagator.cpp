@@ -798,7 +798,7 @@ void QQmlJSTypePropagator::generate_CallProperty_SCMath(
     if (methods.isEmpty()) {
         setVarAccumulatorAndError();
         std::optional<QQmlJSFixSuggestion> fixSuggestion = QQmlJSUtils::didYouMean(
-                name, math.containedType()->methods().keys(),
+                name, math.containedType()->methods().keys(), m_logger->filePath(),
                 currentSourceLocation());
         m_logger->log(u"Member \"%1\" not found on Math object"_s.arg(name),
                       qmlMissingProperty, currentSourceLocation(),
@@ -919,7 +919,7 @@ void QQmlJSTypePropagator::generate_CallProperty(int nameIndex, int base, int ar
         std::optional<QQmlJSFixSuggestion> fixSuggestion;
 
         if (auto suggestion = QQmlJSUtils::didYouMean(propertyName, baseType->methods().keys(),
-                                                      currentSourceLocation());
+                                                      m_logger->filePath(), currentSourceLocation());
             suggestion.has_value()) {
             fixSuggestion = suggestion;
         }

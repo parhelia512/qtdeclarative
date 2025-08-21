@@ -258,13 +258,10 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
                 }
 
                 fixString += handler.isMultiline ? u") "_s : u") => "_s;
-
-                suggestion =
-                        QQmlJSFixSuggestion{ u"\"%1\" is ambiguous. "
-                                             "Use a function instead: %2%3"_s.arg(
-                                                     name, fixString,
-                                                     handler.isMultiline ? "{ ... }"_L1 : "..."_L1),
-                                             fixLocation, fixString };
+                const auto msg = u"\"%1\" is ambiguous. Use a function instead: %2%3"_s.arg(
+                        name, fixString, handler.isMultiline ? "{ ... }"_L1 : "..."_L1);
+                QQmlJSDocumentEdit documentEdit{ m_logger->filePath(), fixLocation, fixString };
+                suggestion = {{ msg, fixLocation, documentEdit }};
                 suggestion->setAutoApplicable();
             }
             break;
@@ -310,7 +307,8 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
                 m = m.arg(id.result.isEmpty() ? " (You first have to give the element an id)"_L1 : ""_L1);
 
                 suggestion = QQmlJSFixSuggestion{
-                    m, fixLocation, (id.result.isEmpty() ? u"<id>."_s : (id.result + u'.'))
+                    m, fixLocation, { m_logger->filePath(), fixLocation,
+                                      (id.result.isEmpty() ? u"<id>."_s : (id.result + u'.')) }
                 };
 
                 if (!id.result.isEmpty())
@@ -326,7 +324,7 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
             "Set \"%1\" in order to use IDs from outer components in nested components."_L1
                     .arg(replacement),
             QQmlJS::s_documentOrigin,
-            replacement + '\n'_L1
+            QQmlJSDocumentEdit{ m_logger->filePath(), QQmlJS::s_documentOrigin, replacement + u'\n' }
         };
         bindComponents.setAutoApplicable();
         suggestion = std::move(bindComponents);
@@ -334,7 +332,8 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
 
     if (!suggestion.has_value()) {
         if (auto didYouMean = QQmlJSUtils::didYouMean(
-                    name, qmlScope->properties().keys() + qmlScope->methods().keys(), location);
+                    name, qmlScope->properties().keys() + qmlScope->methods().keys(),
+                    m_logger->filePath(), location);
                 didYouMean.has_value()) {
             suggestion = std::move(didYouMean);
         }
@@ -517,8 +516,8 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 
     std::optional<QQmlJSFixSuggestion> fixSuggestion;
 
-    if (auto suggestion = QQmlJSUtils::didYouMean(
-                propertyName, baseType->properties().keys(), currentSourceLocation());
+    if (auto suggestion = QQmlJSUtils::didYouMean(propertyName, baseType->properties().keys(),
+                                                  m_logger->filePath(), currentSourceLocation());
             suggestion.has_value()) {
         fixSuggestion = std::move(suggestion);
     }
@@ -537,7 +536,7 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
         }
 
         if (auto suggestion = QQmlJSUtils::didYouMean(
-                    propertyName, enumKeys, currentSourceLocation());
+                    propertyName, enumKeys, m_logger->filePath(), currentSourceLocation());
                 suggestion.has_value()) {
             fixSuggestion = std::move(suggestion);
         }
@@ -555,8 +554,8 @@ bool QQmlJSLinterTypePropagator::checkForEnumProblems(QQmlJSRegisterContent base
     if (base.isEnumeration()) {
         const auto metaEnum = base.enumeration();
         if (!metaEnum.hasKey(propertyName)) {
-            const auto fixSuggestion = QQmlJSUtils::didYouMean(propertyName, metaEnum.keys(),
-                                                               currentSourceLocation());
+            const auto fixSuggestion = QQmlJSUtils::didYouMean(
+                    propertyName, metaEnum.keys(), m_logger->filePath(), currentSourceLocation());
             const QString error = u"\"%1\" is not an entry of enum \"%2\"."_s
                                           .arg(propertyName, metaEnum.name());
             m_logger->log(error, qmlMissingEnumEntry, currentSourceLocation(), true, true,

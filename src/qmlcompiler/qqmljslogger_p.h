@@ -72,16 +72,37 @@ private:
     QStringView m_afterText;
 };
 
+struct Q_QMLCOMPILER_EXPORT QQmlJSDocumentEdit
+{
+    Q_DECLARE_EQUALITY_COMPARABLE(QQmlJSDocumentEdit)
+
+    QString m_filename;
+    QQmlJS::SourceLocation m_location;
+    QString m_replacement;
+
+    friend bool comparesEqual(const QQmlJSDocumentEdit &self,
+                              const QQmlJSDocumentEdit &other) noexcept
+    {
+        return self.m_filename == other.m_filename && self.m_location == other.m_location
+                && self.m_replacement == other.m_replacement;
+    }
+};
+
 class Q_QMLCOMPILER_EXPORT QQmlJSFixSuggestion
 {
 public:
     QQmlJSFixSuggestion() = default;
     QQmlJSFixSuggestion(const QString &description, const QQmlJS::SourceLocation &location,
-                        const QString &replacement = QString());
+                        const QQmlJSDocumentEdit &);
+    QQmlJSFixSuggestion(const QString &description, const QQmlJS::SourceLocation &location,
+                        const QList<QQmlJSDocumentEdit> & = {});
 
     QString description() const { return m_description; }
     QQmlJS::SourceLocation location() const { return m_location; }
-    QString replacement() const { return m_replacement; }
+
+    void addDocumentEdit(const QQmlJSDocumentEdit &documentEdit);
+    void setDocumentEdits(const QList<QQmlJSDocumentEdit> &documentEdits);
+    QList<QQmlJSDocumentEdit> documentEdits() const { return m_documentEdits; }
 
     void setFilename(const QString &filename) { m_filename = filename; }
     QString filename() const { return m_filename; }
@@ -93,10 +114,10 @@ public:
     bool operator!=(const QQmlJSFixSuggestion &) const;
 
 private:
-    QQmlJS::SourceLocation m_location;
     QString m_description;
-    QString m_replacement;
     QString m_filename;
+    QQmlJS::SourceLocation m_location;
+    QList<QQmlJSDocumentEdit> m_documentEdits;
     bool m_autoApplicable = false;
 };
 

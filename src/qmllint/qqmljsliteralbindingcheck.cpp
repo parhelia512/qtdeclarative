@@ -4,6 +4,8 @@
 
 #include "qqmljsliteralbindingcheck_p.h"
 
+#include "qqmlsa.h"
+
 #include <private/qqmljsimportvisitor_p.h>
 #include <private/qqmljstyperesolver_p.h>
 #include <private/qqmljsmetatypes_p.h>
@@ -112,7 +114,8 @@ void LiteralBindingCheckBase::warnOnCheckedBinding(
 
     const QQmlSA::FixSuggestion suggestion(
             u"Replace string by structured value construction"_s,
-            binding.sourceLocation(), construction.code);
+            binding.sourceLocation(),
+            { binding.bindingScope().filePath(), binding.sourceLocation(), construction.code });
     emitWarning(warningMessage, qmlIncompatibleType, binding.sourceLocation(), suggestion);
 }
 

@@ -101,9 +101,9 @@ QQmlJSUtils::ResolvedAlias QQmlJSUtils::resolveAlias(const QQmlJSScopesById &idS
             property, owner, visitor);
 }
 
-std::optional<QQmlJSFixSuggestion> QQmlJSUtils::didYouMean(const QString &userInput,
-                                                     QStringList candidates,
-                                                     QQmlJS::SourceLocation location)
+std::optional<QQmlJSFixSuggestion> QQmlJSUtils::didYouMean(
+        const QString &userInput, QStringList candidates, const QString &filename,
+        const QQmlJS::SourceLocation &location)
 {
     QString shortestDistanceWord;
     int shortestDistance = userInput.size();
@@ -152,7 +152,7 @@ std::optional<QQmlJSFixSuggestion> QQmlJSUtils::didYouMean(const QString &userIn
         return QQmlJSFixSuggestion {
             u"Did you mean \"%1\"?"_s.arg(shortestDistanceWord),
             location,
-            shortestDistanceWord
+            { QQmlJSDocumentEdit{ filename, location, shortestDistanceWord } }
         };
     } else {
         return {};

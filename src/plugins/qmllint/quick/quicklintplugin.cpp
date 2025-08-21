@@ -724,7 +724,7 @@ void ColorValidatorPass::onBinding(const QQmlSA::Element &element, const QString
         return;
 
     auto suggestion = QQmlJSUtils::didYouMean(
-            colorName, m_colorNames,
+            colorName, m_colorNames, element.filePath(),
             QQmlSA::SourceLocationPrivate::sourceLocation(binding.sourceLocation()));
 
     emitWarningWithOptionalFix(*this, "Invalid color \"%1\"."_L1.arg(colorName), quickColor,
@@ -767,8 +767,10 @@ void AttachedPropertyReuse::onRead(const QQmlSA::Element &element, const QString
                                                            attachedLocation.startColumn() };
             QString m = "Reference it by id instead%1:"_L1;
             m = m.arg(id.isEmpty() ? " (You first have to give the element and id)"_L1 : ""_L1);
-            QQmlSA::FixSuggestion suggestion{ m, idInsertLocation,
-                                              id.isEmpty() ? u"<id>."_s : (id + '.'_L1) };
+            QQmlSA::FixSuggestion suggestion{
+                m, idInsertLocation, { readScope.filePath(), idInsertLocation,
+                                       id.isEmpty() ? u"<id>."_s : (id + '.'_L1) }
+            };
 
             if (!id.isEmpty())
                 suggestion.setAutoApplicable();

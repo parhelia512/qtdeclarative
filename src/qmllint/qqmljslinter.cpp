@@ -490,10 +490,22 @@ static void addJsonWarning(QJsonArray &warnings, const QQmlJS::DiagnosticMessage
 
     QJsonArray suggestions;
     if (suggestion.has_value()) {
+        QJsonArray documentEdits;
+        for (const auto &documentEdit : suggestion->documentEdits()) {
+            QJsonObject location;
+            convertLocation(documentEdit.m_location, &location);
+            QJsonObject edit {
+                { "filename"_L1, documentEdit.m_filename },
+                { "location"_L1, location },
+                { "replacement"_L1, documentEdit.m_replacement }
+            };
+            documentEdits.append(edit);
+        }
+
         QJsonObject jsonFix {
             { "message"_L1, suggestion->description() },
-            { "replacement"_L1, suggestion->replacement() },
-            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() }
+            { "documentEdits"_L1, documentEdits },
+            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() },
         };
         convertLocation(suggestion->location(), &jsonFix);
         const QString filename = suggestion->filename();
@@ -938,36 +950,46 @@ QQmlJSLinter::FixResult QQmlJSLinter::applyFixes(QString *fixedCode, bool silent
     if (fixesToApply.isEmpty())
         return NothingToFix;
 
-    std::sort(fixesToApply.begin(), fixesToApply.end(),
-              [](const QQmlJSFixSuggestion &a, const QQmlJSFixSuggestion &b) {
-                  return a.location().offset < b.location().offset;
+    QList<QQmlJSDocumentEdit> documentEdits;
+    for (const auto &fixToApply : std::as_const(fixesToApply)) {
+        const auto &fixDocumentEdits = fixToApply.documentEdits();
+        for (const auto &documentEdit : fixDocumentEdits) {
+            // TODO also apply documentEdits in other files
+            if (documentEdit.m_filename == m_logger->filePath())
+                documentEdits << documentEdit;
+        }
+    }
+
+    std::sort(documentEdits.begin(), documentEdits.end(),
+              [](const QQmlJSDocumentEdit &a, const QQmlJSDocumentEdit &b) {
+                  return a.m_location.offset < b.m_location.offset;
               });
 
-    const auto dupes = std::unique(fixesToApply.begin(), fixesToApply.end());
-    fixesToApply.erase(dupes, fixesToApply.end());
+    const auto dupes = std::unique(documentEdits.begin(), documentEdits.end());
+    documentEdits.erase(dupes, documentEdits.end());
 
-    for (auto it = fixesToApply.begin(); it + 1 != fixesToApply.end(); it++) {
-        const QQmlJS::SourceLocation srcLocA = it->location();
-        const QQmlJS::SourceLocation srcLocB = (it + 1)->location();
+    for (auto it = documentEdits.begin(); it + 1 != documentEdits.end(); it++) {
+        const QQmlJS::SourceLocation srcLocA = it->m_location;
+        const QQmlJS::SourceLocation srcLocB = (it + 1)->m_location;
         if (srcLocA.offset + srcLocA.length > srcLocB.offset) {
             if (!silent)
-                qWarning() << "Fixes for two warnings are overlapping, aborting. Please file a bug "
-                              "report.";
+                qWarning() << "Document edits for warning fixes are overlapping, aborting. "
+                              "Please file a bug report if this is a Qt warning";
             return FixError;
         }
     }
 
-    int offsetChange = 0;
+    int offsetEdit = 0;
 
-    for (const auto &fix : std::as_const(fixesToApply)) {
-        const QQmlJS::SourceLocation fixLocation = fix.location();
-        qsizetype cutLocation = fixLocation.offset + offsetChange;
+    for (const auto &edit : std::as_const(documentEdits)) {
+        const QQmlJS::SourceLocation fixLocation = edit.m_location;
+        qsizetype cutLocation = fixLocation.offset + offsetEdit;
         const QString before = code.left(cutLocation);
         const QString after = code.mid(cutLocation + fixLocation.length);
 
-        const QString replacement = fix.replacement();
+        const QString replacement = edit.m_replacement;
         code = before + replacement + after;
-        offsetChange += replacement.size() - fixLocation.length;
+        offsetEdit += replacement.size() - fixLocation.length;
     }
 
     QQmlJS::Engine engine;

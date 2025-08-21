@@ -83,8 +83,11 @@ bool LinterVisitor::visit(StringLiteral *sl)
             templateString += c;
         }
 
+        QQmlJSDocumentEdit documentEdit{
+            m_logger->filePath(), sl->literalToken, "`" % templateString % u"`"
+        };
         QQmlJSFixSuggestion suggestion = { "Use a template literal instead."_L1, sl->literalToken,
-                                           u"`" % templateString % u"`" };
+                                           documentEdit };
         suggestion.setAutoApplicable();
         m_logger->log(QStringLiteral("String contains unescaped line terminator which is "
                                      "deprecated."),
@@ -141,11 +144,11 @@ static void warnAboutLiteralConstructors(NewMemberExpression *expression, QQmlJS
     }
     if (identifier->name == "Array"_L1 && expression->arguments && expression->arguments->next) {
         const auto fullRange = combine(expression->newToken, expression->rparenToken);
-        const auto parensRange = combine(expression->lparenToken, expression->rparenToken);
-        const auto parens = QStringView(logger->code()).mid(parensRange.offset, parensRange.length);
-        const auto insideParens = parens.mid(1, parens.length() - 2);
-        const QString newCode = u'[' + insideParens + u']';
-        QQmlJSFixSuggestion fix("Replace with array literal"_L1, fullRange, newCode);
+        const QList<QQmlJSDocumentEdit> edits = {
+            { logger->filePath(), combine(expression->newToken, expression->lparenToken), "["_L1 },
+            { logger->filePath(), expression->rparenToken, "]"_L1 },
+        };
+        QQmlJSFixSuggestion fix("Replace with array literal"_L1, fullRange, edits);
         fix.setAutoApplicable(true);
         logger->log("Array has confusing semantics, use an array literal ([]) instead."_L1,
                     qmlLiteralConstructor, identifier->identifierToken, true, true, fix);

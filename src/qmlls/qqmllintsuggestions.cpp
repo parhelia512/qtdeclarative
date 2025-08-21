@@ -5,11 +5,11 @@
 #include "qqmllintsuggestions_p.h"
 
 #include <QtLanguageServer/private/qlanguageserverspec_p.h>
-#include <private/qqmljslinter_p.h>
 #include <QtQmlCompiler/private/qqmljslogger_p.h>
 #include <QtQmlCompiler/private/qqmljsutils_p.h>
 #include <QtQmlDom/private/qqmldom_utils_p.h>
 #include <QtQmlDom/private/qqmldomtop_p.h>
+#include <QtQmlLint/private/qqmljslinter_p.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qfileinfo.h>
@@ -62,21 +62,21 @@ static void codeActionHandler(
 
         QList<WorkspaceEdit::DocumentChange> edits;
         QString message;
-        for (const QJsonValue &suggestion : suggestions) {
-            QString replacement = suggestion[u"replacement"].toString();
-            message += suggestion[u"message"].toString() + u"\n";
-
-            TextEdit textEdit;
-            textEdit.range = { Position { suggestion[u"lspBeginLine"].toInt(),
-                                          suggestion[u"lspBeginCharacter"].toInt() },
-                               Position { suggestion[u"lspEndLine"].toInt(),
-                                          suggestion[u"lspEndCharacter"].toInt() } };
-            textEdit.newText = replacement.toUtf8();
-
+        for (const QJsonValue &suggestion : std::as_const(suggestions)) {
+            message += suggestion[u"message"_s].toString() + u'\n';
+            const auto &documentEdits = suggestion[u"documentEdits"_s].toArray();
             TextDocumentEdit textDocEdit;
-            textDocEdit.textDocument = { params.textDocument, version };
-            textDocEdit.edits.append(textEdit);
-
+            for (const auto &documentEdit : documentEdits) {
+                TextEdit textEdit;
+                textEdit.range = { Position{ documentEdit[u"lspBeginLine"].toInt(),
+                                             documentEdit[u"lspBeginCharacter"].toInt() },
+                                   Position{ documentEdit[u"lspEndLine"].toInt(),
+                                             documentEdit[u"lspEndCharacter"].toInt() } };
+                textEdit.newText = documentEdit[u"replacement"_s].toString().toUtf8();
+                QString filename = documentEdit[u"filename"_s].toString();
+                textDocEdit.textDocument = { { filename.toUtf8() }, version };
+                textDocEdit.edits.append(textEdit);
+            }
             edits.append(textDocEdit);
         }
         message.chop(1);
@@ -153,6 +153,56 @@ static Diagnostic createMissingBuildDirDiagnostic()
 }
 
 using AdvanceFunc = qxp::function_ref<void(const QQmlJS::SourceLocation &, Position &)>;
+QJsonArray suggestionToJson(AdvanceFunc advancePositionPastLocation, const Message &message)
+{
+    const auto addLocationToJsonObject = [&](const auto &location, QJsonObject &object) {
+        const int line = location.isValid() ? location.startLine - 1 : 0;
+        const int column = location.isValid() ? location.startColumn - 1 : 0;
+        Position end = { line, column };
+        if (location.isValid())
+            advancePositionPastLocation(location, end);
+        object["lspBeginLine"_L1] = line;
+        object["lspBeginCharacter"_L1] = column;
+        object["lspEndLine"_L1] = end.line;
+        object["lspEndCharacter"_L1] = end.character;
+    };
+
+    if (!message.fixSuggestion.has_value())
+        return QJsonArray();
+
+    const QQmlJSFixSuggestion &suggestion = message.fixSuggestion.value();
+    QJsonArray documentEditsJson;
+    const auto &documentEdits = suggestion.documentEdits();
+    for (const auto &documentEdit : documentEdits) {
+        // We need to interject the information about where the fix suggestions end
+        // here since we don't have access to the textDocument to calculate it later.
+        const QQmlJS::SourceLocation cut = suggestion.location();
+        const int line = cut.isValid() ? cut.startLine - 1 : 0;
+        const int column = cut.isValid() ? cut.startColumn - 1 : 0;
+
+        Position end = { line, column };
+        if (cut.isValid())
+            advancePositionPastLocation(cut, end);
+
+        QJsonObject documentEditJson{
+            { "filename"_L1, QUrl::fromLocalFile(documentEdit.m_filename).toString() },
+            { "replacement"_L1, documentEdit.m_replacement }
+        };
+        addLocationToJsonObject(documentEdit.m_location, documentEditJson);
+        documentEditsJson.append(documentEditJson);
+    }
+
+    QJsonObject fixSuggestionJson;
+    fixSuggestionJson["message"_L1] = message.fixSuggestion->description();
+    addLocationToJsonObject(message.fixSuggestion->location(), fixSuggestionJson);
+    fixSuggestionJson["documentEdits"_L1] = documentEditsJson;
+    fixSuggestionJson["autoApplicable"_L1] = message.fixSuggestion->isAutoApplicable();
+
+    QJsonArray fixSuggestionsJson;
+    fixSuggestionsJson.append(fixSuggestionJson);
+    return fixSuggestionsJson;
+}
+
 static Diagnostic messageToDiagnostic_helper(AdvanceFunc advancePositionPastLocation,
                                              std::optional<int> version, const Message &message)
 {
@@ -184,37 +234,12 @@ static Diagnostic messageToDiagnostic_helper(AdvanceFunc advancePositionPastLoca
     if (!suggestion.has_value())
         return diagnostic;
 
-    // We need to interject the information about where the fix suggestions end
-    // here since we don't have access to the textDocument to calculate it later.
-    const QQmlJS::SourceLocation cut = suggestion->location();
-
-    const int line = cut.isValid() ? cut.startLine - 1 : 0;
-    const int column = cut.isValid() ? cut.startColumn - 1 : 0;
-
-    QJsonObject object;
-    object.insert("lspBeginLine"_L1, line);
-    object.insert("lspBeginCharacter"_L1, column);
-
-    Position end = { line, column };
-
-    if (srcLoc.isValid())
-        advancePositionPastLocation(cut, end);
-    object.insert("lspEndLine"_L1, end.line);
-    object.insert("lspEndCharacter"_L1, end.character);
-
-    object.insert("message"_L1, suggestion->description());
-    object.insert("replacement"_L1, suggestion->replacement());
-
-    QJsonArray fixedSuggestions;
-    fixedSuggestions.append(object);
     QJsonObject data;
-    data[u"suggestions"] = fixedSuggestions;
-
+    data[u"suggestions"] = suggestionToJson(advancePositionPastLocation, message);
     Q_ASSERT(version.has_value());
     data[u"version"] = version.value();
 
     diagnostic.data = data;
-
     return diagnostic;
 };
 

@@ -32,6 +32,7 @@ namespace QQmlSA {
 
 class BindingPrivate;
 class BindingsPrivate;
+class DocumentEditPrivate;
 class Element;
 class ElementPass;
 class FixSuggestion;
@@ -373,13 +374,43 @@ public:
     virtual void run(const Element &element) = 0;
 };
 
+class Q_QMLCOMPILER_EXPORT DocumentEdit
+{
+    Q_DECLARE_PRIVATE(DocumentEdit)
+    Q_DECLARE_EQUALITY_COMPARABLE(DocumentEdit)
+
+public:
+    DocumentEdit(const QString &filename, const SourceLocation &location,
+                   const QString &replacement);
+    DocumentEdit(const DocumentEdit&);
+    DocumentEdit(DocumentEdit&&);
+    DocumentEdit &operator=(const DocumentEdit&);
+    DocumentEdit &operator=(DocumentEdit &&);
+    ~DocumentEdit();
+
+    QString filename() const;
+    SourceLocation location() const;
+    QString replacement() const;
+
+private:
+    friend bool comparesEqual(const DocumentEdit &self, const DocumentEdit &other) noexcept
+    {
+        return self.filename() == other.filename() && self.location() == other.location()
+                && self.replacement() == other.replacement();
+    }
+
+    std::unique_ptr<DocumentEditPrivate> d_ptr;
+};
+
 class Q_QMLCOMPILER_EXPORT FixSuggestion
 {
     Q_DECLARE_PRIVATE(FixSuggestion)
 
 public:
     FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
-                  const QString &replacement = QString());
+                  const DocumentEdit &documentEdit);
+    FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
+                  const QList<DocumentEdit> &documentEdits = {});
     FixSuggestion(const FixSuggestion &);
     FixSuggestion(FixSuggestion &&) noexcept;
     FixSuggestion &operator=(const FixSuggestion &);
@@ -388,7 +419,9 @@ public:
 
     QString description() const;
     QQmlSA::SourceLocation location() const;
-    QString replacement() const;
+
+    void addDocumentEdit(const DocumentEdit &);
+    QList<DocumentEdit> documentEdits() const;
 
     void setFileName(const QString &);
     QString fileName() const;

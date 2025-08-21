@@ -1953,12 +1953,12 @@ std::unordered_map<quint32, Binding> PassManager::bindingsByLocation() const
 
 FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface) : q_ptr{ iface } { }
 
-FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, const QString &description,
-                                           const QQmlSA::SourceLocation &location,
-                                           const QString &replacement)
-    : m_fixSuggestion{ description, QQmlSA::SourceLocationPrivate::sourceLocation(location),
-                       replacement },
-      q_ptr{ iface }
+FixSuggestionPrivate::FixSuggestionPrivate(
+        FixSuggestion *iface, const QString &description, const SourceLocation &location,
+        const QList<DocumentEdit> &documentEdits)
+    : m_fixSuggestion{ description, SourceLocationPrivate::sourceLocation(location),
+                       DocumentEditPrivate::documentEdits(documentEdits) }
+    , q_ptr{ iface }
 {
 }
 
@@ -1983,9 +1983,18 @@ QQmlSA::SourceLocation FixSuggestionPrivate::location() const
     return QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(m_fixSuggestion.location());
 }
 
-QString FixSuggestionPrivate::replacement() const
+void FixSuggestionPrivate::addDocumentEdit(const DocumentEdit &editSA)
 {
-    return m_fixSuggestion.replacement();
+    auto editJS = DocumentEditPrivate::documentEdit(editSA);
+    m_fixSuggestion.addDocumentEdit(editJS);
+}
+
+QList<DocumentEdit> FixSuggestionPrivate::documentEdits() const
+{
+    QList<DocumentEdit> edits;
+    for (const auto &edit : m_fixSuggestion.documentEdits())
+        edits << DocumentEditPrivate::createQQmlSADocumentEdit(edit);
+    return edits;
 }
 
 void FixSuggestionPrivate::setFileName(const QString &fileName)
@@ -2018,6 +2027,169 @@ const QQmlJSFixSuggestion &FixSuggestionPrivate::fixSuggestion(const FixSuggesti
     return saFixSuggestion.d_func()->m_fixSuggestion;
 }
 
+FixSuggestion FixSuggestionPrivate::createQQmlSAFixSuggestion(const QQmlJSFixSuggestion &jsFix)
+{
+    auto saLocation = SourceLocationPrivate::createQQmlSASourceLocation(jsFix.location());
+    FixSuggestion saFix(jsFix.description(), saLocation);
+    saFix.d_ptr->m_fixSuggestion.setDocumentEdits(jsFix.documentEdits());
+    saFix.setAutoApplicable(jsFix.isAutoApplicable());
+    return saFix;
+}
+
+/*!
+    \class QQmlSA::DocumentEdit
+    \inmodule QtQmlCompiler
+
+    \brief Represents a single edit to a document.
+ */
+
+/*!
+    Creates a DocumentEdit object.
+ */
+DocumentEdit::DocumentEdit(const QString &filename, const SourceLocation &location,
+                           const QString &replacement)
+    : d_ptr{ new DocumentEditPrivate{ this, filename, location, replacement } }
+{
+}
+
+/*!
+    Creates a copy of \a other.
+ */
+DocumentEdit::DocumentEdit(const DocumentEdit &other)
+    : d_ptr{ new DocumentEditPrivate(this, *other.d_func()) }
+{
+}
+
+/*!
+    Move-constructs a DocumentEdit instance.
+ */
+DocumentEdit::DocumentEdit(DocumentEdit &&other)
+    : d_ptr{ new DocumentEditPrivate(this, std::move(*other.d_func())) }
+{
+}
+
+/*!
+    Assigns \a other to this DocumentEdit instance.
+ */
+DocumentEdit &DocumentEdit::operator=(const DocumentEdit &other)
+{
+    if (*this == other)
+        return *this;
+
+    d_func()->m_documentEdit = other.d_func()->m_documentEdit;
+    d_func()->q_ptr = this;
+    return *this;
+}
+
+/*!
+    Move-assigns \a other to this DocumentEdit instance.
+ */
+DocumentEdit &DocumentEdit::operator=(DocumentEdit &&other)
+{
+    if (*this == other)
+        return *this;
+
+    d_func()->m_documentEdit = std::move(other.d_func()->m_documentEdit);
+    d_func()->q_ptr = this;
+    return *this;
+}
+
+/*!
+    Destroys the DocumentEdit instance.
+ */
+DocumentEdit::~DocumentEdit() = default;
+
+/*!
+    Returns the file this edit applies to.
+ */
+QString DocumentEdit::filename() const
+{
+    Q_D(const DocumentEdit);
+    return d->filename();
+}
+
+/*!
+    Returns the location where the edit applies.
+ */
+SourceLocation DocumentEdit::location() const
+{
+    Q_D(const DocumentEdit);
+    return d->location();
+}
+
+/*!
+    Returns the replacement string of the edit.
+ */
+QString DocumentEdit::replacement() const
+{
+    Q_D(const DocumentEdit);
+    return d->replacement();
+}
+
+/*!
+    \fn friend bool DocumentEdit::operator==(const DocumentEdit &lhs, const DocumentEdit &rhs)
+    Returns \c true if \a lhs and \a rhs are equal, and \c false otherwise.
+ */
+/*!
+    \fn friend bool DocumentEdit::operator!=(const DocumentEdit &lhs, const DocumentEdit &rhs)
+    Returns \c true if \a lhs and \a rhs are not equal, and \c false otherwise.
+ */
+
+
+DocumentEditPrivate::DocumentEditPrivate(
+        DocumentEdit *interface, const QString &filename, const SourceLocation &location,
+        const QString &replacement)
+    : m_documentEdit{ filename, SourceLocationPrivate::sourceLocation(location), replacement }
+    , q_ptr{ interface }
+{
+}
+
+DocumentEditPrivate::DocumentEditPrivate(
+        DocumentEdit *interface, const DocumentEditPrivate &other)
+    : m_documentEdit{ other.m_documentEdit }, q_ptr{ interface }
+{
+}
+
+DocumentEditPrivate::DocumentEditPrivate(
+        DocumentEdit *interface, DocumentEditPrivate &&other)
+    : m_documentEdit{ std::move(other.m_documentEdit) }, q_ptr{ interface }
+{
+}
+
+QString DocumentEditPrivate::filename() const
+{
+    return m_documentEdit.m_filename;
+}
+
+QQmlSA::SourceLocation DocumentEditPrivate::location() const
+{
+    return QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(m_documentEdit.m_location);
+}
+
+QString DocumentEditPrivate::replacement() const
+{
+    return m_documentEdit.m_replacement;
+}
+
+QQmlJSDocumentEdit DocumentEditPrivate::documentEdit(const DocumentEdit &edit)
+{
+    return edit.d_ptr->m_documentEdit;
+}
+
+QList<QQmlJSDocumentEdit> DocumentEditPrivate::documentEdits(const QList<DocumentEdit> &editsSA)
+{
+    QList<QQmlJSDocumentEdit> editsJS;
+    for (const auto &editsSA : editsSA)
+        editsJS << DocumentEditPrivate::documentEdit(editsSA);
+    return editsJS;
+}
+
+DocumentEdit DocumentEditPrivate::createQQmlSADocumentEdit(const QQmlJSDocumentEdit &jsEdit)
+{
+    auto saLocation = QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(jsEdit.m_location);
+    return DocumentEdit{ jsEdit.m_filename, saLocation, jsEdit.m_replacement };
+}
+
 /*!
     \class QQmlSA::FixSuggestion
     \inmodule QtQmlCompiler
@@ -2030,8 +2202,18 @@ const QQmlJSFixSuggestion &FixSuggestionPrivate::fixSuggestion(const FixSuggesti
     Creates a FixSuggestion object.
  */
 FixSuggestion::FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
-                             const QString &replacement)
-    : d_ptr{ new FixSuggestionPrivate{ this, description, location, replacement } }
+                             const DocumentEdit &documentEdit)
+    : d_ptr{ new FixSuggestionPrivate{ this, description, location, { documentEdit} } }
+{
+}
+
+
+/*!
+    Creates a FixSuggestion object.
+ */
+FixSuggestion::FixSuggestion(const QString &description, const SourceLocation &location,
+                             const QList<DocumentEdit> &documentEdits)
+    : d_ptr{ new FixSuggestionPrivate{ this, description, location, documentEdits } }
 {
 }
 
@@ -2076,7 +2258,7 @@ FixSuggestion &FixSuggestion::operator=(FixSuggestion &&other) noexcept
 }
 
 /*!
-    Destorys the FixSuggestion instance.
+    Destroys the FixSuggestion instance.
  */
 FixSuggestion::~FixSuggestion() = default;
 
@@ -2090,7 +2272,7 @@ QString QQmlSA::FixSuggestion::description() const
 }
 
 /*!
-    Returns the location where the fix would be applied.
+    Returns the location of the fix.
  */
 QQmlSA::SourceLocation FixSuggestion::location() const
 {
@@ -2099,12 +2281,21 @@ QQmlSA::SourceLocation FixSuggestion::location() const
 }
 
 /*!
-    Returns the fix that will replace the problematic source code.
+    Adds a document \a edit to the list of edits for this fix.
  */
-QString FixSuggestion::replacement() const
+void FixSuggestion::addDocumentEdit(const DocumentEdit &edit)
+{
+    Q_D(FixSuggestion);
+    d->addDocumentEdit(edit);
+}
+
+/*!
+    Returns the list of document edits that applying this fix would make.
+ */
+QList<DocumentEdit> FixSuggestion::documentEdits() const
 {
     Q_D(const FixSuggestion);
-    return d->replacement();
+    return d->documentEdits();
 }
 
 /*!
@@ -2166,10 +2357,8 @@ void emitWarningWithOptionalFix(GenericPass &pass, QAnyStringView diagnostic,
         return;
     }
 
-    const QQmlSA::SourceLocation location =
-            QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(fix->location());
-    const QQmlSA::FixSuggestion saFix{ fix->description(), location, fix->replacement() };
-    pass.emitWarning(diagnostic, id, srcLocation, saFix);
+    auto saFix = FixSuggestionPrivate::createQQmlSAFixSuggestion(fix.value());
+    pass.emitWarning(diagnostic, id, srcLocation, std::move(saFix));
 }
 
 bool isRegularBindingType(BindingType type)

@@ -1307,7 +1307,7 @@ void QQmlJSImportVisitor::processPropertyBindings()
                 for (QQmlJSScope::ConstPtr baseScope = scope; !baseScope.isNull();
                      baseScope = baseScope->baseType()) {
                     if (auto suggestion = QQmlJSUtils::didYouMean(
-                                name, baseScope->ownProperties().keys(), location);
+                                name, baseScope->ownProperties().keys(), m_logger->filePath(), location);
                         suggestion.has_value()) {
                         fixSuggestion = suggestion;
                         break;
@@ -1571,6 +1571,7 @@ void QQmlJSImportVisitor::breakInheritanceCycles(const QQmlJSScope::Ptr &origina
                         qmlImport, scope->sourceLocation(), true, true,
                         QQmlJSUtils::didYouMean(scope->baseTypeName(),
                                                 m_rootScopeImports.types().keys(),
+                                                m_logger->filePath(),
                                                 scope->sourceLocation()));
             }
         }

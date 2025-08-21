@@ -41,15 +41,26 @@ public:
         QtMsgType severity = QtWarningMsg;
     };
 
-    struct FixMessage
+    struct Edit
+    {
+        QString replacement;
+        quint32 line = 0;
+        quint32 column = 0;
+    };
+    using Edits = QList<Edit>;
+
+    struct Fix
     {
         QString text;
-        QString replacement;
+        QList<Edit> edits;
         quint32 line = 0, column = 0;
 
-        FixMessage(const QString &text, const QString &replacement, quint32 line = 0,
-                   quint32 column = 0)
-            : text(text), replacement(replacement), line(line), column(column)
+        Fix(const QString &text, const QList<Edit> &&edits, quint32 line = 0, quint32 column = 0)
+            : text(text), edits(edits), line(line), column(column)
+        {}
+
+        Fix(const QString &text, Edit &&edit, quint32 line = 0, quint32 column = 0)
+            : text(text), edits(QList<Edit>() << edit), line(line), column(column)
         {}
     };
 
@@ -72,7 +83,7 @@ public:
 
         QList<Message> expectedMessages = {};
         QList<Message> badMessages = {};
-        QList<FixMessage> expectedReplacements = {};
+        QList<Fix> expectedFixes = {};
 
         Flags flags = {};
 
@@ -275,8 +286,8 @@ private:
     void searchWarnings(const QJsonArray &warnings, const QString &string,
                         QtMsgType type = QtWarningMsg, quint32 line = 0, quint32 column = 0,
                         ContainOption shouldContain = StringContained);
-    void searchReplacements(const QJsonArray &warnings, const QString &substring,
-                            const QString &replacementSubString, quint32 line, quint32 column);
+    void searchFixes(const QJsonArray &warnings, const QString &substring, const Edits &edits,
+                     quint32 line, quint32 column);
 
     template<typename ExpectedMessageFailureHandler, typename BadMessageFailureHandler,
              typename ReplacementFailureHandler>
@@ -358,10 +369,10 @@ void TestQmllint::testUnqualified_data()
                    {},
                    { { { u"unqualified is a member of a parent element.\n      "_s
                          u"You can qualify the access with its id to avoid this warning."_s,
-                         u"root."_s, 9, 16 },
+                         Edit{ u"root."_s, 9, 16 } },
                        { u"x is a member of a parent element.\n      "_s
                          u"You can qualify the access with its id to avoid this warning."_s,
-                         u"root."_s, 13, 33 } } } };
+                         Edit{ u"root."_s, 13, 33 } } } } };
     // access injected name from signal
     QTest::newRow("SignalHandler")
             << QStringLiteral("SignalHandler.qml")
@@ -371,13 +382,13 @@ void TestQmllint::testUnqualified_data()
                          { "Unqualified access"_L1, 12, 34 } },
                        { },
                        { { "\"mouse\" is ambiguous. Use a function instead: function(mouse) { ... }"_L1,
-                           "function(mouse) "_L1, 4, 22 },
+                           Edit{ "function(mouse) "_L1, 4, 22 } },
                          { "\"mouse\" is ambiguous. Use a function instead: function(mouse) { ... }"_L1,
-                           "function(mouse) "_L1, 9, 24 },
+                           Edit{ "function(mouse) "_L1, 9, 24 } },
                          { "\"mouse\" is ambiguous. Use a function instead: (mouse) => ..."_L1,
-                           "(mouse) => "_L1, 8, 16 },
+                           Edit{ "(mouse) => "_L1, 8, 16 } },
                          { "\"mouse\" is ambiguous. Use a function instead: (mouse) => ..."_L1,
-                           "(mouse) => "_L1, 12, 21 } } };
+                           Edit{ "(mouse) => "_L1, 12, 21 } } } };
     // access catch identifier outside catch block
     QTest::newRow("CatchStatement")
             << QStringLiteral("CatchStatement.qml")
@@ -388,7 +399,7 @@ void TestQmllint::testUnqualified_data()
                        { },
                        { { { u"You can qualify the access with its id to avoid this warning "_s
                              u"(You first have to give the element an id)."_s,
-                             u"<id>."_s, 6, 25 } } } };
+                             Edit{ u"<id>."_s, 6, 25 } } } } };
 
     QTest::newRow("crashConnections")
             << QStringLiteral("crashConnections.qml")
@@ -741,8 +752,8 @@ void TestQmllint::dirtyQmlCode_data()
             << Result{ { { "Member \"Mode\" not found on type \"Item\""_L1, 12, 29 },
                          { "\"Hour\" is not an entry of enum \"Mode\"."_L1, 13, 62 } },
                        {},
-                       { { "Did you mean \"mode\"?"_L1, "mode"_L1, 12, 29 },
-                         { "Did you mean \"Hours\"?"_L1, "Hours"_L1, 13, 62 } } };
+                       { { "Did you mean \"mode\"?"_L1, Edit{ "mode"_L1, 12, 29 } },
+                         { "Did you mean \"Hours\"?"_L1, Edit{ "Hours"_L1, 13, 62 } } } };
     QTest::newRow("MemberNotFound")
             << QStringLiteral("memberNotFound.qml")
             << Result{ { { "Member \"foo\" not found on type \"QtObject\""_L1, 6, 31 } } };
@@ -976,7 +987,7 @@ void TestQmllint::dirtyQmlCode_data()
             << QStringLiteral("didYouMeanBinding.qml")
             << Result{ { { "Could not find property \"witdh\"."_L1 } },
                        {},
-                       { { "Did you mean \"width\"?"_L1, "width"_L1 } } };
+                       { { "Did you mean \"width\"?"_L1, Edit{ "width"_L1 } } } };
     QTest::newRow("didYouMean(component)")
             << QStringLiteral("didYouMeanComponent.qml")
             << Result{ { { "Itym was not found. Did you add all imports and dependencies?"_L1 },
@@ -1001,12 +1012,12 @@ void TestQmllint::dirtyQmlCode_data()
             << QStringLiteral("didYouMeanUnqualified.qml")
             << Result{ { { "Unqualified access"_L1 } },
                        {},
-                       { { "Did you mean \"height\"?"_L1, "height"_L1 } } };
+                       { { "Did you mean \"height\"?"_L1, Edit{ "height"_L1 } } } };
     QTest::newRow("didYouMean(unqualifiedCall)")
             << QStringLiteral("didYouMeanUnqualifiedCall.qml")
             << Result{ { { "Unqualified access"_L1 } },
                        {},
-                       { { "Did you mean \"func\""_L1, "func"_L1 } } };
+                       { { "Did you mean \"func\""_L1, Edit{ "func"_L1 } } } };
     QTest::newRow("duplicateImportsDirty")
             << QStringLiteral("duplicateImportsDirty.qml")
             << Result{ { { "Duplicate import 'QtQml'"_L1, 2, 8 },
@@ -1036,7 +1047,7 @@ void TestQmllint::dirtyQmlCode_data()
                          { "Member \"red\" not found on type \"QtObject\""_L1, 6, 25 },
                          { "Member \"S2\" not found on type \"EnumTesterScoped\""_L1, 8, 38 }, },
                        { },
-                       { { "Did you mean \"U2\"?"_L1, "U2"_L1, 8, 38 } } };
+                       { { "Did you mean \"U2\"?"_L1, Edit{ "U2"_L1, 8, 38 } } } };
     QTest::newRow("enumsAreNotTypes_functionAnnotations")
             << QStringLiteral("EnumsAreNotTypes_functionAnnotations.qml")
             << Result{
@@ -1127,8 +1138,8 @@ void TestQmllint::dirtyQmlCode_data()
             << Result{ { { "Unqualified access"_L1, 8, 31  } },
                        {},
                        { { "Set \"pragma ComponentBehavior: Bound\" in order to use IDs from "
-                           "outer components in nested components."_L1, "pragma ComponentBehavior: Bound\n"_L1,
-                           0, 0 } },
+                           "outer components in nested components."_L1,
+                           Edit{ "pragma ComponentBehavior: Bound\n"_L1, 0, 0 } } },
                        Result::AutoFixable };
     QTest::newRow("missingQmltypes")
             << QStringLiteral("missingQmltypes.qml")
@@ -1154,7 +1165,7 @@ void TestQmllint::dirtyQmlCode_data()
                        {},
                        { { "Set \"pragma ComponentBehavior: Bound\" in order to use IDs from "
                            "outer components in nested components."_L1,
-                           "pragma ComponentBehavior: Bound\n"_L1, 1, 1 } },
+                           Edit{ "pragma ComponentBehavior: Bound\n"_L1, 1, 1 } } },
                        { Result::AutoFixable } };
     QTest::newRow("multilineString")
             << QStringLiteral("multilineString.qml")
@@ -1162,21 +1173,21 @@ void TestQmllint::dirtyQmlCode_data()
                            0, 0, QtInfoMsg } },
                        {},
                        { { "Use a template literal instead."_L1,
-                           "`Foo\nmultiline\\`\nstring`"_L1, 4, 32 },
+                           Edit{ "`Foo\nmultiline\\`\nstring`"_L1, 4, 32 } },
                          { "Use a template literal instead."_L1,
-                           "`another\\`\npart\nof it`"_L1, 6, 11 },
+                           Edit{ "`another\\`\npart\nof it`"_L1, 6, 11 } },
                          { "Use a template literal instead."_L1,
-                           R"(`
+                           Edit{ R"(`
 quote: " \\" \\\\"
 ticks: \` \` \\\` \\\`
 singleTicks: ' \' \\' \\\'
-expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 10, 28 },
+expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 10, 28 } },
                          { "Use a template literal instead."_L1,
-                           R"(`
+                           Edit{ R"(`
 quote: " \" \\" \\\"
 ticks: \` \` \\\` \\\`
 singleTicks: ' \\' \\\\'
-expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
+expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } } },
                        { Result::ExitsNormally, Result::AutoFixable } };
 
     // The warning should show up only once even though
@@ -1258,7 +1269,7 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
                        {},
                        { { "i is a member of a parent element.\n      "
                            "You can qualify the access with its id to avoid this warning."_L1,
-                           "stringy."_L1 } } };
+                           Edit{ "stringy."_L1 } } } };
     QTest::newRow("unboundComponents")
             << QStringLiteral("unboundComponents.qml")
             << Result{ { { "Unqualified access"_L1, 10, 25 },
@@ -1369,17 +1380,22 @@ void TestQmllint::dirtyQmlCode()
 static void addLocationOffsetTo(TestQmllint::Result *result, qsizetype lineOffset,
                                 qsizetype columnOffset = 0)
 {
-    auto processMessages = [lineOffset, columnOffset](auto messages) {
-        for (auto &message : *messages) {
-            if (message.line != 0)
-                message.line += lineOffset;
-            if (message.column != 0)
-                message.column += columnOffset;
-        }
+    auto adjustLineAndColumn = [lineOffset, columnOffset](auto &lineAndColumnHolder) {
+        if (lineAndColumnHolder.line != 0)
+            lineAndColumnHolder.line += lineOffset;
+        if (lineAndColumnHolder.column != 0)
+            lineAndColumnHolder.column += columnOffset;
     };
-    processMessages(&result->expectedMessages);
-    processMessages(&result->badMessages);
-    processMessages(&result->expectedReplacements);
+
+    for (auto &expectedMessage : result->expectedMessages)
+        adjustLineAndColumn(expectedMessage);
+    for (auto &badMessage : result->badMessages)
+        adjustLineAndColumn(badMessage);
+    for (auto &expectedFix : result->expectedFixes) {
+        adjustLineAndColumn(expectedFix);
+        for (auto &edit : expectedFix.edits)
+            adjustLineAndColumn(edit);
+    }
 }
 
 void TestQmllint::dirtyQmlSnippet_data()
@@ -1423,7 +1439,7 @@ void TestQmllint::dirtyQmlSnippet_data()
             << u"property color myColor: \"lbue\""_s
             << Result{ { { "Invalid color \"lbue\""_L1, 1, 25 } },
                        {},
-                       { { "Did you mean \"blue\"?", "blue"_L1, 1, 25 } } }
+                       { { "Did you mean \"blue\"?", Edit{ "blue"_L1, 1, 25 } } } }
             << defaultOptions;
     QTest::newRow("componentExactlyOneChild1")
             << u"Component { Item {} Item {} }"_s
@@ -2032,7 +2048,8 @@ void TestQmllint::dirtyJsSnippet_data()
             << Result{ { { "Array has confusing semantics, use an array literal ([]) instead."_L1,
                            1, 12 } },
                        {},
-                       { { "Replace with array literal"_L1, "[1, 2]"_L1, 1, 8 } } }
+                       { { "Replace with array literal"_L1,
+                           Edits{ { "["_L1, 1, 8 }, { "]"_L1, 1, 22 } } } } }
             << defaultOptions;
     QTest::newRow("doubleConst")
             << u"const x = 4; const x = 4;"_s
@@ -3181,10 +3198,9 @@ void TestQmllint::checkResult(const QJsonArray &warnings, const Result &result,
         searchWarnings(warnings, msg.text, msg.severity, msg.line, msg.column, StringNotContained);
     }
 
-    for (const FixMessage &replacement : result.expectedReplacements) {
+    for (const Fix &fix: result.expectedFixes) {
         onReplacementFailures();
-        searchReplacements(warnings, replacement.text, replacement.replacement, replacement.line,
-                           replacement.column);
+        searchFixes(warnings, fix.text, fix.edits, fix.line, fix.column);
     }
 
     // check for duplicates
@@ -3201,43 +3217,70 @@ void TestQmllint::checkResult(const QJsonArray &warnings, const Result &result,
     QVERIFY2(firstDuplicate == sortedWarnings.constEnd(), "Found duplicate warnings!");
 }
 
-static bool warningsContainReplacement(const QJsonArray &warnings, const QString &substring,
-                                       const QString &replacementSubString, quint32 line,
-                                       quint32 column)
+static bool foundAllExpectedEdits(const TestQmllint::Edits &expectedEdits,
+                                  const QJsonArray &actualEdits)
 {
-    for (const QJsonValueConstRef warningJson : warnings) {
-        for (const QJsonValueConstRef fix : warningJson[u"suggestions"].toArray()) {
-            QString replacement = fix[u"replacement"].toString();
+    for (const TestQmllint::Edit &expectedEdit : expectedEdits) {
+        bool found = false;
+        for (const auto &actualEdit : actualEdits) {
+            auto replacement = actualEdit[u"replacement"_s].toString();
+
 #ifdef Q_OS_WIN
             // Replacements can contain native line endings
             // but we need them to be uniform in order for them to conform to our test data
             replacement = replacement.replace(u"\r\n"_s, u"\n"_s);
 #endif
-            if (replacement != replacementSubString)
+
+            if (replacement != expectedEdit.replacement)
                 continue;
 
+            if (expectedEdit.line != 0 || expectedEdit.column != 0) {
+                const auto actualLocation = actualEdit[u"location"_s].toObject();
+                if (actualLocation[u"line"_s].toInt() != int(expectedEdit.line))
+                    continue;
+                if (actualLocation[u"column"_s].toInt() != int(expectedEdit.column))
+                    continue;
+            }
+
+            found = true;
+            break;
+        }
+
+        if (!found)
+            return false;
+    }
+    return true;
+}
+
+static bool warningsContainFix(const QJsonArray &warnings, const QString &substring,
+                                 const TestQmllint::Edits &edits, quint32 line, quint32 column)
+{
+    for (const QJsonValueConstRef warningJson : warnings) {
+        for (const QJsonValueConstRef fix : warningJson[u"suggestions"].toArray()) {
             if (!fix[u"message"].toString().contains(substring))
                 continue;
 
-            const quint32 fixLine = fix[u"line"].toInt();
-            const quint32 fixColumn = fix[u"column"].toInt();
             if (line != 0 || column != 0) {
-                if (fixLine != line || fixColumn != column) {
+                const quint32 fixLine = fix[u"line"].toInt();
+                const quint32 fixColumn = fix[u"column"].toInt();
+                if (fixLine != line || fixColumn != column)
                     continue;
-                }
             }
+
+            const QJsonArray editsJson = fix[u"documentEdits"_s].toArray();
+            if (!foundAllExpectedEdits(edits, editsJson))
+                continue;
+
             return true;
         }
     }
     return false;
 }
 
-void TestQmllint::searchReplacements(const QJsonArray &warnings, const QString &substring,
-                                     const QString &replacementSubString, quint32 line, quint32 column)
+void TestQmllint::searchFixes(const QJsonArray &warnings, const QString &substring,
+                              const Edits &edits, quint32 line, quint32 column)
 {
-    const bool contains =
-            warningsContainReplacement(warnings, substring, replacementSubString, line, column);
-
+    const bool contains = warningsContainFix(warnings, substring, edits, line, column);
     const auto toDescription = [](const QJsonArray &warnings, const QString &substring,
                                   quint32 line, quint32 column) {
         const auto indentedJson =
@@ -3265,17 +3308,16 @@ void TestQmllint::searchWarnings(const QJsonArray &warnings, const QString &subs
         SimplifiedWarning warning(warningJson);
 
         if (warning.message.contains(substring)) {
-            if (warning.type != type) {
-                continue;
-            }
+            bool locationMismatch = false;
             if (line != 0 || column != 0) {
-                if (warning.line != line || warning.column != column) {
-                    continue;
-                }
+                if (warning.line != line || warning.column != column)
+                    locationMismatch = true;
             }
 
-            contains = true;
-            break;
+            if (warning.type == type && !locationMismatch) {
+                contains = true;
+                break;
+            }
         }
 
         for (const QJsonValueConstRef fix : warningJson[u"suggestions"].toArray()) {
@@ -3416,7 +3458,7 @@ void TestQmllint::attachedPropertyReuse()
                             "Using attached type MyStyle already initialized in a parent scope"_L1,
                             10, 16 } },
                     {},
-                    { { "Reference it by id instead"_L1, "control."_L1, 10, 16 } },
+                    { { "Reference it by id instead"_L1, Edit{ "control."_L1, 10, 16 } } },
                     Result::AutoFixable },
             {}, {}, {}, UseDefaultImports, &categories);
     runTest("pluginQuick_multipleAttachedPropertyReuse.qml",
@@ -3566,23 +3608,23 @@ void TestQmllint::valueTypesFromString()
                     },
                     { /*bad messages */ },
                     { { u"Replace string by structured value construction"_s,
-                        u"({ width: 30, height: 50 })"_s },
+                        Edit{ u"({ width: 30, height: 50 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 10, y: 20, width: 30, height: 50 })"_s },
+                        Edit{ u"({ x: 10, y: 20, width: 30, height: 50 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 30, y: 50 })"_s },
+                        Edit{ u"({ x: 30, y: 50 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 1, y: 2 })"_s },
+                        Edit{ u"({ x: 1, y: 2 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 1, y: 2 })"_s },
+                        Edit{ u"({ x: 1, y: 2 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 1, y: 2, z: 3 })"_s },
+                        Edit{ u"({ x: 1, y: 2, z: 3 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ x: 1, y: 2, z: 3, w: 4 })"_s },
+                        Edit{ u"({ x: 1, y: 2, z: 3, w: 4 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ scalar: 1, x: 2, y: 3, z: 4 })"_s },
+                        Edit{ u"({ scalar: 1, x: 2, y: 3, z: 4 })"_s } },
                       { u"Replace string by structured value construction"_s,
-                        u"({ m11: 1, m12: 2, m13: 3, m14: 4, m21: 5, m22: 6, m23: 7, m24: 8, m31: 9, m32: 10, m33: 11, m34: 12, m41: 13, m42: 14, m43: 15, m44: 16 })"_s },
+                        Edit{ u"({ m11: 1, m12: 2, m13: 3, m14: 4, m21: 5, m22: 6, m23: 7, m24: 8, m31: 9, m32: 10, m33: 11, m34: 12, m41: 13, m42: 14, m43: 15, m44: 16 })"_s } },
                     } });
 }
 
@@ -3720,6 +3762,12 @@ void TestQmllint::testPlugin_data()
     QTest::addRow("nosettings_pluginTest")
             << testFile(u"settings/plugin/elementpass_pluginTest.qml"_s)
             << Result{ { Message{ u"ElementTest OK"_s } }, {}, {} };
+    QTest::addRow("multipleDocumentEditsFixSuggestion")
+            << testFile("testPluginData/multipleDocumentEditsFixSuggestion_pluginTest.qml")
+            << Result{ { { u"Multiple document edits"_s, 3, 1 } },
+                       { },
+                       { { "Rename and add pragma"_L1,
+                           Edits{ { "pragma Yep\n", 1, 1 }, { "NewTypeName", 3, 1 } } } } };
 }
 
 void TestQmllint::testPlugin()

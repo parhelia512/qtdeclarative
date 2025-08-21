@@ -225,7 +225,7 @@ bool QQmlToolingSettings::reportConfigForFiles(const QStringList &files)
 
         QString displayFile = file;
         if (displayFile.length() > maxAllowedFileLength) {
-            displayFile = "..." + displayFile.right(maxAllowedFileLength - 3);
+            displayFile = u"..." + displayFile.right(maxAllowedFileLength - 3);
         }
 
         const auto result = search(file);

@@ -122,6 +122,7 @@ public:
     QStringList buildPaths();
     QStringList buildPathsForFileUrl(const QByteArray &url);
     void setBuildPaths(const QStringList &paths);
+    QStringList buildPathsForOpenedFiles();
     QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const;
     void setImportPaths(const QStringList &paths);

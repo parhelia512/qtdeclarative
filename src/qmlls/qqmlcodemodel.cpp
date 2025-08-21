@@ -341,6 +341,26 @@ bool QQmlCodeModel::callCMakeBuild(const QStringList &buildPaths)
     return success;
 }
 
+QStringList QQmlCodeModel::buildPathsForOpenedFiles()
+{
+    QStringList result;
+
+    std::vector<QByteArray> urls = { m_rootUrl };
+    {
+        QMutexLocker guard(&m_mutex);
+        for (auto it = m_openDocuments.begin(), end = m_openDocuments.end(); it != end; ++it)
+            urls.push_back(it.key());
+    }
+
+    for (const auto &url : urls)
+        result.append(buildPathsForFileUrl(url));
+
+    // remove duplicates
+    std::sort(result.begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
+    return result;
+}
+
 /*!
 \internal
 Iterate the entire source directory to find all C++ files that have their names in fileNames, and

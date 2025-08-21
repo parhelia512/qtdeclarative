@@ -84,6 +84,10 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
     QStringList result = model.buildPathsForFileUrl(nonExistentUrl);
     QCOMPARE(result.size(), 1);
     QCOMPARE(result.front(), expectedPath);
+
+    result = model.findCodeModelForFile(nonExistentUrl)->buildPathsForOpenedFiles();
+    QCOMPARE(result.size(), 1);
+    QCOMPARE(result.front(), expectedPath);
 }
 
 void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames_data()

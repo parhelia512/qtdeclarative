@@ -119,7 +119,6 @@ QQmlCodeModel::~QQmlCodeModel()
         bool shouldWait;
         {
             QMutexLocker l(&m_mutex);
-            m_state = State::Stopping;
             m_openDocumentsToUpdate.clear();
             shouldWait = m_nUpdateInProgress != 0;
         }
@@ -233,12 +232,7 @@ bool QQmlCodeModel::openUpdateSome()
                 openUpdateEnd();
             return false;
         }
-        auto it = m_openDocumentsToUpdate.find(m_lastOpenDocumentUpdated);
-        auto end = m_openDocumentsToUpdate.end();
-        if (it == end)
-            it = m_openDocumentsToUpdate.begin();
-        else if (++it == end)
-            it = m_openDocumentsToUpdate.begin();
+        const auto it = m_openDocumentsToUpdate.begin();
         toUpdate = *it;
         m_openDocumentsToUpdate.erase(it);
     }

@@ -157,11 +157,9 @@ private:
     void initializeCMakeStatus(const QString &);
 
     mutable QMutex m_mutex;
-    State m_state = State::Running;
     int m_nUpdateInProgress = 0;
     QQmlJS::Dom::DomItem m_currentEnv;
     QQmlJS::Dom::DomItem m_validEnv;
-    QByteArray m_lastOpenDocumentUpdated;
     QSet<QByteArray> m_openDocumentsToUpdate;
     QHash<QByteArray, QStringList> m_buildPathsForRootUrl;
     QByteArray m_rootUrl;

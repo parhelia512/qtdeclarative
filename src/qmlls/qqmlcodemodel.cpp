@@ -103,7 +103,7 @@ QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
 
 /*!
 \internal
-Enable and initialize the functionality that uses CMake, if CMake exists.
+Enable and initialize the functionality that uses CMake, if CMake exists. Runs the build once.
 */
 void QQmlCodeModel::tryEnableCMakeCalls(QProcessScheduler *scheduler)
 {
@@ -124,10 +124,8 @@ void QQmlCodeModel::tryEnableCMakeCalls(QProcessScheduler *scheduler)
                      &QQmlCodeModel::onCMakeProcessFinished);
     QObject::connect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, scheduler,
                      [this, scheduler] { callCMakeBuild(scheduler); });
-
     setCMakeStatus(HasCMake);
-
-    // TODO: call CMake build here, to automatically build on the initial workspace opening
+    callCMakeBuild(scheduler);
 }
 
 /*!

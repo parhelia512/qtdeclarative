@@ -44,7 +44,9 @@ tst_qmlls_modules::tst_qmlls_modules() : QQmlDataTest(QT_QMLTEST_DATADIR)
     qputenv("QT_LOGGING_RULES", "*.debug=true;*.warning=true");
     // when using EditingRecorder
     m_server.setProgram(m_qmllsPath);
-    // m_server.setArguments(QStringList() << u"-v"_s << u"-w"_s << u"7"_s);
+    m_server.setArguments(QStringList{
+            "--no-cmake-calls"_L1,
+    });
 }
 
 void tst_qmlls_modules::init()

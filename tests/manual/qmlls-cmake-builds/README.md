@@ -22,3 +22,11 @@ the `Main.qml` file, without having to rebuild the project yourself.
 3. In your editor, open the `Main.qml` and `helloworld.h`.
 4. Modify the `helloworld.h` file by commenting the existing `Q_PROPERTY myPPP` out and save `helloworld.h`.
 5. Remove `myPPP: 55` from `Main.qml` and replace it with `myP`: it should get autocompleted to `myPPP`, without waiting for the CMake build process to finish.
+
+### Scenario 3: Automatic CMake build on WS opening
+
+1. Open the manual test using the `CMakeLists.txt` (for QtC, for example) or the folder in which the `CMakeLists.txt` lies (for VS Code, for example) in the editor where qmlls is **disabled**.
+2. Make sure the project build folder is configured and cleaned.
+3. Enable qmlls in your editor, and open `Main.qml`
+4. You should see lots of linting warnings about the missing qmltypes files of the AutoGenCMake module.
+5. After few seconds, qmlls should have built the project in the background, and retriggered a new linting pass, without any user interaction. The warnings about the missing qmltypes file of the AutoGenCMake module should disappear by themselves. Also make sure that qmlls didn't crash while doing that.

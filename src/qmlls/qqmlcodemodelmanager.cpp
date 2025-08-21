@@ -150,12 +150,6 @@ RegisteredSemanticTokens &QQmlCodeModelManager::registeredTokens(const QByteArra
     return findCodeModelForFile(url)->registeredTokens();
 }
 
-void QQmlCodeModelManager::newDocForOpenFile(const QByteArray &url, int version,
-                                             const QString &docText)
-{
-    findCodeModelForFile(url)->newDocForOpenFile(url, version, docText);
-}
-
 void QQmlCodeModelManager::closeOpenFile(const QByteArray &url)
 {
     m_file2CodeModel.erase(url);

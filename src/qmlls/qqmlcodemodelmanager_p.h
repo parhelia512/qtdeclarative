@@ -52,7 +52,6 @@ public:
     void removeDirectory(const QByteArray &);
 
     void newOpenFile(const QByteArray &url, int version, const QString &docText);
-    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText);
     void closeOpenFile(const QByteArray &url);
     QList<QByteArray> rootUrls() const;
     void addRootUrls(const QList<QByteArray> &urls);

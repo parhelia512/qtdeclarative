@@ -75,26 +75,33 @@ void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames_data()
     QTest::addColumn<QStringList>("fileNames");
     QTest::addColumn<QStringList>("expectedPaths");
     QTest::addColumn<QSet<QString>>("missingFiles");
+    QTest::addColumn<QSet<QString>>("alreadyWatchedFiles");
 
     const QString folder = testFile("sourceFolder");
     const QString subfolder = testFile("sourceFolder/subSourceFolder/subsubSourceFolder");
     const QSet<QString> noMissingFiles;
+    const QSet<QString> noAlreadyWatchedFiles;
 
-    QTest::addRow("notExistingFile") << QStringList{ u"notExistingFile.h"_s } << QStringList{}
-                                     << QSet<QString>{ u"notExistingFile.h"_s };
+    QTest::addRow("notExistingFile")
+            << QStringList{ u"notExistingFile.h"_s } << QStringList{}
+            << QSet<QString>{ u"notExistingFile.h"_s } << noAlreadyWatchedFiles;
 
     QTest::addRow("myqmlelement") << QStringList{ u"myqmlelement.h"_s }
                                   << QStringList{ folder + u"/myqmlelement.h"_s,
                                                   subfolder + u"/myqmlelement.h"_s }
-                                  << noMissingFiles;
+                                  << noMissingFiles << noAlreadyWatchedFiles;
 
-    QTest::addRow("myqmlelement2")
-            << QStringList{ u"myqmlelement2.hpp"_s }
-            << QStringList{ folder + u"/myqmlelement2.hpp"_s } << noMissingFiles;
+    QTest::addRow("myqmlelementAlreadyWatched")
+            << QStringList{ u"myqmlelement.h"_s } << QStringList{ folder + u"/myqmlelement.h"_s }
+            << noMissingFiles << QSet<QString>{ subfolder + u"/myqmlelement.h"_s };
 
-    QTest::addRow("anotherqmlelement")
-            << QStringList{ u"anotherqmlelement.cpp"_s }
-            << QStringList{ subfolder + u"/anotherqmlelement.cpp"_s } << noMissingFiles;
+    QTest::addRow("myqmlelement2") << QStringList{ u"myqmlelement2.hpp"_s }
+                                   << QStringList{ folder + u"/myqmlelement2.hpp"_s }
+                                   << noMissingFiles << noAlreadyWatchedFiles;
+
+    QTest::addRow("anotherqmlelement") << QStringList{ u"anotherqmlelement.cpp"_s }
+                                       << QStringList{ subfolder + u"/anotherqmlelement.cpp"_s }
+                                       << noMissingFiles << noAlreadyWatchedFiles;
 }
 
 void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames()
@@ -102,10 +109,11 @@ void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames()
     QFETCH(QStringList, fileNames);
     QFETCH(QStringList, expectedPaths);
     QFETCH(QSet<QString>, missingFiles);
+    QFETCH(QSet<QString>, alreadyWatchedFiles);
 
     QmlLsp::QQmlCodeModel model(testFileUrl(u"sourceFolder"_s).toEncoded());
 
-    auto result = model.findFilePathsFromFileNames(fileNames);
+    auto result = model.findFilePathsFromFileNames(fileNames, alreadyWatchedFiles);
 
     // the order only is required for the QCOMPARE
     std::sort(result.begin(), result.end());

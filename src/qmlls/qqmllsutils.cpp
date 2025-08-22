@@ -1994,7 +1994,7 @@ static std::optional<Location> createCppTypeLocation(const QQmlJSScope::ConstPtr
                                                      const QStringList &headerLocations,
                                                      const QQmlJS::SourceLocation &location)
 {
-    const QString filePath = findFilePathFromFileName(headerLocations, type->filePath());
+    const QString filePath = findFilePathFromFileName(headerLocations, type->filePath(), {});
     if (filePath.isEmpty()) {
         qCWarning(QQmlLSUtilsLog) << "Couldn't find the C++ file '%1'."_L1.arg(type->filePath());
         return {};
@@ -2553,7 +2553,8 @@ RenameUsages::RenameUsages(const QList<Edit> &renamesInFile,
 enum SearchOption { FindFirst, FindAll };
 static QStringList findFilePathsFromFileNamesImpl(const QStringList &rootDirs,
                                                   const QStringList &fileNamesToSearch,
-                                                  SearchOption option)
+                                                  SearchOption option,
+                                                  const QSet<QString> &ignoredFilePaths)
 {
     if (fileNamesToSearch.isEmpty() || rootDirs.isEmpty())
         return {};
@@ -2594,25 +2595,31 @@ static QStringList findFilePathsFromFileNamesImpl(const QStringList &rootDirs,
             if (!fileNamesToSearch.contains(entry.fileName()))
                 continue;
 
-            result << entry.absoluteFilePath();
+            if (ignoredFilePaths.contains(entry.absoluteFilePath()))
+                continue;
+
             if (option == FindFirst)
-                return result;
+                return { entry.absoluteFilePath() };
+
+            result << entry.absoluteFilePath();
         }
     }
 
     return result;
 }
 
-QStringList findFilePathsFromFileNames(const QString &rootDir,
-                                       const QStringList &fileNamesToSearch)
+QStringList findFilePathsFromFileNames(const QString &rootDir, const QStringList &fileNamesToSearch,
+                                       const QSet<QString> &ignoredFilePaths)
 {
-    return findFilePathsFromFileNamesImpl({ rootDir }, fileNamesToSearch, FindAll);
+    return findFilePathsFromFileNamesImpl({ rootDir }, fileNamesToSearch, FindAll,
+                                          ignoredFilePaths);
 }
 
-QString findFilePathFromFileName(const QStringList &rootDirs, const QString &fileNameToSearch)
+QString findFilePathFromFileName(const QStringList &rootDirs, const QString &fileNameToSearch,
+                                 const QSet<QString> &ignoredFilePaths)
 {
-    const QStringList result =
-            findFilePathsFromFileNamesImpl(rootDirs, { fileNameToSearch }, FindFirst);
+    const QStringList result = findFilePathsFromFileNamesImpl(rootDirs, { fileNameToSearch },
+                                                              FindFirst, ignoredFilePaths);
     return result.isEmpty() ? QString{} : result.front();
 }
 

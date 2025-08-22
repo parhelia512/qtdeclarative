@@ -4629,7 +4629,68 @@ void tst_qmlls_utils::maxFilesToSearch()
                          "\" after reaching QMLLS_MAX_FILES_TO_SEARCH (currently set to 1111). Set "
                          "the environment variable \"QMLLS_MAX_FILES_TO_SEARCH\" to a higher value "
                          "to spend more time on searching.");
-    QQmlLSUtils::findFilePathsFromFileNames(QT_QMLLS_BIG_FOLDER ""_L1, { "qt"_L1, "qwer"_L1 });
+    QQmlLSUtils::findFilePathsFromFileNames(QT_QMLLS_BIG_FOLDER ""_L1, { "qt"_L1, "qwer"_L1 }, {});
+}
+
+void tst_qmlls_utils::findFilePathsFromFileNames_data()
+{
+    QTest::addColumn<QSet<QString>>("ignored");
+    QTest::addColumn<QStringList>("expected");
+
+    QTest::addRow("all") << QSet<QString>()
+                         << QStringList{
+                                testFile("findFilePathsFromFileNames/HelloWorld.txt"_L1),
+                                testFile("findFilePathsFromFileNames/a/HelloWorld.txt"_L1),
+                                testFile("findFilePathsFromFileNames/a/b/HelloWorld.txt"_L1),
+                                testFile("findFilePathsFromFileNames/a/b/c/HelloWorld.txt"_L1),
+                            };
+
+    QTest::addRow("ignore3")
+            << QSet<QString> {
+               testFile("findFilePathsFromFileNames/a/HelloWorld.txt"_L1),
+               testFile("findFilePathsFromFileNames/a/b/HelloWorld.txt"_L1),
+    }
+            << QStringList{
+               testFile("findFilePathsFromFileNames/HelloWorld.txt"_L1),
+               testFile("findFilePathsFromFileNames/a/b/c/HelloWorld.txt"_L1),
+    };
+}
+
+void tst_qmlls_utils::findFilePathsFromFileNames()
+{
+    QFETCH(QSet<QString>, ignored);
+    QFETCH(QStringList, expected);
+
+    QStringList filePaths = QQmlLSUtils::findFilePathsFromFileNames(
+            testFile("findFilePathsFromFileNames"_L1), { "HelloWorld.txt"_L1 }, ignored);
+    std::sort(filePaths.begin(), filePaths.end());
+    std::sort(expected.begin(), expected.end());
+    QCOMPARE(filePaths, expected);
+}
+
+void tst_qmlls_utils::findFilePathFromFileName_data()
+{
+    QTest::addColumn<QSet<QString>>("ignored");
+    QTest::addColumn<QString>("expected");
+
+    QTest::addRow("withoutIgnore")
+            << QSet<QString>() << testFile("findFilePathsFromFileNames/HelloWorld.txt"_L1);
+
+    QTest::addRow("withIgnore") << QSet<QString>{
+        testFile("findFilePathsFromFileNames/HelloWorld.txt"_L1),
+        testFile("findFilePathsFromFileNames/a/HelloWorld.txt"_L1),
+        testFile("findFilePathsFromFileNames/a/b/HelloWorld.txt"_L1),
+    } << testFile("findFilePathsFromFileNames/a/b/c/HelloWorld.txt"_L1);
+}
+
+void tst_qmlls_utils::findFilePathFromFileName()
+{
+    QFETCH(QSet<QString>, ignored);
+    QFETCH(QString, expected);
+
+    QString filePaths = QQmlLSUtils::findFilePathFromFileName(
+            { testFile("findFilePathsFromFileNames"_L1) }, { "HelloWorld.txt"_L1 }, ignored);
+    QCOMPARE(filePaths, expected);
 }
 
 QTEST_MAIN(tst_qmlls_utils)

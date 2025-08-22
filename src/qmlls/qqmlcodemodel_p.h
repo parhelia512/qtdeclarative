@@ -125,7 +125,8 @@ public:
     QStringList importPaths() const;
     void setImportPaths(const QStringList &paths);
     QQmlToolingSharedSettings *settings() const { return m_settings; }
-    QStringList findFilePathsFromFileNames(const QStringList &fileNames);
+    QStringList findFilePathsFromFileNames(const QStringList &fileNames,
+                                           const QSet<QString> &alreadyWatchedFiles);
     static QStringList fileNamesToWatch(const QQmlJS::Dom::DomItem &qmlFile);
     void disableCMakeCalls();
 

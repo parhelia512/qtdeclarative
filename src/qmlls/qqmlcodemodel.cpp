@@ -347,7 +347,8 @@ return all the found file paths.
 
 This is an overapproximation and might find unrelated files with the same name.
 */
-QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNamesToSearch)
+QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNamesToSearch,
+                                                      const QSet<QString> &ignoredFilePaths)
 {
     QStringList fileNamesToSearch{ _fileNamesToSearch };
 
@@ -364,9 +365,8 @@ QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNa
     const QString rootDir = QUrl(QString::fromUtf8(m_rootUrl)).toLocalFile();
     qCDebug(codeModelLog) << "Searching for files to watch in workspace folder" << rootDir;
 
-
     const QStringList result =
-            QQmlLSUtils::findFilePathsFromFileNames(rootDir, fileNamesToSearch);
+            QQmlLSUtils::findFilePathsFromFileNames(rootDir, fileNamesToSearch, ignoredFilePaths);
 
     QMutexLocker guard(&m_mutex);
     for (const auto &fileName : fileNamesToSearch) {
@@ -423,7 +423,13 @@ are modified.
 void QQmlCodeModel::addFileWatches(const DomItem &qmlFile)
 {
     const auto filesToWatch = fileNamesToWatch(qmlFile);
-    const QStringList filepathsToWatch = findFilePathsFromFileNames(filesToWatch);
+
+    // remove already watched files to avoid a warning later on
+    const QStringList alreadyWatchedFiles = m_cppFileWatcher.files();
+    const QSet<QString> alreadyWatchedFilesSet(alreadyWatchedFiles.begin(),
+                                               alreadyWatchedFiles.end());
+    QStringList filepathsToWatch = findFilePathsFromFileNames(filesToWatch, alreadyWatchedFilesSet);
+
     if (filepathsToWatch.isEmpty())
         return;
 

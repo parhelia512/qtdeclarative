@@ -411,7 +411,7 @@ void QQmlJSTypePropagator::handleUnqualifiedAccess(const QString &name, bool isM
         QQmlJSFixSuggestion bindComponents {
             "Set \"%1\" in order to use IDs from outer components in nested components."_L1
                 .arg(replacement),
-            QQmlJS::SourceLocation(0, 0, 1, 1),
+            QQmlJS::s_documentOrigin,
             replacement + '\n'_L1
         };
         bindComponents.setAutoApplicable();

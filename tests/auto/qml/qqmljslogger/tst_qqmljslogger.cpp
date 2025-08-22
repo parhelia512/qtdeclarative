@@ -25,7 +25,7 @@ void TestQQmlJSLogger::printFix()
     QQmlJSLogger logger;
     logger.setFilePath("test.qml");
     logger.setCode(""_L1);
-    QQmlJS::SourceLocation loc(0, 0, 1, 1);
+    QQmlJS::SourceLocation loc = QQmlJS::s_documentOrigin;
     QQmlJSFixSuggestion info("Purely informative"_L1, loc, ""_L1);
     info.setFilename("test.qml"_L1);
     info.setAutoApplicable(false);

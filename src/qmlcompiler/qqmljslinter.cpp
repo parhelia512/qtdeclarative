@@ -456,22 +456,19 @@ static void addJsonWarning(QJsonArray &warnings, const QQmlJS::DiagnosticMessage
     jsonMessage[u"type"_s] = type;
     jsonMessage[u"id"_s] = id.toString();
 
-    if (message.loc.isValid()) {
-        jsonMessage[u"line"_s] = static_cast<int>(message.loc.startLine);
-        jsonMessage[u"column"_s] = static_cast<int>(message.loc.startColumn);
-        jsonMessage[u"charOffset"_s] = static_cast<int>(message.loc.offset);
-        jsonMessage[u"length"_s] = static_cast<int>(message.loc.length);
-    }
-
-    jsonMessage[u"message"_s] = message.message;
-
-    QJsonArray suggestions;
     const auto convertLocation = [](const QQmlJS::SourceLocation &source, QJsonObject *target) {
         target->insert("line"_L1, int(source.startLine));
         target->insert("column"_L1, int(source.startColumn));
         target->insert("charOffset"_L1, int(source.offset));
         target->insert("length"_L1, int(source.length));
     };
+
+    if (message.loc.isValid())
+        convertLocation(message.loc, &jsonMessage);
+
+    jsonMessage[u"message"_s] = message.message;
+
+    QJsonArray suggestions;
     if (suggestion.has_value()) {
         QJsonObject jsonFix {
             { "message"_L1, suggestion->fixDescription() },

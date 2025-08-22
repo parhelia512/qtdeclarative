@@ -61,9 +61,13 @@ function(qt6_target_qml_from_svg target)
         list(APPEND svgtoqml_args "${file_absolute}")
         list(APPEND svgtoqml_args "${svgtoqml_result}")
 
+        _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
         add_custom_command(
             OUTPUT "${svgtoqml_result}"
-            COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::svgtoqml ${svgtoqml_args}
+            COMMAND
+                ${tool_wrapper}
+                $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::svgtoqml>
+                ${svgtoqml_args}
             DEPENDS
                 "${file_absolute}"
                 ${QT_CMAKE_EXPORT_NAMESPACE}::svgtoqml

@@ -15,6 +15,7 @@ QQmlFormatOptions::QQmlFormatOptions()
     setNormalizeEnabled(false);
     setObjectsSpacing(false);
     setFunctionsSpacing(false);
+    setSingleLineEmptyObjects(false);
     setIndentWidth(4);
 }
 
@@ -108,6 +109,11 @@ void QQmlFormatOptions::applySettings(const QQmlFormatSettings &settings)
         && settings.isSet(QQmlFormatSettings::s_sortImportsSetting)) {
         setSortImports(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool());
     }
+
+    if (!isMarked(Settings::SingleLineEmptyObjects)
+        && settings.isSet(QQmlFormatSettings::s_singleLineEmptyObjectsSetting)) {
+        setSingleLineEmptyObjects(settings.value(QQmlFormatSettings::s_singleLineEmptyObjectsSetting).toBool());
+    }
 }
 
 QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &args)
@@ -180,6 +186,11 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
                                QStringLiteral("Sort imports alphabetically "
                                               "(Warning: this might change semantics if a given "
                                               "name identifies types in multiple modules!).")));
+
+    parser.addOption(QCommandLineOption(
+            QStringList() << "single-line-empty-objects"_L1,
+            QStringLiteral("Write empty objects on a single line (only works with normalize option).")));
+
     QCommandLineOption semicolonRuleOption(
             QStringList() << "semicolon-rule"_L1,
             QStringLiteral("Specify the semicolon rule to use (always, essential).\n"
@@ -289,6 +300,10 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
     if (parser.isSet("sort-imports"_L1)) {
         options.mark(Settings::SortImports);
         options.setSortImports(true);
+    }
+    if (parser.isSet("single-line-empty-objects"_L1)) {
+        options.mark(Settings::SingleLineEmptyObjects);
+        options.setSingleLineEmptyObjects(true);
     }
     if (parser.isSet("indent-width"_L1)) {
         options.mark(Settings::IndentWidth);

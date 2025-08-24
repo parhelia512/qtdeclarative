@@ -76,6 +76,9 @@ public:
     bool sortImports() const { return m_options.sortImports; }
     void setSortImports(bool sort) { m_options.sortImports = sort; }
 
+    bool singleLineEmptyObjects() const { return m_options.singleLineEmptyObjects; }
+    void setSingleLineEmptyObjects(bool singleLineEmptyObjects) { m_options.singleLineEmptyObjects = singleLineEmptyObjects; }
+
     int indentWidth() const { return m_options.formatOptions.indentSize; }
     void setIndentWidth(int width) { m_options.formatOptions.indentSize = width; }
 
@@ -148,6 +151,7 @@ public:
         ObjectsSpacing,
         FunctionsSpacing,
         SortImports,
+        SingleLineEmptyObjects,
         SemicolonRule,
         SettingsFile,
         SettingsCount

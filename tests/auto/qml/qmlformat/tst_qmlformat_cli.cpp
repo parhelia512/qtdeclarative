@@ -213,6 +213,11 @@ void TestQmlformatCli::testFormat_data()
     QTest::newRow("esm_tabIndents")
             << "mini_esm.mjs"
             << "mini_esm.formattedTabs.mjs" << QStringList{ "-t" } << RunOption::OnCopy;
+
+    QTest::newRow("singeLineEmptyObjects")
+            << "singleLineEmptyObjects.qml"
+            << "singleLineEmptyObjects.formatted.qml"
+            << QStringList{ "--single-line-empty-objects" } << RunOption::OnCopy;
 }
 
 void TestQmlformatCli::testFormat()
@@ -414,6 +419,9 @@ void TestQmlformatCli::writeDefaults()
 
     QVERIFY(settings.isSet(QQmlFormatSettings::s_sortImportsSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool(), false);
+
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_singleLineEmptyObjectsSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_singleLineEmptyObjectsSetting).toBool(), false);
 
     QVERIFY(settings.isSet(QQmlFormatSettings::s_semiColonRuleSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_semiColonRuleSetting).toString(), "always"_L1);

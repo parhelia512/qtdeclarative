@@ -101,6 +101,7 @@ public:
     bool objectsSpacing = false;
     bool functionsSpacing = false;
     bool sortImports = false;
+    bool singleLineEmptyObjects = false;
     SemicolonRule semicolonRule = SemicolonRule::Always;
 };
 

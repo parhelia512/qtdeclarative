@@ -1065,7 +1065,8 @@ void QmlObject::writeOutSortedAttributes(const DomItem &self, OutWriter &ow,
         }
         ow.removeTextAddCallback(spacerId);
     }
-    ow.ensureNewline();
+    if (counter != ow.counter() || !ow.lineWriter.options().singleLineEmptyObjects)
+        ow.ensureNewline();
 }
 
 void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTarget) const

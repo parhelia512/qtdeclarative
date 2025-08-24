@@ -102,6 +102,10 @@ The following options are available:
     \li
     \li Ensure spaces between functions (only works with normalize option).
 \row
+    \li \c{--single-line-empty-objects}
+    \li
+    \li Write empty objects on a single line (only works with normalize option).
+\row
     \li \c{--semicolon-rule}
     \li always
     \li Customize the addition of semicolons at the end of  JS statements.
@@ -185,6 +189,11 @@ The following settings are available in the \c{.qmlformat.ini} file:
     \li false
     \li Sorts imports alphabetically.
         \note This might change semantics if a given name identifies types in multiple modules.
+
+\row
+    \li SingleLineEmptyObjects
+    \li false
+    \li Writes empty objects on a single line (only works with normalize option).
 
 \row
     \li SemicolonRule

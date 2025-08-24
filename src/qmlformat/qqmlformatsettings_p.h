@@ -31,6 +31,7 @@ public:
     static const inline QLatin1StringView s_objectsSpacingSetting = QLatin1String("ObjectsSpacing");
     static const inline QLatin1StringView s_functionsSpacingSetting = QLatin1String("FunctionsSpacing");
     static const inline QLatin1StringView s_sortImportsSetting = QLatin1String("SortImports");
+    static const inline QLatin1StringView s_singleLineEmptyObjectsSetting = QLatin1String("SingleLineEmptyObjects");
     static const inline QLatin1StringView s_semiColonRuleSetting = QLatin1String("SemicolonRule");
 };
 

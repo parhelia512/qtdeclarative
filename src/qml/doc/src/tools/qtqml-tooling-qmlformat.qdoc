@@ -221,4 +221,25 @@ The following values are accepted:
     \li \c{essential} - Remove semicolons unless omitting them would cause issues.
 \endlist
 
+\section2 Disabling Formatting with Comments
+You can temporarily disable qmlformat using special comments.
+\list
+    \li \c {// qmlformat off} turns off formatting from that line onward
+    \li \c {// qmlformat on} turns on formatting after you turned it off
+\endlist
+
+This lets you preserve hand-tuned code or complex structures without \c qmlformat
+changing their layout. Formatting remains off until the next \c {// qmlformat on}
+comment, or until the end of the file if no re-enable is found.
+
+\note Directives must be on their own line.
+
+\note Nested directives are not supported. Only the first \c {// qmlformat off} and
+the next \c {// qmlformat on} are considered. Any additional directives inside a disabled
+region are ignored.
+
+\note The directives are ignored in normalized formatting mode, when \c sortImports is
+enabled, or when any option that reorders the original document is used. In these cases,
+formatting is always applied.
+
 */

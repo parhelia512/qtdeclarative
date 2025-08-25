@@ -176,7 +176,7 @@ void QmltypesReader::insertComponent(const QQmlJSScope::ConstPtr &jsScope,
     comp.setIsCreatable(jsScope->isCreatable());
     comp.setIsComposite(jsScope->isComposite());
     comp.setHasCustomParser(jsScope->hasCustomParser());
-    comp.setValueTypeName(jsScope->valueTypeName());
+    comp.setElementTypeName(jsScope->elementTypeName());
     comp.setAccessSemantics(jsScope->accessSemantics());
     comp.setExtensionTypeName(jsScope->extensionTypeName());
     comp.setExtensionIsJavaScript(jsScope->extensionIsJavaScript());

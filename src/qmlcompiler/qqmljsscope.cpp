@@ -472,8 +472,8 @@ QTypeRevision QQmlJSScope::resolveType(
     if (!self->m_attachedType && !self->m_attachedTypeName.isEmpty())
         self->m_attachedType = findType(self->m_attachedTypeName, context, usedTypes).scope;
 
-    if (!self->m_valueType && !self->m_valueTypeName.isEmpty())
-        self->m_valueType = findType(self->m_valueTypeName, context, usedTypes).scope;
+    if (!self->m_elementType && !self->m_elementTypeName.isEmpty())
+        self->m_elementType = findType(self->m_elementTypeName, context, usedTypes).scope;
 
     if (!self->m_extensionType) {
         if (self->m_extensionTypeName.isEmpty()) {
@@ -693,12 +693,12 @@ void QQmlJSScope::resolveList(const QQmlJSScope::Ptr &self, const QQmlJSScope::C
     Q_ASSERT(!arrayType.isNull());
     QQmlJSScope::Ptr listType = QQmlJSScope::create();
     listType->setAccessSemantics(AccessSemantics::Sequence);
-    listType->setValueTypeName(self->internalName());
+    listType->setElementTypeName(self->internalName());
 
     if (self->isComposite()) {
         // There is no internalName for this thing. Just set the value type right away
         listType->setInternalName(u"QQmlListProperty<>"_s);
-        listType->m_valueType = QQmlJSScope::ConstPtr(self);
+        listType->m_elementType = QQmlJSScope::ConstPtr(self);
     } else if (self->isReferenceType()) {
         listType->setInternalName(u"QQmlListProperty<%2>"_s.arg(self->internalName()));
         // Do not set a filePath on the list type, so that we have to generalize it
@@ -717,7 +717,7 @@ void QQmlJSScope::resolveList(const QQmlJSScope::Ptr &self, const QQmlJSScope::C
             arrayType);
     QQmlJSScope::resolveTypes(listType, contextualTypes);
 
-    Q_ASSERT(listType->valueType() == self);
+    Q_ASSERT(listType->elementType() == self);
     self->m_listType = listType;
 }
 
@@ -1252,7 +1252,7 @@ bool QQmlJSScope::canAssign(const QQmlJSScope::ConstPtr &derived) const
     if (internalName() == u"QVariant"_s || internalName() == u"QJSValue"_s)
         return true;
 
-    return isListProperty() && valueType()->canAssign(derived);
+    return isListProperty() && elementType()->canAssign(derived);
 }
 
 /*!

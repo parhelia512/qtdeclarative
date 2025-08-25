@@ -1322,7 +1322,7 @@ bool QmltypesComponent::iterateDirectSubpaths(const DomItem &self, DirectVisitor
         cont = cont && self.dvValueField(visitor, Fields::fileName, fileName()); // remove?
     cont = cont && self.dvValueField(visitor, Fields::interfaceNames, m_interfaceNames);
     cont = cont && self.dvValueField(visitor, Fields::hasCustomParser, m_hasCustomParser);
-    cont = cont && self.dvValueField(visitor, Fields::valueTypeName, m_valueTypeName);
+    cont = cont && self.dvValueField(visitor, Fields::elementTypeName, m_elementTypeName);
     cont = cont && self.dvValueField(visitor, Fields::extensionTypeName, m_extensionTypeName);
     cont = cont && self.dvValueField(visitor, Fields::accessSemantics, int(m_accessSemantics));
     return cont;

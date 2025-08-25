@@ -578,7 +578,7 @@ QMLDOM_FIELD(uris);
 QMLDOM_FIELD(validExposedAt);
 QMLDOM_FIELD(validItem);
 QMLDOM_FIELD(value);
-QMLDOM_FIELD(valueTypeName);
+QMLDOM_FIELD(elementTypeName);
 QMLDOM_FIELD(values);
 QMLDOM_FIELD(version);
 QMLDOM_FIELD(when);

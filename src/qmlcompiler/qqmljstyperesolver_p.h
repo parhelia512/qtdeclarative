@@ -242,7 +242,7 @@ public:
             QQmlJSRegisterContent type, const QString &name,
             int lookupIndex = QQmlJSRegisterContent::InvalidLookupIndex) const;
 
-    QQmlJSRegisterContent valueType(QQmlJSRegisterContent list) const;
+    QQmlJSRegisterContent elementType(QQmlJSRegisterContent list) const;
 
     QQmlJSRegisterContent returnType(
             const QQmlJSMetaMethod &method, const QQmlJSScope::ConstPtr &returnType,

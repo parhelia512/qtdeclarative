@@ -1120,8 +1120,8 @@ public:
     const QStringList &interfaceNames() const & { return m_interfaceNames; }
     QString extensionTypeName() const { return m_extensionTypeName; }
     void setExtensionTypeName(const QString &name) { m_extensionTypeName =  name; }
-    QString valueTypeName() const { return m_valueTypeName; }
-    void setValueTypeName(const QString &name) { m_valueTypeName = name; }
+    QString elementTypeName() const { return m_elementTypeName; }
+    void setElementTypeName(const QString &name) { m_elementTypeName = name; }
     bool hasCustomParser() const { return m_hasCustomParser; }
     void setHasCustomParser(bool v) { m_hasCustomParser = v; }
     bool extensionIsJavaScript() const { return m_extensionIsJavaScript; }
@@ -1142,7 +1142,7 @@ private:
     bool m_hasCustomParser = false;
     bool m_extensionIsJavaScript = false;
     bool m_extensionIsNamespace = false;
-    QString m_valueTypeName;
+    QString m_elementTypeName;
     QString m_extensionTypeName;
     QQmlJSScope::AccessSemantics m_accessSemantics = QQmlJSScope::AccessSemantics::None;
     QQmlJSScope::ConstPtr m_semanticScope;

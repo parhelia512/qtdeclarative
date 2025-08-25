@@ -320,9 +320,9 @@ public:
     };
     AnnotatedScope extensionType() const;
 
-    QString valueTypeName() const { return m_valueTypeName; }
-    void setValueTypeName(const QString &name) { m_valueTypeName = name; }
-    QQmlJSScope::ConstPtr valueType() const { return m_valueType; }
+    QString elementTypeName() const { return m_elementTypeName; }
+    void setElementTypeName(const QString &name) { m_elementTypeName = name; }
+    QQmlJSScope::ConstPtr elementType() const { return m_elementType; }
     QQmlJSScope::ConstPtr listType() const { return m_listType; }
     QQmlJSScope::Ptr listType() { return m_listType; }
 
@@ -534,11 +534,11 @@ private:
     QQmlJSScope::WeakConstPtr m_attachedType;
 
     /*! \internal
-     *  The Value type name.
+     *  The type name of the list element in case this is a sequence type.
      *  This is an internal name, from a c++ type or a synthetic jsrootgen.
      */
-    QString m_valueTypeName;
-    QQmlJSScope::WeakConstPtr m_valueType;
+    QString m_elementTypeName;
+    QQmlJSScope::WeakConstPtr m_elementType;
     QQmlJSScope::Ptr m_listType;
 
     /*!

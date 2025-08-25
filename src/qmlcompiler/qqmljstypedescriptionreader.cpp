@@ -213,7 +213,7 @@ void QQmlJSTypeDescriptionReader::readComponent(UiObjectDefinition *ast)
             } else if (name == QLatin1String("attachedType")) {
                 scope->setOwnAttachedTypeName(readStringBinding(script));
             } else if (name == QLatin1String("valueType")) {
-                scope->setValueTypeName(readStringBinding(script));
+                scope->setElementTypeName(readStringBinding(script));
             } else if (name == QLatin1String("isSingleton")) {
                 scope->setIsSingleton(readBoolBinding(script));
             } else if (name == QLatin1String("isCreatable")) {

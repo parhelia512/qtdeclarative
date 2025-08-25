@@ -795,7 +795,7 @@ void QQmlJSTypePropagator::generate_LoadElement(int base)
         setAccumulator(m_pool->createProperty(
                 property, QQmlJSRegisterContent::InvalidLookupIndex,
                 QQmlJSRegisterContent::InvalidLookupIndex, QQmlJSRegisterContent::ListValue,
-                m_typeResolver->convert(m_typeResolver->valueType(baseRegister), jsValue)));
+                m_typeResolver->convert(m_typeResolver->elementType(baseRegister), jsValue)));
     };
 
     if (baseRegister.isList()) {
@@ -824,7 +824,7 @@ void QQmlJSTypePropagator::generate_LoadElement(int base)
 
     // We can end up with undefined.
     setAccumulator(m_typeResolver->merge(
-            m_typeResolver->valueType(baseRegister),
+            m_typeResolver->elementType(baseRegister),
             m_typeResolver->literalType(m_typeResolver->voidType())));
 }
 
@@ -855,7 +855,7 @@ void QQmlJSTypePropagator::generate_StoreElement(int base, int index)
         addReadRegister(index, m_typeResolver->realType());
 
     addReadRegister(base, m_typeResolver->arrayPrototype());
-    addReadAccumulator(m_typeResolver->valueType(baseRegister));
+    addReadAccumulator(m_typeResolver->elementType(baseRegister));
 
     // If we're writing a QQmlListProperty backed by a container somewhere else,
     // that has side effects.
@@ -1891,7 +1891,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
     const auto intType = m_typeResolver->int32Type();
     const auto stringType = m_typeResolver->stringType();
     const auto baseContained = baseType.containedType();
-    const auto valueContained = baseContained->valueType();
+    const auto elementContained = baseContained->elementType();
 
     const auto setReturnType = [&](const QQmlJSScope::ConstPtr type) {
         QQmlJSMetaMethod method;
@@ -1915,7 +1915,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
     }
 
     if (name == u"fill" && argc > 0 && argc < 4) {
-        if (!canConvertFromTo(m_state.registers[argv].content, valueContained))
+        if (!canConvertFromTo(m_state.registers[argv].content, elementContained))
             return false;
 
         for (int i = 1; i < argc; ++i) {
@@ -1923,7 +1923,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
                 return false;
         }
 
-        addReadRegister(argv, valueContained);
+        addReadRegister(argv, elementContained);
 
         for (int i = 1; i < argc; ++i)
             addReadRegister(argv + i, intType);
@@ -1934,7 +1934,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
     }
 
     if (name == u"includes" && argc > 0 && argc < 3) {
-        if (!canConvertFromTo(m_state.registers[argv].content, valueContained))
+        if (!canConvertFromTo(m_state.registers[argv].content, elementContained))
             return false;
 
         if (argc == 2) {
@@ -1943,7 +1943,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
             addReadRegister(argv + 1, intType);
         }
 
-        addReadRegister(argv, valueContained);
+        addReadRegister(argv, elementContained);
         setReturnType(m_typeResolver->boolType());
         return true;
     }
@@ -1961,18 +1961,18 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
 
     if ((name == u"pop" || name == u"shift") && argc == 0) {
         m_state.setHasExternalSideEffects();
-        setReturnType(valueContained);
+        setReturnType(elementContained);
         return true;
     }
 
     if (name == u"push" || name == u"unshift") {
         for (int i = 0; i < argc; ++i) {
-            if (!canConvertFromTo(m_state.registers[argv + i].content, valueContained))
+            if (!canConvertFromTo(m_state.registers[argv + i].content, elementContained))
                 return false;
         }
 
         for (int i = 0; i < argc; ++i)
-            addReadRegister(argv + i, valueContained);
+            addReadRegister(argv + i, elementContained);
 
         m_state.setHasExternalSideEffects();
         setReturnType(m_typeResolver->int32Type());
@@ -2007,7 +2007,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
         }
 
         for (int i = 2; i < argc; ++i) {
-            if (!canConvertFromTo(m_state.registers[argv + i].content, valueContained))
+            if (!canConvertFromTo(m_state.registers[argv + i].content, elementContained))
                 return false;
         }
 
@@ -2015,7 +2015,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
             addReadRegister(argv + i, intType);
 
         for (int i = 2; i < argc; ++i)
-            addReadRegister(argv + i, valueContained);
+            addReadRegister(argv + i, elementContained);
 
         m_state.setHasExternalSideEffects();
         setReturnType(baseContained);
@@ -2023,7 +2023,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
     }
 
     if ((name == u"indexOf" || name == u"lastIndexOf") && argc > 0 && argc < 3) {
-        if (!canConvertFromTo(m_state.registers[argv].content, valueContained))
+        if (!canConvertFromTo(m_state.registers[argv].content, elementContained))
             return false;
 
         if (argc == 2) {
@@ -2032,7 +2032,7 @@ bool QQmlJSTypePropagator::propagateArrayMethod(
             addReadRegister(argv + 1, intType);
         }
 
-        addReadRegister(argv, valueContained);
+        addReadRegister(argv, elementContained);
         setReturnType(m_typeResolver->int32Type());
         return true;
     }
@@ -2374,7 +2374,7 @@ void QQmlJSTypePropagator::generate_IteratorNext(int value, int offset)
     const QQmlJSRegisterContent iteratorType = m_state.accumulatorIn();
     addReadAccumulator();
     setRegister(value, m_typeResolver->merge(
-                                m_typeResolver->valueType(iteratorType),
+                                m_typeResolver->elementType(iteratorType),
                                 m_typeResolver->literalType(m_typeResolver->voidType())));
     saveRegisterStateForJump(offset);
     m_state.setHasInternalSideEffects();

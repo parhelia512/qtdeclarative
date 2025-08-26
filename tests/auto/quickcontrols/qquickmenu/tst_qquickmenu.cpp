@@ -3573,6 +3573,11 @@ void tst_QQuickMenu::loadMenuAsynchronously()
     window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
+    // The ignored warning message described below triggered from the loader and
+    // this need to be further analyzed.
+    // The bug report QTBUG-139552 raised to track the investigation.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("There are still \\\\\"(\\d+)\\\\\" items in the process of being created at engine destruction\\."));
+
     auto *rootItem = window.rootObject();
     QVERIFY(rootItem);
 

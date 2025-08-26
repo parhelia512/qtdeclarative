@@ -19,96 +19,147 @@ with the \l{QML Coding Conventions}. \l{Details}{More...}
     \li qmlformat [\l{options}] \l{arguments}
 \endtable
 
-\section2 Options
+\section2 Options and settings
 \target options
-The following options are available:
+The following command line options and \l{Settings File}{settings file} variables are available:
 
 \table
 \header
-    \li Option
-    \li Default Value
+    \li Command Line Option
+    \li Setting Name
+    \li Default State/Value
     \li Description
 \row
     \li \c{-h}, \c{--help}
+    \li N/A
     \li
     \li Displays help on commandline options.
 \row
     \li \c{--help-all}
+    \li N/A
     \li
     \li Displays help, including generic Qt options.
 
 \row
     \li \c{-v}, \c{--version}
+    \li N/A
     \li
     \li Displays version information.
 \row
     \li \c{-V}, \c{--verbose}
+    \li N/A
     \li
     \li Verbose mode. Outputs more detailed information.
 \row
     \li \c{--write-defaults}
+    \li N/A
     \li
     \li Writes defaults settings to .qmlformat.ini and exits
         (Warning: This will overwrite any existing settings and comments!)
 \row
     \li \c{--ignore-settings}
+    \li N/A
     \li
     \li Ignores all settings files and only takes command line options into consideration
 \row
     \li \c{-i}, \c{--inplace}
+    \li N/A
     \li
     \li Edit file in-place instead of outputting to stdout.
 \row
     \li \c{-f}, \c{--force}
+    \li N/A
     \li
     \li Continue even if an error has occurred.
 \row
     \li \c{-t}, \c{--tabs}
-    \li
+    \li UseTabs
+    \li disabled/false
     \li Use tabs instead of spaces.
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{-w}, \c{--indent-width <width>}
+    \li IndentWidth
     \li 4
     \li How many spaces are used when indenting.
 \row
     \li \c{-W}, \c{--column-width <width>}
+    \li MaxColumnWidth
     \li -1
     \li Breaks the line into multiple lines if it exceeds
         the specified width. Use -1 to disable line
         wrapping. (default).
 \row
     \li \c{-n}, \c{--normalize}
-    \li
+    \li NormalizeOrder
+    \li disabled/false
     \li Reorders the attributes of the objects according to the QML Coding Guidelines.
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{-F}, \c{--files <file>}
+    \li N/A
     \li
     \li Format all files listed in file, in-place
 \row
     \li \c{-l}, \c{--newline <newline>}
-    \li
-    \li Override the new line format to use (native macos unix windows).
+    \li NewlineType
+    \li native
+    \li Overrides the new line format to use (\c {native}, \c {macos}, \c {unix}, \c {windows}).
 \row
     \li \c{-S}, \c{--sort-imports}
-    \li
+    \li SortImports
+    \li disabled/false
     \li Sort imports alphabetically
         (Warning: this might change semantics if a given name identifies types in multiple modules!).
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{--objects-spacing}
-    \li
+    \li ObjectsSpacing
+    \li disabled/false
     \li Ensure spaces between objects (only works with normalize option).
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{--functions-spacing}
-    \li
+    \li FunctionsSpacing
+    \li disabled/false
     \li Ensure spaces between functions (only works with normalize option).
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{--single-line-empty-objects}
-    \li
+    \li SingleLineEmptyObjects
+    \li disabled/false
     \li Write empty objects on a single line (only works with normalize option).
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
 \row
     \li \c{--semicolon-rule}
+    \li SemicolonRule
     \li always
-    \li Customize the addition of semicolons at the end of  JS statements.
+    \li Customizes the addition of semicolons at the end of JS statements (\c {always}, \c {essential}).
+        \note See \l{Semicolon Rule} for more details.
 \endtable
 
 \section2 Arguments
@@ -138,70 +189,6 @@ settings file can be obtained by passing the \c{--write-defaults} flag. This gen
 \c{.qmlformat.ini} file in the current working directory.
 
 \warning \c{--write-defaults} will overwrite any existing settings and comments!
-
-\target qmlformat-settings
-The following settings are available in the \c{.qmlformat.ini} file:
-\table
-\header
-    \li Setting
-    \li Default Value
-    \li Description
-
-\row
-    \li UseTabs
-    \li false
-    \li Uses tabs instead of spaces.
-
-\row
-    \li IndentWidth
-    \li 4
-    \li How many spaces are used when indenting.
-
-\row
-    \li NewlineType
-    \li native
-    \li Overrides the new line format to use (\c {native}, \c {macos}, \c {unix}, \c {windows}).
-
-\row
-    \li NormalizeOrder
-    \li false
-    \li Reorders the attributes of the objects according to the QML coding guidelines.
-
-\row
-    \li FunctionsSpacing
-    \li false
-    \li Ensures spaces between functions (only works with normalize option).
-
-\row
-    \li ObjectsSpacing
-    \li false
-    \li Ensures spaces between objects (only works with normalize option).
-
-\row
-    \li MaxColumnWidth
-    \li -1
-    \li Breaks the line into multiple lines if it exceeds
-        the specified width. Use -1 to disable line
-        wrapping (default).
-
-\row
-    \li SortImports
-    \li false
-    \li Sorts imports alphabetically.
-        \note This might change semantics if a given name identifies types in multiple modules.
-
-\row
-    \li SingleLineEmptyObjects
-    \li false
-    \li Writes empty objects on a single line (only works with normalize option).
-
-\row
-    \li SemicolonRule
-    \li always
-    \li Customizes the addition of semicolons at the end of JS statements (\c {always}, \c {essential}).
-        \note See \l{Semicolon Rule} for more details.
-
-\endtable
 
 \section3 Formatting a List of Files
 While you can pass a list of files to be formatted as arguments, qmlformat provides

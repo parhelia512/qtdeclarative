@@ -24,3 +24,6 @@ android
 android
 [shrinkPopupThatWasLargerThanWindow]
 android
+
+[fadeDimmer]
+macos # QTBUG-131695

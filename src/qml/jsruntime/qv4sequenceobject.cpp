@@ -481,10 +481,12 @@ QV4::ReturnedValue SequencePrototype::method_getLength(
         return Encode::undefined();
 
     const qsizetype size = sizeInline(p);
-    if (qIsAtMostUintLimit(size))
-        RETURN_RESULT(Encode(uint(size)));
+    if (!qIsAtMostUintLimit(size)) {
+        generateWarning(scope.engine, QLatin1String("Sequence length out of range"));
+        RETURN_RESULT(uint(0));
+    }
 
-    return scope.engine->throwRangeError(QLatin1String("Sequence length out of range"));
+    RETURN_RESULT(uint(size));
 }
 
 QV4::ReturnedValue SequencePrototype::method_setLength(

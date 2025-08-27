@@ -1029,7 +1029,7 @@ void tst_TouchMouse::pinchOnFlickable()
     QTest::touchEvent(&window, touchscreen.get()).release(0, p, &window);
     QTRY_COMPARE(flickable->isAtXBeginning(), false);
     // wait until flicking is done
-    QTRY_COMPARE(flickable->isFlicking(), false);
+    QTRY_COMPARE_WITH_TIMEOUT(flickable->isFlicking(), false, 2s);
 
     // pinch with two touchpoints
     QPoint p1 = QPoint(40, 20);

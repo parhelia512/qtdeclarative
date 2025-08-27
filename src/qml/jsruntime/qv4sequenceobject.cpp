@@ -329,8 +329,6 @@ bool Sequence::virtualPut(Managed *that, PropertyKey id, const Value &value, Val
     }
 
     Heap::Sequence *p = static_cast<Sequence *>(that)->d();
-    if (p->internalClass->engine->hasException)
-        return false;
 
     if (p->isReadOnly()) {
         p->internalClass->engine->throwTypeError(

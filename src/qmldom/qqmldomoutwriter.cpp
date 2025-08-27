@@ -23,32 +23,42 @@ static inline OutWriter::RegionToCommentMap extractComments(const DomItem &it)
 
 void OutWriter::itemStart(const DomItem &it)
 {
+    if (skipComments)
+        return;
+
     pendingComments.push(extractComments(it));
-    regionStart(MainRegion);
+    writePreComment(MainRegion);
 }
 
 void OutWriter::itemEnd()
 {
+    if (skipComments)
+        return;
+
     Q_ASSERT(!pendingComments.isEmpty());
-    regionEnd(MainRegion);
+    writePostComment(MainRegion);
     pendingComments.pop();
 }
 
-void OutWriter::regionStart(FileLocationRegion region)
+void OutWriter::writePreComment(FileLocationRegion region)
 {
+    if (skipComments)
+        return;
+
     const auto &comments = pendingComments.top();
-    if (!skipComments && comments.contains(region)) {
+    if (comments.contains(region)) {
         comments[region].writePre(*this);
     }
 }
 
-void OutWriter::regionEnd(FileLocationRegion region)
+void OutWriter::writePostComment(FileLocationRegion region)
 {
+    if (skipComments)
+        return;
+
     auto &comments = pendingComments.top();
     if (comments.contains(region)) {
-        if (!skipComments) {
-            comments[region].writePost(*this);
-        }
+        comments[region].writePost(*this);
         comments.remove(region);
     }
 }
@@ -231,9 +241,9 @@ OutWriter &OutWriter::writeRegion(FileLocationRegion region)
 
 OutWriter &OutWriter::writeRegion(FileLocationRegion region, QStringView toWrite)
 {
-    regionStart(region);
+    writePreComment(region);
     lineWriter.write(toWrite);
-    regionEnd(region);
+    writePostComment(region);
     return *this;
 }
 

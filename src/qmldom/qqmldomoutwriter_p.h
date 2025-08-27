@@ -31,11 +31,10 @@ class QMLDOM_EXPORT OutWriter
 {
 public:
     int indent = 0;
-    int indenterId = -1;
     bool indentNextlines = false;
+    // TODO QTBUG-139623
     bool skipComments = false;
     LineWriter &lineWriter;
-    Path currentPath;
     QString writtenStr;
     using RegionToCommentMap = QMap<FileLocationRegion, CommentedElement>;
     QStack<RegionToCommentMap> pendingComments;
@@ -43,13 +42,12 @@ public:
     explicit OutWriter(LineWriter &lw) : lineWriter(lw)
     {
         lineWriter.addInnerSink([this](QStringView s) { writtenStr.append(s); });
-        indenterId =
-                lineWriter.addTextAddCallback([this](LineWriter &, LineWriter::TextAddType tt) {
-                    if (indentNextlines && tt == LineWriter::TextAddType::Normal
-                        && QStringView(lineWriter.currentLine()).trimmed().isEmpty())
-                        lineWriter.setLineIndent(indent);
-                    return true;
-                });
+        lineWriter.addTextAddCallback([this](LineWriter &, LineWriter::TextAddType tt) {
+            if (indentNextlines && tt == LineWriter::TextAddType::Normal
+                && QStringView(lineWriter.currentLine()).trimmed().isEmpty())
+                lineWriter.setLineIndent(indent);
+            return true;
+        });
     }
 
     int increaseIndent(int level = 1)
@@ -67,8 +65,8 @@ public:
 
     void itemStart(const DomItem &it);
     void itemEnd();
-    void regionStart(FileLocationRegion region);
-    void regionEnd(FileLocationRegion regino);
+    void writePreComment(FileLocationRegion region);
+    void writePostComment(FileLocationRegion regino);
 
     quint32 counter() const { return lineWriter.counter(); }
     OutWriter &writeRegion(FileLocationRegion region, QStringView toWrite);

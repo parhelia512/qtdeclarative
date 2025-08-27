@@ -1901,12 +1901,10 @@ QString MethodInfo::signature(const DomItem &self) const
     ow.indentNextlines = true;
     ow.skipComments = true;
 
-    ow.itemStart(self);
     writeOutArguments(self, ow);
 
     writeOutReturnType(ow);
 
-    ow.itemEnd();
     lw.eof(false);
     res.flush();
     return resultStr.simplified();

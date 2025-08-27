@@ -373,8 +373,12 @@ bool Sequence::virtualDeleteProperty(Managed *that, PropertyKey id)
 
     Heap::Sequence *p = static_cast<Sequence *>(that)->d();
 
-    if (p->isReadOnly())
+    if (p->isReadOnly()) {
+        p->internalClass->engine->throwTypeError(
+                QLatin1String("Cannot delete from a readonly container"));
         return false;
+    }
+
     if (p->isReference() && !p->loadReference())
         return false;
 
@@ -444,6 +448,9 @@ int Sequence::virtualMetacall(Object *object, QMetaObject::Call call, int index,
         break;
     }
     case QMetaObject::WriteProperty: {
+        if (p->isReadOnly())
+            return 0;
+
         void *storagePointer = p->storagePointer();
         const QMetaSequence metaSequence = p->metaSequence();
         if (index < 0 || index >= metaSequence.size(storagePointer))
@@ -550,6 +557,8 @@ ReturnedValue SequencePrototype::method_shift(
         return ArrayPrototype::method_shift(b, thisObject, argv, argc);
 
     Heap::Sequence *p = s->d();
+    if (p->isReadOnly())
+        THROW_TYPE_ERROR();
 
     if (p->isReference() && !p->loadReference())
         RETURN_UNDEFINED();

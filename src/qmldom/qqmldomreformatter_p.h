@@ -58,6 +58,28 @@ protected:
         if (loc.length != 0)
             out(m_script->loc2Str(loc));
     }
+    void writePreComment(const CommentedElement *c)
+    {
+        Q_ASSERT(c);
+
+        if (!c->preComments().empty())
+            deferredSpaces = 0;
+        else
+            ensureDeferredSpaces();
+        c->writePre(lw);
+        if (!c->preComments().empty())
+            lastWriteWasComment = true;
+    }
+
+    void writePostComment(const CommentedElement *c)
+    {
+        Q_ASSERT(c);
+        c->writePost(lw);
+
+        if (!c->postComments().empty())
+            lastWriteWasComment = true;
+    }
+
     enum CommentOption { TokenAndComment, OnlyComments };
     void outWithComments(const SourceLocation &loc, AST::Node *node,
                          CommentOption option = TokenAndComment)
@@ -65,21 +87,16 @@ protected:
         if (!loc.isValid())
             return;
         const CommentedElement *c = comments->commentForNode(node, CommentAnchor::from(loc));
-        if (c) {
-            if (!c->preComments().empty())
-                deferredSpaces = 0;
-            else
-                ensureDeferredSpaces();
-            c->writePre(lw);
-        }
+        if (c)
+            writePreComment(c);
+
         if (option != OnlyComments)
             out(loc);
-        if (c)
-            c->writePost(lw);
 
-        if (c && (!c->postComments().empty() || (option == OnlyComments && !c->preComments().empty())))
-            lastWriteWasComment = true;
+        if (c)
+            writePostComment(c);
     }
+
     inline void ensureSpaceIfNoComment()
     {
         // Comments contain the spaces before and after them. And, in case the comment doesn't end

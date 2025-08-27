@@ -468,14 +468,33 @@ bool ScriptFormatter::visit(ConditionalExpression *ast)
 
 bool ScriptFormatter::visit(Block *ast)
 {
+    // write comments manually because we need to indent before writing a potential post comment
+    const CommentedElement *c =
+            comments->commentForNode(ast, CommentAnchor::from(ast->lbraceToken));
+    if (c)
+        writePreComment(c);
     out(ast->lbraceToken);
+    const int indent = lw.increaseIndent();
+    if (c)
+        writePostComment(c);
+
     if (ast->statements) {
         ++expressionDepth;
-        lnAcceptIndented(ast->statements);
+        ensureNewline();
+        accept(ast->statements);
         ensureNewline();
         --expressionDepth;
     }
+
+    // write comments manually because we need to write a potential pre-comment before decreasing
+    // the indentation
+    c = comments->commentForNode(ast, CommentAnchor::from(ast->rbraceToken));
+    if (c)
+        writePreComment(c);
+    lw.decreaseIndent(1, indent);
     out(ast->rbraceToken);
+    if (c)
+        writePostComment(c);
     return false;
 }
 
@@ -557,9 +576,9 @@ bool ScriptFormatter::visit(DoWhileStatement *ast)
     acceptBlockOrIndented(ast->statement, true);
     out(ast->whileToken);
     ensureSpaceIfNoComment();
-    out(ast->lparenToken);
+    outWithComments(ast->lparenToken, ast);
     accept(ast->expression);
-    out(ast->rparenToken);
+    outWithComments(ast->rparenToken, ast);
     return false;
 }
 
@@ -567,9 +586,9 @@ bool ScriptFormatter::visit(WhileStatement *ast)
 {
     out(ast->whileToken);
     ensureSpaceIfNoComment();
-    out(ast->lparenToken);
+    outWithComments(ast->lparenToken, ast);
     accept(ast->expression);
-    out(ast->rparenToken);
+    outWithComments(ast->rparenToken, ast);
     acceptBlockOrIndented(ast->statement);
     return false;
 }
@@ -578,7 +597,7 @@ bool ScriptFormatter::visit(ForStatement *ast)
 {
     out(ast->forToken);
     ensureSpaceIfNoComment();
-    out(ast->lparenToken);
+    outWithComments(ast->lparenToken, ast);
     if (ast->initialiser) {
         accept(ast->initialiser);
     } else if (ast->declarations) {
@@ -603,7 +622,7 @@ bool ScriptFormatter::visit(ForStatement *ast)
     out(u";"); // ast->secondSemicolonToken
     ensureSpaceIfNoComment();
     accept(ast->expression);
-    out(ast->rparenToken);
+    outWithComments(ast->rparenToken, ast);
     acceptBlockOrIndented(ast->statement);
     return false;
 }

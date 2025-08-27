@@ -384,6 +384,15 @@ public:
     }
 
     using VisitAll::visit;
+    bool visit(Block *block) override
+    {
+        // blocks can have comments after their `{` and before their `}`. preVisit already handles
+        // comments before `{` and after `}`.
+        addSourceLocations(block, block->lbraceToken);
+        addSourceLocations(block, block->rbraceToken);
+        return true;
+    }
+
     bool visit(CaseClause *caseClause) override
     {
         // special case: case clauses can have comments attached to their `:` token
@@ -400,9 +409,27 @@ public:
         return true;
     }
 
+    bool visit(DoWhileStatement *doWhileStatement) override
+    {
+        // do while statements can have comments attached to their `()` token. preVisit already
+        // handles comments before `do` and after the doWhile statement.
+        addSourceLocations(doWhileStatement, doWhileStatement->lparenToken);
+        addSourceLocations(doWhileStatement, doWhileStatement->rparenToken);
+        return true;
+    }
+
     bool visit(FormalParameterList *list) override
     {
         addSourceLocations(list, list->commaToken);
+        return true;
+    }
+
+    bool visit(ForStatement *forStatement) override
+    {
+        // for statements can have comments attached to their `()` token. preVisit already
+        // handles comments before `for` and after the doWhile statement.
+        addSourceLocations(forStatement, forStatement->lparenToken);
+        addSourceLocations(forStatement, forStatement->rparenToken);
         return true;
     }
 
@@ -419,6 +446,15 @@ public:
     bool visit(FunctionDeclaration *fExpr) override
     {
         return visit(static_cast<FunctionExpression *>(fExpr));
+    }
+
+    bool visit(WhileStatement *whileStatement) override
+    {
+        // while statements can have comments attached to their `()` token. preVisit already
+        // handles comments before `while` and after the doWhile statement.
+        addSourceLocations(whileStatement, whileStatement->lparenToken);
+        addSourceLocations(whileStatement, whileStatement->rparenToken);
+        return true;
     }
 
     QMap<qsizetype, ElementRef> starts;

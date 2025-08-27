@@ -779,20 +779,16 @@ bool QQmlDomAstCreator::visit(AST::FunctionDeclaration *fDef)
 
     SourceLocation bodyLoc = fDef->body ? combineLocations(fDef->body)
                                         : combineLocations(fDef->lbraceToken, fDef->rbraceToken);
-    SourceLocation methodLoc = combineLocations(fDef);
-    QStringView preCode = code.mid(methodLoc.begin(), bodyLoc.begin() - methodLoc.begin());
-    QStringView postCode = code.mid(bodyLoc.end(), methodLoc.end() - bodyLoc.end());
     m.body = std::make_shared<ScriptExpression>(
             code.mid(bodyLoc.offset, bodyLoc.length), qmlFilePtr->engine(), fDef->body,
-            qmlFilePtr->astComments(), ScriptExpression::ExpressionType::FunctionBody, bodyLoc, 0,
-            preCode, postCode);
+            qmlFilePtr->astComments(), ScriptExpression::ExpressionType::FunctionBody, bodyLoc);
 
     if (fDef->typeAnnotation) {
         SourceLocation typeLoc = combineLocations(fDef->typeAnnotation);
         m.returnType = std::make_shared<ScriptExpression>(
                 code.mid(typeLoc.offset, typeLoc.length), qmlFilePtr->engine(),
                 fDef->typeAnnotation, qmlFilePtr->astComments(),
-                ScriptExpression::ExpressionType::ReturnType, typeLoc, 0, u"", u"");
+                ScriptExpression::ExpressionType::ReturnType, typeLoc);
     }
 
     MethodInfo *mPtr;

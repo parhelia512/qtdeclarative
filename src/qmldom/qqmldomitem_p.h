@@ -1589,6 +1589,11 @@ void SimpleObjectWrapT<T>::writeOut(const DomItem &self, OutWriter &lw) const
 
 QMLDOM_EXPORT QDebug operator<<(QDebug debug, const DomItem &c);
 
+// TODO QTBUG-121518 quite some methods are used only in the "examples"
+// Even though MutableDomItem provides some API for modifying internal data,
+// de-facto it's not very helpful / convinient / intuitive to use
+// Moreover it just amplifies and repeats issues of DomItem interface,
+// a.k.a. abuse or misuse of type erasure technique
 class QMLDOM_EXPORT MutableDomItem {
 public:
     using CopyOption = DomItem::CopyOption;
@@ -1731,26 +1736,12 @@ public:
     ErrorHandler errorHandler();
 
     // convenience setters
-    MutableDomItem addPrototypePath(const Path &prototypePath);
-    MutableDomItem setNextScopePath(const Path &nextScopePath);
-    MutableDomItem setPropertyDefs(QMultiMap<QString, PropertyDefinition> propertyDefs);
-    MutableDomItem setBindings(QMultiMap<QString, Binding> bindings);
-    MutableDomItem setMethods(QMultiMap<QString, MethodInfo> functionDefs);
-    MutableDomItem setChildren(const QList<QmlObject> &children);
-    MutableDomItem setAnnotations(const QList<QmlObject> &annotations);
-    MutableDomItem setScript(const std::shared_ptr<ScriptExpression> &exp);
-    MutableDomItem setCode(const QString &code);
     MutableDomItem addPropertyDef(const PropertyDefinition &propertyDef,
                                   AddOption option = AddOption::Overwrite);
     MutableDomItem addBinding(Binding binding, AddOption option = AddOption::Overwrite);
     MutableDomItem addMethod(
             const MethodInfo &functionDef, AddOption option = AddOption::Overwrite);
     MutableDomItem addChild(QmlObject child);
-    MutableDomItem addAnnotation(QmlObject child);
-    MutableDomItem addPreComment(const Comment &comment, FileLocationRegion region);
-    MutableDomItem addPostComment(const Comment &comment, FileLocationRegion region);
-    QQmlJSScope::ConstPtr semanticScope();
-    void setSemanticScope(const QQmlJSScope::ConstPtr &scope);
 
     MutableDomItem() = default;
     MutableDomItem(const DomItem &owner, const Path &pathFromOwner):

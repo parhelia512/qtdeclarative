@@ -404,11 +404,10 @@ public:
     constexpr static DomType kindValue = DomType::ScriptExpression;
     DomType kind() const override { return kindValue; }
 
-    explicit ScriptExpression(
-            QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine, AST::Node *ast,
-            const std::shared_ptr<AstComments> &comments, ExpressionType expressionType,
-            SourceLocation localOffset = SourceLocation(), int derivedFrom = 0,
-            QStringView preCode = QStringView(), QStringView postCode = QStringView());
+    explicit ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
+                              AST::Node *ast, const std::shared_ptr<AstComments> &comments,
+                              ExpressionType expressionType,
+                              SourceLocation localOffset = SourceLocation(), int derivedFrom = 0);
 
     ScriptExpression()
         : ScriptExpression(QStringView(), std::shared_ptr<QQmlJS::Engine>(), nullptr,
@@ -417,12 +416,11 @@ public:
     {
     }
 
-    explicit ScriptExpression(
-            const QString &code, ExpressionType expressionType, int derivedFrom = 0,
-            const QString &preCode = QString(), const QString &postCode = QString())
+    explicit ScriptExpression(const QString &code, ExpressionType expressionType,
+                              int derivedFrom = 0)
         : OwningItem(derivedFrom), m_expressionType(expressionType)
     {
-        setCode(code, preCode, postCode);
+        setCode(code);
     }
 
     ScriptExpression(const ScriptExpression &e);
@@ -432,7 +430,9 @@ public:
         return std::static_pointer_cast<ScriptExpression>(doCopy(self));
     }
 
-    std::shared_ptr<ScriptExpression> copyWithUpdatedCode(const DomItem &self, const QString &code) const;
+    // TODO can be deleted atm used only in MutableItem setCode (which is unused atm)
+    std::shared_ptr<ScriptExpression> copyWithUpdatedCode(const DomItem &self,
+                                                          const QString &code) const;
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const override;
 
@@ -472,8 +472,6 @@ public:
     void writeOut(const DomItem &self, OutWriter &lw) const override;
     SourceLocation globalLocation(const DomItem &self) const;
     SourceLocation localOffset() const { return m_localOffset; }
-    QStringView preCode() const { return m_preCode; }
-    QStringView postCode() const { return m_postCode; }
     void setScriptElement(const ScriptElementVariant &p);
     ScriptElementVariant scriptElement() { return m_element; }
 
@@ -529,14 +527,12 @@ private:
             return ParseMode::JS;
         }
     }
-    void setCode(const QString &code, const QString &preCode, const QString &postCode);
+    void setCode(const QString &code);
     [[nodiscard]] AST::Node *parse(ParseMode mode);
 
     ExpressionType m_expressionType;
     QString m_codeStr;
     QStringView m_code;
-    QStringView m_preCode;
-    QStringView m_postCode;
     mutable std::shared_ptr<QQmlJS::Engine> m_engine;
     mutable AST::Node *m_ast;
     std::shared_ptr<AstComments> m_astComments;
@@ -765,18 +761,10 @@ public:
     }
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const;
-    QString preCode(const DomItem &) const; // ### REVISIT, might be simplified by using different toplevel production rules at usage site
-    QString postCode(const DomItem &) const;
     void writePre(const DomItem &self, OutWriter &ow) const;
     void writeOut(const DomItem &self, OutWriter &ow) const;
     QString signature(const DomItem &self) const;
 
-    void setCode(const QString &code)
-    {
-        body = std::make_shared<ScriptExpression>(
-                code, ScriptExpression::ExpressionType::FunctionBody, 0,
-                                     QLatin1String("function foo(){\n"), QLatin1String("\n}\n"));
-    }
     MethodInfo() = default;
 
     // TODO: make private + add getters/setters

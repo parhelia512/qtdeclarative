@@ -1119,8 +1119,7 @@ Binding::Binding(
 Binding::Binding(const QString &name, const QString &scriptCode, BindingType bindingType)
     : Binding(name,
               std::make_unique<BindingValue>(std::make_shared<ScriptExpression>(
-                      scriptCode, ScriptExpression::ExpressionType::BindingExpression, 0,
-                      Binding::preCodeForName(name), Binding::postCodeForName(name))),
+                      scriptCode, ScriptExpression::ExpressionType::BindingExpression)),
               bindingType)
 {
 }
@@ -1618,15 +1617,13 @@ void BindingValue::clearValue()
     kind = BindingValueKind::Empty;
 }
 
-ScriptExpression::ScriptExpression(
-        QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine, AST::Node *ast,
-        const std::shared_ptr<AstComments> &comments, ExpressionType expressionType,
-        SourceLocation localOffset, int derivedFrom, QStringView preCode, QStringView postCode)
+ScriptExpression::ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
+                                   AST::Node *ast, const std::shared_ptr<AstComments> &comments,
+                                   ExpressionType expressionType, SourceLocation localOffset,
+                                   int derivedFrom)
     : OwningItem(derivedFrom),
       m_expressionType(expressionType),
       m_code(code),
-      m_preCode(preCode),
-      m_postCode(postCode),
       m_engine(engine),
       m_ast(ast),
       m_astComments(comments),
@@ -1654,14 +1651,13 @@ ScriptExpression::ScriptExpression(const ScriptExpression &e) : OwningItem(e)
     m_astComments = e.m_astComments;
 }
 
+// TODO can be deleted atm used only in MutableItem setCode (which is unused atm)
 std::shared_ptr<ScriptExpression> ScriptExpression::copyWithUpdatedCode(
         const DomItem &self, const QString &code) const
 {
     std::shared_ptr<ScriptExpression> copy = makeCopy(self);
     DomItem container = self.containingObject();
-    QString preCodeStr = container.field(Fields::preCode).value().toString(m_preCode.toString());
-    QString postCodeStr = container.field(Fields::postCode).value().toString(m_postCode.toString());
-    copy->setCode(code, preCodeStr, postCodeStr);
+    copy->setCode(code);
     return copy;
 }
 
@@ -1669,14 +1665,6 @@ bool ScriptExpression::iterateDirectSubpaths(const DomItem &self, DirectVisitor 
 {
     bool cont = OwningItem::iterateDirectSubpaths(self, visitor);
     cont = cont && self.dvValueField(visitor, Fields::code, code());
-    if (!preCode().isEmpty())
-        cont = cont
-                && self.dvValueField(visitor, Fields::preCode, preCode(),
-                                     ConstantData::Options::MapIsMap);
-    if (!postCode().isEmpty())
-        cont = cont
-                && self.dvValueField(visitor, Fields::postCode, postCode(),
-                                     ConstantData::Options::MapIsMap);
     cont = cont
             && self.dvValueLazyField(
                     visitor, Fields::localOffset,
@@ -1722,30 +1710,26 @@ AST::Node *firstNodeInRange(AST::Node *n, qsizetype minStart = 0, qsizetype maxE
     return visitor.firstNodeInRange;
 }
 
-void ScriptExpression::setCode(const QString &code, const QString &preCode, const QString &postCode)
+void ScriptExpression::setCode(const QString &code)
 {
     // TODO QTBUG-121933
     m_codeStr = code;
     QString resolvedPreCode, resolvedPostCode;
-    if (m_expressionType == ExpressionType::BindingExpression && preCode.isEmpty()) {
+    if (m_expressionType == ExpressionType::BindingExpression) {
         resolvedPreCode = Binding::preCodeForName(u"binding");
         resolvedPostCode = Binding::postCodeForName(u"binding");
-    } else {
-        resolvedPreCode = preCode;
-        resolvedPostCode = postCode;
     }
     if (!resolvedPreCode.isEmpty() || !resolvedPostCode.isEmpty())
         m_codeStr = resolvedPreCode + code + resolvedPostCode;
     m_code = QStringView(m_codeStr).mid(resolvedPreCode.size(), code.size());
-    m_preCode = QStringView(m_codeStr).mid(0, resolvedPreCode.size());
-    m_postCode = QStringView(m_codeStr).mid(
-            resolvedPreCode.size() + code.size(), resolvedPostCode.size());
+    auto preCode = QStringView(m_codeStr).mid(0, resolvedPreCode.size());
+
     m_engine = nullptr;
     m_ast = nullptr;
     m_localOffset = SourceLocation();
     if (!m_code.isEmpty()) {
-        IndentInfo preChange(m_preCode, 4);
-        m_localOffset.offset = m_preCode.size();
+        IndentInfo preChange(preCode, 4);
+        m_localOffset.offset = preCode.size();
         m_localOffset.length = m_code.size();
         m_localOffset.startColumn = preChange.trailingString.size();
         m_localOffset.startLine = preChange.nNewlines;
@@ -1756,9 +1740,8 @@ void ScriptExpression::setCode(const QString &code, const QString &preCode, cons
         if (AST::Program *programPtr = AST::cast<AST::Program *>(m_ast)) {
             m_ast = programPtr->statements;
         }
-        if (!m_preCode.isEmpty())
-            m_ast = firstNodeInRange(m_ast, m_preCode.size(),
-                                     m_preCode.size() + m_code.size());
+        if (!preCode.isEmpty())
+            m_ast = firstNodeInRange(m_ast, preCode.size(), preCode.size() + m_code.size());
         if (auto *sList = AST::cast<AST::FormalParameterList *>(m_ast)) {
             m_ast = sList->element;
         }
@@ -1874,8 +1857,6 @@ bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     if (!typeName.isEmpty())
         cont = cont && self.dvReferenceField(visitor, Fields::type, typePath(self));
     if (methodType == MethodType::Method) {
-        cont = cont && self.dvValueField(visitor, Fields::preCode, preCode(self));
-        cont = cont && self.dvValueField(visitor, Fields::postCode, postCode(self));
         cont = cont && self.dvValueField(visitor, Fields::isConstructor, isConstructor);
     }
     if (returnType)
@@ -1887,40 +1868,6 @@ bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
             return self.subOwnerItem(PathEls::Field(Fields::body), body);
         });
     return cont;
-}
-
-QString MethodInfo::preCode(const DomItem &self) const
-{
-    QString res;
-    LineWriter lw([&res](QStringView s) { res.append(s); }, QLatin1String("*preCode*"));
-    OutWriter ow(lw);
-    ow.indentNextlines = true;
-    ow.skipComments = true;
-    MockObject standinObj(self.pathFromOwner());
-    DomItem standin = self.copy(&standinObj);
-    ow.itemStart(standin);
-    ow.writeRegion(FunctionKeywordRegion).ensureSpace().writeRegion(IdentifierRegion, name);
-    bool first = true;
-    ow.writeRegion(LeftParenthesisRegion);
-    for (const MethodParameter &mp : parameters) {
-        if (first) {
-            first = false;
-        } else {
-            ow.writeRegion(CommaTokenRegion);
-            ow.ensureSpace();
-        }
-        ow.write(mp.value->code());
-    }
-    ow.writeRegion(RightParenthesisRegion);
-    ow.ensureSpace().writeRegion(LeftBraceRegion);
-    ow.itemEnd();
-    ow.eof();
-    return res;
-}
-
-QString MethodInfo::postCode(const DomItem &) const
-{
-    return QLatin1String("\n}\n");
 }
 
 void MethodInfo::writeOutArguments(const DomItem &self, OutWriter &ow) const

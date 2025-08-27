@@ -1619,9 +1619,8 @@ void BindingValue::clearValue()
 
 ScriptExpression::ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
                                    AST::Node *ast, const std::shared_ptr<AstComments> &comments,
-                                   ExpressionType expressionType, SourceLocation localOffset,
-                                   int derivedFrom)
-    : OwningItem(derivedFrom),
+                                   ExpressionType expressionType, SourceLocation localOffset)
+    : OwningItem(),
       m_expressionType(expressionType),
       m_code(code),
       m_engine(engine),
@@ -1649,16 +1648,6 @@ ScriptExpression::ScriptExpression(const ScriptExpression &e) : OwningItem(e)
     }
     m_localOffset = e.m_localOffset;
     m_astComments = e.m_astComments;
-}
-
-// TODO can be deleted atm used only in MutableItem setCode (which is unused atm)
-std::shared_ptr<ScriptExpression> ScriptExpression::copyWithUpdatedCode(
-        const DomItem &self, const QString &code) const
-{
-    std::shared_ptr<ScriptExpression> copy = makeCopy(self);
-    DomItem container = self.containingObject();
-    copy->setCode(code);
-    return copy;
 }
 
 bool ScriptExpression::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
@@ -1713,70 +1702,47 @@ AST::Node *firstNodeInRange(AST::Node *n, qsizetype minStart = 0, qsizetype maxE
 void ScriptExpression::setCode(const QString &code)
 {
     // TODO QTBUG-121933
+    if (code.isEmpty()) {
+        return;
+    }
     m_codeStr = code;
-    QString resolvedPreCode, resolvedPostCode;
-    if (m_expressionType == ExpressionType::BindingExpression) {
-        resolvedPreCode = Binding::preCodeForName(u"binding");
-        resolvedPostCode = Binding::postCodeForName(u"binding");
-    }
-    if (!resolvedPreCode.isEmpty() || !resolvedPostCode.isEmpty())
-        m_codeStr = resolvedPreCode + code + resolvedPostCode;
-    m_code = QStringView(m_codeStr).mid(resolvedPreCode.size(), code.size());
-    auto preCode = QStringView(m_codeStr).mid(0, resolvedPreCode.size());
+    m_code = QStringView(m_codeStr);
 
-    m_engine = nullptr;
-    m_ast = nullptr;
     m_localOffset = SourceLocation();
-    if (!m_code.isEmpty()) {
-        IndentInfo preChange(preCode, 4);
-        m_localOffset.offset = preCode.size();
-        m_localOffset.length = m_code.size();
-        m_localOffset.startColumn = preChange.trailingString.size();
-        m_localOffset.startLine = preChange.nNewlines;
-        m_engine = std::make_shared<QQmlJS::Engine>();
-        m_astComments = std::make_shared<AstComments>(m_engine);
-        m_ast = parse(resolveParseMode());
+    m_localOffset.length = m_code.size();
 
-        if (AST::Program *programPtr = AST::cast<AST::Program *>(m_ast)) {
-            m_ast = programPtr->statements;
-        }
-        if (!preCode.isEmpty())
-            m_ast = firstNodeInRange(m_ast, preCode.size(), preCode.size() + m_code.size());
-        if (auto *sList = AST::cast<AST::FormalParameterList *>(m_ast)) {
-            m_ast = sList->element;
-        }
-        if (m_expressionType != ExpressionType::FunctionBody) {
-            if (AST::StatementList *sList = AST::cast<AST::StatementList *>(m_ast)) {
-                if (!sList->next)
-                    m_ast = sList->statement;
-            }
-        }
-        if (m_expressionType == ExpressionType::BindingExpression)
-            if (AST::ExpressionStatement *exp = AST::cast<AST::ExpressionStatement *>(m_ast))
-                m_ast = exp->expression;
+    m_engine = std::make_shared<QQmlJS::Engine>();
+    m_astComments = std::make_shared<AstComments>(m_engine);
+    m_ast = parse();
 
-        CommentCollector collector;
-        collector.collectComments(m_engine, m_ast, m_astComments);
+    if (AST::Program *programPtr = AST::cast<AST::Program *>(m_ast)) {
+        m_ast = programPtr->statements;
     }
+
+    if (auto *sList = AST::cast<AST::FormalParameterList *>(m_ast)) {
+        m_ast = sList->element;
+    }
+    if (m_expressionType != ExpressionType::FunctionBody) {
+        if (AST::StatementList *sList = AST::cast<AST::StatementList *>(m_ast)) {
+            if (!sList->next)
+                m_ast = sList->statement;
+        }
+    }
+    if (m_expressionType == ExpressionType::BindingExpression)
+        if (AST::ExpressionStatement *exp = AST::cast<AST::ExpressionStatement *>(m_ast))
+            m_ast = exp->expression;
+
+    CommentCollector collector;
+    collector.collectComments(m_engine, m_ast, m_astComments);
 }
 
-AST::Node *ScriptExpression::parse(const ParseMode mode)
+AST::Node *ScriptExpression::parse()
 {
     QQmlJS::Lexer lexer(m_engine.get());
-    lexer.setCode(m_codeStr, /*lineno = */ 1, /*qmlMode=*/mode == ParseMode::QML);
+    lexer.setCode(m_codeStr, /*lineno = */ 1, /*qmlMode=*/false /* it's EcmaScript */);
     QQmlJS::Parser parser(m_engine.get());
-    const bool parserSucceeded = [mode, &parser]() {
-        switch (mode) {
-        case ParseMode::QML:
-            return parser.parse();
-        case ParseMode::JS:
-            return parser.parseScript();
-        case ParseMode::ESM:
-            return parser.parseModule();
-        default:
-            Q_UNREACHABLE_RETURN(false);
-        }
-    }();
+    const bool parserSucceeded = m_expressionType == ExpressionType::ESMCode ? parser.parseModule()
+                                                                             : parser.parseScript();
     if (!parserSucceeded) {
         addErrorLocal(domParsingErrors().error(tr("Parsing of code failed")));
     }

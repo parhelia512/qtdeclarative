@@ -407,18 +407,17 @@ public:
     explicit ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
                               AST::Node *ast, const std::shared_ptr<AstComments> &comments,
                               ExpressionType expressionType,
-                              SourceLocation localOffset = SourceLocation(), int derivedFrom = 0);
+                              SourceLocation localOffset = SourceLocation());
 
     ScriptExpression()
         : ScriptExpression(QStringView(), std::shared_ptr<QQmlJS::Engine>(), nullptr,
                            std::shared_ptr<AstComments>(), ExpressionType::BindingExpression,
-                           SourceLocation(), 0)
+                           SourceLocation())
     {
     }
 
-    explicit ScriptExpression(const QString &code, ExpressionType expressionType,
-                              int derivedFrom = 0)
-        : OwningItem(derivedFrom), m_expressionType(expressionType)
+    explicit ScriptExpression(const QString &code, ExpressionType expressionType)
+        : OwningItem(), m_expressionType(expressionType)
     {
         setCode(code);
     }
@@ -429,10 +428,6 @@ public:
     {
         return std::static_pointer_cast<ScriptExpression>(doCopy(self));
     }
-
-    // TODO can be deleted atm used only in MutableItem setCode (which is unused atm)
-    std::shared_ptr<ScriptExpression> copyWithUpdatedCode(const DomItem &self,
-                                                          const QString &code) const;
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const override;
 
@@ -481,18 +476,6 @@ protected:
         return std::make_shared<ScriptExpression>(*this);
     }
 
-    std::function<SourceLocation(SourceLocation)> locationToGlobalF(const DomItem &self) const
-    {
-        SourceLocation loc = globalLocation(self);
-        return [loc, this](SourceLocation x) {
-            return SourceLocation(x.offset - m_localOffset.offset + loc.offset, x.length,
-                                  x.startLine - m_localOffset.startLine + loc.startLine,
-                                  ((x.startLine == m_localOffset.startLine) ? x.startColumn
-                                                   - m_localOffset.startColumn + loc.startColumn
-                                                                            : x.startColumn));
-        };
-    }
-
     SourceLocation locationToLocal(SourceLocation x) const
     {
         return SourceLocation(
@@ -502,11 +485,6 @@ protected:
                          : x.startColumn)); // are line and column 1 based? then we should + 1
     }
 
-    std::function<SourceLocation(SourceLocation)> locationToLocalF(const DomItem &) const
-    {
-        return [this](SourceLocation x) { return locationToLocal(x); };
-    }
-
 private:
     enum class ParseMode {
         QML,
@@ -514,21 +492,8 @@ private:
         ESM, // ECMAScript module
     };
 
-    inline ParseMode resolveParseMode()
-    {
-        switch (m_expressionType) {
-        case ExpressionType::BindingExpression:
-            // unfortunately there are no documentation explaining this resolution
-            // this was just moved from the original implementation
-            return ParseMode::QML;
-        case ExpressionType::ESMCode:
-            return ParseMode::ESM;
-        default:
-            return ParseMode::JS;
-        }
-    }
     void setCode(const QString &code);
-    [[nodiscard]] AST::Node *parse(ParseMode mode);
+    [[nodiscard]] AST::Node *parse();
 
     ExpressionType m_expressionType;
     QString m_codeStr;

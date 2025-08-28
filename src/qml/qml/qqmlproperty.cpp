@@ -647,6 +647,12 @@ bool QQmlProperty::isSignalProperty() const
 }
 
 /*!
+    \property QQmlProperty::object
+    \brief the QObject represented by the QML property.
+    \sa QQmlProperty::name
+*/
+
+/*!
     Returns the QQmlProperty's QObject.
 */
 QObject *QQmlProperty::object() const
@@ -734,6 +740,12 @@ bool QQmlProperty::isValid() const
         return false;
     return type() != Invalid;
 }
+
+/*!
+    \property QQmlProperty::name
+    \brief the name of the QML property.
+    \sa QQmlProperty::object
+*/
 
 /*!
     Return the name of this QML property.

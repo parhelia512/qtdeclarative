@@ -2014,10 +2014,10 @@ std::unordered_map<quint32, Binding> PassManager::bindingsByLocation() const
 
 FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface) : q_ptr{ iface } { }
 
-FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, const QString &fixDescription,
+FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, const QString &description,
                                            const QQmlSA::SourceLocation &location,
                                            const QString &replacement)
-    : m_fixSuggestion{ fixDescription, QQmlSA::SourceLocationPrivate::sourceLocation(location),
+    : m_fixSuggestion{ description, QQmlSA::SourceLocationPrivate::sourceLocation(location),
                        replacement },
       q_ptr{ iface }
 {
@@ -2034,9 +2034,9 @@ FixSuggestionPrivate::FixSuggestionPrivate(FixSuggestion *iface, FixSuggestionPr
 {
 }
 
-QString FixSuggestionPrivate::fixDescription() const
+QString FixSuggestionPrivate::description() const
 {
-    return m_fixSuggestion.fixDescription();
+    return m_fixSuggestion.description();
 }
 
 QQmlSA::SourceLocation FixSuggestionPrivate::location() const
@@ -2100,9 +2100,9 @@ const QQmlJSFixSuggestion &FixSuggestionPrivate::fixSuggestion(const FixSuggesti
 /*!
     Creates a FixSuggestion object.
  */
-FixSuggestion::FixSuggestion(const QString &fixDescription, const QQmlSA::SourceLocation &location,
+FixSuggestion::FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
                              const QString &replacement)
-    : d_ptr{ new FixSuggestionPrivate{ this, fixDescription, location, replacement } }
+    : d_ptr{ new FixSuggestionPrivate{ this, description, location, replacement } }
 {
 }
 
@@ -2154,10 +2154,10 @@ FixSuggestion::~FixSuggestion() = default;
 /*!
     Returns the description of the fix.
  */
-QString QQmlSA::FixSuggestion::fixDescription() const
+QString QQmlSA::FixSuggestion::description() const
 {
     Q_D(const FixSuggestion);
-    return d->fixDescription();
+    return d->description();
 }
 
 /*!
@@ -2257,7 +2257,7 @@ void emitWarningWithOptionalFix(GenericPass &pass, QAnyStringView diagnostic,
 
     const QQmlSA::SourceLocation location =
             QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(fix->location());
-    const QQmlSA::FixSuggestion saFix{ fix->fixDescription(), location, fix->replacement() };
+    const QQmlSA::FixSuggestion saFix{ fix->description(), location, fix->replacement() };
     pass.emitWarning(diagnostic, id, srcLocation, saFix);
 }
 

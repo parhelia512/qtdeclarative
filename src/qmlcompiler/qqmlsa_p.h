@@ -248,13 +248,13 @@ class FixSuggestionPrivate
 
 public:
     explicit FixSuggestionPrivate(FixSuggestion *);
-    FixSuggestionPrivate(FixSuggestion *, const QString &fixDescription,
+    FixSuggestionPrivate(FixSuggestion *, const QString &description,
                          const QQmlSA::SourceLocation &location, const QString &replacement);
     FixSuggestionPrivate(FixSuggestion *, const FixSuggestionPrivate &);
     FixSuggestionPrivate(FixSuggestion *, FixSuggestionPrivate &&);
     ~FixSuggestionPrivate() = default;
 
-    QString fixDescription() const;
+    QString description() const;
     QQmlSA::SourceLocation location() const;
     QString replacement() const;
 

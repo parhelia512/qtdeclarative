@@ -398,7 +398,7 @@ class Q_QMLCOMPILER_EXPORT FixSuggestion
     Q_DECLARE_PRIVATE(FixSuggestion)
 
 public:
-    FixSuggestion(const QString &fixDescription, const QQmlSA::SourceLocation &location,
+    FixSuggestion(const QString &description, const QQmlSA::SourceLocation &location,
                   const QString &replacement = QString());
     FixSuggestion(const FixSuggestion &);
     FixSuggestion(FixSuggestion &&) noexcept;
@@ -406,7 +406,7 @@ public:
     FixSuggestion &operator=(FixSuggestion &&) noexcept;
     ~FixSuggestion();
 
-    QString fixDescription() const;
+    QString description() const;
     QQmlSA::SourceLocation location() const;
     QString replacement() const;
 

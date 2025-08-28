@@ -224,7 +224,7 @@ const QList<QQmlJS::LoggerCategory> &QQmlJSLogger::builtinCategories()
 
 bool QQmlJSFixSuggestion::operator==(const QQmlJSFixSuggestion &other) const
 {
-    return m_location == other.m_location && m_fixDescription == other.m_fixDescription
+    return m_location == other.m_location && m_description == other.m_description
             && m_replacement == other.m_replacement && m_filename == other.m_filename
             && m_hint == other.m_hint && m_autoApplicable == other.m_autoApplicable;
 }
@@ -427,7 +427,7 @@ void QQmlJSLogger::printFix(const QQmlJSFixSuggestion &fixItem)
     const QString currentFileAbsPath = m_filePath;
     QString code = m_code;
     QString currentFile;
-    m_output.writePrefixedMessage(fixItem.fixDescription(), QtInfoMsg);
+    m_output.writePrefixedMessage(fixItem.description(), QtInfoMsg);
 
     if (!fixItem.location().isValid())
         return;
@@ -479,10 +479,10 @@ void QQmlJSLogger::printFix(const QQmlJSFixSuggestion &fixItem)
         m_output.write("      "_L1 + fixItem.hint());
 }
 
-QQmlJSFixSuggestion::QQmlJSFixSuggestion(const QString &fixDescription,
+QQmlJSFixSuggestion::QQmlJSFixSuggestion(const QString &description,
                                          const QQmlJS::SourceLocation &location,
                                          const QString &replacement)
-    : m_location{ location }, m_fixDescription{ fixDescription }, m_replacement{ replacement }
+    : m_location{ location }, m_description{ description }, m_replacement{ replacement }
 {
 }
 

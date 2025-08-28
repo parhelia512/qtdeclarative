@@ -471,7 +471,7 @@ static void addJsonWarning(QJsonArray &warnings, const QQmlJS::DiagnosticMessage
     QJsonArray suggestions;
     if (suggestion.has_value()) {
         QJsonObject jsonFix {
-            { "message"_L1, suggestion->fixDescription() },
+            { "message"_L1, suggestion->description() },
             { "replacement"_L1, suggestion->replacement() },
             { "isAutoApplicable"_L1, suggestion->isAutoApplicable() },
             { "hint"_L1, suggestion->hint() },

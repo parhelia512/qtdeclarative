@@ -76,10 +76,10 @@ class Q_QMLCOMPILER_EXPORT QQmlJSFixSuggestion
 {
 public:
     QQmlJSFixSuggestion() = default;
-    QQmlJSFixSuggestion(const QString &fixDescription, const QQmlJS::SourceLocation &location,
+    QQmlJSFixSuggestion(const QString &description, const QQmlJS::SourceLocation &location,
                         const QString &replacement = QString());
 
-    QString fixDescription() const { return m_fixDescription; }
+    QString description() const { return m_description; }
     QQmlJS::SourceLocation location() const { return m_location; }
     QString replacement() const { return m_replacement; }
 
@@ -97,7 +97,7 @@ public:
 
 private:
     QQmlJS::SourceLocation m_location;
-    QString m_fixDescription;
+    QString m_description;
     QString m_replacement;
     QString m_filename;
     QString m_hint;

@@ -6,13 +6,20 @@
 #include <QtTest/qsignalspy.h>
 #include <QtTest/qtest.h>
 #include <QtQuick/qquickview.h>
+#include <QtQuick/private/qquickmousearea_p.h>
 #include <QtQuick/private/qquicktaphandler_p.h>
 #include <QtQuickTestUtils/private/viewtestutils_p.h>
 #include <QtQuickTestUtils/private/visualtestutils_p.h>
+#include <QtQuickControlsTestUtils/private/controlstestutils_p.h>
 #include <QtQuickControlsTestUtils/private/qtest_quickcontrols_p.h>
 #include <QtQuickTemplates2/private/qquickmenu_p.h>
+#include <QtQuickTemplates2/private/qquickmenu_p_p.h>
 #include <QtQuickTemplates2/private/qquickmenuitem_p_p.h>
+#include <QtQuickTemplates2/private/qquickpopupwindow_p_p.h>
+#include <QtQuickTemplates2/private/qquicktextarea_p.h>
+#include <QtQuickTest/quicktest.h>
 
+using namespace QQuickControlsTestUtils;
 using namespace QQuickVisualTestUtils;
 
 class tst_QQuickContextMenu : public QQmlDataTest
@@ -38,6 +45,7 @@ private slots:
     void explicitMenuPreventsBuiltInMenu();
     void menuItemShouldntTriggerOnRelease();
     void textControlsMenuKey();
+    void mouseAreaUnderTextArea();
 
 private:
     bool contextMenuTriggeredOnRelease = false;
@@ -399,6 +407,52 @@ void tst_QQuickContextMenu::textControlsMenuKey()
         QVERIFY(openMenu);
         openMenu->close();
     }
+}
+
+void tst_QQuickContextMenu::mouseAreaUnderTextArea()
+{
+    if (!arePopupWindowsSupported())
+        QSKIP("The platform doesn't support popup windows. Skipping test.");
+
+    QQuickApplicationHelper helper(this, "mouseAreaUnderTextArea.qml");
+    QVERIFY2(helper.ready, helper.failureMessage());
+    QQuickWindow *window = helper.window;
+    window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(window));
+
+    auto *textArea = window->findChild<QQuickTextArea *>();
+    QVERIFY(textArea);
+    auto *mouseArea = window->findChild<QQuickMouseArea *>();
+    QVERIFY(mouseArea);
+
+    // Open the menu by right clicking on the TextArea.
+    QTest::mouseClick(window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(textArea));
+    auto *menu = window->findChild<QQuickMenu *>();
+    QVERIFY(menu);
+    QTRY_VERIFY(menu->isOpened());
+
+    QQuickMenuPrivate *menuPrivate = QQuickMenuPrivate::get(menu);
+    QVERIFY(menuPrivate);
+    QVERIFY(menuPrivate->usePopupWindow());
+    QVERIFY(menuPrivate->popupWindow);
+    QVERIFY(menuPrivate->popupWindow->isActive());
+    QTRY_COMPARE(QQuickTest::qIsPolishScheduled(menuPrivate->popupWindow), false);
+
+    // Click on the menu item to close the menu; the MouseArea shouldn't emit pressed().
+    auto *selectAllMenuItem = qobject_cast<QQuickMenuItem *>(menu->itemAt(menu->count() - 1));
+    QVERIFY(selectAllMenuItem);
+    QCOMPARE(selectAllMenuItem->text(), "Select All");
+    const QSignalSpy mouseAreaPressedSpy(mouseArea, &QQuickMouseArea::pressed);
+    QVERIFY(mouseAreaPressedSpy.isValid());
+    const QSignalSpy menuItemTriggeredSpy(selectAllMenuItem, &QQuickMenuItem::triggered);
+    QVERIFY(menuItemTriggeredSpy.isValid());
+    const QPointF menuItemCenter(selectAllMenuItem->width() / 2, selectAllMenuItem->height() / 2);
+    const QPoint posGlobal = selectAllMenuItem->mapToGlobal(menuItemCenter).toPoint();
+    const QPoint posMainWindowLocal = window->mapFromGlobal(posGlobal);
+    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, posMainWindowLocal);
+    QTRY_COMPARE(menuItemTriggeredSpy.size(), 1);
+    QCOMPARE(mouseAreaPressedSpy.size(), 0);
+    QTRY_COMPARE(menuPrivate->popupWindow->isVisible(), false);
 }
 
 QTEST_QUICKCONTROLS_MAIN(tst_QQuickContextMenu)

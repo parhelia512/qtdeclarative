@@ -293,7 +293,7 @@ void QQuickTextFieldPrivate::accessibilityActiveChanged(bool active)
     accessibleAttached->setRole(effectiveAccessibleRole());
     accessibleAttached->set_readOnly(m_readOnly);
     accessibleAttached->set_passwordEdit((m_echoMode == QQuickTextField::Password || m_echoMode == QQuickTextField::PasswordEchoOnEdit) ? true : false);
-    accessibleAttached->setDescription(placeholder);
+    accessibleAttached->setDescriptionImplicitly(placeholder);
 }
 
 QAccessible::Role QQuickTextFieldPrivate::accessibleRole() const
@@ -503,7 +503,7 @@ void QQuickTextField::setPlaceholderText(const QString &text)
     d->placeholder = text;
 #if QT_CONFIG(accessibility)
     if (QQuickAccessibleAttached *accessibleAttached = QQuickControlPrivate::accessibleAttached(this))
-        accessibleAttached->setDescription(text);
+        accessibleAttached->setDescriptionImplicitly(text);
 #endif
     emit placeholderTextChanged();
 }

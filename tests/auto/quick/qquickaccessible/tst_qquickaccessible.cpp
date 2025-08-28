@@ -501,7 +501,7 @@ void tst_QQuickAccessible::basicPropertiesTest()
 
     QAccessibleInterface *item = iface->child(0);
     QVERIFY(item);
-    QCOMPARE(item->childCount(), 6);
+    QCOMPARE(item->childCount(), 7);
     QCOMPARE(item->rect().size(), QSize(400, 400));
     QCOMPARE(item->role(), QAccessible::Client);
     QCOMPARE(iface->indexOfChild(item), 0);
@@ -589,7 +589,7 @@ void tst_QQuickAccessible::basicPropertiesTest()
 
     // Text "Rich text"
     QAccessibleInterface *richText = item->child(5);
-    QVERIFY(text3);
+    QVERIFY(richText);
     QCOMPARE(richText->childCount(), 2);
     QCOMPARE(richText->text(QAccessible::Name), QLatin1String("Rich text with links:\nWebsite or blog"));
     QCOMPARE(richText->role(), QAccessible::StaticText);
@@ -611,6 +611,17 @@ void tst_QQuickAccessible::basicPropertiesTest()
         QCOMPARE(link->anchor(), QLatin1String(linkUrls[i][0]));
         QCOMPARE(link->anchorTarget(), QLatin1String(linkUrls[i][1]));
     }
+
+    // TextField
+    QAccessibleInterface *textField = item->child(6);
+    QVERIFY(textField);
+    QCOMPARE(textField->childCount(), 0);
+    QCOMPARE(textField->text(QAccessible::Value), QLatin1String("text is TextField"));
+    QCOMPARE(textField->text(QAccessible::Description), QLatin1String("This is the TextField description"));
+    QCOMPARE(textField->role(), QAccessible::EditableText);
+    QCOMPARE(item->indexOfChild(textField), 6);
+    QVERIFY(textField->state().editable);
+    QVERIFY(!textField->state().readOnly);
 
     // see if implicit changes back
     attached->setRole(QAccessible::EditableText);

@@ -553,7 +553,7 @@ void tst_qquickanimatedimage::playingAndPausedChanges()
 
     // Cannot animate this image, playing will be false
     ctxt->setContextProperty("srcImage", testFileUrl("green.png"));
-    QTRY_VERIFY(!obj->isPlaying());
+    QTRY_VERIFY_WITH_TIMEOUT(!obj->isPlaying(), 2s);
     QTRY_VERIFY(!obj->isPaused());
     QTRY_COMPARE(playingSpy.size(), 5);
     QTRY_COMPARE(pausedSpy.size(), 4);

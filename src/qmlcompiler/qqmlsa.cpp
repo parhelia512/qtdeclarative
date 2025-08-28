@@ -2156,7 +2156,8 @@ FixSuggestion::~FixSuggestion() = default;
  */
 QString QQmlSA::FixSuggestion::fixDescription() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).fixDescription();
+    Q_D(const FixSuggestion);
+    return d->fixDescription();
 }
 
 /*!
@@ -2164,8 +2165,8 @@ QString QQmlSA::FixSuggestion::fixDescription() const
  */
 QQmlSA::SourceLocation FixSuggestion::location() const
 {
-    return QQmlSA::SourceLocationPrivate::createQQmlSASourceLocation(
-            FixSuggestionPrivate::fixSuggestion(*this).location());
+    Q_D(const FixSuggestion);
+    return d->location();
 }
 
 /*!
@@ -2173,7 +2174,8 @@ QQmlSA::SourceLocation FixSuggestion::location() const
  */
 QString FixSuggestion::replacement() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).replacement();
+    Q_D(const FixSuggestion);
+    return d->replacement();
 }
 
 /*!
@@ -2197,7 +2199,8 @@ QString FixSuggestion::fileName() const
  */
 void FixSuggestion::setHint(const QString &hint)
 {
-    FixSuggestionPrivate::fixSuggestion(*this).setHint(hint);
+    Q_D(FixSuggestion);
+    d->setHint(hint);
 }
 
 /*!
@@ -2205,7 +2208,8 @@ void FixSuggestion::setHint(const QString &hint)
  */
 QString FixSuggestion::hint() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).hint();
+    Q_D(const FixSuggestion);
+    return d->hint();
 }
 
 /*!
@@ -2214,7 +2218,8 @@ QString FixSuggestion::hint() const
  */
 void FixSuggestion::setAutoApplicable(bool autoApplicable)
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).setAutoApplicable(autoApplicable);
+    Q_D(FixSuggestion);
+    d->setAutoApplicable(autoApplicable);
 }
 
 /*!
@@ -2222,7 +2227,8 @@ void FixSuggestion::setAutoApplicable(bool autoApplicable)
  */
 bool QQmlSA::FixSuggestion::isAutoApplicable() const
 {
-    return FixSuggestionPrivate::fixSuggestion(*this).isAutoApplicable();
+    Q_D(const FixSuggestion);
+    return d->isAutoApplicable();
 }
 
 /*!

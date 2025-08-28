@@ -29,8 +29,10 @@ QT_BEGIN_NAMESPACE
 
 struct NodeInfo
 {
+    QString id;
     QString nodeId;
     QString typeName;
+    QString maskId;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
     QQuickAnimatedProperty opacity = QQuickAnimatedProperty(QVariant::fromValue(1.0));
     bool isDefaultTransform = true;
@@ -41,6 +43,7 @@ struct NodeInfo
     int visibilityEndTime = -1;
     int layerNum = -1;
     int transformReferenceLayerNum = -1;
+    QRectF bounds;
 };
 
 struct ImageNodeInfo : NodeInfo
@@ -135,6 +138,14 @@ struct StructureNodeInfo : NodeInfo
     QRectF viewBox;
     QSize size;
     bool isPathContainer = false;
+};
+
+struct MaskNodeInfo : NodeInfo
+{
+    StructureNodeStage stage = StructureNodeStage::Start;
+
+    bool isMaskRectRelativeCoordinates = false;
+    QRectF maskRect;
 };
 
 

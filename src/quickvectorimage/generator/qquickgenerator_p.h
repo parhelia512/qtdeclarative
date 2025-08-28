@@ -39,6 +39,7 @@ struct TextNodeInfo;
 struct UseNodeInfo;
 struct StructureNodeInfo;
 struct AnimateColorNodeInfo;
+struct MaskNodeInfo;
 
 class Q_QUICKVECTORIMAGEGENERATOR_EXPORT QQuickGenerator
 {
@@ -60,6 +61,7 @@ public:
     virtual void generateUseNode(const UseNodeInfo &info) = 0;
     virtual bool generateStructureNode(const StructureNodeInfo &info) = 0;
     virtual bool generateRootNode(const StructureNodeInfo &info) = 0;
+    virtual bool generateMaskNode(const MaskNodeInfo &info) = 0;
     virtual void outputShapePath(const PathNodeInfo &info, const QPainterPath *path, const QQuadPath *quadPath, QQuickVectorImageGenerator::PathSelector pathSelector, const QRectF &boundingRect) = 0;
     void optimizePaths(const PathNodeInfo &info, const QRectF &overrideBoundingRect);
     bool isNodeVisible(const NodeInfo &info);

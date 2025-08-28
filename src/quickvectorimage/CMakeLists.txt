@@ -49,7 +49,20 @@ qt_internal_add_qml_module(QuickVectorImageHelpers
     SOURCES
         helpers/qquickcoloropacityanimation_p.h helpers/qquickcoloropacityanimation.cpp
         helpers/qquicktransformgroup_p.h helpers/qquicktransformgroup.cpp
+        helpers/qquickitemspy_p.h helpers/qquickitemspy.cpp
     LIBRARIES
         Qt::QuickPrivate
         Qt::QuickVectorImageGeneratorPrivate
+)
+
+qt_internal_add_shaders(QuickVectorImageHelpers "vectorimage_shaders"
+    SILENT
+    BATCHABLE
+    PRECOMPILE
+    OPTIMIZED
+    MULTIVIEW
+    PREFIX
+        "/qt-project.org/quickvectorimage/"
+    FILES
+        "helpers/shaders_ng/luminancemask.frag"
 )

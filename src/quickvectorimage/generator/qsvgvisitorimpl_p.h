@@ -19,6 +19,9 @@
 #include "qquickgenerator_p.h"
 #include "qquickanimatedproperty_p.h"
 
+#include <QtCore/qhash.h>
+#include <QtCore/qset.h>
+
 QT_BEGIN_NAMESPACE
 
 class QTextStream;
@@ -47,6 +50,9 @@ protected:
     bool visitStructureNodeStart(const QSvgStructureNode *node) override;
     void visitStructureNodeEnd(const QSvgStructureNode *node) override;
 
+    bool visitMaskNodeStart(const QSvgMask *node) override;
+    void visitMaskNodeEnd(const QSvgMask *node) override;
+
     bool visitDocumentNodeStart(const QSvgTinyDocument *node) override;
     void visitDocumentNodeEnd(const QSvgTinyDocument *node) override;
 
@@ -60,7 +66,7 @@ private:
                                    QQuickAnimatedProperty *property,
                                    std::function<QVariant(const QSvgAbstractAnimatedProperty *, int index, int subtype)> calculateValue);
 
-    void fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info);
+    void fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, const QString &idSuffix = QString{});
     void fillPathAnimationInfo(const QSvgNode *node, PathNodeInfo &info);
     void fillAnimationInfo(const QSvgNode *node, NodeInfo &info);
     void fillColorAnimationInfo(const QSvgNode *node, PathNodeInfo &info);
@@ -70,6 +76,7 @@ private:
     void handleBaseNodeEnd(const QSvgNode *node);
     void handlePathNode(const QSvgNode *node, const QPainterPath &path);
     void outputShapePath(QPainterPath pathCopy, const PathNodeInfo &info);
+    QString nextNodeId() const;
     static QString gradientCssDescription(const QGradient *gradient);
     static QString colorCssDescription(QColor color);
 
@@ -77,6 +84,11 @@ private:
     QString m_svgFileName;
     QQuickGenerator *m_generator;
     bool m_assumeTrustedSource;
+    mutable int m_nodeIdCounter = 0;
+    QHash<QString, QString> m_idForNodeId;
+    QSet<QString> m_generatedNodes;
+
+    QString m_linkSuffix;
 };
 
 QT_END_NAMESPACE

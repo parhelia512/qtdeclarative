@@ -218,9 +218,6 @@ public:
                           DirectVisitor visitor) const = 0; // iterates the *direct* subpaths, returns
                                                             // false if a quick end was requested
 
-    bool iterateDirectSubpathsConst(const DomItem &self, DirectVisitor)
-            const; // iterates the *direct* subpaths, returns false if a quick end was requested
-
     virtual DomItem containingObject(
             const DomItem &self) const; // the DomItem corresponding to the canonicalSource source
     virtual void dump(const DomItem &, const Sink &sink, int indent, FilterT filter) const;
@@ -2167,12 +2164,6 @@ DomItem ListPT<T>::index(const DomItem &self, index_type index) const
 inline DomKind DomBase::domKind() const
 {
     return kind2domKind(kind());
-}
-
-inline bool DomBase::iterateDirectSubpathsConst(const DomItem &self, DirectVisitor visitor) const
-{
-    Q_ASSERT(self.base() == this);
-    return self.iterateDirectSubpaths(std::move(visitor));
 }
 
 inline DomItem DomBase::containingObject(const DomItem &self) const

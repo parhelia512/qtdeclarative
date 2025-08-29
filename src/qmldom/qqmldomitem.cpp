@@ -1150,7 +1150,7 @@ DomItem DomItem::index(index_type i) const
 
 bool DomItem::visitIndexes(function_ref<bool(const DomItem &)> visitor) const
 {
-    // use iterateDirectSubpathsConst instead?
+    // use iterateDirectSubpaths instead?
     int nIndexes = indexes();
     for (int i = 0; i < nIndexes; ++i) {
         DomItem v = index(i);
@@ -1180,7 +1180,7 @@ DomItem DomItem::key(const QString &name) const
 
 bool DomItem::visitKeys(function_ref<bool(const QString &, const DomItem &)> visitor) const
 {
-    // use iterateDirectSubpathsConst instead?
+    // use iterateDirectSubpaths instead?
     const QStringList keys = sortedKeys();
     for (const QString &k : keys) {
         DomItem v = key(k);
@@ -1193,12 +1193,9 @@ bool DomItem::visitKeys(function_ref<bool(const QString &, const DomItem &)> vis
 QList<DomItem> DomItem::values() const
 {
     QList<DomItem> res;
-    visitEl([this, &res](const auto &el) {
-        return el->iterateDirectSubpathsConst(
-                *this, [&res](const PathEls::PathComponent &, function_ref<DomItem()> item) {
-                    res.append(item());
-                    return true;
-                });
+    iterateDirectSubpaths([&res](const PathEls::PathComponent &, function_ref<DomItem()> item) {
+        res.append(item());
+        return true;
     });
     return res;
 }
@@ -1440,39 +1437,35 @@ bool DomItem::visitTree(const Path &basePath, DomItem::ChildrenVisitor visitor,
             closingVisitor(basePath, *this, true);
         }
     });
-    return visitEl([this, basePath, visitor, openingVisitor, closingVisitor, options,
-                    &filter](auto &&el) {
-        return el->iterateDirectSubpathsConst(
-                *this,
-                [this, basePath, visitor, openingVisitor, closingVisitor, options,
-                 &filter](const PathEls::PathComponent &c, function_ref<DomItem()> itemF) {
-                    Path pNow;
-                    if (!(options & VisitOption::NoPath)) {
-                        pNow = basePath;
-                        pNow = pNow.withComponent(c);
-                    }
-                    if (!filter(*this, c, DomItem{}))
-                        return true;
-                    DomItem item = itemF();
-                    bool directChild = isCanonicalChild(item);
-                    if (!directChild && !(options & VisitOption::VisitAdopted))
-                        return true;
-                    if (!directChild || !(options & VisitOption::Recurse)) {
-                        if (!visitor(pNow, item, directChild))
-                            return false;
-                        // give an option to avoid calling open/close when not recursing?
-                        // calling it always allows close to do the reverse looping (children before
-                        // parent)
-                        if (!openingVisitor(pNow, item, directChild))
-                            return true;
-                        closingVisitor(pNow, item, directChild);
-                    } else {
-                        return item.visitTree(pNow, visitor, options | VisitOption::VisitSelf,
-                                              openingVisitor, closingVisitor, filter);
-                    }
+    return iterateDirectSubpaths(
+            [this, basePath, visitor, openingVisitor, closingVisitor, options,
+             &filter](const PathEls::PathComponent &c, function_ref<DomItem()> itemF) {
+                Path pNow;
+                if (!(options & VisitOption::NoPath)) {
+                    pNow = basePath;
+                    pNow = pNow.withComponent(c);
+                }
+                if (!filter(*this, c, DomItem{}))
                     return true;
-                });
-    });
+                DomItem item = itemF();
+                bool directChild = isCanonicalChild(item);
+                if (!directChild && !(options & VisitOption::VisitAdopted))
+                    return true;
+                if (!directChild || !(options & VisitOption::Recurse)) {
+                    if (!visitor(pNow, item, directChild))
+                        return false;
+                    // give an option to avoid calling open/close when not recursing?
+                    // calling it always allows close to do the reverse looping (children before
+                    // parent)
+                    if (!openingVisitor(pNow, item, directChild))
+                        return true;
+                    closingVisitor(pNow, item, directChild);
+                } else {
+                    return item.visitTree(pNow, visitor, options | VisitOption::VisitSelf,
+                                          openingVisitor, closingVisitor, filter);
+                }
+                return true;
+            });
 }
 static bool visitPrototypeIndex(QList<DomItem> &toDo, const DomItem &current,
                                 const DomItem &derivedFromPrototype, const ErrorHandler &h,

@@ -30,7 +30,14 @@
 
 using namespace Qt::StringLiterals;
 
-constexpr int JSON_LOGGING_FORMAT_REVISION = 4;
+// Bump this whenever the qmllint JSON format changes
+//
+// IMPORTANT:
+//
+// Also change the comment behind the number to describe the latest change. This has the added
+// benefit that if another patch changes the version too, it will result in a merge conflict, and
+// not get removed silently.
+constexpr int JSON_LOGGING_FORMAT_REVISION = 5; // Remove hint from FixSuggestion
 
 bool argumentsFromCommandLineAndFile(QStringList& allArguments, const QStringList &arguments)
 {

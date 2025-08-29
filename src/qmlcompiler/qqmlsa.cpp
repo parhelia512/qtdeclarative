@@ -2059,16 +2059,6 @@ QString FixSuggestionPrivate::fileName() const
     return m_fixSuggestion.filename();
 }
 
-void FixSuggestionPrivate::setHint(const QString &hint)
-{
-    m_fixSuggestion.setHint(hint);
-}
-
-QString FixSuggestionPrivate::hint() const
-{
-    return m_fixSuggestion.hint();
-}
-
 void FixSuggestionPrivate::setAutoApplicable(bool autoApplicable)
 {
     m_fixSuggestion.setAutoApplicable(autoApplicable);
@@ -2192,24 +2182,6 @@ void FixSuggestion::setFileName(const QString &fileName)
 QString FixSuggestion::fileName() const
 {
     return FixSuggestionPrivate::fixSuggestion(*this).filename();
-}
-
-/*!
-    Sets \a hint as the hint for this fix suggestion.
- */
-void FixSuggestion::setHint(const QString &hint)
-{
-    Q_D(FixSuggestion);
-    d->setHint(hint);
-}
-
-/*!
-    Returns the hint for this fix suggestion.
- */
-QString FixSuggestion::hint() const
-{
-    Q_D(const FixSuggestion);
-    return d->hint();
 }
 
 /*!

@@ -226,7 +226,7 @@ bool QQmlJSFixSuggestion::operator==(const QQmlJSFixSuggestion &other) const
 {
     return m_location == other.m_location && m_description == other.m_description
             && m_replacement == other.m_replacement && m_filename == other.m_filename
-            && m_hint == other.m_hint && m_autoApplicable == other.m_autoApplicable;
+            && m_autoApplicable == other.m_autoApplicable;
 }
 
 bool QQmlJSFixSuggestion::operator!=(const QQmlJSFixSuggestion &other) const
@@ -474,9 +474,6 @@ void QQmlJSLogger::printFix(const QQmlJSFixSuggestion &fixItem)
                        + u"\t"_s.repeated(tabCount)
                        + u"^"_s.repeated(replacement.size()) + u'\n');
     }
-
-    if (!fixItem.hint().isEmpty())
-        m_output.write("      "_L1 + fixItem.hint());
 }
 
 QQmlJSFixSuggestion::QQmlJSFixSuggestion(const QString &description,

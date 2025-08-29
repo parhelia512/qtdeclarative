@@ -29,10 +29,9 @@ void TestQQmlJSLogger::printFix()
     QQmlJSFixSuggestion info("Purely informative"_L1, loc, ""_L1);
     info.setFilename("test.qml"_L1);
     info.setAutoApplicable(false);
-    info.setHint("Just a hint"_L1);
     logger.startTransaction();
     logger.log("Test"_L1, qmlSyntax, loc, false, false, info);
-    logger.rollback();;
+    logger.rollback();
     QVERIFY(true); // no assert hit
 }
 

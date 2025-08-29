@@ -261,9 +261,6 @@ public:
     void setFileName(const QString &);
     QString fileName() const;
 
-    void setHint(const QString &);
-    QString hint() const;
-
     void setAutoApplicable(bool autoApplicable = true);
     bool isAutoApplicable() const;
 

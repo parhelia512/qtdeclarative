@@ -86,9 +86,6 @@ public:
     void setFilename(const QString &filename) { m_filename = filename; }
     QString filename() const { return m_filename; }
 
-    void setHint(const QString &hint) { m_hint = hint; }
-    QString hint() const { return m_hint; }
-
     void setAutoApplicable(bool autoApply = true) { m_autoApplicable = autoApply; }
     bool isAutoApplicable() const { return m_autoApplicable; }
 
@@ -100,7 +97,6 @@ private:
     QString m_description;
     QString m_replacement;
     QString m_filename;
-    QString m_hint;
     bool m_autoApplicable = false;
 };
 

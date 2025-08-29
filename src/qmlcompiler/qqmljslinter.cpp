@@ -473,8 +473,7 @@ static void addJsonWarning(QJsonArray &warnings, const QQmlJS::DiagnosticMessage
         QJsonObject jsonFix {
             { "message"_L1, suggestion->description() },
             { "replacement"_L1, suggestion->replacement() },
-            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() },
-            { "hint"_L1, suggestion->hint() },
+            { "isAutoApplicable"_L1, suggestion->isAutoApplicable() }
         };
         convertLocation(suggestion->location(), &jsonFix);
         const QString filename = suggestion->filename();

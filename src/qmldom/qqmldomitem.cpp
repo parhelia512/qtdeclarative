@@ -108,7 +108,7 @@ The minimal overload set to be usable consists of following methods:
 
 \li \c{pathFromOwner()} returns the path from the owner to the current element
 \code
-    Path pathFromOwner(const DomItem &self) const override;
+    Path pathFromOwner() const override;
 \endcode
 
 \li \c{canonicalPath()} returns the path
@@ -2063,7 +2063,7 @@ quintptr DomItem::id() const
 
 Path DomItem::pathFromOwner() const
 {
-    return visitEl([this](auto &&e) { return e->pathFromOwner(*this); });
+    return visitEl([](auto &&e) { return e->pathFromOwner(); });
 }
 
 QString DomItem::canonicalFilePath() const
@@ -2518,7 +2518,7 @@ DomItem DomItem::fromCode(const QString &code, DomType fileType)
 Empty::Empty()
 {}
 
-Path Empty::pathFromOwner(const DomItem &) const
+Path Empty::pathFromOwner() const
 {
     return Path();
 }
@@ -2783,12 +2783,6 @@ void List::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
 }
 
 DomElement::DomElement(const Path &pathFromOwner) : m_pathFromOwner(pathFromOwner) { }
-
-Path DomElement::pathFromOwner(const DomItem &) const
-{
-    Q_ASSERT(m_pathFromOwner && "uninitialized DomElement");
-    return m_pathFromOwner;
-}
 
 Path DomElement::canonicalPath(const DomItem &self) const
 {
@@ -3211,8 +3205,8 @@ bool operator==(const DomItem &o1, const DomItem &o2)
             return true;
         if (o1.m_owner != o2.m_owner)
             return false;
-        Path p1 = el1->pathFromOwner(o1);
-        Path p2 = el2->pathFromOwner(o2);
+        Path p1 = el1->pathFromOwner();
+        Path p2 = el2->pathFromOwner();
         if (p1 != p2)
             return false;
         return true;

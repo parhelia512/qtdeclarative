@@ -211,7 +211,7 @@ public:
     // minimal overload set:
     virtual DomType kind() const = 0;
     virtual DomKind domKind() const;
-    virtual Path pathFromOwner(const DomItem &self) const = 0;
+    virtual Path pathFromOwner() const = 0;
     virtual Path canonicalPath(const DomItem &self) const = 0;
     virtual bool
     iterateDirectSubpaths(const DomItem &self,
@@ -275,7 +275,7 @@ public:
 
     Empty();
     quintptr id() const override { return ~quintptr(0); }
-    Path pathFromOwner(const DomItem &self) const override;
+    Path pathFromOwner() const override;
     Path canonicalPath(const DomItem &self) const override;
     DomItem containingObject(const DomItem &self) const override;
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor) const override;
@@ -290,8 +290,7 @@ protected:
 public:
     DomElement(const Path &pathFromOwner = Path());
     DomElement(const DomElement &o) = default;
-    Path pathFromOwner(const DomItem &self) const override;
-    Path pathFromOwner() const { return m_pathFromOwner; }
+    Path pathFromOwner() const override { return m_pathFromOwner; }
     Path canonicalPath(const DomItem &self) const override;
     DomItem containingObject(const DomItem &self) const override;
     virtual void updatePathFromOwner(const Path &newPath);
@@ -1481,8 +1480,7 @@ public:
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor) const override;
     std::shared_ptr<OwningItem> makeCopy(const DomItem &self) const { return doCopy(self); }
-    Path pathFromOwner() const { return Path(); }
-    Path pathFromOwner(const DomItem &) const override final { return Path(); }
+    Path pathFromOwner() const override final { return Path(); }
     DomItem containingObject(const DomItem &self) const override;
     int derivedFrom() const;
     virtual int revision() const;
@@ -2179,7 +2177,7 @@ inline bool DomBase::iterateDirectSubpathsConst(const DomItem &self, DirectVisit
 
 inline DomItem DomBase::containingObject(const DomItem &self) const
 {
-    Path path = pathFromOwner(self);
+    Path path = pathFromOwner();
     DomItem base = self.owner();
     if (!path) {
         path = canonicalPath(self);

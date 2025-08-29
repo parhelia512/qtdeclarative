@@ -120,7 +120,7 @@ bool ModuleIndex::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
     cont = cont && self.dvValueField(visitor, Fields::majorVersion, majorVersion());
     cont = cont && self.dvItemField(visitor, Fields::moduleScope, [this, &self]() {
         return self.subMapItem(Map(
-                pathFromOwner(self).withField(Fields::moduleScope),
+                pathFromOwner().withField(Fields::moduleScope),
                 [](const DomItem &map, const QString &minorVersionStr) {
                     bool ok;
                     int minorVersion = minorVersionStr.toInt(&ok);

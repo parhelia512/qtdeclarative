@@ -33,12 +33,11 @@ public:
     {
     }
 
-    Path pathFromOwner() const
+    Path pathFromOwner() const override
     {
         return Path::fromField(Fields::moduleScope)
                 .withKey(version.isValid() ? QString::number(version.minorVersion) : QString());
     }
-    Path pathFromOwner(const DomItem &) const override { return pathFromOwner(); }
     Path canonicalPath(const DomItem &self) const override
     {
         return self.owner().canonicalPath().withPath(pathFromOwner());

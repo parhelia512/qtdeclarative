@@ -940,6 +940,60 @@ static bool isDoneIncubating(QQmlIncubator::Status status)
      return status == QQmlIncubator::Ready || status == QQmlIncubator::Error;
 }
 
+struct RequiredPropertiesInitializer
+{
+    Q_DISABLE_COPY_MOVE(RequiredPropertiesInitializer)
+public:
+    RequiredPropertiesInitializer(
+            QQmlEngine *engine, QObject *targetObject, RequiredProperties *requiredProperties,
+            QQmlDelegateModel::DelegateModelAccess access)
+        : engine(engine)
+        , targetObject(targetObject)
+        , requiredProperties(requiredProperties)
+        , access(access)
+    {}
+
+    void operator()(const QMetaObject *modelMetaObject, QObject *modelObject) const
+    {
+        const int end = modelMetaObject->propertyCount() + modelMetaObject->propertyOffset();
+        for (int i = modelMetaObject->propertyOffset(); i < end; ++i) {
+            auto prop = modelMetaObject->property(i);
+            if (!prop.name())
+                continue;
+            const QString propName = QString::fromUtf8(prop.name());
+
+            bool wasInRequired = false;
+            QQmlProperty targetProp = QQmlComponentPrivate::removePropertyFromRequired(
+                    targetObject, propName, requiredProperties,
+                    engine, &wasInRequired);
+            if (!wasInRequired)
+                continue;
+
+            QQmlProperty sourceProp(modelObject, propName);
+            QQmlAnyBinding forward = QQmlPropertyToPropertyBinding::create(
+                    engine, sourceProp, targetProp);
+            if (access != QQmlDelegateModel::Qt5ReadWrite)
+                forward.setSticky();
+            forward.installOn(targetProp);
+
+            if (access != QQmlDelegateModel::ReadWrite || !sourceProp.isWritable())
+                continue;
+
+            QQmlAnyBinding reverse = QQmlPropertyToPropertyBinding::create(
+                    engine, targetProp, sourceProp);
+            reverse.setSticky();
+            reverse.installOn(sourceProp);
+        }
+    }
+
+private:
+    QQmlEngine *engine = nullptr;
+    QObject *targetObject = nullptr;
+    RequiredProperties *requiredProperties = nullptr;
+    QQmlDelegateModel::DelegateModelAccess access
+            = QQmlDelegateModel::DelegateModelAccess::ReadOnly;
+};
+
 void QQDMIncubationTask::initializeRequiredProperties(
         QQmlDelegateModelItem *modelItemToIncubate, QObject *object,
         QQmlDelegateModel::DelegateModelAccess access)
@@ -971,64 +1025,36 @@ void QQDMIncubationTask::initializeRequiredProperties(
         // sure that we are using required properties.
         const QMetaObject *qmlMetaObject = modelItemToIncubate->metaObject();
 
-        if (incubatorPriv->requiredProperties()->empty())
-            return;
         RequiredProperties *requiredProperties = incubatorPriv->requiredProperties();
+        if (requiredProperties->empty())
+            return;
+
+        const RequiredPropertiesInitializer initializer(
+                QQmlEnginePrivate::get(incubatorPriv->enginePriv),
+                object, requiredProperties, access);
 
         // if a required property was not in the model, it might still be a static property of the
         // QQmlDelegateModelItem or one of its derived classes this is the case for index, row,
         // column, model and more
         // the most derived subclasses of QQmlDelegateModelItem are QQmlDMAbstractItemModelData and
         // QQmlDMObjectData at depth 2, so 4 should be plenty
-        QVarLengthArray<std::pair<const QMetaObject *, QObject *>, 4> mos;
+
         // we first check the dynamic meta object for properties originating from the model
         // contains abstractitemmodelproperties
-        mos.push_back(std::make_pair(qmlMetaObject, modelItemToIncubate));
+        initializer(qmlMetaObject, modelItemToIncubate);
+
         auto delegateModelItemSubclassMO = qmlMetaObject->superClass();
-        mos.push_back(std::make_pair(delegateModelItemSubclassMO, modelItemToIncubate));
+        initializer(delegateModelItemSubclassMO, modelItemToIncubate);
 
         while (strcmp(delegateModelItemSubclassMO->className(),
                       modelItemToIncubate->staticMetaObject.className())) {
             delegateModelItemSubclassMO = delegateModelItemSubclassMO->superClass();
-            mos.push_back(std::make_pair(delegateModelItemSubclassMO, modelItemToIncubate));
+            initializer(delegateModelItemSubclassMO, modelItemToIncubate);
         }
+
         if (proxiedObject)
-            mos.push_back(std::make_pair(proxiedObject->metaObject(), proxiedObject));
+            initializer(proxiedObject->metaObject(), proxiedObject.data());
 
-        QQmlEngine *engine = QQmlEnginePrivate::get(incubatorPriv->enginePriv);
-        QV4::ExecutionEngine *v4 = engine->handle();
-        QV4::Scope scope(v4);
-
-        for (const auto &metaObjectAndObject : mos) {
-            const QMetaObject *mo = metaObjectAndObject.first;
-            QObject *itemOrProxy = metaObjectAndObject.second;
-            QV4::Scoped<QV4::QmlContext> qmlContext(scope);
-
-            for (int i = mo->propertyOffset(); i < mo->propertyCount() + mo->propertyOffset(); ++i) {
-                auto prop = mo->property(i);
-                if (!prop.name())
-                    continue;
-                const QString propName = QString::fromUtf8(prop.name());
-                bool wasInRequired = false;
-                QQmlProperty targetProp = QQmlComponentPrivate::removePropertyFromRequired(
-                            object, propName, requiredProperties,
-                            engine, &wasInRequired);
-                if (wasInRequired) {
-                    QQmlProperty sourceProp(itemOrProxy, propName);
-                    QQmlAnyBinding forward = QQmlPropertyToPropertyBinding::create(
-                            engine, sourceProp, targetProp);
-                    if (access != QQmlDelegateModel::Qt5ReadWrite)
-                        forward.setSticky();
-                    forward.installOn(targetProp);
-                    if (access == QQmlDelegateModel::ReadWrite && sourceProp.isWritable()) {
-                        QQmlAnyBinding reverse = QQmlPropertyToPropertyBinding::create(
-                                engine, targetProp, sourceProp);
-                        reverse.setSticky();
-                        reverse.installOn(sourceProp);
-                    }
-                }
-            }
-        }
     } else {
         // To retain compatibility, we cannot enable structured model data if the data is passed
         // via context properties.

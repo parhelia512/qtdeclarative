@@ -9608,7 +9608,6 @@ void tst_qqmlecmascript::qpropertyBindingHandlesUndefinedWithoutResetCorrectly()
     // If the binding evaluates to undefined,
     root->setProperty("toggle", true);
     // then the value still stays the same.
-    QEXPECT_FAIL("QCompatProperty", "Not implemented for QObjectCompatProperty", Continue);
     QCOMPARE(root->property("value2").toInt(), 1);
     // and the binding is still active
     root->setProperty("anotherValue", 2);

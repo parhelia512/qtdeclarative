@@ -953,7 +953,8 @@ public:
         , access(access)
     {}
 
-    void operator()(const QMetaObject *modelMetaObject, QObject *modelObject) const
+    template<typename ModelObjectType>
+    void operator()(const QMetaObject *modelMetaObject, ModelObjectType *modelObject) const
     {
         const int end = modelMetaObject->propertyCount() + modelMetaObject->propertyOffset();
         for (int i = modelMetaObject->propertyOffset(); i < end; ++i) {
@@ -982,7 +983,18 @@ public:
             QQmlAnyBinding reverse = QQmlPropertyToPropertyBinding::create(
                     engine, targetProp, sourceProp);
             reverse.setSticky();
-            reverse.installOn(sourceProp);
+            if constexpr (std::is_base_of_v<QQmlDelegateModelItem, ModelObjectType>) {
+                // Temporarily take away the metaobject so that the property can't actually be
+                // written. It shouldn't be written since we've just synchronized it the other way
+                // when installing the "forward" binding.
+                QQmlDelegateModelReadOnlyMetaObject readonly(modelObject, i);
+                reverse.installOn(sourceProp);
+            } else {
+                // It's only not a QQmlDelegateModelItem if the model is actually an ObjectModel.
+                // In that case, we hope that the generic equality check when setting a property
+                // is enough to de-bounce it.
+                reverse.installOn(sourceProp);
+            }
         }
     }
 

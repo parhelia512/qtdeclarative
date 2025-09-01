@@ -85,14 +85,15 @@ public:
     {
     }
 
-    void notifyItem(const QQmlGuard<QQmlDMAbstractItemModelData> &item, const QVector<int> &signalIndexes) const
+    void notifyItems(
+            const QVarLengthArray<QQmlGuard<QQmlDMAbstractItemModelData>> &guardedItems,
+            int propertyIndex) const
     {
-        for (const int signalIndex : signalIndexes) {
-            QMetaObject::activate(item, signalIndex, nullptr);
-            if (item.isNull())
-                return;
+        const int signalIndex = propertyIndex + signalOffset;
+        for (const auto &item : guardedItems) {
+            if (!item.isNull())
+                QMetaObject::activate(item, signalIndex, nullptr);
         }
-        emit item->modelDataChanged();
     }
 
     bool notify(
@@ -113,7 +114,14 @@ public:
             const_cast<VDMAbstractItemModelDataType *>(this)->watchedRoleIds = roleIds;
         }
 
-        QVector<int> signalIndexes;
+        QVarLengthArray<QQmlGuard<QQmlDMAbstractItemModelData>> guardedItems;
+        for (const auto item : items) {
+            Q_ASSERT(qobject_cast<QQmlDMAbstractItemModelData *>(item) == item);
+            const int idx = item->modelIndex();
+            if (idx >= index && idx < index + count)
+                guardedItems.append(static_cast<QQmlDMAbstractItemModelData *>(item));
+        }
+
         for (int i = 0; i < roles.size(); ++i) {
             const int role = roles.at(i);
             if (!changed && watchedRoleIds.contains(role))
@@ -121,29 +129,20 @@ public:
 
             int propertyId = propertyRoles.indexOf(role);
             if (propertyId != -1)
-                signalIndexes.append(propertyId + signalOffset);
-        }
-        if (roles.isEmpty()) {
-            const int propertyRolesCount = propertyRoles.size();
-            signalIndexes.reserve(propertyRolesCount);
-            for (int propertyId = 0; propertyId < propertyRolesCount; ++propertyId)
-                signalIndexes.append(propertyId + signalOffset);
+                notifyItems(guardedItems, propertyId);
         }
 
-        QVarLengthArray<QQmlGuard<QQmlDMAbstractItemModelData>> guardedItems;
-        for (const auto item : items) {
-            Q_ASSERT(qobject_cast<QQmlDMAbstractItemModelData *>(item) == item);
-            guardedItems.append(static_cast<QQmlDMAbstractItemModelData *>(item));
+        if (roles.isEmpty()) {
+            const int propertyRolesCount = propertyRoles.size();
+            for (int propertyId = 0; propertyId < propertyRolesCount; ++propertyId)
+                notifyItems(guardedItems, propertyId);
         }
 
         for (const auto &item : std::as_const(guardedItems)) {
-            if (item.isNull())
-                continue;
-
-            const int idx = item->modelIndex();
-            if (idx >= index && idx < index + count)
-                notifyItem(item, signalIndexes);
+            if (!item.isNull())
+                emit item->modelDataChanged();
         }
+
         return changed;
     }
 

@@ -87,17 +87,23 @@ public:
 
     void notifyItems(
             const QVarLengthArray<QQmlGuard<QQmlDMAbstractItemModelData>> &guardedItems,
-            int propertyIndex) const
+            int index, QQmlDelegateModel::DelegateModelAccess access) const
     {
-        const int signalIndex = propertyIndex + signalOffset;
         for (const auto &item : guardedItems) {
-            if (!item.isNull())
-                QMetaObject::activate(item, signalIndex, nullptr);
+            if (item.isNull())
+                continue;
+
+            if (access == QQmlDelegateModel::DelegateModelAccess::ReadWrite) {
+                QQmlDelegateModelReadOnlyMetaObject readOnly(item, index + propertyOffset);
+                QMetaObject::activate(item, index + signalOffset, nullptr);
+            } else {
+                QMetaObject::activate(item, index + signalOffset, nullptr);
+            }
         }
     }
 
     bool notify(
-            const QQmlAdaptorModel &,
+            const QQmlAdaptorModel &model,
             const QList<QQmlDelegateModelItem *> &items,
             int index,
             int count,
@@ -129,13 +135,13 @@ public:
 
             int propertyId = propertyRoles.indexOf(role);
             if (propertyId != -1)
-                notifyItems(guardedItems, propertyId);
+                notifyItems(guardedItems, propertyId, model.delegateModelAccess);
         }
 
         if (roles.isEmpty()) {
             const int propertyRolesCount = propertyRoles.size();
             for (int propertyId = 0; propertyId < propertyRolesCount; ++propertyId)
-                notifyItems(guardedItems, propertyId);
+                notifyItems(guardedItems, propertyId, model.delegateModelAccess);
         }
 
         for (const auto &item : std::as_const(guardedItems)) {

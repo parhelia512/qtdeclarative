@@ -731,45 +731,29 @@ void QQmlCodeModel::setBuildPathsForRootUrl(QByteArray url, const QStringList &p
 
 void QQmlCodeModel::openUpdate(const QByteArray &url)
 {
-    bool updateDoc = false;
-    bool updateScope = false;
     std::optional<int> rNow = 0;
     QString docText;
-    DomItem validDoc;
-    std::shared_ptr<Utils::TextDocument> document;
+
     {
         QMutexLocker l(&m_mutex);
         OpenDocument &doc = m_openDocuments[url];
-        document = doc.textDocument;
+        std::shared_ptr<Utils::TextDocument> document = doc.textDocument;
         if (!document)
             return;
         {
             QMutexLocker l2(document->mutex());
             rNow = document->version();
         }
-        if (rNow && (!doc.snapshot.docVersion || *doc.snapshot.docVersion != *rNow))
-            updateDoc = true;
-        else if (doc.snapshot.validDocVersion
-                 && (!doc.snapshot.scopeVersion
-                     || *doc.snapshot.scopeVersion != *doc.snapshot.validDocVersion))
-            updateScope = true;
-        else
+        if (!rNow || (doc.snapshot.docVersion && *doc.snapshot.docVersion == *rNow))
             return;
-        if (updateDoc) {
+
+        {
             QMutexLocker l2(doc.textDocument->mutex());
             rNow = doc.textDocument->version();
             docText = doc.textDocument->toPlainText();
-        } else {
-            validDoc = doc.snapshot.validDoc;
-            rNow = doc.snapshot.validDocVersion;
         }
     }
-    if (updateDoc) {
-        newDocForOpenFile(url, *rNow, docText);
-    }
-    if (updateScope) {
-        // to do
-    }
+    newDocForOpenFile(url, *rNow, docText);
 }
 
 void QQmlCodeModel::addOpenToUpdate(const QByteArray &url)

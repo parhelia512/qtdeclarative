@@ -3,25 +3,23 @@
 
 #include "qqmldelegatemodel_p_p.h"
 
-#include <QtCore/private/qabstractitemmodel_p.h>
-
 #include <QtQml/qqmlinfo.h>
 
-#include <private/qqmlabstractdelegatecomponent_p.h>
-#include <private/qquickpackage_p.h>
+#include <private/qabstractitemmodel_p.h>
+#include <private/qcoreapplication_p.h>
+#include <private/qjsvalue_p.h>
 #include <private/qmetaobjectbuilder_p.h>
+#include <private/qqmlabstractdelegatecomponent_p.h>
 #include <private/qqmladaptormodel_p.h>
 #include <private/qqmlanybinding_p.h>
 #include <private/qqmlchangeset_p.h>
-#include <private/qqmlengine_p.h>
 #include <private/qqmlcomponent_p.h>
+#include <private/qqmlengine_p.h>
 #include <private/qqmlpropertytopropertybinding_p.h>
-#include <private/qjsvalue_p.h>
-#include <QtCore/private/qcoreapplication_p.h>
-
-#include <private/qv4value_p.h>
+#include <private/qquickpackage_p.h>
 #include <private/qv4functionobject_p.h>
 #include <private/qv4objectiterator_p.h>
+#include <private/qv4value_p.h>
 
 QT_BEGIN_NAMESPACE
 

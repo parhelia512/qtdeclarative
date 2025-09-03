@@ -20,21 +20,26 @@ using namespace AST;
 
 bool ScriptFormatter::preVisit(Node *n)
 {
-    if (const CommentedElement *c = comments->commentForNode(n, CommentAnchor{})) {
-        if (!c->preComments().empty()) {
-            deferredSpaces = 0;
-            c->writePre(lw);
-        }
+    const CommentedElement *c = comments->commentForNode(n, CommentAnchor{});
+    if (!c)
+        return true;
 
-        postOps[n].append([c, this]() {
-            if (!c->postComments().empty()) {
-                deferredSpaces = 0;
-                c->writePost(lw);
-            }
-        });
+    if (!c->preComments().empty()) {
+        deferredSpaces = 0;
+        for (const auto &preComment : c->preComments())
+            lw.maybeWriteComment(preComment);
     }
+
+    postOps[n].append([c, this]() {
+        if (!c->postComments().empty()) {
+            deferredSpaces = 0;
+            for (const auto &postComment : c->postComments())
+                lw.maybeWriteComment(postComment);
+        }
+    });
     return true;
 }
+
 void ScriptFormatter::postVisit(Node *n)
 {
     for (auto &op : postOps[n]) {

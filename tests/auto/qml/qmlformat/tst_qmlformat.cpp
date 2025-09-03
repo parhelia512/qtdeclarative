@@ -517,6 +517,9 @@ void TestQmlformat::disableViaComments_data()
         opts.attributesSequence = LineWriterOptions::AttributesSequence::Preserve;
         QTest::newRow("disableFormat") << "disableViaComments/qmlobject.qml"
                                        << "disableViaComments/qmlobject.formatted.qml" << opts;
+        QTest::newRow("disableFormatScriptExpressions")
+                << "disableViaComments/scriptExpressions.qml"
+                << "disableViaComments/scriptExpressions.formatted.qml" << opts;
     }
     {
         // Basic test non-functional disableViaComments feature, i.e in normalized mode and
@@ -527,6 +530,17 @@ void TestQmlformat::disableViaComments_data()
         QTest::newRow("disableFormatInSortImports")
                 << "disableViaComments/qmlobject.qml"
                 << "disableViaComments/qmlobject.nodisable.qml" << opt1;
+        opt1.attributesSequence = LineWriterOptions::AttributesSequence::Normalize;
+        QTest::newRow("disableFormatInNormalizedMode")
+                << "disableViaComments/scriptExpressions.qml"
+                << "disableViaComments/scriptExpressions.nodisable.qml" << opt1;
+    }
+    {
+        // Basic test for the disableViaComments feature
+        LineWriterOptions opts;
+        opts.attributesSequence = LineWriterOptions::AttributesSequence::Preserve;
+        QTest::newRow("disableFormatFuzzy") << "disableViaComments/fuzzy.qml"
+                                            << "disableViaComments/fuzzy.formatted.qml" << opts;
     }
 }
 

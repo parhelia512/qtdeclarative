@@ -245,17 +245,27 @@ void QQmlCodeModelManager::setVerbose(bool verbose)
 
 void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths)
 {
+    auto setBuildPaths = [&paths, this](const auto &ws) {
+        ws.codeModel->setBuildPathsForRootUrl(ws.url, paths);
+
+        if (const QStringList importPaths =
+                    m_buildInformation.importPathsFor(QUrl::fromEncoded(ws.url).toLocalFile());
+            !importPaths.isEmpty()) {
+            ws.codeModel->setImportPaths(importPaths);
+        }
+    };
+
     m_buildInformation.loadSettingsFrom(paths);
 
-    const auto ws = findWorkspaceForFile(url);
-    if (ws->url == url) {
-        if (const QStringList importPaths =
-                    m_buildInformation.importPathsFor(QUrl::fromEncoded(url).toLocalFile());
-            !importPaths.isEmpty()) {
-            ws->codeModel->setImportPaths(importPaths);
-        }
+    // build paths passed by -b have an empty url and apply to all workspaces
+    if (url.isEmpty()) {
+        for (QQmlWorkspace &ws : m_workspaces)
+            setBuildPaths(ws);
+        return;
     }
-    ws->codeModel->setBuildPathsForRootUrl(url, paths);
+
+    const auto ws = findWorkspaceForFile(url);
+    setBuildPaths(*ws);
 }
 
 void QQmlCodeModelManager::addOpenToUpdate(const QByteArray &url)

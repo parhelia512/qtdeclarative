@@ -10,6 +10,25 @@
 #include <QtQmlDom/private/qqmldomitem_p.h>
 #include <QtQmlDom/private/qqmldomtop_p.h>
 
+struct TestCodeModelManager final : public QmlLsp::QQmlCodeModelManager
+{
+    TestCodeModelManager(QQmlToolingSharedSettings *settings = nullptr)
+        : QmlLsp::QQmlCodeModelManager(nullptr, settings)
+    {
+        disableCMakeCalls();
+    }
+
+    QmlLsp::QQmlCodeModel *findCodeModelForFile(const QByteArray &url)
+    {
+        return QmlLsp::QQmlCodeModelManager::findCodeModelForFile(url);
+    }
+    QmlLsp::QQmlCodeModel *findCodeModel(const QByteArray &url)
+    {
+        const auto it = QmlLsp::QQmlCodeModelManager::findWorkspace(url);
+        return it != m_workspaces.end() ? it->codeModel.get() : nullptr;
+    }
+};
+
 tst_qmlls_qqmlcodemodel::tst_qmlls_qqmlcodemodel() : QQmlDataTest(QT_QQMLCODEMODEL_DATADIR) { }
 
 void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl_data()
@@ -56,7 +75,9 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
         qputenv(environmentVariable, pathFromEnvironmentVariable.toUtf8());
     }
 
-    QmlLsp::QQmlCodeModel model(QByteArray(), nullptr, &settings);
+    TestCodeModelManager model(&settings);
+    model.addRootUrls({ QUrl::fromLocalFile(u"./___thispathdoesnotexist123___/"_s).toEncoded() });
+
     if (!pathFromCommandLine.isEmpty())
         model.setBuildPathsForRootUrl(QByteArray(), QStringList{ pathFromCommandLine });
 
@@ -322,25 +343,6 @@ void tst_qmlls_qqmlcodemodel::reloadLotsOfFiles()
     thread->start();
     thread->wait();
 }
-
-struct TestCodeModelManager final : public QmlLsp::QQmlCodeModelManager
-{
-    TestCodeModelManager(QQmlToolingSharedSettings *settings = nullptr)
-        : QmlLsp::QQmlCodeModelManager(nullptr, settings)
-    {
-        disableCMakeCalls();
-    }
-
-    QmlLsp::QQmlCodeModel *findCodeModelForFile(const QByteArray &url)
-    {
-        return QmlLsp::QQmlCodeModelManager::findCodeModelForFile(url);
-    }
-    QmlLsp::QQmlCodeModel *findCodeModel(const QByteArray &url)
-    {
-        const auto it = QmlLsp::QQmlCodeModelManager::findWorkspace(url);
-        return it != m_workspaces.end() ? it->codeModel.get() : nullptr;
-    }
-};
 
 void tst_qmlls_qqmlcodemodel::buildPaths_data()
 {

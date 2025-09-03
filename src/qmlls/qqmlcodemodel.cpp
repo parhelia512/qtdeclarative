@@ -565,6 +565,10 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
                             [&p, this](Path, const DomItem &, const DomItem &newValue) {
                                 const DomItem file = newValue.fileObject();
                                 p = file.canonicalPath();
+                                // Force population of the file by accessing isValid field. We
+                                // don't want to populate the file after adding the file to the
+                                // snapshot in updateItemInSnapshot.
+                                file.field(Fields::isValid);
                                 if (cmakeStatus() == HasCMake)
                                     addFileWatches(file);
                             });

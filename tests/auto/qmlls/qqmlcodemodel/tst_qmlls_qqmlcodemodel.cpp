@@ -165,9 +165,23 @@ QString tst_qmlls_qqmlcodemodel::readFile(const QString &filename) const
     return f.readAll();
 }
 
+void tst_qmlls_qqmlcodemodel::openFiles_data()
+{
+    QTest::addColumn<bool>("cmakeEnabled");
+
+    QTest::addRow("withCMake") << true;
+    QTest::addRow("withoutCMake") << false;
+}
+
 void tst_qmlls_qqmlcodemodel::openFiles()
 {
+    QFETCH(bool, cmakeEnabled);
+
     QmlLsp::QQmlCodeModel model;
+
+    // disabling CMake should not make the test fail!
+    if (!cmakeEnabled)
+        model.disableCMakeCalls();
 
     const QByteArray fileAUrl = testFileUrl(u"FileA.qml"_s).toEncoded();
     const QString fileAPath = testFile(u"FileA.qml"_s);

@@ -31,6 +31,7 @@ private slots:
     void fileNamesToWatch();
     void findFilePathsFromFileNames_data();
     void findFilePathsFromFileNames();
+    void openFiles_data();
     void openFiles();
     void importPathViaSettings();
     void reloadLotsOfFiles();

@@ -23,6 +23,9 @@
 
 QT_BEGIN_NAMESPACE
 
+class QWindow;
+class QQuickWindow;
+
 namespace QtPrivate {
 
 class Q_QUICK_EXPORT QQuickAttachedPropertyPropagatorPrivate

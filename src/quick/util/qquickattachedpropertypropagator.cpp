@@ -63,10 +63,6 @@ void QQuickAttachedPropertyPropagatorPrivate::detachFrom(QObject *object)
         and the attached parent of the attached object children.
     \li The attached object is destructed.
     \endlist
-
-    \quotefromfile ../../../examples/quickcontrols/attachedstyleproperties/MyStyle/mystyle.cpp
-    \skipto MyStyle::resetTheme
-    \printuntil }
 */
 void QQuickAttachedPropertyPropagatorPrivate::setAttachedParent(QQuickAttachedPropertyPropagator *parent)
 {
@@ -232,6 +228,9 @@ QQuickAttachedPropertyPropagator *QQuickAttachedPropertyPropagatorPrivate::findA
                 // Now try the window's transientParent(), via the next loop iteration.
                 object = item->window();
             }
+        } else {
+            // We don't know what to do with this.
+            object = nullptr;
         }
     } while (object);
 

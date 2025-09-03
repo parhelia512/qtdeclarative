@@ -44,6 +44,13 @@ using namespace Qt::StringLiterals;
 using namespace QQuickVisualTestUtils;
 using namespace QQuickControlsTestUtils;
 
+#if defined(QT_BUILD_INTERNAL)
+QT_BEGIN_NAMESPACE
+extern Q_AUTOTEST_EXPORT bool qt_quicktooltipattachedprivate_short_timeout;
+extern Q_AUTOTEST_EXPORT int qt_quicktooltipattachedprivate_delay;
+QT_END_NAMESPACE
+#endif
+
 class tst_QQuickPopup : public QQmlDataTest
 {
     Q_OBJECT
@@ -156,6 +163,11 @@ private:
 tst_QQuickPopup::tst_QQuickPopup()
     : QQmlDataTest(QT_QMLTEST_DATADIR)
 {
+#if defined(QT_BUILD_INTERNAL)
+    // The minimum timeout is 10 seconds, and we don't want to wait that long.
+    qt_quicktooltipattachedprivate_short_timeout = true;
+    qt_quicktooltipattachedprivate_delay = 50;
+#endif
 }
 
 void tst_QQuickPopup::cleanup()
@@ -2083,8 +2095,6 @@ void tst_QQuickPopup::invisibleToolTipOpen()
     QVERIFY(toolTipAttached);
     QQuickPopup *toolTip = toolTipAttached->toolTip();
     QVERIFY(toolTip);
-    QObject *loader = qvariant_cast<QObject *>(window->property("loader"));
-    QVERIFY(loader);
 
     // Simulate a real move, otherwise the test fails on subsequent runs for different styles for
     // some reason...
@@ -2092,6 +2102,8 @@ void tst_QQuickPopup::invisibleToolTipOpen()
     mousePointLerper.move(QPoint(mouseArea->width() / 2, mouseArea->height() / 2));
     QTRY_VERIFY(toolTip->isOpened());
 
+    QObject *loader = qvariant_cast<QObject *>(window->property("loader"));
+    QVERIFY(loader);
     QSignalSpy componentLoadedSpy(loader, SIGNAL(loaded()));
     QVERIFY(componentLoadedSpy.isValid());
 

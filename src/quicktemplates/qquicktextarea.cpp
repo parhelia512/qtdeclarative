@@ -8,6 +8,7 @@
 #include "qquickcontrol_p_p.h"
 #include "qquickscrollview_p.h"
 #include "qquickdeferredexecute_p_p.h"
+#include "qquicktooltip_p_p.h"
 
 #include <QtQml/qqmlinfo.h>
 #include <QtQuick/private/qquickitem_p.h>
@@ -718,6 +719,7 @@ void QQuickTextArea::setHovered(bool hovered)
 
     d->hovered = hovered;
     emit hoveredChanged();
+    QQuickToolTipAttachedPrivate::maybeSetVisibleImplicitly(this, hovered);
 #else
     Q_UNUSED(hovered);
 #endif

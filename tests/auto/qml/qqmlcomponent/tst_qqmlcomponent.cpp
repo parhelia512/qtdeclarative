@@ -161,6 +161,7 @@ private slots:
     void compilationUnitsWithSameUrl();
     void bindingInRequired();
     void repeatedSetDataWithInlineComponent();
+    void setInitialPropertyInteraction();
 
 private:
     QQmlEngine engine;
@@ -1902,6 +1903,44 @@ void tst_qqmlcomponent::repeatedSetDataWithInlineComponent()
         QScopedPointer<QObject> secondObject(secondComp.create());
         QVERIFY2(!secondObject.isNull(), qPrintable(secondComp.errorString()));
     }
+}
+
+void tst_qqmlcomponent::setInitialPropertyInteraction()
+{
+    QQmlEngine engine;
+    {
+        QQmlComponent prequisiteTester(&engine);
+        prequisiteTester.loadFromModule("QtQuick", "Item");
+        if (!prequisiteTester.isReady())
+            QSKIP("QtQuick is not available");
+        prequisiteTester.loadFromModule("QtQuick.Layouts", "RowLayout");
+        if (!prequisiteTester.isReady())
+            QSKIP("QtQuick.Layouts is not available");
+    }
+
+    const QByteArray code = R"(
+        import QtQuick
+        import QtQuick.Layouts
+        Item {
+
+        })";
+    QQmlComponent comp(&engine);
+    auto compPriv = QQmlComponentPrivate::get(&comp);
+    comp.setData(code, QUrl{});
+    QScopedPointer<QObject> obj(comp.beginCreate(engine.rootContext()));
+    QVERIFY(obj);
+    {
+        bool couldSetProperty = compPriv->setInitialProperty(
+                obj.get(), "Layout.fillWidth"_L1, true);
+        QVERIFY(couldSetProperty);
+    }
+    {
+        bool couldSetProperty = compPriv->setInitialProperty(
+                obj.get(), "parent.doesNotExist.shouldNotCrash"_L1, true);
+        QVERIFY(!couldSetProperty);
+    }
+
+    comp.completeCreate();
 }
 
 QTEST_MAIN(tst_qqmlcomponent)

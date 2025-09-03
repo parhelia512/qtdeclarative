@@ -384,41 +384,46 @@ static void removePendingQPropertyBinding(
 bool QQmlComponentPrivate::setInitialProperty(
         QObject *base, const QString &name, const QVariant &value)
 {
-    const QStringList properties = name.split(u'.');
-
-    if (properties.size() > 1) {
+    bool isComplexProperty = name.contains(u'.');
+    QQmlProperty prop;
+    // we don't allow "fixing" inner required properties - that would seriously hamper local reasoning
+    if (m_state.hasUnsetRequiredProperties() && !isComplexProperty)
+        prop = QQmlComponentPrivate::removePropertyFromRequired(
+                    base, name, m_state.requiredProperties(), m_engine);
+    else if (QQmlContext *ctxt = qmlContext(base); ctxt)
+        prop = QQmlProperty(base, name, ctxt);
+    else
+        prop = QQmlProperty(base, name, m_engine);
+    const bool isValid = prop.isValid();
+    if (!isValid && isComplexProperty) {
+        // QQmlProperty can't handle accesses on value types
+        const QStringList properties = name.split(u'.');
         QV4::Scope scope(m_engine->handle());
         QV4::ScopedObject object(scope, QV4::QObjectWrapper::wrap(scope.engine, base));
         QV4::ScopedString segment(scope);
-
         for (int i = 0; i < properties.size() - 1; ++i) {
             segment = scope.engine->newString(properties.at(i));
             object = object->get(segment);
-            if (scope.engine->hasException)
+            if (scope.engine->hasException || object->isNullOrUndefined())
                 break;
         }
         const QString lastProperty = properties.last();
-        segment = scope.engine->newString(lastProperty);
-        QV4::ScopedValue v(scope, scope.engine->metaTypeToJS(value.metaType(), value.constData()));
-        object->put(segment, v);
+        if (!object->isNullOrUndefined()) {
+            segment = scope.engine->newString(lastProperty);
+            QV4::ScopedValue v(scope, scope.engine->metaTypeToJS(value.metaType(), value.constData()));
+            object->put(segment, v);
+        } else {
+            return false;
+        }
         if (scope.engine->hasException) {
             qmlWarning(base, scope.engine->catchExceptionAsQmlError());
             scope.engine->hasException = false;
             return false;
         }
-
         removePendingQPropertyBinding(object, lastProperty, m_state.creator());
         return true;
     }
-
-    QQmlProperty prop;
-    if (m_state.hasUnsetRequiredProperties())
-        prop = QQmlComponentPrivate::removePropertyFromRequired(
-                    base, name, m_state.requiredProperties(), m_engine);
-    else
-        prop = QQmlProperty(base, name, m_engine);
     QQmlPropertyPrivate *privProp = QQmlPropertyPrivate::get(prop);
-    const bool isValid = prop.isValid();
     if (isValid && privProp->writeValueProperty(value, {})) {
         if (prop.isBindable()) {
             if (QQmlObjectCreator *creator = m_state.creator())

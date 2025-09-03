@@ -120,6 +120,7 @@ public:
     void setNewlinesBefore(int n) { m_newlinesBefore = n; }
     QStringView rawComment() const { return m_comment; }
     CommentInfo info() const { return CommentInfo(m_comment, m_location); }
+    QQmlJS::SourceLocation sourceLocation() const { return m_location; }
     void write(OutWriter &lw) const;
 
     CommentType type() const { return m_type; }

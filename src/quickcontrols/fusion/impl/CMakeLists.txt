@@ -18,6 +18,7 @@ set(qml_files
     "SliderHandle.qml"
     "SwitchIndicator.qml"
     "TextEditingContextMenu.qml"
+    "TextFieldBackground.qml"
 )
 
 qt_internal_add_qml_module(QuickControls2FusionStyleImpl

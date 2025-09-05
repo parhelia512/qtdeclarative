@@ -89,13 +89,13 @@ worker thread (or more) that work on it exist.
 QQmlCodeModel::QQmlCodeModel(const QByteArray &rootUrl, QObject *parent,
                              QQmlToolingSharedSettings *settings)
     : QObject{ parent },
+      m_rootUrl(rootUrl),
       m_currentEnv(std::make_shared<DomEnvironment>(
               QLibraryInfo::paths(QLibraryInfo::QmlImportsPath),
               DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
       m_validEnv(std::make_shared<DomEnvironment>(
               m_currentEnv.ownerAs<DomEnvironment>()->loadPaths(),
               DomEnvironment::Option::SingleThreaded, DomCreationOption::Extended)),
-      m_rootUrl(rootUrl),
       m_settings(settings)
 {
 }
@@ -106,6 +106,7 @@ Disable the functionality that uses CMake, and remove the already watched paths 
 */
 void QQmlCodeModel::disableCMakeCalls()
 {
+    QMutexLocker guard(&m_mutex);
     m_cmakeStatus = DoesNotHaveCMake;
     if (const QStringList toRemove = m_cppFileWatcher.files(); !toRemove.isEmpty())
         m_cppFileWatcher.removePaths(toRemove);
@@ -271,9 +272,10 @@ void QQmlCodeModel::initializeCMakeStatus(const QString &pathForSettings)
 {
     if (m_settings) {
         const QString cmakeCalls = u"no-cmake-calls"_s;
-        m_settings->search(pathForSettings, { QString(), m_verbose });
+        m_settings->search(pathForSettings, { QString(), verbose() });
         if (m_settings->isSet(cmakeCalls) && m_settings->value(cmakeCalls).toBool()) {
             qWarning() << "Disabling CMake calls via .qmlls.ini setting.";
+            QMutexLocker guard(&m_mutex);
             m_cmakeStatus = DoesNotHaveCMake;
             return;
         }
@@ -284,13 +286,17 @@ void QQmlCodeModel::initializeCMakeStatus(const QString &pathForSettings)
     process.setArguments({ u"--version"_s });
     process.start();
     process.waitForFinished();
-    m_cmakeStatus = process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
-            ? HasCMake
-            : DoesNotHaveCMake;
 
-    if (m_cmakeStatus == DoesNotHaveCMake) {
-        qWarning() << "Disabling CMake calls because CMake was not found.";
-        return;
+    {
+        QMutexLocker guard(&m_mutex);
+        m_cmakeStatus = process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
+                ? HasCMake
+                : DoesNotHaveCMake;
+
+        if (m_cmakeStatus == DoesNotHaveCMake) {
+            qWarning() << "Disabling CMake calls because CMake was not found.";
+            return;
+        }
     }
 
     QObject::connect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, this,
@@ -343,12 +349,15 @@ QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNa
 {
     QStringList fileNamesToSearch{ _fileNamesToSearch };
 
-    // ignore files that were not found last time
-    fileNamesToSearch.erase(std::remove_if(fileNamesToSearch.begin(), fileNamesToSearch.end(),
-                                           [this](const QString &fileName) {
-                                               return m_ignoreForWatching.contains(fileName);
-                                           }),
-                            fileNamesToSearch.end());
+    {
+        QMutexLocker guard(&m_mutex);
+        // ignore files that were not found last time
+        fileNamesToSearch.erase(std::remove_if(fileNamesToSearch.begin(), fileNamesToSearch.end(),
+                                               [this](const QString &fileName) {
+                                                   return m_ignoreForWatching.contains(fileName);
+                                               }),
+                                fileNamesToSearch.end());
+    }
 
     const QString rootDir = QUrl(QString::fromUtf8(m_rootUrl)).toLocalFile();
     qCDebug(codeModelLog) << "Searching for files to watch in workspace folder" << rootDir;
@@ -357,6 +366,7 @@ QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNa
     const QStringList result =
             QQmlLSUtils::findFilePathsFromFileNames(rootDir, fileNamesToSearch);
 
+    QMutexLocker guard(&m_mutex);
     for (const auto &fileName : fileNamesToSearch) {
         if (std::none_of(result.begin(), result.end(),
                          [&fileName](const QString &path) { return path.endsWith(fileName); })) {
@@ -414,6 +424,8 @@ void QQmlCodeModel::addFileWatches(const DomItem &qmlFile)
     const QStringList filepathsToWatch = findFilePathsFromFileNames(filesToWatch);
     if (filepathsToWatch.isEmpty())
         return;
+
+    QMutexLocker guard(&m_mutex);
     const auto unwatchedPaths = m_cppFileWatcher.addPaths(filepathsToWatch);
     if (!unwatchedPaths.isEmpty()) {
         qCDebug(codeModelLog) << "Cannot watch paths" << unwatchedPaths << "from requested"
@@ -423,6 +435,7 @@ void QQmlCodeModel::addFileWatches(const DomItem &qmlFile)
 
 void QQmlCodeModel::onCppFileChanged(const QString &)
 {
+    QMutexLocker guard(&m_mutex);
     m_rebuildRequired = true;
 }
 
@@ -509,14 +522,15 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
                           << docText.size() << "chars)";
 
     const QString fPath = url2Path(url, UrlLookup::ForceLookup);
-    if (m_cmakeStatus == RequiresInitialization)
+    if (cmakeStatus() == RequiresInitialization)
         initializeCMakeStatus(fPath);
 
     DomItem newCurrent = m_currentEnv.makeCopy(DomItem::CopyOption::EnvConnected).item();
     QStringList loadPaths = buildPathsForFileUrl(url);
 
-    if (m_cmakeStatus == HasCMake && !loadPaths.isEmpty() && m_rebuildRequired) {
+    if (cmakeStatus() == HasCMake && !loadPaths.isEmpty() && rebuildRequired()) {
         callCMakeBuild(loadPaths);
+        QMutexLocker guard(&m_mutex);
         m_rebuildRequired = false;
     }
 
@@ -527,7 +541,7 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
 
     // if the documentation root path is not set through the commandline,
     // try to set it from the settings file (.qmlls.ini file)
-    if (m_documentationRootPath.isEmpty() && m_settings) {
+    if (documentationRootPath().isEmpty() && m_settings) {
         // note: settings already searched current file in importPathsForFile() call above
         const QString docDir = QStringLiteral(u"docDir");
         if (m_settings->isSet(docDir))
@@ -540,7 +554,7 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
                             [&p, this](Path, const DomItem &, const DomItem &newValue) {
                                 const DomItem file = newValue.fileObject();
                                 p = file.canonicalPath();
-                                if (m_cmakeStatus == HasCMake)
+                                if (cmakeStatus() == HasCMake)
                                     addFileWatches(file);
                             });
     newCurrentPtr->loadPendingDependencies();
@@ -587,12 +601,13 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
     QStringList result = importPaths();
 
     const QString importPaths = u"importPaths"_s;
-    if (m_settings && m_settings->search(fileName, { QString(), m_verbose }).isValid()
+    if (m_settings && m_settings->search(fileName, { QString(), verbose() }).isValid()
         && m_settings->isSet(importPaths)) {
         result.append(m_settings->value(importPaths).toString().split(QDir::listSeparator()));
     }
 
-    const QStringList buildPath = buildPathsForFileUrl(m_path2url[fileName]);
+    const QStringList buildPath = buildPathsForFileUrl(url);
+    QMutexLocker l(&m_mutex);
     m_buildInformation.loadSettingsFrom(buildPath);
     result.append(m_buildInformation.importPathsFor(fileName));
 
@@ -663,7 +678,7 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
     // look in the settings.
     // This is the one that is passed via the .qmlls.ini file.
     if (buildPaths.isEmpty() && m_settings) {
-        m_settings->search(path, { QString(), m_verbose });
+        m_settings->search(path, { QString(), verbose() });
         QString buildDir = QStringLiteral(u"buildDir");
         if (m_settings->isSet(buildDir))
             buildPaths += m_settings->value(buildDir).toString().split(QDir::listSeparator(),
@@ -711,11 +726,13 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
 
 void QQmlCodeModel::setDocumentationRootPath(const QString &path)
 {
-    QMutexLocker l(&m_mutex);
-    if (m_documentationRootPath != path) {
+    {
+        QMutexLocker l(&m_mutex);
+        if (m_documentationRootPath == path)
+            return;
         m_documentationRootPath = path;
-        m_helpManager.setDocumentationRootPath(path);
     }
+    m_helpManager.setDocumentationRootPath(path);
 }
 
 void QQmlCodeModel::setBuildPathsForRootUrl(QByteArray url, const QStringList &paths)

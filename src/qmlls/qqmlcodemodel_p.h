@@ -129,14 +129,30 @@ public:
 
     RegisteredSemanticTokens &registeredTokens();
     const RegisteredSemanticTokens &registeredTokens() const;
-    QString documentationRootPath() const { return m_documentationRootPath; }
+    QString documentationRootPath() const
+    {
+        QMutexLocker l(&m_mutex);
+        return m_documentationRootPath;
+    }
     void setDocumentationRootPath(const QString &path);
 
-    QSet<QString> ignoreForWatching() const { return m_ignoreForWatching; }
+    QSet<QString> ignoreForWatching() const
+    {
+        QMutexLocker guard(&m_mutex);
+        return m_ignoreForWatching;
+    }
     HelpManager *helpManager() { return &m_helpManager; }
 
-    void setVerbose(bool verbose) { m_verbose = verbose; }
-    bool verbose() const { return m_verbose; }
+    void setVerbose(bool verbose)
+    {
+        QMutexLocker guard(&m_mutex);
+        m_verbose = verbose;
+    }
+    bool verbose() const
+    {
+        QMutexLocker guard(&m_mutex);
+        return m_verbose;
+    }
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url);
@@ -154,27 +170,39 @@ private:
     static bool callCMakeBuild(const QStringList &buildPaths);
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);
     enum CMakeStatus { RequiresInitialization, HasCMake, DoesNotHaveCMake };
+    CMakeStatus cmakeStatus() const
+    {
+        QMutexLocker guard(&m_mutex);
+        return m_cmakeStatus;
+    }
     void initializeCMakeStatus(const QString &);
+    bool rebuildRequired() const
+    {
+        QMutexLocker guard(&m_mutex);
+        return m_rebuildRequired;
+    }
 
     mutable QMutex m_mutex;
-    int m_nUpdateInProgress = 0;
-    QQmlJS::Dom::DomItem m_currentEnv;
-    QQmlJS::Dom::DomItem m_validEnv;
+    const QByteArray m_rootUrl; // note: access without m_mutex, is const
+
+    QQmlJS::Dom::DomItem m_currentEnv; // note: access without m_mutex, has thread-safe API
+    QQmlJS::Dom::DomItem m_validEnv; // note: access without m_mutex, has thread-safe API
+    QQmlToolingSharedSettings *m_settings; // note: access without m_mutex. has thread-safe API
+    HelpManager m_helpManager; // note: access without m_mutex, has thread-safe API
+
     QSet<QByteArray> m_openDocumentsToUpdate;
     QHash<QByteArray, QStringList> m_buildPathsForRootUrl;
-    QByteArray m_rootUrl;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;
-    QQmlToolingSharedSettings *m_settings;
     QQmllsBuildInformation m_buildInformation;
     QFileSystemWatcher m_cppFileWatcher;
-    bool m_rebuildRequired = true; // always trigger a rebuild on start
-    CMakeStatus m_cmakeStatus = RequiresInitialization;
     RegisteredSemanticTokens m_tokens;
     QString m_documentationRootPath;
     QSet<QString> m_ignoreForWatching;
-    HelpManager m_helpManager;
+    int m_nUpdateInProgress = 0;
+    CMakeStatus m_cmakeStatus = RequiresInitialization;
+    bool m_rebuildRequired = true; // always trigger a rebuild on start
     bool m_verbose = false;
 private slots:
     void onCppFileChanged(const QString &);

@@ -44,6 +44,7 @@ HelpManager::HelpManager()
 
 void HelpManager::setDocumentationRootPath(const QString &path)
 {
+    QMutexLocker guard(&m_mutex);
     if (m_docRootPath == path)
         return;
     m_docRootPath = path;
@@ -60,6 +61,7 @@ void HelpManager::setDocumentationRootPath(const QString &path)
 
 QString HelpManager::documentationRootPath() const
 {
+    QMutexLocker guard(&m_mutex);
     return m_docRootPath;
 }
 
@@ -200,6 +202,7 @@ HelpManager::tryExtract(ExtractDocumentation &extractor,
 std::optional<QByteArray>
 HelpManager::documentationForItem(const DomItem &file, QLspSpecification::Position position)
 {
+    QMutexLocker guard(&m_mutex);
     if (!m_helpPlugin)
         return std::nullopt;
 

@@ -744,8 +744,9 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
 
     QLoggingCategory::setFilterRules(u"qt.qml.compiler=false"_s);
 
-    CodegenWarningInterface interface(m_logger.get());
-    qCompileQmlFile(filename, saveFunction, &codegen, &error, true, &interface, fileContents);
+    CodegenWarningInterface warningInterface(m_logger.get());
+    qCompileQmlFile(filename, saveFunction, &codegen, &error, true, &warningInterface,
+                    fileContents);
 
     QList<QQmlJS::DiagnosticMessage> globalWarnings = m_importer.takeGlobalWarnings();
 

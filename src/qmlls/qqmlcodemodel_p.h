@@ -118,9 +118,9 @@ public:
                            UpdatePolicy policy);
     void closeOpenFile(const QByteArray &url);
     QByteArray rootUrl() const;
-    QStringList buildPathsForRootUrl(const QByteArray &url);
+    QStringList buildPaths();
     QStringList buildPathsForFileUrl(const QByteArray &url);
-    void setBuildPathsForRootUrl(QByteArray url, const QStringList &paths);
+    void setBuildPaths(const QStringList &paths);
     QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const;
     void setImportPaths(const QStringList &paths);
@@ -194,7 +194,7 @@ private:
     HelpManager m_helpManager; // note: access without m_mutex, has thread-safe API
 
     QHash<QByteArray, UpdatePolicy> m_openDocumentsToUpdate;
-    QHash<QByteArray, QStringList> m_buildPathsForRootUrl;
+    QStringList m_buildPaths;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;

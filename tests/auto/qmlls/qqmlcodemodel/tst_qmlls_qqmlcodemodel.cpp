@@ -61,20 +61,25 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
     QFETCH(QString, expectedPath);
 
     QQmlToolingSharedSettings settings(u"qmlls"_s);
-    if (!pathFromIniFile.isEmpty())
-        settings.addOption("buildDir", pathFromIniFile);
 
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+    {
+        QFile settingsFile(temporaryDirectory.filePath(".qmlls.ini"));
+        QVERIFY(settingsFile.open(QFile::WriteOnly | QFile::Text));
+        settingsFile.write("[General]\n");
+        if (!pathFromIniFile.isEmpty())
+            settingsFile.write("buildDir=\"%1\""_L1.arg(pathFromIniFile).toUtf8());
+    }
 
     TestCodeModelManager model(&settings);
-    model.addRootUrls({ QUrl::fromLocalFile(u"./___thispathdoesnotexist123___/"_s).toEncoded() });
+    model.addRootUrls({ QUrl::fromLocalFile(temporaryDirectory.path()).toEncoded() });
 
     if (!pathFromCommandLine.isEmpty())
         model.setBuildPathsForRootUrl(QByteArray(), QStringList{ pathFromCommandLine });
 
-    // use nonexistent path to avoid loading random .qmlls.ini files that might be laying around.
-    // in this case, it should abort the search and the standard value we set in the settings
     const QByteArray nonExistentUrl =
-            QUrl::fromLocalFile(u"./___thispathdoesnotexist123___/abcdefghijklmnop"_s).toEncoded();
+            QUrl::fromLocalFile(temporaryDirectory.filePath(u"file.qml"_s)).toEncoded();
 
     QStringList result = model.buildPathsForFileUrl(nonExistentUrl);
     QCOMPARE(result.size(), 1);

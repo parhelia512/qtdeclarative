@@ -245,8 +245,8 @@ void QQmlCodeModelManager::setVerbose(bool verbose)
 
 void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths)
 {
-    auto setBuildPaths = [&paths, this](const auto &ws) {
-        ws.codeModel->setBuildPathsForRootUrl(ws.url, paths);
+    auto setBuildPaths = [&paths, this](const QQmlWorkspace &ws) {
+        ws.codeModel->setBuildPaths(paths);
 
         if (const QStringList importPaths =
                     m_buildInformation.importPathsFor(QUrl::fromEncoded(ws.url).toLocalFile());

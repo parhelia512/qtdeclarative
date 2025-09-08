@@ -600,15 +600,10 @@ QByteArray QQmlCodeModel::rootUrl() const
     return m_rootUrl;
 }
 
-QStringList QQmlCodeModel::buildPathsForRootUrl(const QByteArray &url)
+QStringList QQmlCodeModel::buildPaths()
 {
     QMutexLocker l(&m_mutex);
-    return m_buildPathsForRootUrl.value(url);
-}
-
-static bool isNotSeparator(char c)
-{
-    return c != '/';
+    return m_buildPaths;
 }
 
 QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
@@ -668,74 +663,19 @@ static QStringList withDependentBuildDirectories(QStringList &&buildPaths)
 
 QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
 {
-    QList<QByteArray> roots;
-    {
-        QMutexLocker l(&m_mutex);
-        roots = m_buildPathsForRootUrl.keys();
-    }
-    // we want to longest match to be first, as it should override shorter matches
-    std::sort(roots.begin(), roots.end(), [](const QByteArray &el1, const QByteArray &el2) {
-        if (el1.size() > el2.size())
-            return true;
-        if (el1.size() < el2.size())
-            return false;
-        return el1 < el2;
-    });
-    QStringList buildPaths;
-    QStringList defaultValues;
-    if (!roots.isEmpty() && roots.last().isEmpty())
-        roots.removeLast();
-    QByteArray urlSlash(url);
-    if (!urlSlash.isEmpty() && isNotSeparator(urlSlash.at(urlSlash.size() - 1)))
-        urlSlash.append('/');
-    // look if the file has a know prefix path
-    for (const QByteArray &root : roots) {
-        if (urlSlash.startsWith(root)) {
-            buildPaths += buildPathsForRootUrl(root);
-            break;
-        }
-    }
-    QString path = url2Path(url);
+    if (QStringList result = buildPaths(); !result.isEmpty())
+        return withDependentBuildDirectories(std::move(result));
 
-    // fallback to the empty root, if is has an entry.
-    // This is the buildPath that is passed to qmlls via --build-dir.
-    if (buildPaths.isEmpty()) {
-        buildPaths += buildPathsForRootUrl(QByteArray());
-    }
+    // fallback: look in the user settings (.qmlls.ini files in the source directory)
+    if (!m_settings || !m_settings->search(url2Path(url), { QString(), verbose() }).isValid())
+        return {};
 
-    // look in the settings.
-    // This is the one that is passed via the .qmlls.ini file.
-    if (buildPaths.isEmpty() && m_settings) {
-        m_settings->search(path, { QString(), verbose() });
-        QString buildDir = QStringLiteral(u"buildDir");
-        if (m_settings->isSet(buildDir))
-            buildPaths += m_settings->value(buildDir).toString().split(QDir::listSeparator(),
-                                                                       Qt::SkipEmptyParts);
-    }
+    constexpr QLatin1String buildDir = "buildDir"_L1;
+    if (!m_settings->isSet(buildDir))
+        return {};
 
-    // heuristic to find build directory
-    if (buildPaths.isEmpty()) {
-        QDir d(path);
-        d.setNameFilters(QStringList({ u"build*"_s }));
-        const int maxDirDepth = 8;
-        int iDir = maxDirDepth;
-        QString dirName = d.dirName();
-        QDateTime lastModified;
-        while (d.cdUp() && --iDir > 0) {
-            for (const QFileInfo &fInfo : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-                if (fInfo.completeBaseName() == u"build"
-                    || fInfo.completeBaseName().startsWith(u"build-%1"_s.arg(dirName))) {
-                    if (iDir > 1)
-                        iDir = 1;
-                    if (!lastModified.isValid() || lastModified < fInfo.lastModified()) {
-                        buildPaths.clear();
-                        buildPaths.append(fInfo.absoluteFilePath());
-                    }
-                }
-            }
-        }
-    }
-    return withDependentBuildDirectories(std::move(buildPaths));
+    return withDependentBuildDirectories(m_settings->value(buildDir).toString().split(
+            QDir::listSeparator(), Qt::SkipEmptyParts));
 }
 
 void QQmlCodeModel::setDocumentationRootPath(const QString &path)
@@ -749,15 +689,10 @@ void QQmlCodeModel::setDocumentationRootPath(const QString &path)
     m_helpManager.setDocumentationRootPath(path);
 }
 
-void QQmlCodeModel::setBuildPathsForRootUrl(QByteArray url, const QStringList &paths)
+void QQmlCodeModel::setBuildPaths(const QStringList &paths)
 {
     QMutexLocker l(&m_mutex);
-    if (!url.isEmpty() && isNotSeparator(url.at(url.size() - 1)))
-        url.append('/');
-    if (paths.isEmpty())
-        m_buildPathsForRootUrl.remove(url);
-    else
-        m_buildPathsForRootUrl.insert(url, paths);
+    m_buildPaths = paths;
 }
 
 void QQmlCodeModel::openUpdate(const QByteArray &url, UpdatePolicy policy)

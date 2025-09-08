@@ -647,6 +647,25 @@ QStringList QQmlCodeModel::importPaths() const
     return {};
 }
 
+static QStringList withDependentBuildDirectories(QStringList &&buildPaths)
+{
+    // add dependent build directories
+    QStringList res;
+    std::reverse(buildPaths.begin(), buildPaths.end());
+    const int maxDeps = 4;
+    while (!buildPaths.isEmpty()) {
+        QString bPath = buildPaths.last();
+        buildPaths.removeLast();
+        res += bPath;
+        if (QFile::exists(bPath + u"/_deps") && bPath.split(u"/_deps/"_s).size() < maxDeps) {
+            QDir d(bPath + u"/_deps");
+            for (const QFileInfo &fInfo : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+                buildPaths.append(fInfo.absoluteFilePath());
+        }
+    }
+    return res;
+}
+
 QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
 {
     QList<QByteArray> roots;
@@ -716,21 +735,7 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
             }
         }
     }
-    // add dependent build directories
-    QStringList res;
-    std::reverse(buildPaths.begin(), buildPaths.end());
-    const int maxDeps = 4;
-    while (!buildPaths.isEmpty()) {
-        QString bPath = buildPaths.last();
-        buildPaths.removeLast();
-        res += bPath;
-        if (QFile::exists(bPath + u"/_deps") && bPath.split(u"/_deps/"_s).size() < maxDeps) {
-            QDir d(bPath + u"/_deps");
-            for (const QFileInfo &fInfo : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
-                buildPaths.append(fInfo.absoluteFilePath());
-        }
-    }
-    return res;
+    return withDependentBuildDirectories(std::move(buildPaths));
 }
 
 void QQmlCodeModel::setDocumentationRootPath(const QString &path)

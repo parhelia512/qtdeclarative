@@ -374,7 +374,7 @@ int qmllsMain(int argv, char *argc[])
         qInfo().nospace().noquote() << "Using build directories passed from environment variable "
                                        "\"QMLLS_BUILD_DIRS\": \""
                                     << dirsFromEnv.join(u"\", \""_s) << "\".";
-
+        qmlServer.codeModelManager()->setBuildPathsForRootUrl(QByteArray(), dirsFromEnv);
     } else {
         qInfo() << "Using the build directories found in the .qmlls.ini file. Your build folder "
                    "might not be found if no .qmlls.ini files are present in the root source "

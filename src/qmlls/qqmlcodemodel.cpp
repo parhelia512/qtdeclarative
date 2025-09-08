@@ -684,13 +684,6 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
         buildPaths += buildPathsForRootUrl(QByteArray());
     }
 
-    // look in the QMLLS_BUILD_DIRS environment variable
-    if (buildPaths.isEmpty()) {
-        QStringList envPaths = qEnvironmentVariable("QMLLS_BUILD_DIRS")
-                                       .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-        buildPaths += envPaths;
-    }
-
     // look in the settings.
     // This is the one that is passed via the .qmlls.ini file.
     if (buildPaths.isEmpty() && m_settings) {

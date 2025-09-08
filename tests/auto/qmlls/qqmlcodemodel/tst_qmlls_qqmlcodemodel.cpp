@@ -34,7 +34,6 @@ tst_qmlls_qqmlcodemodel::tst_qmlls_qqmlcodemodel() : QQmlDataTest(QT_QQMLCODEMOD
 void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl_data()
 {
     QTest::addColumn<QString>("pathFromIniFile");
-    QTest::addColumn<QString>("pathFromEnvironmentVariable");
     QTest::addColumn<QString>("pathFromCommandLine");
     QTest::addColumn<QString>("expectedPath");
 
@@ -42,26 +41,22 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl_data()
     const QString path2 = u"/Users/helloWorld/build-custom"_s;
     const QString path3 = u"/Users/helloWorld/build-12345678"_s;
 
-    QTest::addRow("justCommandLine") << QString() << QString() << path1 << path1;
-    QTest::addRow("all3") << path1 << path2 << path3 << path3;
+    QTest::addRow("justCommandLine") << QString() << path1 << path1;
+    QTest::addRow("all3") << path1 << path3 << path3;
 
-    QTest::addRow("commandLineOverridesEnvironmentVariable")
-            << QString() << path2 << path3 << path3;
-    QTest::addRow("commandLineOverridesIniFile") << path2 << QString() << path3 << path3;
+    QTest::addRow("commandLineOverridesEnvironmentVariable") << QString() << path3 << path3;
+    QTest::addRow("commandLineOverridesIniFile") << path2 << path3 << path3;
 
-    QTest::addRow("EnvironmentVariableOverridesIniFile") << path1 << path2 << QString() << path2;
-    QTest::addRow("iniFile") << path1 << QString() << QString() << path1;
-    QTest::addRow("environmentVariable") << QString() << path3 << QString() << path3;
+    QTest::addRow("iniFile") << path1 << QString() << path1;
 
     // bug where qmlls allocates memory in an endless loop because of a folder called "_deps"
-    QTest::addRow("endlessLoop") << QString() << QString() << testFile(u"buildfolderwithdeps"_s)
+    QTest::addRow("endlessLoop") << QString() << testFile(u"buildfolderwithdeps"_s)
                                  << testFile(u"buildfolderwithdeps"_s);
 }
 
 void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
 {
     QFETCH(QString, pathFromIniFile);
-    QFETCH(QString, pathFromEnvironmentVariable);
     QFETCH(QString, pathFromCommandLine);
     QFETCH(QString, expectedPath);
 
@@ -69,11 +64,6 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
     if (!pathFromIniFile.isEmpty())
         settings.addOption("buildDir", pathFromIniFile);
 
-    constexpr char environmentVariable[] = "QMLLS_BUILD_DIRS";
-    qunsetenv(environmentVariable);
-    if (!pathFromEnvironmentVariable.isEmpty()) {
-        qputenv(environmentVariable, pathFromEnvironmentVariable.toUtf8());
-    }
 
     TestCodeModelManager model(&settings);
     model.addRootUrls({ QUrl::fromLocalFile(u"./___thispathdoesnotexist123___/"_s).toEncoded() });

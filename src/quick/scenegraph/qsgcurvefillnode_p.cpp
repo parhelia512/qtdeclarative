@@ -115,7 +115,7 @@ namespace {
                 memcpy(buf->data() + offset + viewIndex * 64, m.constData(), 64);
             }
 
-            matrixScale = qSqrt(qAbs(state.determinant()));
+            matrixScale = qSqrt(qAbs(state.determinant())) * state.devicePixelRatio();
             memcpy(buf->data() + offset + newEffect->viewCount() * 64, &matrixScale, 4);
 
             changed = true;

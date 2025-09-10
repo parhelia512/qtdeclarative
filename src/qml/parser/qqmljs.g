@@ -1737,6 +1737,8 @@ Type: UiQualifiedId T_LT SimpleType T_GT;
 /.
     case $rule_number: {
         sym(1).Type = new (pool) AST::Type(sym(1).UiQualifiedId, sym(3).Type);
+        sym(1).Type->lAngleBracketToken = loc(2);
+        sym(1).Type->rAngleBracketToken = loc(4);
     } break;
 ./
 

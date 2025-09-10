@@ -1186,8 +1186,7 @@ void AOTCompiledContext::setInstructionPointer(int offset) const
 
 void AOTCompiledContext::setLocals(const AOTTrackedLocalsStorage *locals) const
 {
-    if (auto *frame = engine->handle()->currentStackFrame)
-        frame->locals = locals;
+    static_cast<QV4::MetaTypesStackFrame *>(engine->handle()->currentStackFrame)->setLocals(locals);
 }
 
 void AOTCompiledContext::setReturnValueUndefined() const

@@ -194,6 +194,9 @@ protected:
     bool visit(AST::VariableStatement *ast) override;
 
     bool visit(AST::PatternElement *ast) override;
+    bool visit(AST::TypeAnnotation *ast) override;
+    bool visit(AST::Type *ast) override;
+    bool visit(AST::UiQualifiedId *ast) override;
 
     bool visit(AST::EmptyStatement *ast) override;
 

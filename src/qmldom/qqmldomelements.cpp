@@ -1741,7 +1741,10 @@ void ScriptExpression::setCode(const QString &code)
 AST::Node *ScriptExpression::parse()
 {
     QQmlJS::Lexer lexer(m_engine.get());
-    lexer.setCode(m_codeStr, /*lineno = */ 1, /*qmlMode=*/false /* it's EcmaScript */);
+    // qmlMode enables QML specific things that plain JS doesn't have, for example type annotations.
+    const bool qmlMode = m_expressionType != ExpressionType::ESMCode
+            && m_expressionType != ExpressionType::JSCode;
+    lexer.setCode(m_codeStr, /*lineno = */ 1, qmlMode);
     QQmlJS::Parser parser(m_engine.get());
     const bool parserSucceeded = m_expressionType == ExpressionType::ESMCode ? parser.parseModule()
                                                                              : parser.parseScript();

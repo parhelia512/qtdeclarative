@@ -53,6 +53,10 @@ public:
                                 this, &QQmlInstantiatorPrivate::_q_modelUpdated);
         QObjectPrivate::connect(instanceModel, &QQmlInstanceModel::createdItem,
                                 this, &QQmlInstantiatorPrivate::_q_createdItem);
+        if (ownModel) {
+            QObject::connect(model->delegateModel(), &QQmlDelegateModel::modelChanged,
+                             q, &QQmlInstantiator::modelChanged);
+        }
 
         regenerate();
     }
@@ -67,6 +71,10 @@ public:
                                    this, &QQmlInstantiatorPrivate::_q_modelUpdated);
         QObjectPrivate::disconnect(instanceModel, &QQmlInstanceModel::createdItem,
                                    this, &QQmlInstantiatorPrivate::_q_createdItem);
+        if (ownModel) {
+            QObject::disconnect(model->delegateModel(), &QQmlDelegateModel::modelChanged,
+                                q, &QQmlInstantiator::modelChanged);
+        }
     }
 
     QPointer<QQmlInstanceModel> model;

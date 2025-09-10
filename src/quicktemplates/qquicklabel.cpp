@@ -51,6 +51,7 @@ QQuickLabelPrivate::QQuickLabelPrivate()
 {
 #if QT_CONFIG(accessibility)
     QAccessible::installActivationObserver(this);
+    setAccessible();
 #endif
 }
 

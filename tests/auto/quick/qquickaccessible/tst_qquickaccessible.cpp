@@ -27,6 +27,7 @@
 #include <QtQuickTestUtils/private/visualtestutils_p.h>
 
 #include <QQmlComponent>
+#include <QQmlApplicationEngine>
 
 using namespace Qt::StringLiterals;
 
@@ -72,6 +73,8 @@ private slots:
     void eventTest();
     void relations_data();
     void relations();
+    void controlsThatShouldSendObjectShow_data();
+    void controlsThatShouldSendObjectShow();
 };
 
 tst_QQuickAccessible::tst_QQuickAccessible()
@@ -931,6 +934,55 @@ void tst_QQuickAccessible::relations()
 
     const auto otherRelations = otherIface->relations();
     QVERIFY(!otherRelations.isEmpty());
+}
+
+void tst_QQuickAccessible::controlsThatShouldSendObjectShow_data()
+{
+    QTest::addColumn<QByteArray>("qmlSnippet");
+
+    QTest::newRow("BusyIndicator") << QByteArray("BusyIndicator { running: true }");
+    QTest::newRow("Button") << QByteArray("Button { text: 'Button' }");
+    QTest::newRow("ComboBox") << QByteArray("ComboBox { model: 3 }");
+    QTest::newRow("Dial") << QByteArray("Dial { value: 0.5 }");
+    // Label without a text is a bit unusual,
+    // but the background can be an image with meaningful info...
+    QTest::newRow("Label") << QByteArray("Label {\nbackground: Rectangle {\ncolor: 'red'\n}\nwidth: 50\nheight: 20}");
+    QTest::newRow("ProgressBar") << QByteArray("ProgressBar { value: 0.5 }");
+    QTest::newRow("RangeSlider") << QByteArray("RangeSlider { from: 1; to: 100; second.value: 50 }");
+    QTest::newRow("RoundButton") << QByteArray("RoundButton { text: 'Yes, please' }");
+    QTest::newRow("Slider") << QByteArray("Slider { value: 0.5 }");
+    QTest::newRow("Switch") << QByteArray("Switch { text: 'Switch me' }");
+    QTest::newRow("TextArea") << QByteArray("TextArea { width: 50}");
+    QTest::newRow("TextField") << QByteArray("TextField { width: 50}");
+
+    QTest::newRow("CheckBox") << QByteArray("CheckBox { text: 'checkBox' }");
+    QTest::newRow("DelayButton") << QByteArray("DelayButton { text: 'Are you really sure?' }");
+    QTest::newRow("RadioButton") << QByteArray("RadioButton { text: 'RadioButton' }");
+    QTest::newRow("TabButton") << QByteArray("TabButton { text: 'Home' }");
+}
+
+void tst_QQuickAccessible::controlsThatShouldSendObjectShow()
+{
+    QFETCH(QByteArray, qmlSnippet);
+
+    auto clearEvents = qScopeGuard([]{ QTestAccessibility::clearEvents(); });
+    QQmlApplicationEngine engine;
+    engine.loadData(QByteArray(R"(import QtQuick
+import QtQuick.Controls
+Window { visible: true
+)") + qmlSnippet + "}",
+                    QUrl());
+
+    QVERIFY(engine.rootObjects().count() > 0);
+    QQuickWindow *window = qobject_cast<QQuickWindow*>(engine.rootObjects().first());
+    QQuickItem *contentItem = window->contentItem();
+    QVERIFY(contentItem);
+    QQuickItem *rootItem = contentItem->childItems().first();
+    QVERIFY(rootItem);
+
+    QAccessibleEvent ev(rootItem, QAccessible::ObjectShow);
+    // Don't use QVERIFY_EVENT, because it gets very noisy when additional events are found
+    QVERIFY(QTestAccessibility::containsEvent(&ev));
 }
 
 QTEST_MAIN(tst_QQuickAccessible)

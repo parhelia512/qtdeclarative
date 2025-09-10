@@ -122,6 +122,9 @@ using namespace Qt::StringLiterals;
 
 QQuickTextAreaPrivate::QQuickTextAreaPrivate()
 {
+#if QT_CONFIG(accessibility)
+    setAccessible();
+#endif
 }
 
 QQuickTextAreaPrivate::~QQuickTextAreaPrivate()

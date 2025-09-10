@@ -88,6 +88,7 @@ QQuickTextFieldPrivate::QQuickTextFieldPrivate()
 {
 #if QT_CONFIG(accessibility)
     QAccessible::installActivationObserver(this);
+    setAccessible();
 #endif
 }
 

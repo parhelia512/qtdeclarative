@@ -453,7 +453,10 @@ QAccessible::State QAccessibleQuickItem::state() const
         state.invisible = true;
     if (!viewRect_.intersects(itemRect))
         state.offscreen = true;
-    if ((role() == QAccessible::CheckBox || role() == QAccessible::RadioButton) && object()->property("checked").toBool())
+    if ((role() == QAccessible::CheckBox
+         || role() == QAccessible::RadioButton
+         || role() == QAccessible::Switch)
+        && object()->property("checked").toBool())
         state.checked = true;
     if (item()->activeFocusOnTab() || isTextRole(role()))
         state.focusable = true;
@@ -529,6 +532,7 @@ QStringList QAccessibleQuickItem::actionNames() const
         break;
     case QAccessible::RadioButton:
     case QAccessible::CheckBox:
+    case QAccessible::Switch:
         actions << QAccessibleActionInterface::toggleAction()
                 << QAccessibleActionInterface::pressAction();
         break;
@@ -577,7 +581,8 @@ void QAccessibleQuickItem::doAction(const QString &actionName)
     //   Value-based roles : (via the value interface: value, minimumValue, maximumValue), stepSize
     switch (role()) {
     case QAccessible::RadioButton:
-    case QAccessible::CheckBox: {
+    case QAccessible::CheckBox:
+    case QAccessible::Switch: {
         QVariant checked = object()->property("checked");
         if (checked.isValid()) {
             if (actionName == QAccessibleActionInterface::toggleAction() ||

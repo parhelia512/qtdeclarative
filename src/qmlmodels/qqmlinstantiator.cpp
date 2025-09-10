@@ -14,7 +14,6 @@ QT_BEGIN_NAMESPACE
 
 QQmlInstantiatorPrivate::QQmlInstantiatorPrivate()
     : componentComplete(true)
-    , effectiveReset(false)
     , active(true)
     , async(false)
     , ownModel(false)
@@ -104,7 +103,7 @@ void QQmlInstantiatorPrivate::_q_modelUpdated(const QQmlChangeSet &changeSet, bo
 {
     Q_Q(QQmlInstantiator);
 
-    if (!componentComplete || effectiveReset || !active)
+    if (!componentComplete || !active)
         return;
 
     if (reset) {
@@ -159,19 +158,6 @@ void QQmlInstantiatorPrivate::_q_modelUpdated(const QQmlChangeSet &changeSet, bo
         q->countChanged();
 }
 
-void QQmlInstantiatorPrivate::makeModel()
-{
-    Q_Q(QQmlInstantiator);
-    QQmlDelegateModel* delegateModel = new QQmlDelegateModel(qmlContext(q), q);
-    model = delegateModel;
-    ownModel = true;
-    delegateModel->setDelegate(delegate);
-    delegateModel->setDelegateModelAccess(delegateModelAccess);
-    delegateModel->classBegin(); //Pretend it was made in QML
-    if (componentComplete)
-        delegateModel->componentComplete();
-}
-
 /*!
     \qmltype Instantiator
     \nativetype QQmlInstantiator
@@ -199,7 +185,8 @@ QQmlInstantiator::~QQmlInstantiator()
 {
     Q_D(QQmlInstantiator);
     d->clear();
-    d->disconnectModel(d->model);
+    QQmlDelegateModelPointer model(d->model);
+    d->disconnectModel(this, &model);
 }
 
 /*!
@@ -343,59 +330,59 @@ void QQmlInstantiator::setDelegate(QQmlComponent* c)
 QVariant QQmlInstantiator::model() const
 {
     Q_D(const QQmlInstantiator);
-    if (!d->ownModel)
-        return QVariant::fromValue(d->model);
 
-    return d->model
-            ? static_cast<QQmlDelegateModel *>(d->model)->model()
-            : QVariant(0);
+    if (d->ownModel)
+        return static_cast<QQmlDelegateModel *>(d->model.data())->model();
+    if (d->model)
+        return QVariant::fromValue(d->model);
+    return QVariant();
 }
 
-void QQmlInstantiator::setModel(const QVariant &v)
+void QQmlInstantiator::setModel(const QVariant &m)
 {
     Q_D(QQmlInstantiator);
-    QQmlInstanceModel *prevModel = d->model;
+    QVariant model = m;
+    if (model.userType() == qMetaTypeId<QJSValue>())
+        model = model.value<QJSValue>().toVariant();
 
+    QQmlDelegateModelPointer oldModel(d->model);
     if (d->ownModel) {
-        if (!prevModel) {
-            if (v == QVariant(0))
-                return;
-        } else if (static_cast<QQmlDelegateModel *>(prevModel)->model() == v) {
+        if (oldModel.delegateModel()->model() == model)
             return;
-        }
-    } else if (QVariant::fromValue(prevModel) == v) {
+    } else if (QVariant::fromValue(d->model) == model) {
         return;
     }
 
-    QObject *object = qvariant_cast<QObject*>(v);
-    QQmlInstanceModel *vim = nullptr;
-    if (object && (vim = qobject_cast<QQmlInstanceModel *>(object))) {
+    d->clear();
+
+    d->disconnectModel(this, &oldModel);
+    d->model = nullptr;
+
+    QObject *object = qvariant_cast<QObject *>(model);
+
+    QQmlDelegateModelPointer newModel(qobject_cast<QQmlInstanceModel *>(object));
+    if (newModel) {
         if (d->ownModel) {
-            delete d->model;
-            prevModel = nullptr;
+            delete oldModel.instanceModel();
             d->ownModel = false;
         }
-        d->model = vim;
-    } else if (v == QVariant(0) && !d->model) {
-        // Optimization: If the model is initially 0, we don't even create an instance model.
-        d->ownModel = true;
+        d->model = newModel.instanceModel();
+    } else if (d->ownModel) {
+        // d->ownModel can only be set if the old model is a QQmlDelegateModel.
+        Q_ASSERT(oldModel.delegateModel());
+        newModel = oldModel;
+        d->model = newModel.instanceModel();
+        newModel.delegateModel()->setModel(model);
     } else {
-        if (!d->ownModel || !d->model)
-            d->makeModel();
-
-        if (QQmlDelegateModel *dataModel = qobject_cast<QQmlDelegateModel *>(d->model)) {
-            d->effectiveReset = true;
-            dataModel->setModel(v);
-            d->effectiveReset = false;
-        }
+        QQmlDelegateModel *own = QQmlDelegateModel::createForView(this, d);
+        own->setDelegate(d->delegate);
+        own->setDelegateModelAccess(d->delegateModelAccess);
+        own->setModel(model);
+        newModel = own;
     }
 
-    if (d->model != prevModel) {
-        d->disconnectModel(prevModel);
-        d->connectModel(d->model);
-    }
+    d->connectModel(this, &newModel);
 
-    d->regenerate();
     emit modelChanged();
 }
 
@@ -473,24 +460,13 @@ void QQmlInstantiator::componentComplete()
 {
     Q_D(QQmlInstantiator);
     d->componentComplete = true;
-    if (!d->ownModel) {
-        if (!d->model)
-            setModel(QVariant(1));
-        else
-            d->regenerate();
-        return;
-    }
 
-    if (!d->model)
-        return; // It's 0: Nothing to do
-
-    // Disregard any modelUpdated() triggered by componentComplete() and rather regenerate manually.
-    // See also setModel().
-    d->effectiveReset = true;
-    static_cast<QQmlDelegateModel*>(d->model)->componentComplete();
-    d->effectiveReset = false;
-
-    d->regenerate();
+    if (d->model && d->ownModel)
+        static_cast<QQmlDelegateModel *>(d->model.data())->componentComplete();
+    else if (!d->ownModel && !d->model)
+        setModel(QVariant(1));
+    else
+        d->regenerate();
 }
 
 QT_END_NAMESPACE

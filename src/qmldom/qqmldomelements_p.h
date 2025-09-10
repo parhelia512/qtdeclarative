@@ -486,12 +486,6 @@ protected:
     }
 
 private:
-    enum class ParseMode {
-        QML,
-        JS,
-        ESM, // ECMAScript module
-    };
-
     void setCode(const QString &code);
     [[nodiscard]] AST::Node *parse();
 

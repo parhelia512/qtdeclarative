@@ -5,6 +5,7 @@
 #include <QQmlApplicationEngine>
 #include <QCommandLineParser>
 #include <QFile>
+#include <QFileInfo>
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QtQuickVectorImageGenerator/private/qquickitemgenerator_p.h>
@@ -94,7 +95,8 @@ int main(int argc, char *argv[])
 
     const QString inFileName = args.at(0);
 
-    QString commentString = QLatin1String("Generated from SVG file %1").arg(inFileName);
+    QString commentString = QLatin1String("Generated from SVG file %1")
+                                .arg(QFileInfo(inFileName).fileName());
 
     const auto outFileName = args.size() > 1 ? args.at(1) : QString{};
     const auto typeName = parser.value(typeNameOption);

@@ -870,6 +870,7 @@ bool ScriptFormatter::visit(FunctionExpression *ast)
     accept(ast->formals);
     lw.decreaseIndent(1, baseIndent);
     outWithComments(ast->rparenToken, ast, removeParentheses ? OnlyComments : TokenAndComment);
+    accept(ast->typeAnnotation);
     ensureSpaceIfNoComment();
     if (ast->isArrowFunction) {
         out("=>");

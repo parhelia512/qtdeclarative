@@ -383,7 +383,7 @@ ExecutionEngine::ExecutionEngine(QJSEngine *jsEngine)
                 /* writable */ true, /* executable */ false, /* includesGuardPages */ true);
     jsStackBase = (Value *)jsStack->base();
 #ifdef V4_USE_VALGRIND
-    VALGRIND_MAKE_MEM_UNDEFINED(jsStackBase, m_maxJSStackSize + 256*1024);
+    VALGRIND_MAKE_MEM_UNDEFINED(jsStackBase, s_maxJSStackSize + 256*1024);
 #endif
 
     jsStackTop = jsStackBase;

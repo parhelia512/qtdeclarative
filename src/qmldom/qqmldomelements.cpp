@@ -1083,7 +1083,6 @@ void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTa
     }
     ow.ensureSpace();
     ow.writeRegion(LeftBraceRegion);
-    int baseIndent = ow.increaseIndent();
 
     // *always* put id first
     writeOutId(self, ow);
@@ -1100,7 +1099,6 @@ void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTa
     } else {
         writeOutSortedAttributes(self, ow, component);
     }
-    ow.decreaseIndent(1, baseIndent);
     ow.writeRegion(RightBraceRegion);
 }
 
@@ -1412,11 +1410,9 @@ void EnumDecl::writeOut(const DomItem &self, OutWriter &ow) const
             .writeRegion(IdentifierRegion, name())
             .ensureSpace()
             .writeRegion(LeftBraceRegion);
-    int iLevel = ow.increaseIndent(1);
     const auto values = self.field(Fields::values).values();
     for (const auto &value : values)
         value.writeOut(ow);
-    ow.decreaseIndent(1, iLevel);
     ow.ensureNewline().writeRegion(RightBraceRegion);
 }
 
@@ -1871,12 +1867,10 @@ void MethodInfo::writeOutReturnType(OutWriter &ow) const
 void MethodInfo::writeOutBody(const DomItem &self, OutWriter &ow) const
 {
     ow.ensureSpace().writeRegion(LeftBraceRegion);
-    int baseIndent = ow.increaseIndent();
     if (DomItem b = self.field(Fields::body)) {
         ow.ensureNewline();
         b.writeOut(ow);
     }
-    ow.decreaseIndent(1, baseIndent);
     ow.ensureNewline().writeRegion(RightBraceRegion);
 }
 

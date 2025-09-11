@@ -2761,7 +2761,6 @@ DomItem List::index(const DomItem &self, index_type index) const
 void List::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
 {
     ow.writeRegion(LeftBracketRegion);
-    int baseIndent = ow.increaseIndent(1);
     bool first = true;
     iterateDirectSubpaths(
             self,
@@ -2778,7 +2777,6 @@ void List::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
             });
     if (!compact && !first)
         ow.newline();
-    ow.decreaseIndent(1, baseIndent);
     ow.writeRegion(RightBracketRegion);
 }
 
@@ -3287,7 +3285,6 @@ bool ListPBase::iterateDirectSubpaths(const DomItem &self, DirectVisitor v) cons
 void ListPBase::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
 {
     ow.writeRegion(LeftBracketRegion);
-    int baseIndent = ow.increaseIndent(1);
     bool first = true;
     index_type len = index_type(m_pList.size());
     for (index_type i = 0; i < len; ++i) {
@@ -3302,7 +3299,6 @@ void ListPBase::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
     }
     if (!compact && !first)
         ow.newline();
-    ow.decreaseIndent(1, baseIndent);
     ow.writeRegion(RightBracketRegion);
 }
 

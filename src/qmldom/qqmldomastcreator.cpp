@@ -993,7 +993,7 @@ bool QQmlDomAstCreator::visit(AST::UiObjectDefinition *el)
     }
     pushEl(sPathFromOwner, *sPtr, el);
 
-    if (m_enableScriptExpressions && el->initializer) {
+    if (el->initializer) {
         FileLocations::addRegion(nodeStack.last().fileLocations, LeftBraceRegion,
                                  el->initializer->lbraceToken);
         FileLocations::addRegion(nodeStack.last().fileLocations, RightBraceRegion,

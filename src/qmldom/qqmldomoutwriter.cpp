@@ -63,6 +63,32 @@ void OutWriter::writePostComment(FileLocationRegion region)
     }
 }
 
+static bool regionIncreasesIndentation(FileLocationRegion region)
+{
+    switch (region) {
+    case LeftBraceRegion:
+        return true;
+    case LeftBracketRegion:
+        return true;
+    default:
+        return false;
+    }
+    Q_UNREACHABLE_RETURN(false);
+}
+
+static bool regionDecreasesIndentation(FileLocationRegion region)
+{
+    switch (region) {
+    case RightBraceRegion:
+        return true;
+    case RightBracketRegion:
+        return true;
+    default:
+        return false;
+    }
+    Q_UNREACHABLE_RETURN(false);
+}
+
 /*!
 \internal
 Helper method for writeRegion(FileLocationRegion region) that allows to use
@@ -242,7 +268,11 @@ OutWriter &OutWriter::writeRegion(FileLocationRegion region)
 OutWriter &OutWriter::writeRegion(FileLocationRegion region, QStringView toWrite)
 {
     writePreComment(region);
+    if (regionDecreasesIndentation(region))
+        decreaseIndent(1);
     lineWriter.write(toWrite);
+    if (regionIncreasesIndentation(region))
+        increaseIndent(1);
     writePostComment(region);
     return *this;
 }

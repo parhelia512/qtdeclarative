@@ -4595,21 +4595,25 @@ private slots:
         }
         {
             // Goodbye World! comment
-            const auto postCommentPath = Path::fromString(u"[\"MainRegion\"].postComments[0]");
-            const auto postCommentFLocPtr = FileLocations::find(commentsForItem, postCommentPath);
+            const auto preCommentPath =
+                    Path::fromString(u".components[\"\"][0].objects[0].comments.regionComments["
+                                     u"\"RightBraceRegion\"].preComments[0]");
+            const auto preCommentFLocPtr = FileLocations::find(fileLocations, preCommentPath);
 
-            QVERIFY(postCommentFLocPtr);
-            QCOMPARE(postCommentFLocPtr->info().fullRegion.startLine, 6);
-            QCOMPARE(postCommentFLocPtr->info().fullRegion.startColumn, 5);
+            QVERIFY(preCommentFLocPtr);
+            QCOMPARE(preCommentFLocPtr->info().fullRegion.startLine, 6);
+            QCOMPARE(preCommentFLocPtr->info().fullRegion.startColumn, 5);
         }
         {
             // multi line comment
-            const auto postCommentPath = Path::fromString(u"[\"MainRegion\"].postComments[1]");
-            const auto postCommentFLocPtr = FileLocations::find(commentsForItem, postCommentPath);
+            const auto preCommentPath =
+                    Path::fromString(u".components[\"\"][0].objects[0].comments.regionComments["
+                                     u"\"RightBraceRegion\"].preComments[1]");
+            const auto preCommentFLocPtr = FileLocations::find(fileLocations, preCommentPath);
 
-            QVERIFY(postCommentFLocPtr);
-            QCOMPARE(postCommentFLocPtr->info().fullRegion.startLine, 7);
-            QCOMPARE(postCommentFLocPtr->info().fullRegion.startColumn, 5);
+            QVERIFY(preCommentFLocPtr);
+            QCOMPARE(preCommentFLocPtr->info().fullRegion.startLine, 7);
+            QCOMPARE(preCommentFLocPtr->info().fullRegion.startColumn, 5);
         }
     }
 

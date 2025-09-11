@@ -558,10 +558,6 @@ const QSet<int> AstRangesVisitor::kindsToSkip()
 bool AstRangesVisitor::shouldSkipRegion(const DomItem &item, FileLocationRegion region)
 {
     switch (item.internalKind()) {
-    case DomType::QmlObject: {
-        return (region == FileLocationRegion::RightBraceRegion
-                || region == FileLocationRegion::LeftBraceRegion);
-    }
     case DomType::Import:
     case DomType::ImportScope:
         return region == FileLocationRegion::IdentifierRegion;

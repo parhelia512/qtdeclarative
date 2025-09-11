@@ -103,7 +103,7 @@ void tst_accessibility::a11y_data()
     QTest::newRow("Label") << "label" << QAccessible::StaticText << "Label";
     QTest::newRow("Menu") << "menu" << QAccessible::PopupMenu << "";
     QTest::newRow("MenuItem") << "menuitem" << QAccessible::MenuItem << "MenuItem";
-    QTest::newRow("Page") << "page" << QAccessible::PageTab << "Page";
+    QTest::newRow("Page") << "page" << QAccessible::Pane << "Page";
     QTest::newRow("PageIndicator") << "pageindicator" << QAccessible::Indicator << "";
     QTest::newRow("Pane") << "pane" << QAccessible::Pane << "";
     QTest::newRow("Popup") << "popup" << QAccessible::Dialog << "";
@@ -188,7 +188,7 @@ void tst_accessibility::override_data()
     QTest::newRow("Label") << QAccessible::StaticText;
     QTest::newRow("Menu") << QAccessible::PopupMenu;
     QTest::newRow("MenuItem") << QAccessible::MenuItem;
-    QTest::newRow("Page") << QAccessible::PageTab;
+    QTest::newRow("Page") << QAccessible::Pane;
     QTest::newRow("PageIndicator") << QAccessible::Indicator;
     QTest::newRow("Pane") << QAccessible::Pane;
     QTest::newRow("Popup") << QAccessible::Dialog;

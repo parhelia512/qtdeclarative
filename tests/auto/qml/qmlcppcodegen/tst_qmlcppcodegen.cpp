@@ -1104,7 +1104,8 @@ void tst_QmlCppCodegen::callObjectLookupOnNull()
                 qPrintable(urlString + u":5:5: TypeError: Cannot call method 'getName' of null"));
     o->setProperty("person", QVariant::fromValue<Person *>(nullptr));
 
-    QCOMPARE(o->objectName(), QString());
+    // Since the binding threw an exception, we expect the value _not_ to get updated.
+    QCOMPARE(o->objectName(), u"horst"_s);
 }
 
 void tst_QmlCppCodegen::callWithSpread()

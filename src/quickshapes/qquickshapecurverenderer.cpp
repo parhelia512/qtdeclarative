@@ -28,8 +28,8 @@ namespace {
 
 /*! \internal
     Choice of vertex shader to use for the wireframe node:
-    \li \c SimpleWFT is for when vertices are already in logical coordinates
-    \li \c StrokeWFT chooses the stroke shader, which moves vertices according to the stroke width uniform
+    * \c SimpleWFT is for when vertices are already in logical coordinates
+    * \c StrokeWFT chooses the stroke shader, which moves vertices according to the stroke width uniform
 */
 enum WireFrameType { SimpleWFT, StrokeWFT };
 

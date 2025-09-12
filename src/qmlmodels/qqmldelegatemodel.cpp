@@ -2248,7 +2248,6 @@ QQmlDelegateModelPrivate::insert(Compositor::insert_iterator &before, const QV4:
 QQmlDelegateModelItemMetaType::QQmlDelegateModelItemMetaType(
         QV4::ExecutionEngine *engine, QQmlDelegateModel *model, const QStringList &groupNames)
     : model(model)
-    , groupCount(groupNames.size() + 1)
     , v4Engine(engine)
     , groupNames(groupNames)
 {
@@ -2264,7 +2263,7 @@ void QQmlDelegateModelItemMetaType::initializeAttachedMetaObject()
     builder.setSuperClass(&QQmlDelegateModelAttached::staticMetaObject);
 
     int notifierId = 0;
-    for (int i = 0; i < groupNames.size(); ++i, ++notifierId) {
+    for (qsizetype i = 0, end = groupCount(); i < end; ++i, ++notifierId) {
         QString propertyName = QLatin1String("in") + groupNames.at(i);
         propertyName.replace(2, 1, propertyName.at(2).toUpper());
         builder.addSignal("__" + propertyName.toUtf8() + "Changed()");
@@ -2272,7 +2271,7 @@ void QQmlDelegateModelItemMetaType::initializeAttachedMetaObject()
                 propertyName.toUtf8(), "bool", notifierId);
         propertyBuilder.setWritable(true);
     }
-    for (int i = 0; i < groupNames.size(); ++i, ++notifierId) {
+    for (qsizetype i = 0, end = groupCount(); i < end; ++i, ++notifierId) {
         const QString propertyName = groupNames.at(i) + QLatin1String("Index");
         builder.addSignal("__" + propertyName.toUtf8() + "Changed()");
         QMetaPropertyBuilder propertyBuilder = builder.addProperty(
@@ -2320,7 +2319,7 @@ void QQmlDelegateModelItemMetaType::initializePrototype()
     p->setSetter(nullptr);
     proto->insertMember(s, p, QV4::Attr_Accessor|QV4::Attr_NotConfigurable|QV4::Attr_NotEnumerable);
 
-    for (int i = 2; i < groupNames.size(); ++i) {
+    for (qsizetype i = 2, end = groupCount(); i < end; ++i) {
         QString propertyName = QLatin1String("in") + groupNames.at(i);
         propertyName.replace(2, 1, propertyName.at(2).toUpper());
         s = v4Engine->newString(propertyName);
@@ -2328,7 +2327,7 @@ void QQmlDelegateModelItemMetaType::initializePrototype()
         p->setSetter((f = QV4::DelegateModelGroupFunction::create(engine, i + 1, QQmlDelegateModelItem::set_member)));
         proto->insertMember(s, p, QV4::Attr_Accessor|QV4::Attr_NotConfigurable|QV4::Attr_NotEnumerable);
     }
-    for (int i = 2; i < groupNames.size(); ++i) {
+    for (qsizetype i = 2, end = groupCount(); i < end; ++i) {
         const QString propertyName = groupNames.at(i) + QLatin1String("Index");
         s = v4Engine->newString(propertyName);
         p->setGetter((f = QV4::DelegateModelGroupFunction::create(engine, i + 1, QQmlDelegateModelItem::get_index)));
@@ -2398,9 +2397,11 @@ QV4::ReturnedValue QQmlDelegateModelItem::get_groups(const QV4::FunctionObject *
         return scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object"));
 
     QStringList groups;
-    for (int i = 1; i < o->d()->item->metaType->groupCount; ++i) {
-        if (o->d()->item->groups & (1 << i))
-            groups.append(o->d()->item->metaType->groupNames.at(i - 1));
+    QQmlDelegateModelItem *item = o->d()->item;
+    const auto &metaType = item->metaType;
+    for (qsizetype i = 0, end = metaType->groupCount(); i < end; ++i) {
+        if (item->groups & (1 << (i + 1)))
+            groups.append(metaType->groupNames.at(i));
     }
 
     return scope.engine->fromVariant(groups);
@@ -2621,7 +2622,8 @@ QQmlDelegateModelAttachedMetaObject::QQmlDelegateModelAttachedMetaObject(
     : metaType(metaType)
     , metaObject(metaObject)
     , memberPropertyOffset(QQmlDelegateModelAttached::staticMetaObject.propertyCount())
-    , indexPropertyOffset(QQmlDelegateModelAttached::staticMetaObject.propertyCount() + metaType->groupNames.size())
+    , indexPropertyOffset(QQmlDelegateModelAttached::staticMetaObject.propertyCount()
+                          + metaType->groupCount())
 {
     // Don't reference count the meta-type here as that would create a circular reference.
     // Instead we rely the fact that the meta-type's reference count can't reach 0 without first
@@ -2665,7 +2667,7 @@ int QQmlDelegateModelAttachedMetaObject::metaCall(QObject *object, QMetaObject::
                         group, attached->m_currentIndex[group]);
                 model->removeGroups(it, 1, group, groupFlag);
             } else if (!member && *static_cast<bool *>(arguments[0])) {
-                for (int i = 1; i < metaType->groupCount; ++i) {
+                for (qsizetype i = 1, end = metaType->groupCount(); i <= end; ++i) {
                     if (attached->m_cacheItem->groups & (1 << i)) {
                         Compositor::iterator it = model->m_compositor.find(
                                 Compositor::Group(i), attached->m_currentIndex[i]);
@@ -2708,14 +2710,15 @@ QQmlDelegateModelAttached::~QQmlDelegateModelAttached() = default;
 
 void QQmlDelegateModelAttached::resetCurrentIndex()
 {
+    const auto &metaType = m_cacheItem->metaType;
     if (QQDMIncubationTask *incubationTask = m_cacheItem->incubationTask) {
-        for (int i = 1; i < qMin<int>(m_cacheItem->metaType->groupCount, Compositor::MaximumGroupCount); ++i)
+        for (qsizetype i = 1, end = metaType->groupCount(); i <= end; ++i)
             m_currentIndex[i] = incubationTask->index[i];
     } else {
         QQmlDelegateModelPrivate * const model = QQmlDelegateModelPrivate::get(m_cacheItem->metaType->model);
         Compositor::iterator it = model->m_compositor.find(
                 Compositor::Cache, model->m_cache.indexOf(m_cacheItem));
-        for (int i = 1; i < m_cacheItem->metaType->groupCount; ++i)
+        for (qsizetype i = 1, end = metaType->groupCount(); i <= end; ++i)
             m_currentIndex[i] = it.index[i];
     }
 }
@@ -2805,9 +2808,10 @@ QStringList QQmlDelegateModelAttached::groups() const
 
     if (!m_cacheItem)
         return groups;
-    for (int i = 1; i < m_cacheItem->metaType->groupCount; ++i) {
-        if (m_cacheItem->groups & (1 << i))
-            groups.append(m_cacheItem->metaType->groupNames.at(i - 1));
+    const auto &metaType = m_cacheItem->metaType;
+    for (qsizetype i = 0, end = metaType->groupCount(); i < end; ++i) {
+        if (m_cacheItem->groups & (1 << (i + 1)))
+            groups.append(metaType->groupNames.at(i));
     }
     return groups;
 }
@@ -2891,8 +2895,8 @@ void QQmlDelegateModelAttached::emitChanges()
     m_previousGroups = m_cacheItem->groups;
 
     int indexChanges = 0;
-    const int groupCount = m_cacheItem->metaType->groupCount;
-    for (int i = 1; i < groupCount; ++i) {
+    const qsizetype groupCount = m_cacheItem->metaType->groupCount();
+    for (qsizetype i = 1; i <= groupCount; ++i) {
         if (m_previousIndex[i] != m_currentIndex[i]) {
             m_previousIndex[i] = m_currentIndex[i];
             indexChanges |= (1 << i);
@@ -2904,11 +2908,11 @@ void QQmlDelegateModelAttached::emitChanges()
 
     int notifierId = 0;
     const QMetaObject *meta = metaObject();
-    for (int i = 1; i < groupCount; ++i, ++notifierId) {
+    for (qsizetype i = 1; i <= groupCount; ++i, ++notifierId) {
         if (groupChanges & (1 << i))
             QMetaObject::activate(this, meta, notifierId, nullptr);
     }
-    for (int i = 1; i < groupCount; ++i, ++notifierId) {
+    for (qsizetype i = 1; i <= groupCount; ++i, ++notifierId) {
         if (indexChanges & (1 << i))
             QMetaObject::activate(this, meta, notifierId, nullptr);
     }

@@ -52,7 +52,7 @@ public:
     int parseGroups(const QV4::Value &groupNames) const;
 
     QPointer<QQmlDelegateModel> model;
-    const int groupCount;
+    qsizetype groupCount() const { return groupNames.size(); }
     QV4::ExecutionEngine * const v4Engine;
     QQmlRefPointer<QQmlDelegateModelAttachedMetaObject> attachedMetaObject;
     const QStringList groupNames;

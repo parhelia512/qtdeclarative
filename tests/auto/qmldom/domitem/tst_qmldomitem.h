@@ -3044,6 +3044,36 @@ private slots:
                 << folder + u"postDecrement.qml"_s << DomType::ScriptPostExpression;
     }
 
+    void loadFromMemory()
+    {
+        auto environment = DomEnvironment::create({}, DomEnvironment::Option::Default, Extended);
+        // make sure that files loaded from Memory that don't exist on disk are correctly
+        // lazy-loaded
+        FileToLoad fileToLoad = FileToLoad::fromMemory(environment, baseDir + "/doesNotExist.qml",
+                                                       "import QtQuick\nItem {}");
+
+        DomItem result;
+        environment->loadFile(
+                    fileToLoad, [&result](Path, DomItem, DomItem item) { result = item.fileObject(); });
+        environment->loadPendingDependencies();
+
+        QVERIFY(result);
+        QVERIFY(result.field(Fields::components)
+                .key(QString())
+                .index(0)
+                .field(Fields::objects)
+                .index(0));
+        QCOMPARE(result.field(Fields::components)
+                 .key(QString())
+                 .index(0)
+                 .field(Fields::objects)
+                 .index(0)
+                 .field(Fields::name)
+                 .value()
+                 .toString(),
+                 "Item");
+    }
+
     void unaryExpression()
     {
         using namespace Qt::StringLiterals;

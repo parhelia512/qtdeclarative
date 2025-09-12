@@ -364,7 +364,9 @@ FileToLoad FileToLoad::fromMemory(const std::weak_ptr<DomEnvironment> &environme
     const QString canonicalPath = QFileInfo(path).canonicalFilePath();
     return {
         environment,
-        canonicalPath,
+        // we can't lazy load files from an empty path, but non-existent paths where canonicalPath
+        // is empty are OK
+        canonicalPath.isEmpty() ? path : canonicalPath,
         path,
         InMemoryContents{ code },
     };

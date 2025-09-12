@@ -649,13 +649,14 @@ static QStringList withDependentBuildDirectories(QStringList &&buildPaths)
     std::reverse(buildPaths.begin(), buildPaths.end());
     const int maxDeps = 4;
     while (!buildPaths.isEmpty()) {
-        QString bPath = buildPaths.last();
-        buildPaths.removeLast();
-        res += bPath;
-        if (QFile::exists(bPath + u"/_deps") && bPath.split(u"/_deps/"_s).size() < maxDeps) {
-            QDir d(bPath + u"/_deps");
-            for (const QFileInfo &fInfo : d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
-                buildPaths.append(fInfo.absoluteFilePath());
+        res += buildPaths.takeLast();
+        const QString &bPath = res.constLast();
+        const QString bPathExtended = bPath + u"/_deps";
+        if (QFile::exists(bPathExtended) && bPath.count(u"/_deps/"_s) < maxDeps) {
+            for (const auto &fileInfo :
+                 QDirListing{ bPathExtended, QDirListing::IteratorFlag::DirsOnly }) {
+                buildPaths.append(fileInfo.absoluteFilePath());
+            }
         }
     }
     return res;

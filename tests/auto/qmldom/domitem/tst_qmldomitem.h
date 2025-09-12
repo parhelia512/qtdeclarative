@@ -2770,6 +2770,33 @@ private:
         return dom.rootQmlObject(GoTo::MostLikely);
     }
 
+    DomItem parseSnippet(const QString &snippet, const QStringList &qmltypeDirs, DomCreationOption option)
+    {
+        auto envPtr = DomEnvironment::create(
+                qmltypeDirs,
+                QQmlJS::Dom::DomEnvironment::Option::SingleThreaded
+                        | QQmlJS::Dom::DomEnvironment::Option::NoDependencies,
+                option);
+
+        DomItem fileItem;
+
+        constexpr QLatin1String snippetTemplate = "import QtQuick\n\n%1"_L1;
+
+        envPtr->loadFile(
+                    FileToLoad::fromMemory(envPtr, baseDir + "/test1.qml", snippetTemplate.arg(snippet)),
+                    [&fileItem](Path, const DomItem &, const DomItem &newIt) {
+            fileItem = newIt;
+        });
+        envPtr->loadPendingDependencies();
+        return fileItem;
+    }
+
+    DomItem rootQmlObjectFromSnippet(const QString &snippet, const QStringList &qmltypeDirs, DomCreationOption option)
+    {
+        auto dom = parseSnippet(snippet, qmltypeDirs, option);
+        return dom.rootQmlObject(GoTo::MostLikely);
+    }
+
     void fieldMemberExpressionHelper(const DomItem &actual, const QStringList &expected)
     {
         Q_ASSERT(!expected.isEmpty());
@@ -3032,6 +3059,34 @@ private slots:
                          .value()
                          .toString(),
                  u"a"_s);
+    }
+
+    void listBindings_data()
+    {
+        QTest::addColumn<DomCreationOption>("option");
+
+        QTest::addRow("default") << Default;
+        QTest::addRow("extended") << Extended;
+    }
+
+    void listBindings()
+    {
+        QFETCH(DomCreationOption, option);
+
+        using namespace Qt::StringLiterals;
+        // this list of strings require custom list iteration because PatternElementList::accept0 is
+        // so weird.
+        const DomItem rootQmlObject = rootQmlObjectFromSnippet(uR"(Item {
+    property var myList
+    myList: ["Hello", "World"]
+})"_s,
+                                                               qmltypeDirs, option);
+
+        const DomItem array = rootQmlObject.path(".bindings[\"myList\"][0].value.scriptElement.elements");
+        QVERIFY(array);
+        QCOMPARE(array.size(), 2);
+        QCOMPARE(array.index(0).field(Fields::initializer).value().toString(), "Hello"_L1);
+        QCOMPARE(array.index(1).field(Fields::initializer).value().toString(), "World"_L1);
     }
 
     void objectBindings()
@@ -4574,6 +4629,43 @@ private slots:
         const MethodInfo *methodInfo = method.as<MethodInfo>();
 
         QCOMPARE(methodInfo->signature(method), expectedSignature);
+    }
+
+    void dump_data()
+    {
+        QTest::addColumn<QLatin1String>("name");
+        QTest::addColumn<QString>("expectedJSON");
+
+        QTest::addRow("null") << "nullP"_L1
+                              << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":null\n}"_s;
+        QTest::addRow("int") << "intP"_L1
+                             << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":123\n}"_s;
+        QTest::addRow("double") << "realP"_L1
+                                << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":123.456\n}"_s;
+        QTest::addRow("string") << "stringP"_L1
+                                << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":\"Hello\"\n}"_s;
+        QTest::addRow("bool1") << "bool1P"_L1
+                               << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":true\n}"_s;
+        QTest::addRow("bool2") << "bool2P"_L1
+                               << u"{ \"~type~\":\"ScriptLiteral\",\n  \"value\":false\n}"_s;
+    }
+
+    void dump()
+    {
+        QFETCH(QLatin1String, name);
+        QFETCH(QString, expectedJSON);
+
+        const QString testFile = baseDir + u"/dump.qml"_s;
+        const DomItem rootQmlObject = rootQmlObjectFromFile(testFile, qmltypeDirs);
+
+        const DomItem value = rootQmlObject.field(Fields::bindings)
+                                      .key(name)[0]
+                                      .field(Fields::value)
+                                      .field(Fields::scriptElement);
+
+        QString json;
+        value.dump([&json](QStringView data) { json += data; });
+        QCOMPARE(json, expectedJSON);
     }
 
     void commentsFileLocations()

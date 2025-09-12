@@ -2591,22 +2591,7 @@ void DomBase::dump(
         break;
     case DomKind::Value:
     {
-        QJsonValue v = value().toJsonValue();
-        if (v.isString())
-            sinkEscaped(sink, v.toString());
-        else if (v.isBool())
-            if (v.toBool())
-                sink(u"true");
-            else
-                sink(u"false");
-        else if (v.isDouble())
-            if (value().isInteger())
-                sink(QString::number(value().toInteger()));
-            else
-                sink(QString::number(v.toDouble()));
-        else {
-            sink(QString::fromUtf8(QJsonDocument::fromVariant(v.toVariant()).toJson()));
-        }
+        sink(QString::fromUtf8(value().toJsonValue().toJson()));
         break;
     }
     case DomKind::Empty:

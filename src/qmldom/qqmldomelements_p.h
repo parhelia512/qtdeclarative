@@ -561,7 +561,7 @@ public:
     void setBindingIdentifiers(const ScriptElementVariant &bindingIdentifiers) { m_bindingIdentifiers = bindingIdentifiers; }
 
 private:
-    friend class QQmlDomAstCreator;
+    friend class QQmlDomAstCreatorBase;
     BindingType m_bindingType;
     QString m_name;
     std::unique_ptr<BindingValue> m_value;
@@ -935,7 +935,7 @@ public:
     void setNameIdentifiers(const ScriptElementVariant &name) { m_nameIdentifiers = name; }
 
 private:
-    friend class QQmlDomAstCreator;
+    friend class QQmlDomAstCreatorBase;
     QString m_idStr;
     QString m_name;
     QList<Path> m_prototypePaths;
@@ -1025,7 +1025,7 @@ public:
     void setAttachedTypePath(const Path &p) { m_attachedTypePath = p; }
 
 private:
-    friend class QQmlDomAstCreator;
+    friend class QQmlDomAstCreatorBase;
     QString m_name;
     QMultiMap<QString, EnumDecl> m_enumerations;
     QList<QmlObject> m_objects;
@@ -1132,7 +1132,7 @@ public:
     void setNameIdentifiers(const ScriptElementVariant &name) { m_nameIdentifiers = name; }
 
 private:
-    friend class QQmlDomAstCreator;
+    friend class QQmlDomAstCreatorBase;
     Path m_nextComponentPath;
     QMultiMap<QString, Id> m_ids;
     QQmlJSScope::ConstPtr m_semanticScope;

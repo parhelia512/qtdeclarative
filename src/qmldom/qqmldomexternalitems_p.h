@@ -454,7 +454,7 @@ private:
         std::shared_ptr<QQmlJSTypeResolver> m_typeResolver;
         QQmlJSTypeResolverDependencies m_typeResolverDependencies;
     };
-    friend class QQmlDomAstCreator;
+    friend class QQmlDomAstCreatorBase;
     AST::UiProgram *m_ast; // avoid? would make moving away from it easier
     std::shared_ptr<Engine> m_engine;
     QQmlJSScope::ConstPtr m_handleForPopulation;

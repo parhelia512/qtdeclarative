@@ -2274,7 +2274,9 @@ void DomEnvironment::populateFromQmlFile(MutableDomItem &&qmlFile)
                     typeResolver, { analysis.m_importer, analysis.m_mapper, std::move(logger) });
         } else {
             auto v = std::make_unique<QQmlDomAstCreator>(qmlFile);
-            v->enableScriptExpressions(false);
+            // we need file locations of script expressions in qmlformat for the "// qmlformat off"
+            // functionality
+            v->enableScriptExpressions(m_domCreationOption == DomCreationOption::Default);
             setupFile(v.get());
         }
     } else {

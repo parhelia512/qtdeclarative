@@ -48,6 +48,10 @@ The following options only affect the tool behavior:
     \li Writes defaults settings to .qmlformat.ini and exits
         (Warning: This will overwrite any existing settings and comments!)
 \row
+    \li \c{--output-options}
+    \li
+    \li Output all available options, their default value and a hint of values or types
+\row
     \li \c{--ignore-settings}
     \li Ignores all settings files and only takes command line options into consideration
 \row

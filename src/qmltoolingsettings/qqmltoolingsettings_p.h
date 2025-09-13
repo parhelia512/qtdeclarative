@@ -82,7 +82,7 @@ public:
 
     bool reportConfigForFiles(const QStringList &files);
 
-private:
+protected:
     QString m_currentSettingsPath;
     QVariantHash m_values;
     Searcher m_searcher;

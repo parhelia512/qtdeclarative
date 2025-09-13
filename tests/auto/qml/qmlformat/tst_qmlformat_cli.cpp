@@ -4,6 +4,9 @@
 #include <QtTest/QTest>
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLibraryInfo>
 #include <QProcess>
 #include <QString>
@@ -65,6 +68,8 @@ private Q_SLOTS:
     void commandLineOptions();
 
     void writeDefaults();
+
+    void outputOptions();
 
     void settingsKeysStayStable();
 
@@ -425,6 +430,102 @@ void TestQmlformatCli::writeDefaults()
 
     QVERIFY(settings.isSet(QQmlFormatSettings::s_semiColonRuleSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_semiColonRuleSetting).toString(), "always"_L1);
+}
+
+void TestQmlformatCli::outputOptions()
+{
+    QProcess process;
+    process.start(m_qmlformatPath, QStringList{ "--output-options" });
+    QVERIFY(process.waitForFinished());
+    QCOMPARE(process.exitStatus(), QProcess::NormalExit);
+
+    QJsonDocument doc = QJsonDocument::fromJson(process.readAllStandardOutput());
+
+    auto findJsonObject = [doc](const QString &name){
+        QJsonObject rootObj = doc.object();
+        QJsonArray optionsArray = rootObj["options"].toArray();
+
+        for (const QJsonValue &optionValue : optionsArray) {
+            if (!optionValue.isObject())
+                continue;
+
+            QJsonObject optionObj = optionValue.toObject();
+            if (optionObj["name"].toString() == name)
+                return optionObj;
+        }
+
+        return QJsonObject();
+    };
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_useTabsSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_indentWidthSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], 4);
+        QCOMPARE(obj["hint"], QMetaType::fromType<int>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_maxColumnWidthSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], -1);
+        QCOMPARE(obj["hint"], QMetaType::fromType<int>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_normalizeSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_newlineSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], "native"_L1);
+        QCOMPARE(obj["hint"], QStringList({ "unix", "windows", "macos", "native" }).join(','));
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_objectsSpacingSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_functionsSpacingSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_sortImportsSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_singleLineEmptyObjectsSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_semiColonRuleSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], "always"_L1);
+        QCOMPARE(obj["hint"], QStringList({ "always", "essential" }).join(','));
+    }
 }
 
 void TestQmlformatCli::settingsKeysStayStable()

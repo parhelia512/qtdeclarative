@@ -124,6 +124,9 @@ int main(int argc, char *argv[])
     if (options.writeDefaultSettingsEnabled())
         return settings.writeDefaults() ? 0 : -1;
 
+    if (options.outputOptionsEnabled())
+        return settings.outputOptions() ? 0 : -1;
+
     bool success = true;
     if (!options.files().isEmpty()) {
         if (!options.arguments().isEmpty())

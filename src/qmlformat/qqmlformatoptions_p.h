@@ -127,6 +127,8 @@ public:
     {
         m_writeDefaultSettings = newWriteDefaultSettings;
     }
+    bool outputOptionsEnabled() const { return m_outputOptions; }
+    void setOutputOptionsEnabled(bool newOutputOptions) { m_outputOptions = newOutputOptions; }
 
     bool indentWidthSet() const { return m_indentWidthSet; }
     void setIndentWidthSet(bool newIndentWidthSet) { m_indentWidthSet = newIndentWidthSet; }
@@ -179,6 +181,7 @@ private:
     bool m_force = false;
     bool m_ignoreSettings = false;
     bool m_writeDefaultSettings = false;
+    bool m_outputOptions = false;
     bool m_indentWidthSet = false;
     std::bitset<SettingsCount> m_settingBits;
     bool m_dryRun = false;

@@ -141,6 +141,11 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
                           "will overwrite any existing settings and comments!)"_L1));
     parser.addOption(writeDefaultsOption);
 
+    QCommandLineOption outputOptionsOption(
+            QStringList() << "output-options"_L1,
+            QLatin1String("Output available options and their defaults values in JSON format."_L1));
+    parser.addOption(outputOptionsOption);
+
     QCommandLineOption ignoreSettings(QStringList() << "ignore-settings"_L1,
                                       QLatin1String("Ignores all settings files and only takes "
                                                     "command line options into consideration"_L1));
@@ -238,6 +243,11 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
 
     if (parser.isSet(writeDefaultsOption)) {
         options.setWriteDefaultSettingsEnabled(true);
+        return options;
+    }
+
+    if (parser.isSet(outputOptionsOption)) {
+        options.setOutputOptionsEnabled(true);
         return options;
     }
 

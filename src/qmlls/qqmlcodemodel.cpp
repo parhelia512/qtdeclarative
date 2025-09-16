@@ -351,6 +351,7 @@ This is an overapproximation and might find unrelated files with the same name.
 QStringList QQmlCodeModel::findFilePathsFromFileNames(const QStringList &_fileNamesToSearch,
                                                       const QSet<QString> &ignoredFilePaths)
 {
+    Q_ASSERT(!m_rootUrl.isEmpty());
     QStringList fileNamesToSearch{ _fileNamesToSearch };
 
     {
@@ -419,10 +420,12 @@ QStringList QQmlCodeModel::fileNamesToWatch(const DomItem &qmlFile)
 /*!
 \internal
 Add watches for all C++ files that this qmlFile relies on, so a rebuild can be triggered when they
-are modified.
+are modified. Is a no op if this is the fallback codemodel with empty root url.
 */
 void QQmlCodeModel::addFileWatches(const DomItem &qmlFile)
 {
+    if (m_rootUrl.isEmpty())
+        return;
     const auto filesToWatch = fileNamesToWatch(qmlFile);
 
     // remove already watched files to avoid a warning later on

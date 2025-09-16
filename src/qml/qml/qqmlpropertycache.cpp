@@ -377,6 +377,17 @@ static QHashedString signalNameToHandlerName(const QHashedCStringRef &methodName
             QLatin1StringView{ methodName.constData(), methodName.length() });
 }
 
+static inline std::pair<bool, int> deriveEncodingAndLength(const char *str)
+{
+    char utf8 = 0;
+    const char *cptr = str;
+    while (*cptr != 0) {
+        utf8 |= *cptr & 0x80;
+        ++cptr;
+    }
+    return std::make_pair(utf8, cptr - str);
+}
+
 void QQmlPropertyCache::append(const QMetaObject *metaObject,
                                QTypeRevision typeVersion,
                                QQmlPropertyData::Flags propertyFlags,
@@ -436,13 +447,6 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
         // Extract method name
         // It's safe to keep the raw name pointer
         Q_ASSERT(QMetaObjectPrivate::get(metaObject)->revision >= 7);
-        const char *rawName = m.nameView().constData();
-        const char *cptr = rawName;
-        char utf8 = 0;
-        while (*cptr) {
-            utf8 |= *cptr & 0x80;
-            ++cptr;
-        }
 
         QQmlPropertyData *data = &methodIndexCache[ii - methodIndexCacheStart];
         QQmlPropertyData *sigdata = nullptr;
@@ -463,9 +467,8 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
             sigdata->m_flags.setIsSignalHandler(true);
         }
 
-        QQmlPropertyData *old = nullptr;
-
         const auto doSetNamedProperty = [&](const auto &methodName) {
+            QQmlPropertyData *old = nullptr;
             if (StringCache::mapped_type *it = stringCache.value(methodName)) {
                 if (handleOverride(methodName, data, (old = it->second)) == InvalidOverride) {
                     *data = *old;
@@ -485,7 +488,7 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
             if (data->isSignal()) {
 
                 // TODO: Remove this once we can. Signals should not be overridable.
-                if (!utf8)
+                if constexpr (std::is_same_v<std::decay_t<decltype(methodName)>, QHashedCStringRef>)
                     data->m_flags.setIsOverridableSignal(true);
 
                 setNamedProperty(signalNameToHandlerName(methodName), ii, sigdata);
@@ -493,10 +496,12 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
             }
         };
 
-        if (utf8)
-            doSetNamedProperty(QHashedString(QString::fromUtf8(rawName, cptr - rawName)));
+        const char *str = m.nameView().constData();
+        const auto [isUtf8, len] = deriveEncodingAndLength(str);
+        if (isUtf8)
+            doSetNamedProperty(QHashedString(QString::fromUtf8(str, len)));
         else
-            doSetNamedProperty(QHashedCStringRef(rawName, cptr - rawName));
+            doSetNamedProperty(QHashedCStringRef(str, len));
     }
 
     int propCount = metaObject->propertyCount();
@@ -510,14 +515,6 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
         if (!p.isScriptable())
             continue;
 
-        const char *str = p.name();
-        char utf8 = 0;
-        const char *cptr = str;
-        while (*cptr != 0) {
-            utf8 |= *cptr & 0x80;
-            ++cptr;
-        }
-
         QQmlPropertyData *data = &propertyIndexCache[ii - propertyIndexCacheStart];
 
         data->setFlags(propertyFlags);
@@ -527,27 +524,24 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
         Q_ASSERT((allowedRevisionCache.size() - 1) < Q_INT16_MAX);
         data->setMetaObjectOffset(allowedRevisionCache.size() - 1);
 
-        QQmlPropertyData *old = nullptr;
+        const auto doSetNamedProperty = [this](const auto &propName, int index, auto *propData) {
+            QQmlPropertyData *existingPropData = nullptr;
+            if (StringCache::mapped_type *it = stringCache.value(propName)) {
+                if (handleOverride(propName, propData, (existingPropData = it->second))
+                    == InvalidOverride) {
+                    *propData = *existingPropData;
+                    return;
+                }
+            }
+            setNamedProperty(propName, index, propData);
+        };
 
-        if (utf8) {
-            QHashedString propName(QString::fromUtf8(str, cptr - str));
-            if (StringCache::mapped_type *it = stringCache.value(propName)) {
-                if (handleOverride(propName, data, (old = it->second)) == InvalidOverride) {
-                    *data = *old;
-                    continue;
-                }
-            }
-            setNamedProperty(propName, ii, data);
-        } else {
-            QHashedCStringRef propName(str, cptr - str);
-            if (StringCache::mapped_type *it = stringCache.value(propName)) {
-                if (handleOverride(propName, data, (old = it->second)) == InvalidOverride) {
-                    *data = *old;
-                    continue;
-                }
-            }
-            setNamedProperty(propName, ii, data);
-        }
+        const char *str = p.name();
+        const auto [isUtf8, len] = deriveEncodingAndLength(str);
+        if (isUtf8)
+            doSetNamedProperty(QHashedString(QString::fromUtf8(str, len)), ii, data);
+        else
+            doSetNamedProperty(QHashedCStringRef(str, len), ii, data);
 
         bool isGadget = true;
         for (const QMetaObject *it = metaObject; it != nullptr; it = it->superClass()) {

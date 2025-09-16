@@ -294,12 +294,6 @@ private:
         return ValidOverride;
     }
 
-    template<typename String>
-    OverrideResult handleOverride(const String &name, QQmlPropertyData *data)
-    {
-        return handleOverride(name, data, findNamedProperty(name));
-    }
-
     // TODO consider making public
     OverrideResult doAppendPropertyData(const QString &name, QQmlPropertyData &&data)
     {

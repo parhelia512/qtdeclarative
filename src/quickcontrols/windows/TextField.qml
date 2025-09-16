@@ -10,6 +10,6 @@ NativeStyle.DefaultTextField {
     id: control
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 }

@@ -11,7 +11,7 @@ T.Action {
     icon.width: 24
     icon.height: 24
     shortcut: StandardKey.SelectAll
-    onTriggered: control.selectAll()
+    onTriggered: editor.selectAll()
 
-    required property var control
+    required property var editor
 }

@@ -11,8 +11,8 @@ T.Action {
     icon.width: 24
     icon.height: 24
     shortcut: StandardKey.Delete
-    enabled: !control.readOnly && control.selectedText.length > 0
-    onTriggered: control.remove(control.selectionStart, control.selectionEnd)
+    enabled: !editor.readOnly && editor.selectedText.length > 0
+    onTriggered: editor.remove(editor.selectionStart, editor.selectionEnd)
 
-    required property var control
+    required property var editor
 }

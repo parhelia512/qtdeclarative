@@ -9,24 +9,24 @@ Menu {
     id: menu
     popupType: Popup.Window
 
-    required property var control
+    required property var editor
 
     WindowsImpl.CutAction {
-        control: menu.control
+        editor: menu.editor
     }
     WindowsImpl.CopyAction {
-        control: menu.control
+        editor: menu.editor
     }
     WindowsImpl.PasteAction {
-        control: menu.control
+        editor: menu.editor
     }
     WindowsImpl.DeleteAction {
-        control: menu.control
+        editor: menu.editor
     }
 
     MenuSeparator {}
 
     WindowsImpl.SelectAllAction {
-        control: menu.control
+        editor: menu.editor
     }
 }

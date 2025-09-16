@@ -9,24 +9,24 @@ Menu {
     id: menu
     popupType: Qt.platform.pluginName !== "wayland" ? Popup.Window : Popup.Item
 
-    required property var control
+    required property var editor
 
     FluentWinUI3Impl.CutAction {
-        control: menu.control
+        editor: menu.editor
     }
     FluentWinUI3Impl.CopyAction {
-        control: menu.control
+        editor: menu.editor
     }
     FluentWinUI3Impl.PasteAction {
-        control: menu.control
+        editor: menu.editor
     }
     FluentWinUI3Impl.DeleteAction {
-        control: menu.control
+        editor: menu.editor
     }
 
     MenuSeparator {}
 
     FluentWinUI3Impl.SelectAllAction {
-        control: menu.control
+        editor: menu.editor
     }
 }

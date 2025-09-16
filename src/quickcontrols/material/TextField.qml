@@ -40,7 +40,7 @@ T.TextField {
     Material.containerStyle: Material.Outlined
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     cursorDelegate: CursorDelegate { }

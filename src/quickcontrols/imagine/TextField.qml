@@ -34,7 +34,7 @@ T.TextField {
     verticalAlignment: Qt.AlignVCenter
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

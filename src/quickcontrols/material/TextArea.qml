@@ -40,7 +40,7 @@ T.TextArea {
     Material.containerStyle: Material.Outlined
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     cursorDelegate: CursorDelegate { }

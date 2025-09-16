@@ -11,8 +11,8 @@ T.Action {
     icon.width: 24
     icon.height: 24
     shortcut: StandardKey.Copy
-    enabled: control.selectedText.length > 0 && control.hasOwnProperty("copy")
-    onTriggered: control.copy()
+    enabled: editor.selectedText.length > 0 && editor.hasOwnProperty("copy")
+    onTriggered: editor.copy()
 
-    required property var control
+    required property var editor
 }

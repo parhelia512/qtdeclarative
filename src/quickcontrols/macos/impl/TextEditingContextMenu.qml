@@ -9,24 +9,24 @@ Menu {
     id: menu
     popupType: Popup.Window
 
-    required property var control
+    required property var editor
 
     MacOSImpl.CutAction {
-        control: menu.control
+        editor: menu.editor
     }
     MacOSImpl.CopyAction {
-        control: menu.control
+        editor: menu.editor
     }
     MacOSImpl.PasteAction {
-        control: menu.control
+        editor: menu.editor
     }
     MacOSImpl.DeleteAction {
-        control: menu.control
+        editor: menu.editor
     }
 
     MenuSeparator {}
 
     MacOSImpl.SelectAllAction {
-        control: menu.control
+        editor: menu.editor
     }
 }

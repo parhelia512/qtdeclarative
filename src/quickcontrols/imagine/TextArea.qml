@@ -35,7 +35,7 @@ T.TextArea {
     placeholderTextColor: control.palette.placeholderText
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

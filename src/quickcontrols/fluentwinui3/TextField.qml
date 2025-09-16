@@ -40,7 +40,7 @@ T.TextField {
     verticalAlignment: Text.AlignVCenter
 
     ContextMenu.menu: Impl.TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

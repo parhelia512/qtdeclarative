@@ -9,24 +9,24 @@ Menu {
     id: menu
     popupType: Popup.Native
 
-    required property var control
+    required property var editor
 
     IOSImpl.CutAction {
-        control: menu.control
+        editor: menu.editor
     }
     IOSImpl.CopyAction {
-        control: menu.control
+        editor: menu.editor
     }
     IOSImpl.PasteAction {
-        control: menu.control
+        editor: menu.editor
     }
     IOSImpl.DeleteAction {
-        control: menu.control
+        editor: menu.editor
     }
 
     MenuSeparator {}
 
     IOSImpl.SelectAllAction {
-        control: menu.control
+        editor: menu.editor
     }
 }

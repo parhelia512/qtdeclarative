@@ -26,7 +26,7 @@ T.TextArea {
     selectedTextColor: control.palette.highlightedText
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     background: Rectangle {

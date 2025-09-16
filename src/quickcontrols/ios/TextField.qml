@@ -29,7 +29,7 @@ T.TextField {
     cursorDelegate: CursorDelegate {}
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

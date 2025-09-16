@@ -11,6 +11,6 @@ NativeStyle.DefaultTextField {
     readonly property Item __focusFrameTarget: control
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 }

@@ -16,10 +16,10 @@ T.Action {
     // duplicate actions (at least when QT_NO_SHORTCUT is not defined).
     shortcut: StandardKey.Cut
     // If the control has no cut property, Qt was built without clipboard support.
-    enabled: !control.readOnly && control.selectedText.length > 0 && control.hasOwnProperty("cut")
-    onTriggered: control.cut()
+    enabled: !editor.readOnly && editor.selectedText.length > 0 && editor.hasOwnProperty("cut")
+    onTriggered: editor.cut()
 
     // Can't be T.Control because otherwise it would fail to assign TextField/TextArea to it,
     // and we'd need TextFieldCutAction and TextAreaCutAction.
-    required property var control
+    required property var editor
 }

@@ -9,24 +9,24 @@ Menu {
     id: menu
     popupType: Qt.platform.pluginName !== "wayland" ? Popup.Window : Popup.Item
 
-    required property var control
+    required property var editor
 
     CutAction {
-        control: menu.control
+        editor: menu.editor
     }
     CopyAction {
-        control: menu.control
+        editor: menu.editor
     }
     PasteAction {
-        control: menu.control
+        editor: menu.editor
     }
     DeleteAction {
-        control: menu.control
+        editor: menu.editor
     }
 
     MenuSeparator {}
 
     SelectAllAction {
-        control: menu.control
+        editor: menu.editor
     }
 }

@@ -40,7 +40,7 @@ T.TextArea {
     readonly property var __config: Config.controls.textarea[__currentState] || {}
 
     ContextMenu.menu: Impl.TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

@@ -34,7 +34,7 @@ T.TextArea {
                                                    Universal.baseMediumColor
 
     ContextMenu.menu: TextEditingContextMenu {
-        control: control
+        editor: control
     }
 
     PlaceholderText {

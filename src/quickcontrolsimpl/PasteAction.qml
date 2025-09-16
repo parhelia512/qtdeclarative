@@ -11,8 +11,8 @@ T.Action {
     icon.width: 24
     icon.height: 24
     shortcut: StandardKey.Paste
-    enabled: !control.readOnly && control.hasOwnProperty("paste")
-    onTriggered: control.paste()
+    enabled: !editor.readOnly && editor.hasOwnProperty("paste")
+    onTriggered: editor.paste()
 
-    required property var control
+    required property var editor
 }

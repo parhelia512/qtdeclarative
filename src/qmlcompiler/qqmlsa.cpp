@@ -703,6 +703,10 @@ QQmlJSMetaMethod MethodPrivate::method(const QQmlSA::Method &method)
     return method.d_func()->m_method;
 }
 
+/*!
+    \class QQmlSA::PropertyPrivate
+    \internal
+*/
 PropertyPrivate::PropertyPrivate(Property *iface) : q_ptr{ iface } { }
 
 PropertyPrivate::PropertyPrivate(Property *iface, const PropertyPrivate &other)

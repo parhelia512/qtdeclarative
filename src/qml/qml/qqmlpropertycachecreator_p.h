@@ -178,6 +178,22 @@ public:
         // the object index of the last processed (inline) component root.
         int processedRoot = 0;
     };
+
+    // TODO just reuse message from the QQmlPropertyCacheCreator::maybeLog
+    static QString explain(OverrideSemantics::Status reason)
+    {
+        switch (reason) {
+        case OverrideSemantics::Status::MissingBase:
+            return tr("Nothing to override. Remove override keyword");
+        case OverrideSemantics::Status::OverridingFinal:
+            return tr("Cannot override FINAL property");
+        case OverrideSemantics::Status::OverridingNonVirtual:
+            return tr("Cannot override non virtual property. Add virtual to the property of the "
+                      "base object");
+        default:
+            return tr("unknown");
+        }
+    }
 };
 
 template <typename ObjectContainer>
@@ -580,12 +596,11 @@ QQmlPropertyCacheCreator<ObjectContainer>::tryDeriveCacheFrom(
             && objPropertyIdx == obj->indexOfDefaultPropertyOrAlias)
             cache->_defaultPropertyName = propertyName;
 
-        if (cache->doAppendPropertyData(propertyName, std::move(propertyDataOrError).value())
-            == QQmlPropertyCache::OverrideResult::InvalidOverride) {
-            return q23::make_unexpected(qQmlCompileError(
-                    p->location,
-                    // TODO improve error message
-                    QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property")));
+        const auto &appendResult =
+                cache->appendPropertyAttr(propertyName, std::move(propertyDataOrError).value());
+        if (!appendResult) {
+            return q23::make_unexpected(
+                    qQmlCompileError(p->location, explain(appendResult.error())));
         }
     }
     return cache;
@@ -1141,13 +1156,12 @@ inline QQmlError QQmlPropertyCacheAliasCreator<ObjectContainer>::appendAliasToPr
     if (object.hasAliasAsDefaultProperty() && aliasIndex == object.indexOfDefaultPropertyOrAlias)
         propertyCache->_defaultPropertyName = propertyName;
 
-    const auto overrideResult =
+    const auto &appendResult =
             propertyCache->appendAlias(propertyName, propertyFlags, effectivePropertyIndex, type,
                                        version, effectiveSignalIndex, encodedMetaPropertyIndex);
-    if (overrideResult == QQmlPropertyCache::OverrideResult::InvalidOverride) {
+    if (!appendResult) {
         return qQmlCompileError(alias.location,
-                                // TODO improve error message
-                                QQmlPropertyCacheCreatorBase::tr("Cannot override FINAL property"));
+                                QQmlPropertyCacheCreatorBase::explain(appendResult.error()));
     }
     return QQmlError();
 }

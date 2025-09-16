@@ -31,6 +31,124 @@ QT_BEGIN_NAMESPACE
 
 #define Q_INT16_MAX 32767
 
+namespace OverrideSemantics {
+namespace detail {
+
+static inline bool hasInvalidModifierCombintation(const QQmlPropertyData &overridingProperty)
+{
+    return (overridingProperty.isVirtual() && overridingProperty.isFinal())
+            || (overridingProperty.doesOverride() && overridingProperty.isFinal())
+            || (overridingProperty.isVirtual() && overridingProperty.doesOverride());
+}
+
+/*
+ * Performs minimal validation of property override semantics.
+ *
+ * This function checks whether an existing property can be overridden.
+ * It distinguishes between the following cases:
+ *  - No base property exists          → Status::NoOverride
+ *  - Base property is marked final    → Status::OverridingFinal
+ *  - Otherwise                        → Status::Valid
+ *
+ * The minimal check is used in contexts where only basic inheritance
+ * constraints (existence and finality) must be verified.
+ */
+static inline Status checkMinimal(const QQmlPropertyData *const existingProperty)
+{
+    if (!existingProperty)
+        return Status::NoOverride;
+
+    if (existingProperty->isFinal()) {
+        return Status::OverridingFinal;
+    }
+
+    return Status::Valid;
+}
+
+/*
+ * Performs full validation of property override semantics.
+ *
+ * This function enforces the full set of rules for `virtual`, `override`,
+ * and `final` keyword combinations when resolving property overrides.
+ * It verifies:
+ *
+ *  - If `override` is specified but no base property exists,
+ *    the override is invalid (Status::MissingBase).
+ *
+ *  - If `override` is NOT specified and no base property exists,
+ *    then there is no override (Status::NoOverride).
+ *
+ *  - If the base property is final, overriding is not allowed
+ *    (Status::OverridingFinal).
+ *
+ *  - If `override` is present but the base property is not virtual,
+ *    overriding is not allowed (Status::OverridingNonVirtual).
+ *
+ *  - If `final` is present but the base property is not virtual,
+ *    overriding is not allowed (Status::FinalOverridingNonVirtual).
+ *
+ *  - If no `override` or `final` keyword is specified for an existing virtual base,
+ *    the override specifier is missing (Status::MissingOverrideOrFinalSpecifier).
+ *
+ * Returns Status::Valid if the combination is semantically correct.
+ */
+static inline Status checkFull(const QQmlPropertyData &overridingProperty,
+                               const QQmlPropertyData *const existingProperty)
+{
+    const auto overrideKeyword = overridingProperty.doesOverride();
+    if (overrideKeyword && !existingProperty) {
+        return Status::MissingBase;
+    }
+
+    const auto minimalCheckRes = checkMinimal(existingProperty);
+    if (minimalCheckRes != Status::Valid) {
+        return minimalCheckRes;
+    }
+
+    if (overrideKeyword && !existingProperty->isVirtual()) {
+        return Status::OverridingNonVirtual;
+    }
+    if (overridingProperty.isFinal() && !existingProperty->isVirtual()) {
+        return Status::FinalOverridingNonVirtual;
+    }
+
+    const auto overrideOrFinal = overrideKeyword || overridingProperty.isFinal();
+    if (!overrideOrFinal) {
+        return Status::MissingOverrideOrFinalSpecifier;
+    }
+
+    return Status::Valid;
+}
+
+static inline Status check(const QQmlPropertyData &overridingProperty,
+                           const QQmlPropertyData *const existingProperty, CheckMode mode)
+{
+    Q_ASSERT(!hasInvalidModifierCombintation(overridingProperty));
+
+    switch (mode) {
+    case CheckMode::Minimal:
+        return detail::checkMinimal(existingProperty);
+    case CheckMode::Full:
+        return detail::checkFull(overridingProperty, existingProperty);
+    default:
+        Q_UNREACHABLE_RETURN(Status::Unknown);
+    }
+}
+} // namespace detail
+
+Status handleOverride(QQmlPropertyData &overridingProperty, QQmlPropertyData *existingProperty,
+                      CheckMode mode)
+{
+    const auto status = detail::check(overridingProperty, existingProperty, mode);
+
+    if (isValidOverride(status)) {
+        overridingProperty.markAsOverrideOf(existingProperty);
+    }
+    return status;
+}
+
+} // namespace OverrideSemantics
+
 static int metaObjectSignalCount(const QMetaObject *metaObject)
 {
     int signalCount = 0;
@@ -176,7 +294,7 @@ QQmlPropertyCache::~QQmlPropertyCache()
 QQmlPropertyCache::Ptr QQmlPropertyCache::copy(const QQmlMetaObjectPointer &mo, int reserve) const
 {
     QQmlPropertyCache::Ptr cache = QQmlPropertyCache::Ptr(
-            new QQmlPropertyCache(mo), QQmlPropertyCache::Ptr::Adopt);
+            new QQmlPropertyCache(mo, _handleOverride), QQmlPropertyCache::Ptr::Adopt);
     cache->_parent.reset(this);
     cache->propertyIndexCacheStart = propertyIndexCache.size() + propertyIndexCacheStart;
     cache->methodIndexCacheStart = methodIndexCache.size() + methodIndexCacheStart;
@@ -206,7 +324,7 @@ QQmlPropertyCache::Ptr QQmlPropertyCache::copyAndReserve(
     return rv;
 }
 
-QQmlPropertyCache::OverrideResult
+QQmlPropertyCache::AppendResult
 QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flags, int coreIndex,
                                QMetaType propType, QTypeRevision version, int notifyIndex,
                                int encodedTargetIndex)
@@ -220,7 +338,7 @@ QQmlPropertyCache::appendAlias(const QString &name, QQmlPropertyData::Flags flag
     data.setAliasTarget(encodedTargetIndex);
     data.setTypeVersion(version);
 
-    return doAppendPropertyData(name, std::move(data));
+    return appendPropertyAttr(name, std::move(data));
 }
 
 void QQmlPropertyCache::appendSignal(const QString &name, QQmlPropertyData::Flags flags,
@@ -245,8 +363,16 @@ void QQmlPropertyCache::appendSignal(const QString &name, QQmlPropertyData::Flag
     }
 
     QQmlPropertyData *old = findNamedProperty(name);
-    const OverrideResult overrideResult = handleOverride(name, &data, old);
-    if (overrideResult == InvalidOverride) {
+    const auto overrideStatus = _handleOverride(data, old, OverrideSemantics::CheckMode::Minimal);
+    maybeLog(overrideStatus, name);
+    // remove assert when checkMode is expanded and adjust handling correspondingly. For now it
+    // verifies that some code-path work in the same way as before introduction of virtual and
+    // override keywords
+    Q_ASSERT(overrideStatus == OverrideSemantics::Status::NoOverride
+             || overrideStatus == OverrideSemantics::Status::Valid
+             || overrideStatus == OverrideSemantics::Status::OverridingFinal);
+    if (overrideStatus == OverrideSemantics::Status::OverridingFinal) {
+        // TODO QTBUG-141728
         // Insert the overridden member and its signal once more, to keep the counts in sync
         methodIndexCache.append(*old);
         handler = *old;
@@ -280,8 +406,16 @@ void QQmlPropertyCache::appendMethod(const QString &name, QQmlPropertyData::Flag
     data.setCoreIndex(coreIndex);
     data.setFlags(flags);
     QQmlPropertyData *old = findNamedProperty(name);
-    const OverrideResult overrideResult = handleOverride(name, &data, old);
-    if (overrideResult == InvalidOverride) {
+    const auto overrideStatus = _handleOverride(data, old, OverrideSemantics::CheckMode::Minimal);
+    maybeLog(overrideStatus, name);
+    // remove assert when checkMode is expanded and adjust handling correspondingly. For now it
+    // verifies that some code-path work in the same way as before introduction of virtual and
+    // override keywords
+    Q_ASSERT(overrideStatus == OverrideSemantics::Status::NoOverride
+             || overrideStatus == OverrideSemantics::Status::Valid
+             || overrideStatus == OverrideSemantics::Status::OverridingFinal);
+    if (overrideStatus == OverrideSemantics::Status::OverridingFinal) {
+        // TODO QTBUG-141728
         // Insert the overridden member once more, to keep the counts in sync
         methodIndexCache.append(*old);
         return;
@@ -471,7 +605,17 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
         const auto doSetNamedProperty = [&](const auto &methodName) {
             QQmlPropertyData *old = nullptr;
             if (StringCache::mapped_type *it = stringCache.value(methodName)) {
-                if (handleOverride(methodName, data, (old = it->second)) == InvalidOverride) {
+                const auto overrideStatus = _handleOverride(*data, (old = it->second),
+                                                            OverrideSemantics::CheckMode::Minimal);
+                maybeLog(overrideStatus, methodName);
+                // remove assert when checkMode is expanded and adjust handling correspondingly. For
+                // now it verifies that some code-path work in the same way as before introduction
+                // of virtual and override keywords
+                Q_ASSERT(overrideStatus == OverrideSemantics::Status::NoOverride
+                         || overrideStatus == OverrideSemantics::Status::Valid
+                         || overrideStatus == OverrideSemantics::Status::OverridingFinal);
+                if (overrideStatus == OverrideSemantics::Status::OverridingFinal) {
+                    // TODO QTBUG-141728
                     *data = *old;
                     if (sigdata) {
                         // Keep the signal counts in sync,
@@ -528,8 +672,18 @@ void QQmlPropertyCache::append(const QMetaObject *metaObject,
         const auto doSetNamedProperty = [this](const auto &propName, int index, auto *propData) {
             QQmlPropertyData *existingPropData = nullptr;
             if (StringCache::mapped_type *it = stringCache.value(propName)) {
-                if (handleOverride(propName, propData, (existingPropData = it->second))
-                    == InvalidOverride) {
+                const auto overrideStatus =
+                        _handleOverride(*propData, (existingPropData = it->second),
+                                        OverrideSemantics::CheckMode::Minimal);
+                maybeLog(overrideStatus, propName);
+                // remove assert when checkMode is expanded and adjust handling correspondingly. For
+                // now it verifies that some code-path work in the same way as before introduction
+                // of virtual and override keywords
+                Q_ASSERT(overrideStatus == OverrideSemantics::Status::NoOverride
+                         || overrideStatus == OverrideSemantics::Status::Valid
+                         || overrideStatus == OverrideSemantics::Status::OverridingFinal);
+                if (overrideStatus == OverrideSemantics::Status::OverridingFinal) {
+                    // TODO QTBUG-141728
                     *propData = *existingPropData;
                     return;
                 }
@@ -696,12 +850,39 @@ const QQmlPropertyData *QQmlPropertyCache::findProperty(
     return nullptr;
 }
 
+// Note, this function is called when adding aliases, hence data.isEnum() can possibly be true
+QQmlPropertyCache::AppendResult QQmlPropertyCache::appendPropertyAttr(const QString &name,
+                                                                      QQmlPropertyData &&data)
+{
+    QQmlPropertyData *old = findNamedProperty(name);
+    const auto overrideStatus = _handleOverride(data, old, OverrideSemantics::CheckMode::Full);
+    maybeLog(overrideStatus, name);
+    if (!OverrideSemantics::isValidOverride(overrideStatus)) {
+        // TODO QTBUG-141728
+        // Insert the overridden member once more, to keep the counts in sync
+        propertyIndexCache.append(old ? *old : data);
+        return q23::make_unexpected(overrideStatus);
+    }
+
+    const int index = propertyIndexCache.size();
+    propertyIndexCache.append(std::move(data));
+
+    setNamedProperty(name, index + propertyOffset(), propertyIndexCache.data() + index);
+    return {};
+}
+
 void QQmlPropertyData::markAsOverrideOf(QQmlPropertyData *predecessor)
 {
     Q_ASSERT(predecessor != this);
 
+    if (!predecessor) {
+        return;
+    }
+
     setOverrideIndexIsProperty(!predecessor->isFunction());
     setOverrideIndex(predecessor->coreIndex());
+    // propagate "virtuality"
+    m_flags.setIsVirtual(predecessor->isVirtual());
     predecessor->m_flags.setIsOverridden(true);
     Q_ASSERT(predecessor->isOverridden());
     return;

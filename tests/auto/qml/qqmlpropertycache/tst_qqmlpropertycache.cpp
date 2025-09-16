@@ -38,6 +38,18 @@ private slots:
     void overriddenSignals();
     void duplicateIdsAndGeneralizedGroupProperties();
 
+    void appendPropertyAttr_logging_data();
+    void appendPropertyAttr_logging();
+
+    void appendPropertyAttr_InvalidOverride_data();
+    void appendPropertyAttr_InvalidOverride();
+
+    void appendPropertyAttr_ValidOverride_data();
+    void appendPropertyAttr_ValidOverride();
+
+    void handleOverride_data();
+    void handleOverride();
+
 private:
     QQmlEngine engine;
 };
@@ -787,6 +799,258 @@ void tst_qqmlpropertycache::duplicateIdsAndGeneralizedGroupProperties()
     QTest::ignoreMessage(QtDebugMsg, "4 false false false");
 
     QScopedPointer<QObject> o(c.create());
+}
+
+// TODO consider moving to test utils
+static inline auto propertyWithFlags(QQmlPropertyData::Flags &&flags = QQmlPropertyData::Flags())
+        -> QQmlPropertyData
+{
+    QQmlPropertyData property{};
+    property.setFlags(std::move(flags));
+    return property;
+};
+
+using namespace OverrideSemantics;
+
+static inline auto newPropertyCache(HandlerRef fakeOverrideHandler) -> QQmlPropertyCache::Ptr
+{
+    return QQmlPropertyCache::Ptr(new QQmlPropertyCache(fakeOverrideHandler),
+                                  QQmlPropertyCache::Ptr::Adopt);
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_logging_data()
+{
+    QTest::addColumn<OverrideSemantics::Status>("overrideStatus");
+    QTest::addColumn<QString>("warningPattern");
+
+    QTest::newRow("NoOverride") << Status::NoOverride << "";
+
+    QTest::newRow("Valid") << Status::Valid << "";
+
+    QTest::newRow("MissingBase")
+            << Status::MissingBase
+            << "Member (.*) of the object (.*) does not override anything. Consider "
+               "removing \"override\".";
+    QTest::newRow("OverridingFinal")
+            << Status::OverridingFinal
+            << "Final member (.*) is overridden in class (.*). The override won't be used.";
+    QTest::newRow("OverridingNonVirtual")
+            << Status::OverridingNonVirtual
+            << "Member (.*) of the object (.*) overrides a non-virtual "
+               "member. Consider renaming it or mark it virtual in the base object";
+    QTest::newRow("FinalOverridingNonVirtual")
+            << Status::FinalOverridingNonVirtual
+            << "Member (.*) of the object (.*) overrides a non-virtual "
+               "member. Consider renaming it or mark it virtual in the base object";
+    QTest::newRow("MissingOverrideSpecifier")
+            << Status::MissingOverrideOrFinalSpecifier
+            << "Member (.*) of the object (.*) overrides a member of the base object. "
+               "Consider renaming it or adding final or virtual specifier";
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_logging()
+{
+    QFETCH(OverrideSemantics::Status, overrideStatus);
+    QFETCH(QString, warningPattern);
+
+    const auto fakeOverrideHandler = [&overrideStatus](QQmlPropertyData &, QQmlPropertyData *,
+                                                       CheckMode) -> Status {
+        return overrideStatus;
+    };
+
+    if (!warningPattern.isEmpty()) {
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(warningPattern.toLatin1()));
+    }
+    newPropertyCache(fakeOverrideHandler)->appendPropertyAttr("p", QQmlPropertyData());
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_InvalidOverride_data()
+{
+    QTest::addColumn<OverrideSemantics::Status>("overrideStatus");
+
+    QTest::newRow("MissingBase") << Status::MissingBase;
+    QTest::newRow("OverridingFinal") << Status::OverridingFinal;
+    QTest::newRow("OverridingNonVirtual") << Status::OverridingNonVirtual;
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_InvalidOverride()
+{
+    QFETCH(OverrideSemantics::Status, overrideStatus);
+
+    QVERIFY(!isValidOverride(overrideStatus));
+
+    const auto fakeOverrideHandler = [&overrideStatus](QQmlPropertyData &, QQmlPropertyData *,
+                                                       CheckMode) -> Status {
+        return overrideStatus;
+    };
+
+    QQmlPropertyCache::Ptr cache = newPropertyCache(fakeOverrideHandler);
+    QCOMPARE(cache->propertyCount(), 0);
+
+    const auto res = cache->appendPropertyAttr("p", QQmlPropertyData());
+
+    QVERIFY(!res);
+    QCOMPARE(res.error(), overrideStatus);
+    QCOMPARE(cache->propertyCount(), 1);
+
+    // since append is invalid the property is not accessible by name
+    QVERIFY(!cacheProperty(cache, "p"));
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_ValidOverride_data()
+{
+    QTest::addColumn<OverrideSemantics::Status>("overrideStatus");
+
+    QTest::newRow("NoOverride") << Status::NoOverride;
+    QTest::newRow("Valid") << Status::Valid;
+    QTest::newRow("MissingOverrideSpecifier") << Status::MissingOverrideOrFinalSpecifier;
+}
+
+void tst_qqmlpropertycache::appendPropertyAttr_ValidOverride()
+{
+    QFETCH(OverrideSemantics::Status, overrideStatus);
+
+    QVERIFY(isValidOverride(overrideStatus));
+
+    const auto fakeOverrideHandler = [&overrideStatus](QQmlPropertyData &, QQmlPropertyData *,
+                                                       CheckMode) -> Status {
+        return overrideStatus;
+    };
+
+    QQmlPropertyCache::Ptr cache = newPropertyCache(fakeOverrideHandler);
+    auto propCount = 0;
+    QCOMPARE(cache->propertyCount(), propCount);
+
+    const QString propName = "p";
+    {
+        QQmlPropertyData data{};
+        // set just to verify upon query that it's the same data
+        data.setCoreIndex(6);
+
+        const auto res = cache->appendPropertyAttr(propName, QQmlPropertyData(data));
+
+        QVERIFY(res);
+        QCOMPARE(cache->propertyCount(), ++propCount);
+        const auto *addedProperty = cache->property(propName, nullptr, nullptr);
+        QVERIFY(addedProperty);
+        QCOMPARE(*addedProperty, data);
+    }
+    // Now override the property
+    {
+        QQmlPropertyData data{};
+        // set just to verify upon query that it's the same data
+        data.setCoreIndex(3);
+        data.setWritable(false);
+
+        const auto res = cache->appendPropertyAttr(propName, QQmlPropertyData(data));
+
+        QVERIFY(res);
+        QCOMPARE(cache->propertyCount(), ++propCount);
+        const auto *addedProperty = cache->property(propName, nullptr, nullptr);
+        QVERIFY(addedProperty);
+        QCOMPARE(*addedProperty, data);
+    }
+}
+
+void tst_qqmlpropertycache::handleOverride_data()
+{
+    QTest::addColumn<QQmlPropertyData>("overridingProperty");
+    QTest::addColumn<std::optional<QQmlPropertyData>>("existingProperty");
+    QTest::addColumn<CheckMode>("checkMode");
+    QTest::addColumn<Status>("expectedResult");
+
+    const auto makeNullopt = []() -> std::optional<QQmlPropertyData> { return std::nullopt; };
+
+    // Minimal checks
+    QTest::newRow("Derived{property var p} Base{}")
+            << propertyWithFlags() << makeNullopt() << CheckMode::Minimal << Status::NoOverride;
+
+    QQmlPropertyData::Flags final{};
+    final.setIsFinal(true);
+    const auto finalProperty = propertyWithFlags(std::move(final));
+    QTest::newRow("Derived{property var p} Base{final property var p}")
+            << propertyWithFlags() << std::make_optional(finalProperty) << CheckMode::Minimal
+            << Status::OverridingFinal;
+
+    QTest::newRow("Derived{property var p} Base{ property var p}")
+            << propertyWithFlags() << std::make_optional(propertyWithFlags()) << CheckMode::Minimal
+            << Status::Valid;
+
+    // Full
+    QTest::newRow("Derived{property var p} Base{}")
+            << propertyWithFlags() << makeNullopt() << CheckMode::Full << Status::NoOverride;
+
+    QQmlPropertyData::Flags override{};
+    override.setDoesOverride(true);
+    const auto propertyWithOverride = propertyWithFlags(std::move(override));
+
+    QQmlPropertyData::Flags virtual_{};
+    virtual_.setIsVirtual(true);
+    const auto propertyWithVirtual = propertyWithFlags(std::move(virtual_));
+
+    QTest::newRow("Derived{override property var p} Base{}")
+            << propertyWithOverride << makeNullopt() << CheckMode::Full << Status::MissingBase;
+
+    QTest::newRow("Derived{property var p} Base{final property var p}")
+            << propertyWithFlags() << std::make_optional(finalProperty) << CheckMode::Full
+            << Status::OverridingFinal;
+    QTest::newRow("Derived{override property var p} Base{final property var p}")
+            << propertyWithOverride << std::make_optional(finalProperty) << CheckMode::Full
+            << Status::OverridingFinal;
+
+    QTest::newRow("Derived{override property var p} Base{property var p}")
+            << propertyWithOverride << std::make_optional(propertyWithFlags()) << CheckMode::Full
+            << Status::OverridingNonVirtual;
+    QTest::newRow("Derived{final property var p} Base{property var p}")
+            << finalProperty << std::make_optional(propertyWithFlags()) << CheckMode::Full
+            << Status::FinalOverridingNonVirtual;
+
+    QTest::newRow("Derived{property var p} Base{property var p}")
+            << propertyWithFlags() << std::make_optional(propertyWithFlags()) << CheckMode::Full
+            << Status::MissingOverrideOrFinalSpecifier;
+
+    QTest::newRow("Derived{virtual property var p} Base{virtual property var p}")
+            << propertyWithVirtual << std::make_optional(propertyWithVirtual) << CheckMode::Full
+            << Status::MissingOverrideOrFinalSpecifier;
+
+    QTest::newRow("Derived{override property var p} Base{virtual property var p}")
+            << propertyWithOverride << std::make_optional(propertyWithVirtual) << CheckMode::Full
+            << Status::Valid;
+
+    QTest::newRow("Derived{final property var p} Base{virtual property var p}")
+            << finalProperty << std::make_optional(propertyWithVirtual) << CheckMode::Full
+            << Status::Valid;
+
+    // This test aims to cover markAsOverrideOf using a Property with type Function, override
+    // keyword, and coreIndex
+    QQmlPropertyData::Flags isFunctionWithOverride{};
+    isFunctionWithOverride.setType(QQmlPropertyData::Flags::Type::FunctionType);
+    auto funcPropertyWithOverride = propertyWithFlags(std::move(isFunctionWithOverride));
+    // set non zero core index
+    funcPropertyWithOverride.setCoreIndex(5);
+
+    QTest::newRow("Derived{override p()} Base{virtual property var p}")
+            << propertyWithOverride << std::make_optional(propertyWithFlags(std::move(virtual_)))
+            << CheckMode::Full << Status::Valid;
+}
+
+void tst_qqmlpropertycache::handleOverride()
+{
+    QFETCH(QQmlPropertyData, overridingProperty);
+    QFETCH(std::optional<QQmlPropertyData>, existingProperty);
+    QFETCH(CheckMode, checkMode);
+    QFETCH(Status, expectedResult);
+
+    auto *existing = existingProperty.has_value() ? &existingProperty.value() : nullptr;
+    const auto res = ::handleOverride(overridingProperty, existing, checkMode);
+    QCOMPARE(res, expectedResult);
+    if (isValidOverride(res) && existing) {
+        // test markOverrideOf
+        QCOMPARE(overridingProperty.isVirtual(), existing->isVirtual());
+        QCOMPARE(overridingProperty.overrideIndexIsProperty(), !existing->isFunction());
+        QCOMPARE(overridingProperty.overrideIndex(), existing->coreIndex());
+        QVERIFY(existing->isOverridden());
+    }
 }
 
 QTEST_MAIN(tst_qqmlpropertycache)

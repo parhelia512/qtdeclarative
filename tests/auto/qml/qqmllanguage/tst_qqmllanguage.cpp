@@ -425,6 +425,9 @@ private slots:
     void longConversion();
     void finalProperty();
 
+    void overrideSemantics_invalid_data();
+    void overrideSemantics_invalid();
+
     void enumPropsManyUnderylingTypes();
 
     void typedEnums_data();
@@ -9729,6 +9732,58 @@ void tst_qqmllanguage::finalProperty()
     const QJSValue f = engine.evaluate(
             "(function final(final) { var a = final; { let final = a; return final; } })(47)"_L1);
     QCOMPARE(f.toInt(), 47);
+}
+
+void tst_qqmllanguage::overrideSemantics_invalid_data() {
+    QTest::addColumn<QString>("baseProperty");
+    QTest::addColumn<QString>("derivedProperty");
+    QTest::addColumn<QString>("error");
+
+    using namespace Syntax;
+    const auto addTestRow = [](const Phrase& baseProperty,
+                               const Phrase& derivedProperty,
+                               const auto& error){
+        const auto basePropertyDeclaration = toString(baseProperty);
+        const auto derivedPropertyDeclaration = toString(derivedProperty);
+
+        QTest::newRow(qPrintable(QStringLiteral("Derived{%2} Base{%1}")
+                                 .arg(basePropertyDeclaration, derivedPropertyDeclaration)))
+                << basePropertyDeclaration << derivedPropertyDeclaration << error;
+    };
+
+    const QLatin1StringView propName("p");
+
+    const Phrase property_var_p = {QQmlJSGrammar::T_PROPERTY, QQmlJSGrammar::T_VAR, propName};
+
+    const Phrase override_property_var_p = QQmlJSGrammar::T_OVERRIDE + property_var_p;
+    addTestRow({}, override_property_var_p, "Nothing to override. Remove override keyword");
+
+    addTestRow(property_var_p, override_property_var_p,
+               "Cannot override non virtual property. Add virtual to the property of the base object");
+
+    const Phrase final_property_var_p = QQmlJSGrammar::T_FINAL + property_var_p;
+    addTestRow(final_property_var_p, override_property_var_p, "Cannot override FINAL property");
+}
+
+void tst_qqmllanguage::overrideSemantics_invalid() {
+    QFETCH(QString, baseProperty);
+    QFETCH(QString, derivedProperty);
+    QFETCH(QString, error);
+
+    const auto qmlFile = QStringLiteral("import QtQuick; \
+                                        QtObject { \
+                                            component C : QtObject { %1 } \
+                                            C { %2 } \
+                                        }").arg(baseProperty, derivedProperty);
+
+    QQmlEngine engine;
+    QQmlComponent comp(&engine);
+    comp.setData(qmlFile.toUtf8(), QUrl("testdata"));
+
+    QScopedPointer<QObject> root {comp.create()};
+    QVERIFY(!comp.isReady());
+
+    QVERIFY(comp.errorString().contains(error));
 }
 
 void tst_qqmllanguage::dontAccumulateComplationUnitsOnQJSEngineEvaluate()

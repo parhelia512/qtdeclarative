@@ -3,7 +3,8 @@
 // Qt-Security score:significant
 
 #include "qqmljscontextproperties_p.h"
-#include <private/qtqml-config_p.h>
+
+#include <private/qtqmlglobal_p.h>
 
 #include <QtCore/qtconfigmacros.h>
 #include <QtCore/qregularexpression.h>

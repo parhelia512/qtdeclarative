@@ -9,10 +9,10 @@
 
 #include <QtTest/qtest.h>
 
-#include <QtQml/private/qtqml-config_p.h>
 #include <QtQml/qqmlcomponent.h>
 #include <QtQml/qqmlengine.h>
 #include <QtQml/qqmlprivate.h>
+#include <QtQml/qtqmlglobal.h>
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qfile.h>

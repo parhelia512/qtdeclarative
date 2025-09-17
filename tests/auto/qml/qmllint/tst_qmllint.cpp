@@ -2,22 +2,22 @@
 // Copyright (C) 2021 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
 
-#include <QtTest/QTest>
-#include <QProcess>
-#include <QString>
-#include <QtQml/private/qtqml-config_p.h>
-#include <QtQuickTestUtils/private/qmlutils_p.h>
-#include <QtQmlCompiler/private/qqmljslinter_p.h>
-#include <QtQmlCompiler/private/qqmljscontextproperties_p.h>
-#include <QtQmlCompiler/private/qqmlsa_p.h>
-#include <QtQml/private/qtqml-config_p.h>
-#include <QtQmlToolingSettings/private/qqmltoolingsettings_p.h>
-#include <QtCore/qplugin.h>
+#include <private/qmlutils_p.h>
+#include <private/qqmljscontextproperties_p.h>
+#include <private/qqmljslinter_p.h>
+#include <private/qqmlsa_p.h>
+#include <private/qqmltoolingsettings_p.h>
+#include <private/qtqmlglobal_p.h>
+
 #include <QtCore/qcomparehelpers.h>
 #include <QtCore/qdiriterator.h>
 #include <QtCore/qlibraryinfo.h>
-#include <QtCore/qxmlstream.h>
+#include <QtCore/qplugin.h>
+#include <QtCore/qprocess.h>
+#include <QtCore/qstring.h>
 #include <QtCore/qtemporaryfile.h>
+#include <QtCore/qxmlstream.h>
+#include <QtTest/qtest.h>
 
 #if QT_CONFIG(qmlcontextpropertydump)
 #  include <QtCore/qsettings.h>

@@ -15,6 +15,7 @@
 #include <QtCore/qvarlengtharray.h>
 #include <private/qmetaobject_p.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qqueue.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -167,6 +168,22 @@ QQmlContext *QQmlContext::parentContext() const
     if (QQmlRefPointer<QQmlContextData> parent = d->m_data->parent())
         return parent->asQQmlContext();
     return nullptr;
+}
+
+/*!
+    \since 6.11
+
+    Return the context's immediate child QQmlContexts.
+
+    \sa parentContext(), findObjectRecursively(), findObjectsRecursively()
+*/
+QList<QQmlContext *> QQmlContext::childContexts() const
+{
+    Q_D(const QQmlContext);
+    QList<QQmlContext *> result;
+    for (auto child = d->m_data->childContexts(); child; child = child->nextChild())
+        result.append(child->asQQmlContext());
+    return result;
 }
 
 /*!
@@ -375,6 +392,26 @@ QString QQmlContext::nameForObject(const QObject *object) const
     return d->m_data->findObjectId(object);
 }
 
+static QObject *objectForNameInQQmlContextData(
+        const QQmlRefPointer<QQmlContextData> &data, const QQmlContextPrivate *d,
+        const QString &name)
+{
+    if (const int propertyIndex = data->propertyIndex(name); propertyIndex >= 0) {
+        const int numPropertyValues = d ? d->numPropertyValues() : 0;
+        if (propertyIndex < numPropertyValues)
+            return qvariant_cast<QObject *>(d->propertyValue(propertyIndex));
+        return data->idValue(propertyIndex - numPropertyValues);
+    }
+
+    if (QObject *obj = data->contextObject()) {
+        QVariant result;
+        if (readObjectProperty(data, obj, name, &result))
+            return qvariant_cast<QObject *>(result);
+    }
+
+    return nullptr;
+}
+
 /*!
   \since 6.2
 
@@ -391,22 +428,75 @@ QString QQmlContext::nameForObject(const QObject *object) const
 QObject *QQmlContext::objectForName(const QString &name) const
 {
     Q_D(const QQmlContext);
+    return objectForNameInQQmlContextData(d->m_data, d, name);
+}
 
-    QQmlRefPointer<QQmlContextData> data = d->m_data;
-    if (const int propertyIndex = data->propertyIndex(name); propertyIndex >= 0) {
-        const int numPropertyValues = d->numPropertyValues();
-        if (propertyIndex < numPropertyValues)
-            return qvariant_cast<QObject *>(d->propertyValue(propertyIndex));
-        return data->idValue(propertyIndex - numPropertyValues);
-    }
+/*!
+    \since 6.11
 
-    if (QObject *obj = data->contextObject()) {
-        QVariant result;
-        if (readObjectProperty(data, obj, name, &result))
-            return qvariant_cast<QObject *>(result);
+    Searches this context and its children recursively for an object with
+    ID \a id. If such an object is found, the object is returned. Otherwise
+    returns \nullptr.
+
+    There can only be one object with the given \a id in any given context,
+    but you can create many contexts within one document, for example with
+    views and delegates. Each of those contexts can contain an object with
+    the given \a id. Only the first one found is returned here. The search
+    is conducted using breadth-first search.
+
+    \sa findObjectsRecursively(), objectForName(), childContexts()
+ */
+QObject *QQmlContext::findObjectRecursively(const QString &id) const
+{
+    Q_D(const QQmlContext);
+    QQueue<QQmlRefPointer<QQmlContextData>> contexts;
+    contexts.enqueue(d->m_data);
+
+    while (!contexts.isEmpty()) {
+        const QQmlRefPointer<QQmlContextData> context = contexts.dequeue();
+        const QQmlContext *c = context->publicContext();
+        if (QObject *found = objectForNameInQQmlContextData(context, c ? c->d_func() : nullptr, id))
+            return found;
+
+        for (auto child = context->childContexts(); child; child = child->nextChild())
+            contexts.enqueue(child);
     }
 
     return nullptr;
+}
+
+/*!
+    \since 6.11
+
+    Searches this context and its children recursively for objects with
+    ID \a id. Returns a list of these objects.
+
+    There can only be one object with the given \a id in any given context,
+    but you can create many contexts within one document, for example with
+    views and delegates. Each of those contexts can contain an object with
+    the given \a id.
+
+    \sa findObjectRecursively(), objectForName(), childContexts()
+ */
+QList<QObject *> QQmlContext::findObjectsRecursively(const QString &id) const
+{
+    Q_D(const QQmlContext);
+
+    QList<QObject *> result;
+    QQueue<QQmlRefPointer<QQmlContextData>> contexts;
+    contexts.enqueue(d->m_data);
+
+    while (!contexts.isEmpty()) {
+        const QQmlRefPointer<QQmlContextData> context = contexts.dequeue();
+        const QQmlContext *c = context->publicContext();
+        if (QObject *found = objectForNameInQQmlContextData(context, c ? c->d_func() : nullptr, id))
+            result.append(found);
+
+        for (auto child = context->childContexts(); child; child = child->nextChild())
+            contexts.enqueue(child);
+    }
+
+    return result;
 }
 
 /*!

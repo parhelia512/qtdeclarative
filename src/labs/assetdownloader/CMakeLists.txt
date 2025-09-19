@@ -3,10 +3,11 @@
 
 find_package(Qt6 REQUIRED COMPONENTS ExamplesAssetDownloaderPrivate)
 
-qt_internal_add_qml_module(QmlAssetDownloader
+qt_internal_add_qml_module(QmlAssetDownloaderPrivate
     URI "Qt.labs.assetdownloader"
     VERSION "${PROJECT_VERSION}"
     STATIC
+    INTERNAL_MODULE
     SOURCES
         qqmlassetdownloader_p.h
         qqmlassetdownloader.cpp

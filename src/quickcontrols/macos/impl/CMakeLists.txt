@@ -8,6 +8,7 @@ set(qml_files
     "DeleteAction.qml"
     "PasteAction.qml"
     "SelectAllAction.qml"
+    "SliderHandle.qml"
     "SwitchHandle.qml"
     "SwitchIndicator.qml"
     "TextEditingContextMenu.qml"

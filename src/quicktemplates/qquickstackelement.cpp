@@ -40,7 +40,10 @@ protected:
     void setInitialState(QObject *object) override
     {
         auto privIncubator = QQmlIncubatorPrivate::get(this);
-        element->incubate(object, privIncubator->requiredProperties());
+        if (QQmlEnginePrivate *enginePriv = privIncubator->enginePriv) {
+            element->incubate(enginePriv->v4Engine.get(), object,
+                              privIncubator->requiredProperties());
+        }
     }
 
 private:
@@ -91,7 +94,8 @@ QQuickStackElement::~QQuickStackElement()
 #endif
 }
 
-QQuickStackElement *QQuickStackElement::fromString(const QString &str, QQuickStackView *view, QString *error)
+QQuickStackElement *QQuickStackElement::fromString(
+        QQmlEngine *engine, const QString &str, QQuickStackView *view, QString *error)
 {
     QUrl url(str);
     if (!url.isValid()) {
@@ -103,7 +107,7 @@ QQuickStackElement *QQuickStackElement::fromString(const QString &str, QQuickSta
         url = qmlContext(view)->resolvedUrl(url);
 
     QQuickStackElement *element = new QQuickStackElement;
-    element->component = new QQmlComponent(qmlEngine(view), url, view);
+    element->component = new QQmlComponent(engine, url, view);
     element->ownComponent = true;
     return element;
 }
@@ -128,7 +132,8 @@ QQuickStackElement *QQuickStackElement::fromObject(QObject *object, QQuickStackV
     return element;
 }
 
-QQuickStackElement *QQuickStackElement::fromStackViewArg(QQuickStackView *view, QQuickStackViewArg arg)
+QQuickStackElement *QQuickStackElement::fromStackViewArg(
+        QQmlEngine *engine, QQuickStackView *view, QQuickStackViewArg arg)
 {
     QQuickStackElement *element = new QQuickStackElement;
 #if QT_CONFIG(quick_viewtransitions)
@@ -145,7 +150,7 @@ QQuickStackElement *QQuickStackElement::fromStackViewArg(QQuickStackView *view, 
 
         Q_ASSERT(!arg.mUrl.isValid());
     } else if (arg.mUrl.isValid()) {
-        element->component = new QQmlComponent(qmlEngine(view), arg.mUrl, view);
+        element->component = new QQmlComponent(engine, arg.mUrl, view);
         element->ownComponent = true;
     } else {
         qFatal("No Item, Component or URL set on arg passed to fromStrictArg");
@@ -153,7 +158,7 @@ QQuickStackElement *QQuickStackElement::fromStackViewArg(QQuickStackView *view, 
     return element;
 }
 
-bool QQuickStackElement::load(QQuickStackView *parent)
+bool QQuickStackElement::load(QV4::ExecutionEngine *v4, QQuickStackView *parent)
 {
     setView(parent);
     if (!item) {
@@ -162,7 +167,7 @@ bool QQuickStackElement::load(QQuickStackView *parent)
         if (component->isLoading()) {
             QObject::connect(component, &QQmlComponent::statusChanged, [this](QQmlComponent::Status status) {
                 if (status == QQmlComponent::Ready)
-                    load(view);
+                    load(component->engine()->handle(), view);
                 else if (status == QQmlComponent::Error)
                     QQuickStackViewPrivate::get(view)->warn(component->errorString().trimmed());
             });
@@ -178,22 +183,24 @@ bool QQuickStackElement::load(QQuickStackView *parent)
         if (component->isError())
             QQuickStackViewPrivate::get(parent)->warn(component->errorString().trimmed());
     } else {
-        initialize(/*required properties=*/nullptr);
+        initialize(v4, /*required properties=*/nullptr);
     }
     return item;
 }
 
-void QQuickStackElement::incubate(QObject *object, RequiredProperties *requiredProperties)
+void QQuickStackElement::incubate(
+        QV4::ExecutionEngine *v4, QObject *object, RequiredProperties *requiredProperties)
 {
     item = qmlobject_cast<QQuickItem *>(object);
     if (item) {
         QQmlEngine::setObjectOwnership(item, QQmlEngine::CppOwnership);
         item->setParent(view);
-        initialize(requiredProperties);
+        initialize(v4, requiredProperties);
     }
 }
 
-void QQuickStackElement::initialize(RequiredProperties *requiredProperties)
+void QQuickStackElement::initialize(
+        QV4::ExecutionEngine *v4, RequiredProperties *requiredProperties)
 {
     if (!item || init)
         return;
@@ -206,9 +213,7 @@ void QQuickStackElement::initialize(RequiredProperties *requiredProperties)
     item->setParentItem(view);
 
     if (!properties.isUndefined()) {
-        QQmlEngine *engine = qmlEngine(view);
-        Q_ASSERT(engine);
-        QV4::Scope scope(engine->handle());
+        QV4::Scope scope(v4);
         Q_ASSERT(scope.engine);
         QV4::ScopedValue ipv(scope, properties.value());
         QV4::Scoped<QV4::QmlContext> qmlContext(scope, qmlCallingContext.value());

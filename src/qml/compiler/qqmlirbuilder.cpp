@@ -441,11 +441,6 @@ bool IRBuilder::generateFromQml(const QString &code, const QString &url, Documen
     return errors.isEmpty();
 }
 
-bool IRBuilder::visit(QQmlJS::AST::UiArrayMemberList *ast)
-{
-    return QQmlJS::AST::Visitor::visit(ast);
-}
-
 bool IRBuilder::visit(QQmlJS::AST::UiProgram *)
 {
     Q_ASSERT(!"should not happen");
@@ -570,31 +565,6 @@ bool IRBuilder::visit(QQmlJS::AST::UiArrayBinding *node)
 
     qSwap(_object, object);
     return false;
-}
-
-bool IRBuilder::visit(QQmlJS::AST::UiHeaderItemList *list)
-{
-    return QQmlJS::AST::Visitor::visit(list);
-}
-
-bool IRBuilder::visit(QQmlJS::AST::UiObjectInitializer *ast)
-{
-    return QQmlJS::AST::Visitor::visit(ast);
-}
-
-bool IRBuilder::visit(QQmlJS::AST::UiObjectMemberList *ast)
-{
-    return QQmlJS::AST::Visitor::visit(ast);
-}
-
-bool IRBuilder::visit(QQmlJS::AST::UiParameterList *ast)
-{
-    return QQmlJS::AST::Visitor::visit(ast);
-}
-
-bool IRBuilder::visit(QQmlJS::AST::UiQualifiedId *id)
-{
-    return QQmlJS::AST::Visitor::visit(id);
 }
 
 void IRBuilder::accept(QQmlJS::AST::Node *node)

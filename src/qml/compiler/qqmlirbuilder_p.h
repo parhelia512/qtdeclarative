@@ -512,15 +512,9 @@ public:
     using QQmlJS::AST::Visitor::visit;
     using QQmlJS::AST::Visitor::endVisit;
 
-    bool visit(QQmlJS::AST::UiArrayMemberList *ast) override;
     bool visit(QQmlJS::AST::UiImport *ast) override;
     bool visit(QQmlJS::AST::UiPragma *ast) override;
-    bool visit(QQmlJS::AST::UiHeaderItemList *ast) override;
-    bool visit(QQmlJS::AST::UiObjectInitializer *ast) override;
-    bool visit(QQmlJS::AST::UiObjectMemberList *ast) override;
-    bool visit(QQmlJS::AST::UiParameterList *ast) override;
     bool visit(QQmlJS::AST::UiProgram *) override;
-    bool visit(QQmlJS::AST::UiQualifiedId *ast) override;
     bool visit(QQmlJS::AST::UiArrayBinding *ast) override;
     bool visit(QQmlJS::AST::UiObjectBinding *ast) override;
     bool visit(QQmlJS::AST::UiObjectDefinition *ast) override;

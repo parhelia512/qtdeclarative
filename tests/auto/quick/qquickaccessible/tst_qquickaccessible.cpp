@@ -552,6 +552,15 @@ void tst_QQuickAccessible::basicPropertiesTest()
     auto newText = QString("a new text");
     textInput->setText(QAccessible::Value, newText);
     QCOMPARE(textInput->text(QAccessible::Value), newText);
+    QCOMPARE(textInterface->selectionCount(), 0);
+    textInterface->setSelection(0, 1, 4);
+    QCOMPARE(textInterface->selectionCount(), 1);
+    int selectionStartOffset = 0, selectionEndOffset = 0;
+    textInterface->selection(0, &selectionStartOffset, &selectionEndOffset);
+    QCOMPARE(selectionStartOffset, 1);
+    QCOMPARE(selectionEndOffset, 4);
+    textInterface->removeSelection(0);
+    QCOMPARE(textInterface->selectionCount(), 0);
 
     // TextEdit
     QAccessibleInterface *textEdit = item->child(3);

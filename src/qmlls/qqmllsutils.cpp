@@ -2233,7 +2233,7 @@ std::optional<ErrorMessage> checkNameForRename(const DomItem &item, const QStrin
     const auto userSemanticScope = item.nearestSemanticScope();
 
     if (!ownerType || !userSemanticScope) {
-        return ErrorMessage{ 0, u"Requested item cannot be renamed"_s };
+        return ErrorMessage{ 0, u"Requested item cannot be renamed."_s };
     }
 
     // type specific checks

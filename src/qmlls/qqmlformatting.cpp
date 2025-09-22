@@ -50,7 +50,7 @@ void QQmlDocumentFormatting::process(RequestPointerArgument request)
     DomItem file = doc.snapshot.doc.fileObject(GoTo::MostLikely);
     if (!file) {
         guard.setError(QQmlLSUtils::ErrorMessage{
-                0, u"Could not find the file %1"_s.arg(doc.snapshot.doc.canonicalFilePath()) });
+                0, u"Could not find the file %1."_s.arg(doc.snapshot.doc.canonicalFilePath()) });
         return;
     }
     if (!file.field(Fields::isValid).value().toBool(false)) {
@@ -69,7 +69,7 @@ void QQmlDocumentFormatting::process(RequestPointerArgument request)
                 },
                 true);
         guard.setError(QQmlLSUtils::ErrorMessage{
-                0, u"Failed to parse %1"_s.arg(file.canonicalFilePath()) });
+                0, u"Failed to parse %1."_s.arg(file.canonicalFilePath()) });
         return;
     }
 

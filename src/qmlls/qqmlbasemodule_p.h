@@ -193,7 +193,7 @@ void QQmlBaseModule<RequestType>::requestHandler(const RequestParameters &parame
             QQmlLSUtils::lspUriToQmlUrl(parameters.textDocument.uri));
 
     if (!req->fillFrom(doc, parameters, std::move(response))) {
-        req->m_response.sendErrorResponse(0, "Received invalid request", parameters);
+        req->m_response.sendErrorResponse(0, "Received invalid request.", parameters);
         return;
     }
     const int minVersion = req->m_minVersion;

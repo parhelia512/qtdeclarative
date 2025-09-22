@@ -91,6 +91,10 @@ void QQuickTextInput::componentComplete()
     updateCursorRectangle();
     if (d->cursorComponent && isCursorVisible())
         QQuickTextUtil::createCursor(d);
+#if QT_CONFIG(accessibility)
+    if (QAccessible::isActive())
+        d->accessibilityActiveChanged(true);
+#endif
 }
 
 /*!
@@ -2841,6 +2845,57 @@ void QQuickTextInput::focusOutEvent(QFocusEvent *event)
     QQuickImplicitSizeItem::focusOutEvent(event);
 }
 
+void QQuickTextInputPrivate::readOnlyChanged(bool isReadOnly)
+{
+    Q_UNUSED(isReadOnly);
+#if QT_CONFIG(accessibility)
+    if (QQuickAccessibleAttached *accessibleAttached =
+                QQuickAccessibleAttached::attachedProperties(q_func()))
+        accessibleAttached->set_readOnly(isReadOnly);
+#endif
+}
+
+void QQuickTextInputPrivate::echoModeChanged(QQuickTextInput::EchoMode echoMode)
+{
+#if QT_CONFIG(accessibility)
+    if (!QAccessible::isActive())
+        return;
+
+    if (QQuickAccessibleAttached *accessibleAttached =
+                QQuickAccessibleAttached::attachedProperties(q_func()))
+        accessibleAttached->set_passwordEdit((echoMode == QQuickTextInput::Password
+                                              || echoMode == QQuickTextInput::PasswordEchoOnEdit)
+                                                     ? true
+                                                     : false);
+#else
+    Q_UNUSED(echoMode);
+#endif
+}
+
+#if QT_CONFIG(accessibility)
+void QQuickTextInputPrivate::accessibilityActiveChanged(bool active)
+{
+    if (!active)
+        return;
+
+    Q_Q(QQuickTextInput);
+    QQuickAccessibleAttached *accessibleAttached = qobject_cast<QQuickAccessibleAttached *>(
+            qmlAttachedPropertiesObject<QQuickAccessibleAttached>(q, true));
+    Q_ASSERT(accessibleAttached);
+    accessibleAttached->setRole(effectiveAccessibleRole());
+    accessibleAttached->set_readOnly(m_readOnly);
+    accessibleAttached->set_passwordEdit((m_echoMode == QQuickTextInput::Password
+                                          || m_echoMode == QQuickTextInput::PasswordEchoOnEdit)
+                                                 ? true
+                                                 : false);
+}
+
+QAccessible::Role QQuickTextInputPrivate::accessibleRole() const
+{
+    return QAccessible::EditableText;
+}
+#endif
+
 /*!
     \qmlproperty bool QtQuick::TextInput::inputMethodComposing
     \readonly
@@ -2908,6 +2963,11 @@ void QQuickTextInputPrivate::init()
 
     m_inputControl = new QInputControl(QInputControl::LineEdit, q);
     setSizePolicy(QLayoutPolicy::Expanding, QLayoutPolicy::Fixed);
+
+    QObjectPrivate::connect(q, &QQuickTextInput::readOnlyChanged, this,
+                            &QQuickTextInputPrivate::readOnlyChanged);
+    QObjectPrivate::connect(q, &QQuickTextInput::echoModeChanged, this,
+                            &QQuickTextInputPrivate::echoModeChanged);
 }
 
 void QQuickTextInputPrivate::cancelInput()

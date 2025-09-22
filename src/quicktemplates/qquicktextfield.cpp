@@ -86,17 +86,10 @@ using namespace Qt::StringLiterals;
 
 QQuickTextFieldPrivate::QQuickTextFieldPrivate()
 {
-#if QT_CONFIG(accessibility)
-    QAccessible::installActivationObserver(this);
-    setAccessible();
-#endif
 }
 
 QQuickTextFieldPrivate::~QQuickTextFieldPrivate()
 {
-#if QT_CONFIG(accessibility)
-    QAccessible::removeActivationObserver(this);
-#endif
 }
 
 void QQuickTextFieldPrivate::setTopInset(qreal value, bool reset)
@@ -261,45 +254,25 @@ void QQuickTextFieldPrivate::implicitHeightChanged()
 
 void QQuickTextFieldPrivate::readOnlyChanged(bool isReadOnly)
 {
-    Q_UNUSED(isReadOnly);
-#if QT_CONFIG(accessibility)
-    if (QQuickAccessibleAttached *accessibleAttached = QQuickControlPrivate::accessibleAttached(q_func()))
-        accessibleAttached->set_readOnly(isReadOnly);
-#endif
+    QQuickTextInputPrivate::readOnlyChanged(isReadOnly);
 #if QT_CONFIG(cursor)
     q_func()->setCursor(isReadOnly && !selectByMouse ? Qt::ArrowCursor : Qt::IBeamCursor);
-#endif
-}
-
-void QQuickTextFieldPrivate::echoModeChanged(QQuickTextField::EchoMode echoMode)
-{
-#if QT_CONFIG(accessibility)
-    if (QQuickAccessibleAttached *accessibleAttached = QQuickControlPrivate::accessibleAttached(q_func()))
-        accessibleAttached->set_passwordEdit((echoMode == QQuickTextField::Password || echoMode == QQuickTextField::PasswordEchoOnEdit) ? true : false);
-#else
-    Q_UNUSED(echoMode);
 #endif
 }
 
 #if QT_CONFIG(accessibility)
 void QQuickTextFieldPrivate::accessibilityActiveChanged(bool active)
 {
+    QQuickTextInputPrivate::accessibilityActiveChanged(active);
+
     if (!active)
         return;
-
     Q_Q(QQuickTextField);
     QQuickAccessibleAttached *accessibleAttached = qobject_cast<QQuickAccessibleAttached *>(qmlAttachedPropertiesObject<QQuickAccessibleAttached>(q, true));
     Q_ASSERT(accessibleAttached);
-    accessibleAttached->setRole(effectiveAccessibleRole());
-    accessibleAttached->set_readOnly(m_readOnly);
-    accessibleAttached->set_passwordEdit((m_echoMode == QQuickTextField::Password || m_echoMode == QQuickTextField::PasswordEchoOnEdit) ? true : false);
     accessibleAttached->setDescriptionImplicitly(placeholder);
 }
 
-QAccessible::Role QQuickTextFieldPrivate::accessibleRole() const
-{
-    return QAccessible::EditableText;
-}
 #endif
 
 void QQuickTextFieldPrivate::cancelBackground()
@@ -387,8 +360,6 @@ QQuickTextField::QQuickTextField(QQuickItem *parent)
 #if QT_CONFIG(cursor)
     setCursor(Qt::IBeamCursor);
 #endif
-    QObjectPrivate::connect(this, &QQuickTextInput::readOnlyChanged, d, &QQuickTextFieldPrivate::readOnlyChanged);
-    QObjectPrivate::connect(this, &QQuickTextInput::echoModeChanged, d, &QQuickTextFieldPrivate::echoModeChanged);
 #if QT_VERSION < QT_VERSION_CHECK(7, 0, 0)
     if (qEnvironmentVariable("QT_QUICK_CONTROLS_TEXT_SELECTION_BEHAVIOR") == u"old"_s)
         QQuickTextInput::setOldSelectionDefault();
@@ -797,10 +768,6 @@ void QQuickTextField::componentComplete()
 #if QT_CONFIG(quicktemplates2_hover)
     if (!d->explicitHoverEnabled)
         setAcceptHoverEvents(QQuickControlPrivate::calcHoverEnabled(d->parentItem));
-#endif
-#if QT_CONFIG(accessibility)
-    if (QAccessible::isActive())
-        d->accessibilityActiveChanged(true);
 #endif
 }
 

@@ -14,6 +14,9 @@
 #include <QtCore/qelapsedtimer.h>
 #include <QtCore/qpointer.h>
 #include <QtCore/qbasictimer.h>
+#if QT_CONFIG(accessibility)
+#include <QtGui/qaccessible.h>
+#endif
 #include <QtGui/qclipboard.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qpalette.h>
@@ -41,6 +44,9 @@ class QSGInternalTextNode;
 class QInputControl;
 
 class Q_QUICK_EXPORT QQuickTextInputPrivate : public QQuickImplicitSizeItemPrivate
+#if QT_CONFIG(accessibility)
+    , public QAccessible::ActivationObserver
+#endif
 {
 public:
     Q_DECLARE_PUBLIC(QQuickTextInput)
@@ -131,6 +137,10 @@ public:
         , selectByTouchDrag(false)
 #endif
     {
+#if QT_CONFIG(accessibility)
+        QAccessible::installActivationObserver(this);
+        setAccessible();
+#endif
     }
 
     ~QQuickTextInputPrivate()
@@ -140,6 +150,10 @@ public:
         // to zero it out
         if (m_echoMode != QQuickTextInput::Normal)
             m_text.fill(u'\0');
+
+#if QT_CONFIG(accessibility)
+        QAccessible::removeActivationObserver(this);
+#endif
     }
 
     void init();
@@ -159,6 +173,14 @@ public:
     Qt::InputMethodHints effectiveInputMethodHints() const;
 #endif
     void handleFocusEvent(QFocusEvent *event);
+
+    virtual void readOnlyChanged(bool isReadOnly);
+    void echoModeChanged(QQuickTextInput::EchoMode echoMode);
+
+#if QT_CONFIG(accessibility)
+    void accessibilityActiveChanged(bool active) override;
+    QAccessible::Role accessibleRole() const override;
+#endif
 
     struct MaskInputData {
         enum Casemode { NoCaseMode, Upper, Lower };

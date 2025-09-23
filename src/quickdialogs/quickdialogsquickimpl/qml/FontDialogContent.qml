@@ -37,6 +37,7 @@ GridLayout {
             readOnly: true
             Layout.fillWidth: true
             focus: true
+            Accessible.name: qsTr("Font family")
         }
         Frame {
             Layout.fillWidth: true
@@ -86,6 +87,7 @@ GridLayout {
             objectName: "styleEdit"
             readOnly: true
             Layout.fillWidth: true
+            Accessible.name: qsTr("Font style")
         }
         Frame {
             Layout.fillWidth: true
@@ -135,6 +137,7 @@ GridLayout {
                 bottom: 1
                 top: 512
             }
+            Accessible.name: qsTr("Font point size")
         }
         Frame {
             Layout.fillWidth: true
@@ -232,6 +235,8 @@ GridLayout {
             anchors.centerIn: parent
             readOnly: true
             color: palette.text
+            focusPolicy: Qt.NoFocus
+            Accessible.ignored: true
         }
     }
 }

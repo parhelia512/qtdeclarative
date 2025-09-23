@@ -27,7 +27,7 @@ QT_BEGIN_NAMESPACE
     as well as properties in the \l {QTextCharFormat}{character} and
     \l {QTextBlockFormat}{block} formats.
 
-    Additionally, since 6.10 it's possible to create explicit non-visual instances:
+    Additionally, since 6.11 it's possible to create explicit non-visual instances:
 
     \qml
     TextEdit {
@@ -53,7 +53,7 @@ QT_BEGIN_NAMESPACE
     QQuickTextSelection provides QML API using QTextCursor.
     QQuickTextControl owns a text cursor, and one instance of
     QQuickTextSelection represents it and delegates all operations to it.
-    But since 6.10, the user can also create other instances of TextSelection
+    But since 6.11, the user can also create other instances of TextSelection
     in QML for the purpose of programmatic editing; in that case
     m_control remains null, m_doc is set, QQuickTextSelection owns the
     QTextCursor, and delegates all operations to it.
@@ -86,7 +86,7 @@ void QQuickTextSelection::componentComplete()
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlproperty TextDocument QtQuick::TextSelection::document
 
     The QQuickTextDocument that contains the selected text.
@@ -109,7 +109,7 @@ void QQuickTextSelection::setDocument(QQuickTextDocument *doc)
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlproperty int QtQuick::TextSelection::selectionStart
 
     The position before the first character in the selection.
@@ -137,7 +137,7 @@ void QQuickTextSelection::setSelectionStart(int start)
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlproperty int QtQuick::TextSelection::selectionEnd
 
     The position after the last character in the selection.
@@ -264,7 +264,7 @@ void QQuickTextSelection::setAlignment(Qt::Alignment align)
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlmethod bool QtQuick::TextSelection::moveSelectionStart(MoveOperation op, int n)
 
     Deselect text and move \l selectionStart \a n times according to \a op,
@@ -325,7 +325,7 @@ bool QQuickTextSelection::moveSelectionStart(MoveOperation op, int n)
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlmethod void QtQuick::TextSelection::moveSelectionEnd(MoveOperation op, int n)
 
     Move \l selectionEnd \a n times according to \a op, which is
@@ -354,7 +354,7 @@ bool QQuickTextSelection::moveSelectionEnd(MoveOperation op, int n)
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlmethod void QtQuick::TextSelection::duplicate()
 
     Copy the selected text forward, keeping all formatting intact
@@ -378,7 +378,7 @@ void QQuickTextSelection::duplicate()
 }
 
 /*!
-    \since 6.10
+    \since 6.11
     \qmlmethod void QtQuick::TextSelection::linkTo(url destination)
 
     Create a hyperlink from the selected text to \a destination.

@@ -128,7 +128,6 @@ void OutWriter::scanFormatDirectives(QStringView code, const QList<SourceLocatio
     if (!shouldScanDirectives)
         return;
 
-    setCode(code);
     formatDisabledRegions = QmlFormat::identifyDisabledRegions(code, comments);
 }
 

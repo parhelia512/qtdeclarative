@@ -83,7 +83,7 @@ void QQmlRangeFormatting::process(RequestPointerArgument request)
     QTextStream out(&resultText);
     IndentingLineWriter lw([&out](QStringView writtenText) { out << writtenText.toUtf8(); },
                            QString(), options, partialStatus.currentStatus);
-    OutWriter ow(lw);
+    OutWriter ow(qmlFile, lw);
     ow.indentNextlines = true;
 
     // TODO: This is a workaround and will/should be handled by the actual formatter

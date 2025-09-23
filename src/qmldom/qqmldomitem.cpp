@@ -1304,17 +1304,6 @@ DomItem::WriteOutCheckResult DomItem::performWriteOutChecks(const DomItem &refor
     return WriteOutCheckResult::Success;
 }
 
-static inline void scanFormatDirectives(OutWriter &ow, const DomItem &currentFileItem)
-{
-    if (currentFileItem.internalKind() == DomType::QmlFile) {
-        auto filePtr = currentFileItem.as<QmlFile>();
-        ow.scanFormatDirectives(filePtr->code(), filePtr->engine()->comments());
-    } else if (currentFileItem.internalKind() == DomType::JsFile) {
-        auto filePtr = currentFileItem.as<JsFile>();
-        ow.scanFormatDirectives(filePtr->code(), filePtr->engine()->comments());
-    }
-}
-
 /*!
    \internal
     Performes WriteOut of the FileItem and verifies the consistency of the DOM structure.
@@ -1329,7 +1318,6 @@ bool DomItem::writeOutForFile(OutWriter &ow, WriteOutChecks extraChecks) const
 {
     ow.indentNextlines = true;
     auto currentFileItem = fileObject();
-    scanFormatDirectives(ow, currentFileItem);
     writeOut(ow);
     ow.eof();
     WriteOutCheckResult result = WriteOutCheckResult::Success;
@@ -1348,7 +1336,7 @@ bool DomItem::writeOut(const QString &path, int nBackups, const LineWriterOption
             path,
             [this, path, &options, extraChecks](QTextStream &ts) {
                 auto lw = createLineWriter([&ts](QStringView s) { ts << s; }, path, options);
-                OutWriter ow(*lw);
+                OutWriter ow(getFileItemOwner(fileObject()), *lw);
                 return writeOutForFile(ow, extraChecks);
             },
             nBackups);
@@ -3320,6 +3308,18 @@ ScriptElement::PointerType<ScriptElement> ScriptElementVariant::base() const
                         e, static_cast<ScriptElement *>(e.get()));
             },
             *m_data);
+}
+
+std::shared_ptr<ExternalOwningItem> getFileItemOwner(const DomItem &fileItem)
+{
+    switch (fileItem.internalKind()) {
+    case DomType::JsFile:
+        return fileItem.ownerAs<JsFile>();
+    case DomType::QmlFile:
+        return fileItem.ownerAs<QmlFile>();
+    default:
+        Q_UNREACHABLE_RETURN({});
+    }
 }
 
 } // end namespace Dom

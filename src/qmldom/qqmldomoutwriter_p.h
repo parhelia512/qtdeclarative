@@ -19,6 +19,7 @@
 #include "qqmldom_fwd_p.h"
 #include "qqmldomlinewriter_p.h"
 #include "qqmldomcomments_p.h"
+#include "qqmldomexternalitems_p.h"
 
 #include <QtCore/QLoggingCategory>
 
@@ -53,6 +54,26 @@ public:
                 lineWriter.setLineIndent(indent);
             return true;
         });
+    }
+
+    OutWriter(std::shared_ptr<ExternalOwningItem> ownerFile, LineWriter &lw)
+        : OutWriter(lw)
+    {
+        if (!ownerFile)
+            return;
+
+        code = ownerFile->code();
+
+        const auto engine = [&ownerFile]() -> std::shared_ptr<QQmlJS::Engine> {
+            if (auto qmlfilePtr = std::dynamic_pointer_cast<QmlFile>(ownerFile))
+                return qmlfilePtr->engine();
+            else if (auto jsfilePtr = std::dynamic_pointer_cast<JsFile>(ownerFile))
+                return jsfilePtr->engine();
+            return nullptr;
+        }();
+
+        if (engine)
+            scanFormatDirectives(code, engine->comments());
     }
 
     int increaseIndent(int level = 1)
@@ -139,7 +160,6 @@ public:
     void scanFormatDirectives(QStringView code, const QList<SourceLocation> &comments);
     void writeDisabledRegion(const SourceLocation &loc);
     QStringView attachedDisableCode(quint32 offset) const;
-    void setCode(QStringView c) { code = c; };
 };
 
 } // end namespace Dom

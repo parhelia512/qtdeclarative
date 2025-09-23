@@ -2276,6 +2276,11 @@ inline DomItem DomItem::subMapItem(const Map &map) const
     return DomItem(m_top, m_owner, m_ownerPath, map);
 }
 
+// TODO
+// refactor this workaround. ExternalOWningItem is not recognized as an owning type
+// in ownerAs.
+std::shared_ptr<ExternalOwningItem> getFileItemOwner(const DomItem &fileItem);
+
 } // end namespace Dom
 } // end namespace QQmlJS
 

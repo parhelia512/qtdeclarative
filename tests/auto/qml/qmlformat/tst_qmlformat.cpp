@@ -278,9 +278,9 @@ QString TestQmlformat::formatInMemoryImpl(bool *didSucceed, LineWriterOptions op
 
         QTextStream res(&resultStr);
         LineWriter lw([&res](QStringView s) { res << s; }, QLatin1String("*testStream*"), options);
-        OutWriter ow(lw);
-        ow.indentNextlines = true;
         DomItem qmlFile = tFile.field(Fields::currentItem);
+        OutWriter ow(getFileItemOwner(qmlFile), lw);
+        ow.indentNextlines = true;
         writtenOut = qmlFile.writeOutForFile(ow, checks);
         lw.eof();
         res.flush();

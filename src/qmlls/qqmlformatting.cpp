@@ -84,7 +84,7 @@ void QQmlDocumentFormatting::process(RequestPointerArgument request)
     QLspSpecification::TextEdit formattedText;
     LineWriter lw([&formattedText](QStringView s) { formattedText.newText += s.toUtf8(); },
                   QString(), currentFormatOptions.optionsForCode(qmlFile->code()));
-    OutWriter ow(lw);
+    OutWriter ow(qmlFile, lw);
     file.writeOutForFile(ow, WriteOutCheck::None);
     ow.flush();
     const auto &code = qmlFile->code();

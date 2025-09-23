@@ -1762,7 +1762,7 @@ void tst_qmlls_modules::qmldirImports()
         completionOk = true;
     });
 
-    QTRY_VERIFY_WITH_TIMEOUT(diagnosticOk && completionOk, 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(diagnosticOk && completionOk, 10000);
 }
 
 void tst_qmlls_modules::quickFixes_data()

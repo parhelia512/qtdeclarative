@@ -1716,17 +1716,16 @@ void tst_qmlls_modules::qmldirImports()
     QFETCH(int, character);
     QFETCH(QString, expectedCompletion);
 
-    const auto uri = openFile(filePath);
-    QVERIFY(uri);
-
     if (addBuildDirectory == AddBuildDir) {
         Notifications::AddBuildDirsParams bDirs;
         UriToBuildDirs ub;
-        ub.baseUri = *uri;
         ub.buildDirs.append(testFile("buildDir").toUtf8());
         bDirs.buildDirsToSet.append(ub);
         m_protocol->typedRpc()->sendNotification(QByteArray(Notifications::AddBuildDirsMethod), bDirs);
     }
+
+    const auto uri = openFile(filePath);
+    QVERIFY(uri);
 
     bool diagnosticOk = false;
     bool completionOk = false;

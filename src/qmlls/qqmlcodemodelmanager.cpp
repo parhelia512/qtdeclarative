@@ -123,18 +123,13 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
     ws.url = url;
     ws.codeModel = std::make_unique<QQmlCodeModel>(url, this, m_settings);
 
-    // set default values
-    if (!m_defaultImportPaths.isEmpty())
-        ws.codeModel->setImportPaths(m_defaultImportPaths);
-
-    if (!m_defaultDocumentationRootPath.isEmpty())
-        ws.codeModel->setDocumentationRootPath(m_defaultDocumentationRootPath);
-
-    // set values from already known .qmlls.build.ini files
-    if (const QStringList importPaths =
-                m_buildInformation.importPathsFor(QUrl::fromEncoded(url).toLocalFile());
-        !importPaths.isEmpty()) {
-        ws.codeModel->setImportPaths(importPaths);
+    // the non-fallback codemodel inherits the default values from the fallback codemodel
+    if (!url.isEmpty()) {
+        ws.codeModel->setDocumentationRootPath(defaultDocumentationRootPath());
+        ws.codeModel->setBuildPaths(defaultBuildPaths());
+        ws.codeModel->setImportPaths(
+                m_buildInformation.importPathsFor(QUrl::fromEncoded(url).toLocalFile())
+                + defaultImportPaths());
     }
 
     QObject::connect(ws.codeModel.get(), &QQmlCodeModel::updatedSnapshot, this,
@@ -283,7 +278,10 @@ QByteArray QQmlCodeModelManager::shortestRootUrlForFile(const QByteArray &fileUr
 
 void QQmlCodeModelManager::setDocumentationRootPath(const QString &path)
 {
-    m_defaultDocumentationRootPath = path;
+    // Note: this function can only be called after the fallback workspace was created but before
+    // all other potential workspaces are created, for example when setting the import paths set via
+    // commandline option or environment variable.
+    Q_ASSERT(m_workspaces.size() == 1);
     for (const auto &ws : m_workspaces)
         ws.codeModel->setDocumentationRootPath(path);
 }
@@ -297,13 +295,14 @@ void QQmlCodeModelManager::setVerbose(bool verbose)
 
 void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths)
 {
-    auto setBuildPaths = [&paths, this](const QQmlWorkspace &ws) {
-        ws.codeModel->setBuildPaths(paths);
+    const QStringList defaultPaths = defaultBuildPaths();
+    auto setBuildPaths = [&paths, &defaultPaths, this](const QQmlWorkspace &ws) {
+        ws.codeModel->setBuildPaths(paths + defaultPaths);
 
         if (const QStringList importPaths =
                     m_buildInformation.importPathsFor(QUrl::fromEncoded(ws.url).toLocalFile());
             !importPaths.isEmpty()) {
-            ws.codeModel->setImportPaths(importPaths);
+            ws.codeModel->setImportPaths(importPaths + defaultImportPaths());
         }
     };
 
@@ -324,9 +323,13 @@ void QQmlCodeModelManager::addOpenToUpdate(const QByteArray &url)
 {
     findCodeModelForFile(url)->addOpenToUpdate(url, NormalUpdate);
 }
+
 void QQmlCodeModelManager::setImportPaths(const QStringList &paths)
 {
-    m_defaultImportPaths = paths;
+    // Note: this function can only be called after the fallback workspace was created but before
+    // all other potential workspaces are created, for example when setting the import paths set via
+    // commandline option or environment variable.
+    Q_ASSERT(m_workspaces.size() == 1);
     for (const auto &ws : m_workspaces)
         ws.codeModel->setImportPaths(paths);
 }

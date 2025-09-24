@@ -178,6 +178,9 @@ private:
     void onCMakeProcessFinished(const QByteArray &id);
 
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);
+
+    void onBuildOrImportPathChanged();
+
     enum CMakeStatus { RequiresInitialization, HasCMake, DoesNotHaveCMake };
     CMakeStatus cmakeStatus() const
     {
@@ -200,6 +203,7 @@ private:
 
     QHash<QByteArray, UpdatePolicy> m_openDocumentsToUpdate;
     QStringList m_buildPaths;
+    QStringList m_importPaths;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;

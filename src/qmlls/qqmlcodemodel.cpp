@@ -536,11 +536,6 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
 
     const QString fPath = url2Path(url, UrlLookup::ForceLookup);
     DomItem newCurrent = m_currentEnv.makeCopy(DomItem::CopyOption::EnvConnected).item();
-    const QStringList loadPaths = buildPathsForFileUrl(url) + importPathsForUrl(url);
-
-    if (std::shared_ptr<DomEnvironment> newCurrentPtr = newCurrent.ownerAs<DomEnvironment>()) {
-        newCurrentPtr->setLoadPaths(loadPaths);
-    }
 
     // if the documentation root path is not set through the commandline,
     // try to set it from the settings file (.qmlls.ini file)
@@ -553,6 +548,8 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
 
     Path p;
     auto newCurrentPtr = newCurrent.ownerAs<DomEnvironment>();
+    const QStringList loadPaths = buildPathsForFileUrl(url) + importPathsForUrl(url);
+    newCurrentPtr->setLoadPaths(loadPaths);
     newCurrentPtr->loadFile(FileToLoad::fromMemory(newCurrentPtr, fPath, docText),
                             [&p, this](Path, const DomItem &, const DomItem &newValue) {
                                 const DomItem file = newValue.fileObject();
@@ -617,21 +614,26 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
     return result;
 }
 
+void QQmlCodeModel::onBuildOrImportPathChanged()
+{
+    const QStringList loadPaths = m_importPaths + m_buildPaths;
+    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
+        env->setLoadPaths(loadPaths);
+    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
+        env->setLoadPaths(loadPaths);
+}
+
 void QQmlCodeModel::setImportPaths(const QStringList &importPaths)
 {
-    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
-        env->setLoadPaths(importPaths);
-    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
-        env->setLoadPaths(importPaths);
+    QMutexLocker guard(&m_mutex);
+    m_importPaths = importPaths;
+    onBuildOrImportPathChanged();
 }
 
 QStringList QQmlCodeModel::importPaths() const
 {
-    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
-        return env->loadPaths();
-    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
-        return env->loadPaths();
-    return {};
+    QMutexLocker guard(&m_mutex);
+    return m_importPaths;
 }
 
 static QStringList withDependentBuildDirectories(QStringList &&buildPaths)
@@ -686,6 +688,7 @@ void QQmlCodeModel::setBuildPaths(const QStringList &paths)
 {
     QMutexLocker l(&m_mutex);
     m_buildPaths = paths;
+    onBuildOrImportPathChanged();
 }
 
 void QQmlCodeModel::openUpdate(const QByteArray &url, UpdatePolicy policy)

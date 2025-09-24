@@ -75,7 +75,12 @@ public:
     void tryEnableCMakeCalls();
 
     void setVerbose(bool verbose);
-
+    QStringList defaultImportPaths() const { return fallbackCodeModel()->importPaths(); }
+    QStringList defaultBuildPaths() const { return fallbackCodeModel()->buildPaths(); }
+    QString defaultDocumentationRootPath() const
+    {
+        return fallbackCodeModel()->documentationRootPath();
+    }
 private slots:
     void onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
@@ -85,6 +90,7 @@ protected:
     enum CMakeStatus { HasCMake, DoesNotHaveCMake, IsProbingCMake };
 
     QQmlCodeModel *findCodeModelForFile(const QByteArray &url);
+    QQmlCodeModel *fallbackCodeModel() const { return m_workspaces.front().codeModel.get(); }
     WorkspaceIterator findWorkspaceForFile(const QByteArray &url);
     WorkspaceIterator workspaceFromBuildFolder(const QString &fileName,
                                                const QStringList &buildFolders);
@@ -102,9 +108,6 @@ protected:
 
     std::map<QByteArray, QByteArray> m_file2CodeModel;
 
-    // defaults to apply to new codemodels:
-    QStringList m_defaultImportPaths;
-    QString m_defaultDocumentationRootPath;
     QProcess m_cmakeProber;
     CMakeStatus m_cmakeStatus = IsProbingCMake;
     bool m_verbose = false;

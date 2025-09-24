@@ -41,6 +41,8 @@ Item {
                 text: root.delegate.fileName
                 color: root.delegate.icon.color
                 y: (parent.height - height) / 2
+
+                Accessible.ignored: true
             }
         }
 
@@ -59,12 +61,16 @@ Item {
                 }
                 font.pixelSize: root.delegate.font.pixelSize * 0.75
                 color: root.fileDetailRowTextColor
+
+                Accessible.ignored: true
             }
             Label {
                 text: Qt.formatDateTime(root.delegate.fileModified)
                 font.pixelSize: root.delegate.font.pixelSize * 0.75
                 color: root.fileDetailRowTextColor
                 x: parent.width - width
+
+                Accessible.ignored: true
             }
         }
     }

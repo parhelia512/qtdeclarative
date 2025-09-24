@@ -83,6 +83,8 @@ ColorDialogImpl {
 
             Layout.alignment: Qt.AlignRight
             Layout.rightMargin: 16
+
+            Accessible.name: qsTr("Eye dropper")
         }
     }
 
@@ -102,6 +104,8 @@ ColorDialogImpl {
             orientation: Qt.Horizontal
             value: control.hue
             onMoved: function() { control.hue = value; }
+
+            Accessible.name: qsTr("Hue")
 
             Layout.fillWidth: true
             Layout.leftMargin: 16
@@ -189,6 +193,8 @@ ColorDialogImpl {
                     }
                 }
             }
+
+            Accessible.name: qsTr("Alpha")
 
             Layout.fillWidth: true
             Layout.leftMargin: 16

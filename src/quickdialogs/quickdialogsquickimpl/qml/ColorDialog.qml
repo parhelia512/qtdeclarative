@@ -76,6 +76,8 @@ ColorDialogImpl {
                 Layout.preferredWidth: implicitHeight
                 Layout.alignment: Qt.AlignRight
                 Layout.rightMargin: 6
+
+                Accessible.name: qsTr("Eye dropper")
             }
         }
     }
@@ -124,6 +126,8 @@ ColorDialogImpl {
                     }
                 }
             }
+
+            Accessible.name: qsTr("Hue")
 
             Layout.fillWidth: true
             Layout.leftMargin: 12
@@ -181,6 +185,8 @@ ColorDialogImpl {
                     }
                 }
             }
+
+            Accessible.name: qsTr("Alpha")
 
             Layout.fillWidth: true
             Layout.leftMargin: 12

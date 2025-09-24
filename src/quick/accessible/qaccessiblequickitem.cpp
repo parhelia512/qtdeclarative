@@ -4,6 +4,7 @@
 
 #include "qaccessiblequickitem_p.h"
 
+#include <QtGui/private/qaccessiblehelper_p.h>
 #include <QtGui/qtextdocument.h>
 
 #include "QtQuick/private/qquickitem_p.h"
@@ -876,16 +877,7 @@ QString QAccessibleQuickItem::textBeforeOffset(int offset, QAccessible::TextBoun
     Q_ASSERT(endOffset);
 
     if (m_doc) {
-        QTextCursor cursor = QTextCursor(m_doc);
-        cursor.setPosition(offset);
-        std::pair<int, int> boundaries = QAccessible::qAccessibleTextBoundaryHelper(cursor, boundaryType);
-        cursor.setPosition(boundaries.first - 1);
-        boundaries = QAccessible::qAccessibleTextBoundaryHelper(cursor, boundaryType);
-
-        *startOffset = boundaries.first;
-        *endOffset = boundaries.second;
-
-        return text(boundaries.first, boundaries.second);
+        return qt_accTextBeforeOffsetHelper(*this, QTextCursor(m_doc), offset, boundaryType, startOffset, endOffset);
     } else {
         return QAccessibleTextInterface::textBeforeOffset(offset, boundaryType, startOffset, endOffset);
     }
@@ -898,16 +890,7 @@ QString QAccessibleQuickItem::textAfterOffset(int offset, QAccessible::TextBound
     Q_ASSERT(endOffset);
 
     if (m_doc) {
-        QTextCursor cursor = QTextCursor(m_doc);
-        cursor.setPosition(offset);
-        std::pair<int, int> boundaries = QAccessible::qAccessibleTextBoundaryHelper(cursor, boundaryType);
-        cursor.setPosition(boundaries.second);
-        boundaries = QAccessible::qAccessibleTextBoundaryHelper(cursor, boundaryType);
-
-        *startOffset = boundaries.first;
-        *endOffset = boundaries.second;
-
-        return text(boundaries.first, boundaries.second);
+        return qt_accTextAfterOffsetHelper(*this, QTextCursor(m_doc), offset, boundaryType, startOffset, endOffset);
     } else {
         return QAccessibleTextInterface::textAfterOffset(offset, boundaryType, startOffset, endOffset);
     }
@@ -920,13 +903,7 @@ QString QAccessibleQuickItem::textAtOffset(int offset, QAccessible::TextBoundary
     Q_ASSERT(endOffset);
 
     if (m_doc) {
-        QTextCursor cursor = QTextCursor(m_doc);
-        cursor.setPosition(offset);
-        std::pair<int, int> boundaries = QAccessible::qAccessibleTextBoundaryHelper(cursor, boundaryType);
-
-        *startOffset = boundaries.first;
-        *endOffset = boundaries.second;
-        return text(boundaries.first, boundaries.second);
+        return qt_accTextAtOffsetHelper(*this, QTextCursor(m_doc), offset, boundaryType, startOffset, endOffset);
     } else {
         return QAccessibleTextInterface::textAtOffset(offset, boundaryType, startOffset, endOffset);
     }

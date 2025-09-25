@@ -9665,8 +9665,8 @@ void tst_qqmllanguage::referenceToBindableReadsBackOnlyWhenRequired() {
     auto *readCounter = qobject_cast<ReadCounter *>(o.data());
     QVERIFY(readCounter);
 
-    QCOMPARE_GE(readCounter->timesRead, 3);
-    QCOMPARE_LE(readCounter->timesRead, 4);
+    QCOMPARE_GE(readCounter->timesRead, 3u);
+    QCOMPARE_LE(readCounter->timesRead, 4u);
     QCOMPARE(readCounter->property("finalLength").toInt(), readCounter->bindableProperty().value().size());
 }
 

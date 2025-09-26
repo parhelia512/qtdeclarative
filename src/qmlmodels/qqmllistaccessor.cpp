@@ -7,7 +7,7 @@
 #include <private/qqmlmetatype_p.h>
 
 #include <QtCore/qdebug.h>
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qstringlist.h>
 #include <QtCore/qurl.h>
 
@@ -117,10 +117,10 @@ void QQmlListAccessor::setList(const QVariant &v)
         return;
     }
 
-    QSequentialIterable iterable;
+    QMetaSequence::Iterable iterable;
     if (QMetaType::convert(
                 variantsType, d.constData(),
-                QMetaType::fromType<QSequentialIterable>(), &iterable)) {
+                QMetaType::fromType<QMetaSequence::Iterable>(), &iterable)) {
         const QMetaSequence sequence = iterable.metaContainer();
 
         if (sequence.hasSize() && sequence.canGetValueAtIndex()) {

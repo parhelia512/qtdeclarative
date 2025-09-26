@@ -82,7 +82,7 @@
 #include <QtCore/qiterable.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qmetatype.h>
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qtextstream.h>
 #include <QtCore/qtimezone.h>
 
@@ -150,7 +150,7 @@ void createNewIteratorIfNonExisting(void **iterator) {
 
 static QtMetaContainerPrivate::QMetaSequenceInterface emptySequenceInterface()
 {
-    // set up some functions so that non-array QSequentialIterables do not crash
+    // set up some functions so that non-array QMetaSequence::Iterables do not crash
     // but instead appear as an empty sequence
 
     using namespace QtMetaContainerPrivate;
@@ -195,7 +195,7 @@ static QtMetaContainerPrivate::QMetaSequenceInterface sequenceInterface()
     /* Lifetime management notes:
      * valueAtIndexFn and valueAtIteratorFn return a pointer to a JSValue allocated via
      * QMetaType::create Because we set QVariantConstructionFlags::ShouldDeleteVariantData,
-     * QSequentialIterable::at and QSequentialIterable::operator*() will free that memory
+     * QMetaSequence::Iterable::at and QMetaSequence::Iterable::operator*() will free that memory
      */
 
     iface.valueAtIndexFn = [](const void *iterable, qsizetype index, void *dataPtr) -> void {
@@ -295,18 +295,18 @@ static QtMetaContainerPrivate::QMetaSequenceInterface sequenceInterface()
     return iface;
 }
 
-static QSequentialIterable jsvalueToSequence (const QJSValue& value) {
+static QMetaSequence::Iterable jsvalueToSequence (const QJSValue& value) {
     using namespace QtMetaTypePrivate;
     using namespace QtMetaContainerPrivate;
 
 
     if (!value.isArray()) {
         static QMetaSequenceInterface emptySequence = emptySequenceInterface();
-        return QSequentialIterable(QMetaSequence(&emptySequence), nullptr);
+        return QMetaSequence::Iterable(QMetaSequence(&emptySequence), nullptr);
     }
 
     static QMetaSequenceInterface sequence = sequenceInterface();
-    return QSequentialIterable(QMetaSequence(&sequence), &value);
+    return QMetaSequence::Iterable(QMetaSequence(&sequence), &value);
 }
 
 void ExecutionEngine::initializeStaticMembers()
@@ -354,8 +354,8 @@ void ExecutionEngine::initializeStaticMembers()
         QMetaType::registerConverter<QJSValue, QVariantList>(convertJSValueToVariantType<QVariantList>);
     if (!QMetaType::hasRegisteredConverterFunction<QJSValue, QStringList>())
         QMetaType::registerConverter<QJSValue, QStringList>(convertJSValueToVariantType<QStringList>);
-    if (!QMetaType::hasRegisteredConverterFunction<QJSValue, QSequentialIterable>())
-        QMetaType::registerConverter<QJSValue, QSequentialIterable>(jsvalueToSequence);
+    if (!QMetaType::hasRegisteredConverterFunction<QJSValue, QMetaSequence::Iterable>())
+        QMetaType::registerConverter<QJSValue, QMetaSequence::Iterable>(jsvalueToSequence);
 }
 
 /*!
@@ -1976,8 +1976,8 @@ QV4::ReturnedValue ExecutionEngine::fromData(
     if (listType.isSequentialContainer())
         return createSequence(listType.listMetaSequence());
 
-    QSequentialIterable iterable;
-    if (QMetaType::convert(metaType, ptr, QMetaType::fromType<QSequentialIterable>(), &iterable)) {
+    QMetaSequence::Iterable iterable;
+    if (QMetaType::convert(metaType, ptr, QMetaType::fromType<QMetaSequence::Iterable>(), &iterable)) {
 
         // If the resulting iterable is useful for anything, turn it into a QV4::Sequence.
         const QMetaSequence sequence = iterable.metaContainer();
@@ -2544,8 +2544,8 @@ void ExecutionEngine::setExtensionData(int index, Deletable *data)
 template<typename Source>
 bool convertToIterable(QMetaType metaType, void *data, Source *sequence)
 {
-    QSequentialIterable iterable;
-    if (!QMetaType::view(metaType, data, QMetaType::fromType<QSequentialIterable>(), &iterable))
+    QMetaSequence::Iterable iterable;
+    if (!QMetaType::view(metaType, data, QMetaType::fromType<QMetaSequence::Iterable>(), &iterable))
         return false;
 
     // Clear the sequence before appending. There may be stale data in there.
@@ -2555,7 +2555,7 @@ bool convertToIterable(QMetaType metaType, void *data, Source *sequence)
     QV4::Scope scope(sequence->engine());
     QV4::ScopedValue v(scope);
 
-    const QMetaType elementMetaType = iterable.valueMetaType();
+    const QMetaType elementMetaType = iterable.metaContainer().valueMetaType();
     QVariant element;
     void *elementData = nullptr;
     if (elementMetaType == QMetaType::fromType<QVariant>()) {
@@ -2568,7 +2568,7 @@ bool convertToIterable(QMetaType metaType, void *data, Source *sequence)
     for (qsizetype i = 0, end = sequence->getLength(); i < end; ++i) {
         v = sequence->get(i);
         ExecutionEngine::metaTypeFromJS(v, elementMetaType, elementData);
-        iterable.addValue(element, QSequentialIterable::AtEnd);
+        iterable.append(element);
     }
 
     return true;

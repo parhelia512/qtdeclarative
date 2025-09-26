@@ -25,7 +25,7 @@
 #include <QtQml/qqmlprivate.h>
 
 #include <QtCore/qmutex.h>
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetasequence.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -1249,14 +1249,14 @@ static void iterateVariant(const QVariant &element, std::vector<QVariant> *eleme
         return;
     }
 
-    QSequentialIterable iterable;
+    QMetaSequence::Iterable iterable;
     if (!QMetaType::convert(
                 element.metaType(), element.constData(),
-                QMetaType::fromType<QSequentialIterable>(), &iterable)) {
+                QMetaType::fromType<QMetaSequence::Iterable>(), &iterable)) {
         return;
     }
 
-    switch (iterable.valueMetaType().id()) {
+    switch (iterable.metaContainer().valueMetaType().id()) {
     QT_FOR_EACH_STATIC_PRIMITIVE_TYPE(ADD_CASE)
     QT_FOR_EACH_STATIC_CORE_CLASS(ADD_CASE)
     QT_FOR_EACH_STATIC_GUI_CLASS(ADD_CASE)

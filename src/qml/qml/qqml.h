@@ -10,7 +10,7 @@
 
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetaobject.h>
-#include <QtCore/qmetacontainer.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qversionnumber.h>
 
 #define QML_VERSION     0x020000

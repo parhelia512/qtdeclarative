@@ -2921,7 +2921,7 @@ void QQuickPathPolyline::setPath(const QVariant &path)
         QVariantList vl = path.value<QVariantList>();
         // If path is a QJSValue, e.g. coming from a JS array of Qt.point() in QML,
         // then path.value<QVariantList>() is inefficient.
-        // TODO We should be able to iterate over path.value<QSequentialIterable>() eventually
+        // TODO We should be able to iterate over path.value<QMetaSequence::Iterable>() eventually
         for (const QVariant &v : vl)
             pathList.append(v.toPointF());
         setPath(pathList);

@@ -25,7 +25,7 @@
 #include <QtCore/qdatetime.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qglobal.h>
-#include <QtCore/qmetacontainer.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qmetaobject.h>
 #include <QtCore/qpointer.h>
 #include <QtCore/qurl.h>

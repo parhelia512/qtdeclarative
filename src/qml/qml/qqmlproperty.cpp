@@ -28,7 +28,7 @@
 #include <QtQml/qqmlpropertymap.h>
 
 #include <QtCore/qdebug.h>
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qstringlist.h>
 #include <QtCore/qvector.h>
 
@@ -1482,15 +1482,15 @@ static ConvertAndAssignResult tryConvertAndAssign(
 template<typename Op>
 bool iterateQObjectContainer(QMetaType metaType, const void *data, Op op)
 {
-    QSequentialIterable iterable;
-    if (!QMetaType::convert(metaType, data, QMetaType::fromType<QSequentialIterable>(), &iterable))
+    QMetaSequence::Iterable iterable;
+    if (!QMetaType::convert(metaType, data, QMetaType::fromType<QMetaSequence::Iterable>(), &iterable))
         return false;
 
     const QMetaSequence metaSequence = iterable.metaContainer();
 
     if (!metaSequence.hasConstIterator()
             || !metaSequence.canGetValueAtConstIterator()
-            || !iterable.valueMetaType().flags().testFlag(QMetaType::PointerToQObject)) {
+            || !metaSequence.valueMetaType().flags().testFlag(QMetaType::PointerToQObject)) {
         return false;
     }
 
@@ -1585,14 +1585,14 @@ template<typename DoAppend>
 AssignResult assignMetaContainerToListProperty(
         QQmlListProperty<QObject> *prop, QMetaType metaType, const void *data, DoAppend &&doAppend)
 {
-    QSequentialIterable iterable;
-    if (!QMetaType::convert(metaType, data, QMetaType::fromType<QSequentialIterable>(), &iterable))
+    QMetaSequence::Iterable iterable;
+    if (!QMetaType::convert(metaType, data, QMetaType::fromType<QMetaSequence::Iterable>(), &iterable))
         return AssignResult::TypeMismatch;
 
     const QMetaSequence metaSequence = iterable.metaContainer();
     if (!metaSequence.hasConstIterator()
             || !metaSequence.canGetValueAtConstIterator()
-            || !iterable.valueMetaType().flags().testFlag(QMetaType::PointerToQObject)) {
+            || !metaSequence.valueMetaType().flags().testFlag(QMetaType::PointerToQObject)) {
         return AssignResult::TypeMismatch;
     }
 
@@ -1737,11 +1737,11 @@ static bool assignToListProperty(
         const QMetaType outputElementMetaType = outputSequence.valueMetaType();
         const bool outputIsQVariant = (outputElementMetaType == QMetaType::fromType<QVariant>());
 
-        QSequentialIterable inputIterable;
+        QMetaSequence::Iterable inputIterable;
         QVariant inputList = value;
         if (QMetaType::view(
                     inputList.metaType(), inputList.data(),
-                    QMetaType::fromType<QSequentialIterable>(), &inputIterable)) {
+                    QMetaType::fromType<QMetaSequence::Iterable>(), &inputIterable)) {
 
             const QMetaSequence inputSequence = inputIterable.metaContainer();
             const QMetaType inputElementMetaType = inputSequence.valueMetaType();
@@ -1817,15 +1817,15 @@ QVariant QQmlPropertyPrivate::convertToWriteTargetType(const QVariant &value, QM
     /* Note that we've already handled single-value assignment to QList<QUrl> properties in write,
        before calling this function but the generic code still handles them, which is important for
        other places*/
-    QSequentialIterable iterable;
+    QMetaSequence::Iterable iterable;
     QVariant sequenceVariant = QVariant(targetMetaType);
     if (QMetaType::view(
                 targetMetaType, sequenceVariant.data(),
-                QMetaType::fromType<QSequentialIterable>(),
+                QMetaType::fromType<QMetaSequence::Iterable>(),
                 &iterable)) {
         const QMetaSequence propertyMetaSequence = iterable.metaContainer();
         if (propertyMetaSequence.canAddValueAtEnd()) {
-            const QMetaType elementMetaType = iterable.valueMetaType();
+            const QMetaType elementMetaType = propertyMetaSequence.valueMetaType();
             void *propertyContainer = iterable.mutableIterable();
 
             if (sourceMetaType == elementMetaType) {

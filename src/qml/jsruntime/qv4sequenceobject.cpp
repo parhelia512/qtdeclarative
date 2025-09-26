@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant
 
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetasequence.h>
 
 #include "qv4sequenceobject_p.h"
 
@@ -911,9 +911,9 @@ ReturnedValue SequencePrototype::fromVariant(QV4::ExecutionEngine *engine, const
     if (qmlType.isSequentialContainer())
         return fromData(engine, type, qmlType.listMetaSequence(), v.constData());
 
-    QSequentialIterable iterable;
+    QMetaSequence::Iterable iterable;
     if (QMetaType::convert(
-            type, v.constData(), QMetaType::fromType<QSequentialIterable>(), &iterable)) {
+            type, v.constData(), QMetaType::fromType<QMetaSequence::Iterable>(), &iterable)) {
         return fromData(engine, type, iterable.metaContainer(), v.constData());
     }
 
@@ -962,18 +962,18 @@ QVariant SequencePrototype::toVariant(const Sequence *object)
 
 bool convertToIterable(QMetaType metaType, void *data, QV4::Object *sequence)
 {
-    QSequentialIterable iterable;
-    if (!QMetaType::view(metaType, data, QMetaType::fromType<QSequentialIterable>(), &iterable))
+    QMetaSequence::Iterable iterable;
+    if (!QMetaType::view(metaType, data, QMetaType::fromType<QMetaSequence::Iterable>(), &iterable))
         return false;
 
-    const QMetaType elementMetaType = iterable.valueMetaType();
+    const QMetaType elementMetaType = iterable.metaContainer().valueMetaType();
     QV4::Scope scope(sequence->engine());
     QV4::ScopedValue v(scope);
     for (qsizetype i = 0, end = sequence->getLength(); i < end; ++i) {
         QVariant element(elementMetaType);
         v = sequence->get(i);
         ExecutionEngine::metaTypeFromJS(v, elementMetaType, element.data());
-        iterable.addValue(element, QSequentialIterable::AtEnd);
+        iterable.append(element);
     }
     return true;
 }
@@ -997,10 +997,11 @@ QVariant SequencePrototype::toVariant(const QV4::Value &array, QMetaType targetT
             type.isSequentialContainer()) {
         // If the QML type declares a custom sequential container, use that.
         meta = type.priv()->extraData.sequentialContainerTypeData;
-    } else if (QSequentialIterable iterable;
-            QMetaType::view(targetType, result.data(), QMetaType::fromType<QSequentialIterable>(),
-                            &iterable)) {
-        // Otherwise try to convert to QSequentialIterable via QMetaType conversion.
+    } else if (QMetaSequence::Iterable iterable;
+            QMetaType::view(
+                       targetType, result.data(),
+                       QMetaType::fromType<QMetaSequence::Iterable>(), &iterable)) {
+        // Otherwise try to convert to QMetaSequence::Iterable via QMetaType conversion.
         meta = iterable.metaContainer();
     }
 

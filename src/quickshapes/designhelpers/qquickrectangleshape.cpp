@@ -403,7 +403,7 @@ void QQuickRectangleShapePrivate::calculateIndependentRadii()
     can also be specified separately for each corner. Additionally, \l bevel
     can be applied on any corner to cut it off sharply.
 
-    RectangleShape's default value for \l preferredRendererType is
+    RectangleShape's default value for \l {QtQuick.Shapes::Shape::preferredRendererType} is
     \c Shape.CurveRenderer.
 
     \section1 Example Usage

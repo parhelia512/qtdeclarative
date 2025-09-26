@@ -561,7 +561,7 @@ void QQuickEllipseShapePrivate::updatePath()
     Ellipse can be drawn with rounded corners using the \l cornerRadius
     property. The default value of the \l cornerRadius is 10 degrees.
 
-    EllipseShape's default value for \l preferredRendererType is
+    EllipseShape's default value for \l {QtQuick.Shapes::Shape::preferredRendererType} is
     \c Shape.CurveRenderer.
 
     \section1 Example Usage

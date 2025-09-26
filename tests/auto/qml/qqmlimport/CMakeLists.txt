@@ -31,6 +31,8 @@ file(GLOB_RECURSE test_data_glob
     FormFromQmlDir/*)
 list(APPEND test_data ${test_data_glob})
 
+add_subdirectory(MyStaticModule)
+
 qt_internal_add_test(tst_qqmlimport
     SOURCES
         tst_qqmlimport.cpp
@@ -41,6 +43,7 @@ qt_internal_add_test(tst_qqmlimport
         Qt::QmlPrivate
         Qt::Quick
         Qt::QuickTestUtilsPrivate
+        tst_qqmlimport_static_moduleplugin
     TESTDATA ${test_data}
 )
 

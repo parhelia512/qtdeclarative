@@ -19,6 +19,9 @@
 #include <QtCore/qscopeguard.h>
 #include <QtCore/qlibraryinfo.h>
 #include <QtCore/private/qlibraryinfo_p.h>
+#include <QtCore/qpluginloader.h>
+
+#include "MyStaticModule/mystaticmoduleplugin.h"
 
 class TheThing : public QObject
 {
@@ -56,6 +59,7 @@ private slots:
     void interceptQmldir();
     void singletonVersionResolution();
     void removeDynamicPlugin();
+    void removeStaticPlugins();
     void partialImportVersions_data();
     void partialImportVersions();
     void registerModuleImport();
@@ -504,6 +508,27 @@ void tst_QQmlImport::removeDynamicPlugin()
         QVERIFY(QQmlPluginImporter::removePlugin(plugin));
     QVERIFY(QQmlPluginImporter::plugins().isEmpty());
     qmlClearTypeRegistrations();
+}
+
+void tst_QQmlImport::removeStaticPlugins()
+{
+    qmlClearTypeRegistrations();
+
+    QVERIFY(!MyStaticModulePlugin::s_myStaticModulePluginRegistered);
+    QQmlEngine engine;
+    {
+        // Load something that adds a static plugin
+        QQmlComponent component(&engine, testFileUrl("importStaticModule.qml"));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    }
+    QVERIFY(MyStaticModulePlugin::s_myStaticModulePluginRegistered);
+    QVERIFY(QQmlMetaType::qmlType("MyStaticModule/MyCppComponent", QTypeRevision::fromVersion(1, 0))
+                    .isValid());
+    qmlClearTypeRegistrations();
+    QVERIFY(!MyStaticModulePlugin::s_myStaticModulePluginRegistered);
+    QVERIFY(!QQmlMetaType::qmlType("MyStaticModule/MyCppComponent",
+                                   QTypeRevision::fromVersion(1, 0))
+                     .isValid());
 }
 
 void tst_QQmlImport::partialImportVersions_data()

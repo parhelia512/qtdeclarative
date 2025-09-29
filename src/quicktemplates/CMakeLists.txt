@@ -144,6 +144,7 @@ qt_internal_extend_target(QuickTemplates2 CONDITION QT_FEATURE_accessibility
     SOURCES
         accessible/qaccessiblequickcontrol.cpp accessible/qaccessiblequickcontrol_p.h
         accessible/qaccessiblequickpage.cpp accessible/qaccessiblequickpage_p.h
+        accessible/qaccessiblequickscrollbar.cpp accessible/qaccessiblequickscrollbar_p.h
 )
 
 qt_internal_extend_target(QuickTemplates2 CONDITION QT_FEATURE_quicktemplates2_container

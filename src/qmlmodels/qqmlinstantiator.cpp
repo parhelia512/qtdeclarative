@@ -305,7 +305,7 @@ void QQmlInstantiator::setDelegate(QQmlComponent* c)
 
     if (QQmlDelegateModel *dModel = qobject_cast<QQmlDelegateModel*>(d->model))
         dModel->setDelegate(c);
-    if (d->componentComplete)
+    else if (d->componentComplete)
         d->regenerate();
 }
 

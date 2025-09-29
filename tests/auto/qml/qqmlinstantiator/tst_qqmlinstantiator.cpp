@@ -48,6 +48,8 @@ private slots:
 
     void delegateModelAccess_data();
     void delegateModelAccess();
+
+    void replaceDelegate();
 };
 
 tst_qqmlinstantiator::tst_qqmlinstantiator()
@@ -539,6 +541,29 @@ void tst_qqmlinstantiator::delegateModelAccess()
 
     QCOMPARE(delegate->property("modelX").toDouble(), expected);
     QCOMPARE(modelChangedSpy.count(), expectedModelUpdates);
+}
+
+void tst_qqmlinstantiator::replaceDelegate()
+{
+    QTest::failOnWarning();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine, testFileUrl("replaceDelegate.qml"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    QTest::ignoreMessage(QtWarningMsg, "created");
+    QScopedPointer<QObject> outer(component.create());
+    const QUrl url = outer->property("source").value<QUrl>();
+    QVERIFY(url.isValid());
+    QVERIFY(outer->property("object").value<QObject *>() != nullptr);
+    outer->setProperty("source", QUrl());
+    QVERIFY(outer->property("object").value<QObject *>() == nullptr);
+
+    // Restoring the delegate causes the object to be created only _once_.
+    // See failOnWarning() above.
+    QTest::ignoreMessage(QtWarningMsg, "created");
+    outer->setProperty("source", url);
+    QVERIFY(outer->property("object").value<QObject *>() != nullptr);
 }
 
 QTEST_MAIN(tst_qqmlinstantiator)

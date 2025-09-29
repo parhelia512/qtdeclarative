@@ -1122,7 +1122,7 @@ void QQmlBindPrivate::decodeBinding(
 
 void QQmlBindPrivate::createDelayedValues()
 {
-    generalizedGroupData.delayedValues = std::make_unique<QQmlPropertyMap>();
+    generalizedGroupData.delayedValues.reset(QQmlPropertyMap::create());
     QQmlPropertyMap *delayedValues = generalizedGroupData.delayedValues.get();
     QObject::connect(
             delayedValues, &QQmlPropertyMap::valueChanged,

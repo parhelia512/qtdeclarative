@@ -100,6 +100,9 @@ namespace QQmlPrivate
     class QQmlElement final : public T
     {
     public:
+        // Not defaulted so that it can be specialized
+        QQmlElement() {}
+
         ~QQmlElement() override {
             QQmlPrivate::qdeclarativeelement_destructor(this);
         }

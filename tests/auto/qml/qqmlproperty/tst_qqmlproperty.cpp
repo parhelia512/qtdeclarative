@@ -2328,19 +2328,19 @@ void tst_qqmlproperty::bindingToAlias()
 
 void tst_qqmlproperty::nestedQQmlPropertyMap()
 {
-    QQmlPropertyMap mainPropertyMap;
-    QQmlPropertyMap nestedPropertyMap;
-    QQmlPropertyMap deeplyNestedPropertyMap;
+    QScopedPointer<QQmlPropertyMap> mainPropertyMap(QQmlPropertyMap::create());
+    QScopedPointer<QQmlPropertyMap> nestedPropertyMap(QQmlPropertyMap::create());
+    QScopedPointer<QQmlPropertyMap> deeplyNestedPropertyMap(QQmlPropertyMap::create());
 
-    mainPropertyMap.insert("nesting1", QVariant::fromValue(&nestedPropertyMap));
-    nestedPropertyMap.insert("value", 42);
-    nestedPropertyMap.insert("nesting2", QVariant::fromValue(&deeplyNestedPropertyMap));
-    deeplyNestedPropertyMap.insert("value", "success");
+    mainPropertyMap->insert("nesting1", QVariant::fromValue(nestedPropertyMap.data()));
+    nestedPropertyMap->insert("value", 42);
+    nestedPropertyMap->insert("nesting2", QVariant::fromValue(deeplyNestedPropertyMap.data()));
+    deeplyNestedPropertyMap->insert("value", "success");
 
-    QQmlProperty value{&mainPropertyMap, "nesting1.value"};
+    QQmlProperty value{mainPropertyMap.data(), "nesting1.value"};
     QCOMPARE(value.read().toInt(), 42);
 
-    QQmlProperty success{&mainPropertyMap, "nesting1.nesting2.value"};
+    QQmlProperty success{mainPropertyMap.data(), "nesting1.nesting2.value"};
     QCOMPARE(success.read().toString(), QLatin1String("success"));
 }
 

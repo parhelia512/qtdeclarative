@@ -27,6 +27,7 @@ set(cpp_sources
     objectwithmethod.h
     person.cpp person.h
     qmlusing.h
+    refuseWrite.h
     resettable.h
     scriptstringholder.h
     sequenceToIterable.h
@@ -347,6 +348,7 @@ set(qml_files
     versionmismatch.qml
     voidConversion.qml
     voidfunction.qml
+    writeBackReferenceObject.qml
     writeback.qml
     dummy_imports.qml
 )

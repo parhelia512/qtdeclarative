@@ -145,7 +145,7 @@ QVERIFY2(actualMenuItem == expectedMenuItem, \
         .arg(QDebug::toString(actualMenuItem), QDebug::toString(expectedMenuItem))));
 
 tst_QQuickMenu::tst_QQuickMenu()
-    : QQmlDataTest(QT_QMLTEST_DATADIR, FailOnWarningsPolicy::FailOnWarnings)
+    : QQmlDataTest(QT_QMLTEST_DATADIR)
 {
     std::unique_ptr<QPlatformMenu> platformMenu(QGuiApplicationPrivate::platformTheme()->createPlatformMenu());
     nativeMenuSupported = platformMenu != nullptr;

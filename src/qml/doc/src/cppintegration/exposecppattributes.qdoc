@@ -213,10 +213,10 @@ be done with care to ensure that performance doesn't suffer.
 The presence of a NOTIFY signal does incur a small overhead. There are cases
 where a property's value is set at object construction time, and does not
 subsequently change. The most common case of this is when a type uses \l
-{Grouped Properties}, and the grouped property object is allocated once, and
-only freed when the object is deleted. In these cases, the CONSTANT
-attribute may be added to the property declaration instead of a NOTIFY
-signal.
+{#Grouped Properties}{Grouped Properties}, and the grouped property object is
+allocated once, and only freed when the object is deleted. In these cases,
+the CONSTANT attribute may be added to the property declaration instead of a
+NOTIFY signal.
 
 The CONSTANT attribute should only be used for properties whose value is set,
 and finalized, only in the class constructor.  All other properties that want

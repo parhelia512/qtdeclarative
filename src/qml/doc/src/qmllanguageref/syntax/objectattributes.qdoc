@@ -116,7 +116,7 @@ letters, numbers and underscores. \l {JavaScript Reserved Words}
 {JavaScript reserved words} are not valid property names.  The \c default,
 \c final, \c required, and \c readonly keywords are optional, and modify the
 semantics of the property being declared.
-See the upcoming sections on \l {Default Properties}{default properties},
+See the upcoming sections on \l {#Default Properties}{default properties},
 \l {Final Properties}{final properties},
 \l {Required Properties}{required properties}, and
 \l {Read-Only Properties}{read-only properties} for more information
@@ -714,7 +714,7 @@ Item {
 }
 \endqml
 
-\note A read-only property cannot also be a \l{Default Properties}{default}
+\note A read-only property cannot also be a \l{#Default Properties}{default}
 property.
 
 \section3 Property Modifier Objects

@@ -162,11 +162,12 @@ void QmlComponent::writeOut(const DomItem &self, OutWriter &lw) const
 {
     if (name().contains(QLatin1Char('.'))) {
         // inline component
+        const auto fLoc = FileLocations::treeOf(self);
         lw.ensureNewline()
-                .writeRegion(ComponentKeywordRegion)
+                .writeRegion(fLoc, ComponentKeywordRegion)
                 .ensureSpace()
-                .writeRegion(IdentifierRegion, name().split(QLatin1Char('.')).last())
-                .writeRegion(ColonTokenRegion)
+                .writeRegion(fLoc, IdentifierRegion, name().split(QLatin1Char('.')).last())
+                .writeRegion(fLoc, ColonTokenRegion)
                 .ensureSpace();
     }
     self.field(Fields::objects).index(0).writeOut(lw);
@@ -333,9 +334,9 @@ void Import::writeOut(const DomItem &self, OutWriter &ow) const
     // check for an empty line before the import, and preserve it
     int preNewlines = 0;
 
-    const FileLocations::Tree elLoc = FileLocations::treeOf(self);
+    const FileLocations::Tree fLoc = FileLocations::treeOf(self);
 
-    quint32 start = elLoc->info().fullRegion.offset;
+    quint32 start = fLoc->info().fullRegion.offset;
     if (size_t(code.size()) >= start) {
         while (start != 0) {
             QChar c = code.at(--start);
@@ -350,16 +351,18 @@ void Import::writeOut(const DomItem &self, OutWriter &ow) const
         ++preNewlines;
 
     ow.ensureNewline(preNewlines);
-    ow.writeRegion(ImportTokenRegion).ensureSpace();
-    ow.writeRegion(ImportUriRegion, uri.toString());
+    ow.writeRegion(fLoc, ImportTokenRegion).ensureSpace();
+    ow.writeRegion(fLoc, ImportUriRegion, uri.toString());
     if (uri.isModule()) {
         QString vString = version.stringValue();
         if (!vString.isEmpty())
-            ow.ensureSpace().writeRegion(VersionRegion, vString);
+            ow.ensureSpace().writeRegion(fLoc, VersionRegion, vString);
     }
     if (!importId.isEmpty()) {
-        ow.ensureSpace().writeRegion(AsTokenRegion).ensureSpace().writeRegion(IdNameRegion,
-                                                                              importId);
+        ow.ensureSpace()
+                .writeRegion(fLoc, AsTokenRegion)
+                .ensureSpace()
+                .writeRegion(fLoc, IdNameRegion, importId);
     }
 }
 
@@ -719,13 +722,13 @@ void QmlObject::writeOutId(const DomItem &self, OutWriter &ow) const
 {
     if (!idStr().isEmpty()) { // *always* put id first
         DomItem myId = self.component().field(Fields::ids).key(idStr()).index(0);
-        if (myId)
-            myId.writeOutPre(ow);
+        myId.writeOutPre(ow);
+        const auto fLoc = FileLocations::treeOf(myId);
         ow.ensureNewline()
-                .writeRegion(IdTokenRegion)
-                .writeRegion(IdColonTokenRegion)
+                .writeRegion(fLoc, IdTokenRegion)
+                .writeRegion(fLoc, IdColonTokenRegion)
                 .ensureSpace()
-                .writeRegion(IdNameRegion, idStr());
+                .writeRegion(fLoc, IdNameRegion, idStr());
         if (ow.lineWriter.options().attributesSequence
             == LineWriterOptions::AttributesSequence::Normalize) {
             ow.ensureNewline(2);
@@ -844,14 +847,15 @@ void QmlObject::writeOutAttributes(const DomItem &self, OutWriter &ow, const Dom
             }
             el.second.writeOut(ow);
             if (b) {
-                ow.writeRegion(ColonTokenRegion);
+                const auto fLoc = FileLocations::treeOf(b);
+                ow.writeRegion(fLoc, ColonTokenRegion);
                 ow.ensureSpace();
                 if (const Binding *bPtr = b.as<Binding>())
                     bPtr->writeOutValue(b, ow);
                 else {
                     qWarning() << "Internal error casting binding to Binding in"
                                << b.canonicalPath();
-                    ow.writeRegion(LeftBraceRegion).writeRegion(RightBraceRegion);
+                    ow.writeRegion(fLoc, LeftBraceRegion).writeRegion(fLoc, RightBraceRegion);
                 }
                 b.writeOutPost(ow);
             }
@@ -917,14 +921,15 @@ void QmlObject::writeOutSortedPropertyDefinition(const DomItem &self, OutWriter 
             }
             pDef.writeOut(ow);
             if (b) {
-                ow.writeRegion(ColonTokenRegion);
+                const auto fLoc = FileLocations::treeOf(b);
+                ow.writeRegion(fLoc, ColonTokenRegion);
                 ow.ensureSpace();
                 if (const Binding *bPtr = b.as<Binding>())
                     bPtr->writeOutValue(b, ow);
                 else {
                     qWarning() << "Internal error casting binding to Binding in"
                                << b.canonicalPath();
-                    ow.writeRegion(LeftBraceRegion).writeRegion(RightBraceRegion);
+                    ow.writeRegion(fLoc, LeftBraceRegion).writeRegion(fLoc, RightBraceRegion);
                 }
                 b.writeOutPost(ow);
             }
@@ -1076,13 +1081,16 @@ void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTa
     bool isRootObject = pathFromOwner().length() == 5
             && pathFromOwner()[0] == Path::fromField(Fields::components)
             && pathFromOwner()[3] == Path::fromField(Fields::objects);
-    ow.writeRegion(IdentifierRegion, name());
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, IdentifierRegion, name());
     if (!onTarget.isEmpty()) {
-        ow.ensureSpace().writeRegion(OnTokenRegion).ensureSpace().writeRegion(OnTargetRegion,
-                                                                              onTarget);
+        ow.ensureSpace()
+                .writeRegion(fLoc, OnTokenRegion)
+                .ensureSpace()
+                .writeRegion(fLoc, OnTargetRegion, onTarget);
     }
     ow.ensureSpace();
-    ow.writeRegion(LeftBraceRegion);
+    ow.writeRegion(fLoc, LeftBraceRegion);
 
     // *always* put id first
     writeOutId(self, ow);
@@ -1099,7 +1107,7 @@ void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTa
     } else {
         writeOutSortedAttributes(self, ow, component);
     }
-    ow.writeRegion(RightBraceRegion);
+    ow.writeRegion(fLoc, RightBraceRegion);
 }
 
 Binding::Binding(const QString &name) : Binding(name, std::unique_ptr<BindingValue>()) { }
@@ -1271,10 +1279,11 @@ void Binding::updatePathFromOwner(const Path &newPath)
 
 void Binding::writeOut(const DomItem &self, OutWriter &lw) const
 {
+    const auto fLoc = FileLocations::treeOf(self);
     lw.ensureNewline();
     if (m_bindingType == BindingType::Normal) {
-        lw.writeRegion(IdentifierRegion, name());
-        lw.writeRegion(ColonTokenRegion).ensureSpace();
+        lw.writeRegion(fLoc, IdentifierRegion, name());
+        lw.writeRegion(fLoc, ColonTokenRegion).ensureSpace();
         writeOutValue(self, lw);
     } else {
         DomItem v = valueItem(self);
@@ -1292,11 +1301,12 @@ void Binding::writeOut(const DomItem &self, OutWriter &lw) const
 void Binding::writeOutValue(const DomItem &self, OutWriter &lw) const
 {
     DomItem v = valueItem(self);
+    const auto fLoc = FileLocations::treeOf(v);
     switch (valueKind()) {
     case BindingValueKind::Empty:
         qCWarning(writeOutLog()) << "Writing of empty binding " << name();
-        lw.writeRegion(LeftBraceRegion);
-        lw.writeRegion(RightBraceRegion);
+        lw.writeRegion(fLoc, LeftBraceRegion);
+        lw.writeRegion(fLoc, RightBraceRegion);
         break;
     case BindingValueKind::Array:
         if (const List *vPtr = v.as<List>()) {
@@ -1405,15 +1415,16 @@ Path EnumDecl::addAnnotation(const QmlObject &annotation, QmlObject **aPtr)
 
 void EnumDecl::writeOut(const DomItem &self, OutWriter &ow) const
 {
-    ow.writeRegion(EnumKeywordRegion)
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, EnumKeywordRegion)
             .ensureSpace()
-            .writeRegion(IdentifierRegion, name())
+            .writeRegion(fLoc, IdentifierRegion, name())
             .ensureSpace()
-            .writeRegion(LeftBraceRegion);
+            .writeRegion(fLoc, LeftBraceRegion);
     const auto values = self.field(Fields::values).values();
     for (const auto &value : values)
         value.writeOut(ow);
-    ow.ensureNewline().writeRegion(RightBraceRegion);
+    ow.ensureNewline().writeRegion(fLoc, RightBraceRegion);
 }
 
 QList<Path> ImportScope::allSources(const DomItem &self) const
@@ -1798,22 +1809,23 @@ bool PropertyDefinition::isParametricType() const
     return typeName.contains(QChar(u'<'));
 }
 
-void PropertyDefinition::writeOut(const DomItem &, OutWriter &lw) const
+void PropertyDefinition::writeOut(const DomItem &self, OutWriter &lw) const
 {
     lw.ensureNewline();
+    const auto fLoc = FileLocations::treeOf(self);
     if (isDefaultMember)
-        lw.writeRegion(DefaultKeywordRegion).ensureSpace();
+        lw.writeRegion(fLoc, DefaultKeywordRegion).ensureSpace();
     if (isFinal)
-        lw.writeRegion(FinalKeywordRegion).ensureSpace();
+        lw.writeRegion(fLoc, FinalKeywordRegion).ensureSpace();
     if (isRequired)
-        lw.writeRegion(RequiredKeywordRegion).ensureSpace();
+        lw.writeRegion(fLoc, RequiredKeywordRegion).ensureSpace();
     if (isReadonly)
-        lw.writeRegion(ReadonlyKeywordRegion).ensureSpace();
+        lw.writeRegion(fLoc, ReadonlyKeywordRegion).ensureSpace();
     if (!typeName.isEmpty()) {
-        lw.writeRegion(PropertyKeywordRegion).ensureSpace();
-        lw.writeRegion(TypeIdentifierRegion, typeName).ensureSpace();
+        lw.writeRegion(fLoc, PropertyKeywordRegion).ensureSpace();
+        lw.writeRegion(fLoc, TypeIdentifierRegion, typeName).ensureSpace();
     }
-    lw.writeRegion(IdentifierRegion, name);
+    lw.writeRegion(fLoc, IdentifierRegion, name);
 }
 
 bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
@@ -1842,52 +1854,58 @@ void MethodInfo::writeOutArguments(const DomItem &self, OutWriter &ow) const
     if (parameters.isEmpty() && methodType == MethodType::Signal)
         return;
 
-    ow.writeRegion(LeftParenthesisRegion);
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, LeftParenthesisRegion);
     bool first = true;
     for (const DomItem &arg : self.field(Fields::parameters).values()) {
-        if (first)
+        if (first) {
             first = false;
-        else
-            ow.writeRegion(CommaTokenRegion).ensureSpace();
+        } else {
+            const auto fLocArg = FileLocations::treeOf(arg);
+            ow.writeRegion(fLocArg, CommaTokenRegion).ensureSpace();
+        }
         arg.writeOut(ow);
     }
-    ow.writeRegion(RightParenthesisRegion);
+    ow.writeRegion(fLoc, RightParenthesisRegion);
 }
 
-void MethodInfo::writeOutReturnType(OutWriter &ow) const
+void MethodInfo::writeOutReturnType(const DomItem &self, OutWriter &ow) const
 {
     if (typeName.isEmpty())
         return;
 
-    ow.writeRegion(ColonTokenRegion);
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, ColonTokenRegion);
     ow.ensureSpace();
-    ow.writeRegion(TypeIdentifierRegion, typeName);
+    ow.writeRegion(fLoc, TypeIdentifierRegion, typeName);
 }
 
 void MethodInfo::writeOutBody(const DomItem &self, OutWriter &ow) const
 {
-    ow.ensureSpace().writeRegion(LeftBraceRegion);
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.ensureSpace().writeRegion(fLoc, LeftBraceRegion);
     if (DomItem b = self.field(Fields::body)) {
         ow.ensureNewline();
         b.writeOut(ow);
     }
-    ow.ensureNewline().writeRegion(RightBraceRegion);
+    ow.ensureNewline().writeRegion(fLoc, RightBraceRegion);
 }
 
 void MethodInfo::writeOut(const DomItem &self, OutWriter &ow) const
 {
+    const auto fLoc = FileLocations::treeOf(self);
     if (methodType == MethodType::Signal) {
-        ow.writeRegion(SignalKeywordRegion).ensureSpace();
+        ow.writeRegion(fLoc, SignalKeywordRegion).ensureSpace();
     } else {
-        ow.writeRegion(FunctionKeywordRegion).ensureSpace();
+        ow.writeRegion(fLoc, FunctionKeywordRegion).ensureSpace();
     }
-    ow.writeRegion(IdentifierRegion, name);
+    ow.writeRegion(fLoc, IdentifierRegion, name);
     writeOutArguments(self, ow);
     if (methodType == MethodType::Signal) {
         // signal doesn't have returnType or body
         return;
     }
-    writeOutReturnType(ow);
+    writeOutReturnType(self, ow);
     writeOutBody(self, ow);
 }
 
@@ -1901,8 +1919,7 @@ QString MethodInfo::signature(const DomItem &self) const
     ow.skipComments = true;
 
     writeOutArguments(self, ow);
-
-    writeOutReturnType(ow);
+    writeOutReturnType(self, ow);
 
     lw.eof(false);
     res.flush();
@@ -1941,13 +1958,16 @@ void MethodParameter::writeOut(const DomItem &self, OutWriter &ow) const
     }
 
     if (!name.isEmpty()) {
+        const auto fLoc = FileLocations::treeOf(self);
         if (isRestElement)
-            ow.writeRegion(EllipsisTokenRegion);
-        ow.writeRegion(IdentifierRegion, name);
+            ow.writeRegion(fLoc, EllipsisTokenRegion);
+        ow.writeRegion(fLoc, IdentifierRegion, name);
         if (!typeName.isEmpty())
-            ow.writeRegion(ColonTokenRegion).ensureSpace().writeRegion(TypeIdentifierRegion, typeName);
+            ow.writeRegion(fLoc, ColonTokenRegion)
+                    .ensureSpace()
+                    .writeRegion(fLoc, TypeIdentifierRegion, typeName);
         if (defaultValue) {
-            ow.ensureSpace().writeRegion(EqualTokenRegion).ensureSpace();
+            ow.ensureSpace().writeRegion(fLoc, EqualTokenRegion).ensureSpace();
             self.subOwnerItem(PathEls::Field(Fields::defaultValue), defaultValue).writeOut(ow);
         }
     } else {
@@ -1960,28 +1980,32 @@ void MethodParameter::writeOut(const DomItem &self, OutWriter &ow) const
 void MethodParameter::writeOutSignal(const DomItem &self, OutWriter &ow) const
 {
     self.writeOutPre(ow);
+    const auto fLoc = FileLocations::treeOf(self);
     if (!typeName.isEmpty())
-        ow.writeRegion(TypeIdentifierRegion, typeName).ensureSpace();
-    ow.writeRegion(IdentifierRegion, name);
+        ow.writeRegion(fLoc, TypeIdentifierRegion, typeName).ensureSpace();
+    ow.writeRegion(fLoc, IdentifierRegion, name);
     self.writeOutPost(ow);
 }
 
-void Pragma::writeOut(const DomItem &, OutWriter &ow) const
+void Pragma::writeOut(const DomItem &self, OutWriter &ow) const
 {
+    const auto fLoc = FileLocations::treeOf(self);
     ow.ensureNewline();
-    ow.writeRegion(PragmaKeywordRegion).ensureSpace().writeRegion(IdentifierRegion, name);
+    ow.writeRegion(fLoc, PragmaKeywordRegion)
+            .ensureSpace()
+            .writeRegion(fLoc, IdentifierRegion, name);
 
     bool isFirst = true;
     for (const auto &value : values) {
         if (isFirst) {
             isFirst = false;
-            ow.writeRegion(ColonTokenRegion).ensureSpace();
-            ow.writeRegion(PragmaValuesRegion, value);
+            ow.writeRegion(fLoc, ColonTokenRegion).ensureSpace();
+            ow.writeRegion(fLoc, PragmaValuesRegion, value);
             continue;
         }
 
-        ow.writeRegion(CommaTokenRegion).ensureSpace();
-        ow.writeRegion(PragmaValuesRegion, value);
+        ow.writeRegion(fLoc, CommaTokenRegion).ensureSpace();
+        ow.writeRegion(fLoc, PragmaValuesRegion, value);
     }
     ow.ensureNewline();
 }
@@ -1997,16 +2021,20 @@ bool EnumItem::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor)
 
 void EnumItem::writeOut(const DomItem &self, OutWriter &ow) const
 {
+    const auto fLoc = FileLocations::treeOf(self);
     index_type myIndex = self.pathFromOwner().last().headIndex();
     if (myIndex != 0)
-        ow.writeRegion(CommaTokenRegion);
+        ow.writeRegion(fLoc, CommaTokenRegion);
     ow.ensureNewline();
-    ow.writeRegion(IdentifierRegion, name());
+    ow.writeRegion(fLoc, IdentifierRegion, name());
     if (m_valueKind == ValueKind::ExplicitValue) {
         QString v = QString::number(value(), 'f', 0);
         if (abs(value() - v.toDouble()) > 1.e-10)
             v = QString::number(value());
-        ow.ensureSpace().writeRegion(EqualTokenRegion).ensureSpace().writeRegion(EnumValueRegion, v);
+        ow.ensureSpace()
+                .writeRegion(fLoc, EqualTokenRegion)
+                .ensureSpace()
+                .writeRegion(fLoc, EnumValueRegion, v);
     }
 }
 

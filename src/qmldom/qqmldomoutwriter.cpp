@@ -95,7 +95,7 @@ Helper method for writeRegion(FileLocationRegion region) that allows to use
 \c{writeRegion(ColonTokenRegion);} instead of having to write out the more error-prone
 \c{writeRegion(ColonTokenRegion, ":");} for tokens and keywords.
 */
-OutWriter &OutWriter::writeRegion(FileLocationRegion region)
+OutWriter &OutWriter::writeRegion(const FileLocations::Tree &fLoc, FileLocationRegion region)
 {
     using namespace Qt::Literals::StringLiterals;
     QString codeForRegion;
@@ -262,10 +262,11 @@ OutWriter &OutWriter::writeRegion(FileLocationRegion region)
         return *this;
     }
 
-    return writeRegion(region, codeForRegion);
+    return writeRegion(fLoc, region, codeForRegion);
 }
 
-OutWriter &OutWriter::writeRegion(FileLocationRegion region, QStringView toWrite)
+OutWriter &OutWriter::writeRegion(const FileLocations::Tree &, FileLocationRegion region,
+                                  QStringView toWrite)
 {
     writePreComment(region);
     if (regionDecreasesIndentation(region))

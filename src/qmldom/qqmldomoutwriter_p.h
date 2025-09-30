@@ -69,8 +69,8 @@ public:
     void writePostComment(FileLocationRegion regino);
 
     quint32 counter() const { return lineWriter.counter(); }
-    OutWriter &writeRegion(FileLocationRegion region, QStringView toWrite);
-    OutWriter &writeRegion(FileLocationRegion region);
+    OutWriter &writeRegion(const FileLocations::Tree &fLoc, FileLocationRegion region, QStringView toWrite);
+    OutWriter &writeRegion(const FileLocations::Tree &fLoc, FileLocationRegion region);
     OutWriter &ensureNewline(int nNewlines = 1)
     {
         lineWriter.ensureNewline(nNewlines);

@@ -346,7 +346,7 @@ bool JsFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) c
 
 void JsFile::writeOut(const DomItem &self, OutWriter &ow) const
 {
-    writeOutDirectives(ow);
+    writeOutDirectives(self, ow);
     ow.ensureNewline(2);
     if (DomItem script = self.field(Fields::expression)) {
         ow.ensureNewline();
@@ -371,13 +371,15 @@ void JsFile::addModuleImport(const QString &uri, const QString &version, const Q
     m_imports.append(std::move(import));
 }
 
-void JsFile::LegacyPragmaLibrary::writeOut(OutWriter &lw) const
+void JsFile::LegacyPragmaLibrary::writeOut(const DomItem &self, OutWriter &lw) const
 {
+    Q_UNUSED(self);
     lw.write(u".pragma").ensureSpace().write(u"library").ensureNewline();
 }
 
-void JsFile::LegacyImport::writeOut(OutWriter &lw) const
+void JsFile::LegacyImport::writeOut(const DomItem &self, OutWriter &lw) const
 {
+    const auto fLoc = FileLocations::treeOf(self);
     // either filename or module uri must be present
     Q_ASSERT(!fileName.isEmpty() || !uri.isEmpty());
 
@@ -390,7 +392,7 @@ void JsFile::LegacyImport::writeOut(OutWriter &lw) const
     } else {
         lw.write(u"\"").write(fileName).write(u"\"").ensureSpace();
     }
-    lw.writeRegion(AsTokenRegion).ensureSpace().write(asIdentifier);
+    lw.writeRegion(fLoc, AsTokenRegion).ensureSpace().write(asIdentifier);
 
     lw.ensureNewline();
 }
@@ -405,13 +407,13 @@ void JsFile::LegacyImport::writeOut(OutWriter &lw) const
  * because currently they are being attached to the first AST::Node.
  * In case when the first AST::Node is absent, they are not collected, hence lost.
  */
-void JsFile::writeOutDirectives(OutWriter &ow) const
+void JsFile::writeOutDirectives(const DomItem &self, OutWriter &ow) const
 {
     if (m_pragmaLibrary.has_value()) {
-        m_pragmaLibrary->writeOut(ow);
+        m_pragmaLibrary->writeOut(self, ow);
     }
     for (const auto &import : m_imports) {
-        import.writeOut(ow);
+        import.writeOut(self, ow);
     }
 }
 

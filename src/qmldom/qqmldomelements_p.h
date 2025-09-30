@@ -736,7 +736,7 @@ public:
 
 private:
     void writeOutArguments(const DomItem &self, OutWriter &ow) const;
-    void writeOutReturnType(OutWriter &ow) const;
+    void writeOutReturnType(const DomItem &self, OutWriter &ow) const;
     void writeOutBody(const DomItem &self, OutWriter &ow) const;
 };
 

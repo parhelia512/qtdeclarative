@@ -2738,24 +2738,25 @@ DomItem List::index(const DomItem &self, index_type index) const
 
 void List::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
 {
-    ow.writeRegion(LeftBracketRegion);
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, LeftBracketRegion);
     bool first = true;
-    iterateDirectSubpaths(
-            self,
-            [&ow, &first, compact](const PathEls::PathComponent &, function_ref<DomItem()> elF) {
-                if (first)
-                    first = false;
-                else
-                    ow.writeRegion(CommaTokenRegion).ensureSpace();
-                if (!compact)
-                    ow.ensureNewline(1);
-                DomItem el = elF();
-                el.writeOut(ow);
-                return true;
-            });
+    iterateDirectSubpaths(self,
+                          [&ow, &first, &fLoc, compact](const PathEls::PathComponent &,
+                                                        function_ref<DomItem()> elF) {
+                              if (first)
+                                  first = false;
+                              else
+                                  ow.writeRegion(fLoc, CommaTokenRegion).ensureSpace();
+                              if (!compact)
+                                  ow.ensureNewline(1);
+                              DomItem el = elF();
+                              el.writeOut(ow);
+                              return true;
+                          });
     if (!compact && !first)
         ow.newline();
-    ow.writeRegion(RightBracketRegion);
+    ow.writeRegion(fLoc, RightBracketRegion);
 }
 
 DomElement::DomElement(const Path &pathFromOwner) : m_pathFromOwner(pathFromOwner) { }
@@ -3262,14 +3263,15 @@ bool ListPBase::iterateDirectSubpaths(const DomItem &self, DirectVisitor v) cons
 
 void ListPBase::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
 {
-    ow.writeRegion(LeftBracketRegion);
+    const auto fLoc = FileLocations::treeOf(self);
+    ow.writeRegion(fLoc, LeftBracketRegion);
     bool first = true;
     index_type len = index_type(m_pList.size());
     for (index_type i = 0; i < len; ++i) {
         if (first)
             first = false;
         else
-            ow.writeRegion(CommaTokenRegion).ensureSpace();
+            ow.writeRegion(fLoc, CommaTokenRegion).ensureSpace();
         if (!compact)
             ow.ensureNewline(1);
         DomItem el = index(self, i);
@@ -3277,7 +3279,7 @@ void ListPBase::writeOut(const DomItem &self, OutWriter &ow, bool compact) const
     }
     if (!compact && !first)
         ow.newline();
-    ow.writeRegion(RightBracketRegion);
+    ow.writeRegion(fLoc, RightBracketRegion);
 }
 
 QQmlJSScope::ConstPtr ScriptElement::semanticScope()

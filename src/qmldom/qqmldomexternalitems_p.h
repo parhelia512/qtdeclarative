@@ -256,7 +256,7 @@ public:
     void addModuleImport(const QString &uri, const QString &version, const QString &module);
 
 private:
-    void writeOutDirectives(OutWriter &lw) const;
+    void writeOutDirectives(const DomItem &, OutWriter &lw) const;
 
     /*
     Entities with Legacy prefix are here to support formatting of the discouraged
@@ -278,7 +278,7 @@ private:
 
     struct LegacyPragmaLibrary
     {
-        void writeOut(OutWriter &lw) const;
+        void writeOut(const DomItem &, OutWriter &lw) const;
     };
 
     struct LegacyImport
@@ -288,7 +288,7 @@ private:
         QString version; // used for module import
         QString asIdentifier; // .import ... as T_Identifier
 
-        void writeOut(OutWriter &lw) const;
+        void writeOut(const DomItem &, OutWriter &lw) const;
     };
 
     class LegacyDirectivesCollector : public QQmlJS::Directives

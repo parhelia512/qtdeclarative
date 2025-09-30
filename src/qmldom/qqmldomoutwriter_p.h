@@ -38,6 +38,11 @@ public:
     QString writtenStr;
     using RegionToCommentMap = QMap<FileLocationRegion, CommentedElement>;
     QStack<RegionToCommentMap> pendingComments;
+    QStringView code;
+    bool isFormatterEnabled = true;
+
+    using OffsetToDisabledRegionMap = QMap<quint32, SourceLocation>;
+    OffsetToDisabledRegionMap formatDisabledRegions;
 
     explicit OutWriter(LineWriter &lw) : lineWriter(lw)
     {
@@ -73,31 +78,50 @@ public:
     OutWriter &writeRegion(const FileLocations::Tree &fLoc, FileLocationRegion region);
     OutWriter &ensureNewline(int nNewlines = 1)
     {
-        lineWriter.ensureNewline(nNewlines);
+        if (formatterEnabled())
+            lineWriter.ensureNewline(nNewlines);
         return *this;
     }
+
     OutWriter &ensureSpace()
     {
-        lineWriter.ensureSpace();
+        if (formatterEnabled())
+            lineWriter.ensureSpace();
         return *this;
     }
+
     OutWriter &ensureSpace(QStringView space)
     {
-        lineWriter.ensureSpace(space);
+        if (formatterEnabled())
+            lineWriter.ensureSpace(space);
         return *this;
     }
+
     OutWriter &newline()
     {
-        lineWriter.newline();
+        if (formatterEnabled())
+            lineWriter.newline();
         return *this;
     }
+
     OutWriter &write(QStringView v, LineWriter::TextAddType t = LineWriter::TextAddType::Normal)
     {
-        lineWriter.write(v, t);
+        if (formatterEnabled())
+            lineWriter.write(v, t);
         return *this;
     }
-    void flush() { lineWriter.flush(); }
-    void eof(bool ensureNewline = true) { lineWriter.eof(ensureNewline); }
+    void flush()
+    {
+        if (formatterEnabled())
+            lineWriter.flush();
+    }
+
+    void eof(bool ensureNewline = true)
+    {
+        if (formatterEnabled())
+            lineWriter.eof(ensureNewline);
+    }
+
     int addNewlinesAutospacerCallback(int nLines)
     {
         return lineWriter.addNewlinesAutospacerCallback(nLines);
@@ -108,6 +132,14 @@ public:
     }
     bool removeTextAddCallback(int i) { return lineWriter.removeTextAddCallback(i); }
 
+    void maybeWriteComment(const Comment &comment);
+    bool formatterEnabled() const;
+    bool shouldFormat(const FileLocations::Tree &fLoc, FileLocationRegion region);
+    void maybeWriteDisabledRegion(const SourceLocation &loc);
+    void scanFormatDirectives(QStringView code, const QList<SourceLocation> &comments);
+    void writeDisabledRegion(const SourceLocation &loc);
+    QStringView attachedDisableCode(quint32 offset) const;
+    void setCode(QStringView c) { code = c; };
 };
 
 } // end namespace Dom

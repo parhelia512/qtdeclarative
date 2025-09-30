@@ -1304,6 +1304,17 @@ DomItem::WriteOutCheckResult DomItem::performWriteOutChecks(const DomItem &refor
     return WriteOutCheckResult::Success;
 }
 
+static inline void scanFormatDirectives(OutWriter &ow, const DomItem &currentFileItem)
+{
+    if (currentFileItem.internalKind() == DomType::QmlFile) {
+        auto filePtr = currentFileItem.as<QmlFile>();
+        ow.scanFormatDirectives(filePtr->code(), filePtr->engine()->comments());
+    } else if (currentFileItem.internalKind() == DomType::JsFile) {
+        auto filePtr = currentFileItem.as<JsFile>();
+        ow.scanFormatDirectives(filePtr->code(), filePtr->engine()->comments());
+    }
+}
+
 /*!
    \internal
     Performes WriteOut of the FileItem and verifies the consistency of the DOM structure.
@@ -1317,10 +1328,10 @@ DomItem::WriteOutCheckResult DomItem::performWriteOutChecks(const DomItem &refor
 bool DomItem::writeOutForFile(OutWriter &ow, WriteOutChecks extraChecks) const
 {
     ow.indentNextlines = true;
+    auto currentFileItem = fileObject();
+    scanFormatDirectives(ow, currentFileItem);
     writeOut(ow);
     ow.eof();
-
-    auto currentFileItem = fileObject();
     WriteOutCheckResult result = WriteOutCheckResult::Success;
     if (extraChecks)
         result = performWriteOutChecks(currentFileItem, ow, extraChecks);

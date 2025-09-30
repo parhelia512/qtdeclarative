@@ -49,6 +49,9 @@ private Q_SLOTS:
     void semicolonRule_data();
     void semicolonRule();
 
+    void disableViaComments_data();
+    void disableViaComments();
+
 private:
     QString formatInMemory(const QString &fileToFormat, bool *didSucceed = nullptr,
                            LineWriterOptions options = LineWriterOptions(),
@@ -501,6 +504,47 @@ void TestQmlformat::semicolonRule()
 
     QVERIFY(wasSuccessful && !output.isEmpty());
     QCOMPARE(output, readTestFile(formattedFile));
+}
+
+void TestQmlformat::disableViaComments_data()
+{
+    QTest::addColumn<QString>("file");
+    QTest::addColumn<QString>("fileFormatted");
+    QTest::addColumn<LineWriterOptions>("opts");
+    {
+        // Basic test for the disableViaComments feature
+        LineWriterOptions opts;
+        opts.attributesSequence = LineWriterOptions::AttributesSequence::Preserve;
+        QTest::newRow("disableFormat") << "disableViaComments/qmlobject.qml"
+                                       << "disableViaComments/qmlobject.formatted.qml" << opts;
+    }
+    {
+        // Basic test non-functional disableViaComments feature, i.e in normalized mode and
+        // sortImports
+        LineWriterOptions opt1;
+        opt1.attributesSequence = LineWriterOptions::AttributesSequence::Preserve;
+        opt1.sortImports = true;
+        QTest::newRow("disableFormatInSortImports")
+                << "disableViaComments/qmlobject.qml"
+                << "disableViaComments/qmlobject.nodisable.qml" << opt1;
+    }
+}
+
+void TestQmlformat::disableViaComments()
+{
+    QFETCH(QString, file);
+    QFETCH(QString, fileFormatted);
+    QFETCH(LineWriterOptions, opts);
+
+    bool wasSuccessful = false;
+
+#ifdef Q_OS_WIN
+    opts.lineEndings = QQmlJS::Dom::LineWriterOptions::LineEndings::Windows;
+#endif
+    QString output = formatInMemory(testFile(file), &wasSuccessful, opts, WriteOutCheck::None);
+    QVERIFY(wasSuccessful && !output.isEmpty());
+    auto exp = readTestFile(fileFormatted);
+    QCOMPARE(output, exp);
 }
 
 QTEST_MAIN(TestQmlformat)

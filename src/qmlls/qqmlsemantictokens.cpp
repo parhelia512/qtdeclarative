@@ -17,7 +17,8 @@ Q_LOGGING_CATEGORY(semanticTokens, "qt.languageserver.semanticTokens")
 using namespace QQmlJS::AST;
 using namespace QQmlJS::Dom;
 using namespace QLspSpecification;
-using namespace HighlightingUtils;
+
+namespace QmlHighlighting {
 
 static int mapToProtocolForQtCreator(QmlHighlightKind highlightKind)
 {
@@ -190,7 +191,7 @@ static std::optional<QmlHighlightKind> resolveJsGlobalObjectKind(const DomItem &
 static int fromQmlModifierKindToLspTokenType(QmlHighlightModifiers highlightModifier)
 {
     using namespace QLspSpecification;
-    using namespace HighlightingUtils;
+    using namespace Utils;
     int modifier = 0;
 
     if (highlightModifier.testFlag(QmlHighlightModifier::QmlPropertyDefinition))
@@ -247,7 +248,7 @@ bool HighlightingVisitor::visitor(Path, const DomItem &item, bool)
         if (!fLocs)
             return true;
         const auto regions = fLocs->info().regions;
-        if (!HighlightingUtils::rangeOverlapsWithSourceLocation(regions[MainRegion],
+        if (!Utils::rangeOverlapsWithSourceLocation(regions[MainRegion],
                                                                 m_range.value()))
             return true;
     }
@@ -316,7 +317,7 @@ void HighlightingVisitor::highlightComment(const DomItem &item)
 {
     const auto comment = item.as<Comment>();
     Q_ASSERT(comment);
-    const auto locs = HighlightingUtils::sourceLocationsFromMultiLineToken(
+    const auto locs = Utils::sourceLocationsFromMultiLineToken(
             comment->info().comment(), comment->info().sourceLocation());
     for (const auto &loc : locs)
         addHighlight(loc, QmlHighlightKind::Comment);
@@ -523,7 +524,7 @@ void HighlightingVisitor::highlightScriptLiteral(const DomItem &item)
         const auto offset = regions[MainRegion].offset;
         const auto length = regions[MainRegion].length;
         const QStringView literalCode = QStringView{code}.mid(offset, length);
-        const auto &locs = HighlightingUtils::sourceLocationsFromMultiLineToken(
+        const auto &locs = Utils::sourceLocationsFromMultiLineToken(
                 literalCode, regions[MainRegion]);
         for (const auto &loc : locs)
             addHighlight(loc, QmlHighlightKind::String);
@@ -843,7 +844,7 @@ void HighlightingVisitor::highlightScriptExpressions(const DomItem &item)
     case DomType::ScriptTemplateStringPart: {
         // handle multiline case
         QString code = item.field(Fields::value).value().toString();
-        const auto &locs = HighlightingUtils::sourceLocationsFromMultiLineToken(
+        const auto &locs = Utils::sourceLocationsFromMultiLineToken(
             code, regions[MainRegion]);
         for (const auto &loc : locs)
             addHighlight(loc, QmlHighlightKind::String);
@@ -865,8 +866,8 @@ This method generates multiple source locations of sub-elements of token split b
 delimiter.
 */
 QList<QQmlJS::SourceLocation>
-HighlightingUtils::sourceLocationsFromMultiLineToken(QStringView stringLiteral,
-                                                     const QQmlJS::SourceLocation &locationInDocument)
+Utils::sourceLocationsFromMultiLineToken(QStringView stringLiteral,
+                                         const QQmlJS::SourceLocation &locationInDocument)
 {
     auto lineBreakLength = qsizetype(std::char_traits<char>::length("\n"));
     const auto lineLengths = [&lineBreakLength](QStringView literal) {
@@ -913,7 +914,7 @@ HighlightingUtils::sourceLocationsFromMultiLineToken(QStringView stringLiteral,
     return result;
 }
 
-QList<int> HighlightingUtils::encodeSemanticTokens(const HighlightsContainer &highlights)
+QList<int> Utils::encodeSemanticTokens(const HighlightsContainer &highlights)
 {
     QList<int> result;
     constexpr auto tokenEncodingLength = 5;
@@ -948,7 +949,7 @@ tokenModifiersList: ["declaration", definition, readonly, static ,,,]
 
 To set "definition" and "readonly", we need to send 0b00000110
 */
-void HighlightingUtils::addModifier(SemanticTokenModifiers modifier, int *baseModifier)
+void Utils::addModifier(SemanticTokenModifiers modifier, int *baseModifier)
 {
     if (!baseModifier)
         return;
@@ -959,7 +960,7 @@ void HighlightingUtils::addModifier(SemanticTokenModifiers modifier, int *baseMo
 \internal
 Check if the ranges overlap by ensuring that one range starts before the other ends
 */
-bool HighlightingUtils::rangeOverlapsWithSourceLocation(const QQmlJS::SourceLocation &loc,
+bool Utils::rangeOverlapsWithSourceLocation(const QQmlJS::SourceLocation &loc,
                                                         const HighlightsRange &r)
 {
     int startOffsetItem = int(loc.offset);
@@ -971,7 +972,7 @@ bool HighlightingUtils::rangeOverlapsWithSourceLocation(const QQmlJS::SourceLoca
 \internal
 Increments the resultID by one.
 */
-void HighlightingUtils::updateResultID(QByteArray &resultID)
+void Utils::updateResultID(QByteArray &resultID)
 {
     int length = resultID.length();
     for (int i = length - 1; i >= 0; --i) {
@@ -991,7 +992,7 @@ A utility method that computes the difference of two list. The first argument is
 of the file before edited. The second argument is the encoded token data after the file is edited. Returns
 a list of SemanticTokensEdit as expected by the protocol.
 */
-QList<SemanticTokensEdit> HighlightingUtils::computeDiff(const QList<int> &oldData, const QList<int> &newData)
+QList<SemanticTokensEdit> Utils::computeDiff(const QList<int> &oldData, const QList<int> &newData)
 {
     // Find the iterators pointing the first mismatch, from the start
     const auto [oldStart, newStart] =
@@ -1031,7 +1032,7 @@ void HighlightingVisitor::addHighlight(const QQmlJS::SourceLocation &loc, QmlHig
         m_highlights.insert(loc.offset,HighlightToken(loc, tokenType, modifierType));
 }
 
-HighlightsContainer HighlightingUtils::visitTokens(const QQmlJS::Dom::DomItem &item,
+HighlightsContainer Utils::visitTokens(const QQmlJS::Dom::DomItem &item,
                                      const std::optional<HighlightsRange> &range,
                                      HighlightingMode mode)
 {
@@ -1040,10 +1041,13 @@ HighlightsContainer HighlightingUtils::visitTokens(const QQmlJS::Dom::DomItem &i
     return highlightDomElements.highlights();
 }
 
-QList<int> HighlightingUtils::collectTokens(const QQmlJS::Dom::DomItem &item,
+QList<int> Utils::collectTokens(const QQmlJS::Dom::DomItem &item,
                                      const std::optional<HighlightsRange> &range,
                                      HighlightingMode mode)
 {
-    return HighlightingUtils::encodeSemanticTokens(visitTokens(item, range, mode));
+    return Utils::encodeSemanticTokens(visitTokens(item, range, mode));
 }
+
+} // namespace QmlHighlighting
+
 QT_END_NAMESPACE

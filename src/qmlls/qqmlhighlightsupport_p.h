@@ -55,9 +55,9 @@ public:
     SemanticTokenFullHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
-    void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
+    void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
-    HighlightingUtils::HighlightingMode m_mode;
+    QmlHighlighting::HighlightingMode m_mode;
 };
 
 class SemanticTokenDeltaHandler : public QQmlBaseModule<SemanticTokensDeltaRequest>
@@ -66,9 +66,9 @@ public:
     SemanticTokenDeltaHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensDeltaRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
-    void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
+    void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
-    HighlightingUtils::HighlightingMode m_mode;
+    QmlHighlighting::HighlightingMode m_mode;
 };
 
 class SemanticTokenRangeHandler : public QQmlBaseModule<SemanticTokensRangeRequest>
@@ -77,9 +77,9 @@ public:
     SemanticTokenRangeHandler(QmlLsp::QQmlCodeModelManager *codeModel);
     void process(QQmlBaseModule<SemanticTokensRangeRequest>::RequestPointerArgument req) override;
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
-    void setHighlightingMode(HighlightingUtils::HighlightingMode mode) { m_mode = mode; }
+    void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
-    HighlightingUtils::HighlightingMode m_mode;;
+    QmlHighlighting::HighlightingMode m_mode;;
 };
 
 class QQmlHighlightSupport : public QLanguageServerModule

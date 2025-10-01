@@ -12,6 +12,22 @@ QAccessibleQuickScrollBar::QAccessibleQuickScrollBar(QQuickScrollBar *scrollBar)
 {
 }
 
+QList<QAccessible::Attribute> QAccessibleQuickScrollBar::attributeKeys() const
+{
+    QList<QAccessible::Attribute> keys = QAccessibleQuickControl::attributeKeys();
+    keys.append(QAccessible::Attribute::Orientation);
+
+    return keys;
+}
+
+QVariant QAccessibleQuickScrollBar::attributeValue(QAccessible::Attribute key) const
+{
+    if (key == QAccessible::Attribute::Orientation)
+        return QVariant::fromValue(scrollBar()->orientation());
+
+    return QAccessibleQuickControl::attributeValue(key);
+}
+
 QVariant QAccessibleQuickScrollBar::currentValue() const
 {
     return normalizeValue(scrollBar()->position());

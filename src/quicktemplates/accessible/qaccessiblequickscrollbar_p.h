@@ -27,6 +27,9 @@ class QAccessibleQuickScrollBar : public QAccessibleQuickControl
 public:
     QAccessibleQuickScrollBar(QQuickScrollBar *scrollBar);
 
+    QList<QAccessible::Attribute> attributeKeys() const override;
+    QVariant attributeValue(QAccessible::Attribute key) const override;
+
     QVariant currentValue() const override;
     void setCurrentValue(const QVariant &value) override;
     QVariant maximumValue() const override;

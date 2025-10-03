@@ -5,7 +5,6 @@
 import Qt.labs.folderlistmodel
 import QtQuick
 import QtQuick.Templates as T
-import QtQuick.Controls.impl
 import QtQuick.Controls.Imagine
 import QtQuick.Controls.Imagine.impl
 import QtQuick.Dialogs.quickimpl
@@ -118,7 +117,7 @@ FileDialogImpl {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
             Layout.fillWidth: true
-            Layout.maximumWidth: parent.width - 28
+            Layout.maximumWidth: parent.width - 32
         }
     }
 

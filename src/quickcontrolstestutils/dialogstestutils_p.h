@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) \
     QTest::qInit(&tc, argc, argv); \
     const QByteArray testObjectName = QTestResult::currentTestObjectName(); \
     QByteArray testName; \
-    const QStringList allStyles = {"Basic", "Fusion", "Material", "Universal"}; \
+    const QStringList allStyles = {"Basic", "Fusion", "Imagine", "Material", "Universal"}; \
     const QStringList styles = qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE") ? QStringList{qEnvironmentVariable("QT_QUICK_CONTROLS_STYLE")} : allStyles; \
     for (const QString &style : styles) { \
         qmlClearTypeRegistrations(); \

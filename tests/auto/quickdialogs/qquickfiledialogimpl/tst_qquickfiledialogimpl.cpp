@@ -1968,12 +1968,16 @@ void tst_QQuickFileDialogImpl::folderBreadcrumbBarDoesntGrow()
     QTRY_VERIFY(findViewDelegateItem(dialogHelper.fileDialogListView, 0, subDirDelegate));
     COMPARE_URL(subDirDelegate->file(), QUrl::fromLocalFile(tempSubDirCanonicalPath));
     QVERIFY(doubleClickButton(subDirDelegate));
+    QVERIFY(QQuickTest::qWaitForPolish(folderBreadcrumbBar));
+
+    QCOMPARE(folderBreadcrumbBar->width(), initialFolderBreadcrumbBarWidth);
 
     // Select the "sub-sub-dir" delegate by double-clicking.
     QQuickFileDialogDelegate *subSubDirDelegate = nullptr;
     QTRY_VERIFY(findViewDelegateItem(dialogHelper.fileDialogListView, 0, subSubDirDelegate));
     COMPARE_URL(subSubDirDelegate->file(), QUrl::fromLocalFile(tempSubSubDir.canonicalPath()));
     QVERIFY(doubleClickButton(subSubDirDelegate));
+    QVERIFY(QQuickTest::qWaitForPolish(folderBreadcrumbBar));
 
     QCOMPARE(folderBreadcrumbBar->width(), initialFolderBreadcrumbBarWidth);
 }

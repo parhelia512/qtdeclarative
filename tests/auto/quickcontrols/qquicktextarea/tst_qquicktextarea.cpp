@@ -5,6 +5,7 @@
 #include <QtTest/qsignalspy.h>
 #include <QtTest/qtesttouch.h>
 
+#include <QtCore/private/qabstractanimation_p.h>
 #include <QtGui/qclipboard.h>
 #include <QtGui/qfontmetrics.h>
 #include <QtGui/private/qguiapplication_p.h>
@@ -73,6 +74,8 @@ void tst_QQuickTextArea::initTestCase()
     qputenv("QML_NO_TOUCH_COMPRESSION", "1");
     // Showing a native menu is a blocking call, so the test will timeout.
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuWindows);
+
+    QUnifiedTimer::instance()->setSpeedModifier(10);
 }
 
 void tst_QQuickTextArea::touchscreenDoesNotSelect_data()
@@ -470,25 +473,53 @@ void tst_QQuickTextArea::contextMenuSelectAll()
 
 void tst_QQuickTextArea::customContextMenuOnRelease_data()
 {
+    QTest::addColumn<QUrl>("qmlUrl");
     QTest::addColumn<QQuickPopup::PopupType>("popupType");
 
-    QTest::newRow("Item") << QQuickPopup::Item;
-    if (arePopupWindowsSupported())
-        QTest::newRow("Window") << QQuickPopup::Window;
+    QTest::newRow("Item menu instead of attached menu, TapHandler")
+            << testFileUrl("customContextMenuNotAttachedOnRelease.qml") << QQuickPopup::Item;
+    QTest::newRow("Item menu instead of attached menu, MouseArea")
+        << testFileUrl("customContextMenuNotAttachedOnReleaseMouseArea.qml") << QQuickPopup::Item;
+    QTest::newRow("Item menu instead of default menu, TapHandler")
+            << testFileUrl("customContextMenuOnRelease.qml") << QQuickPopup::Item;
+    QTest::newRow("Item menu instead of default menu, MouseArea")
+            << testFileUrl("customContextMenuOnReleaseMouseArea.qml") << QQuickPopup::Item;
+    QTest::newRow("Sibling item menu instead of default menu, TapHandler")
+            << testFileUrl("customContextMenuOnReleaseInSibling.qml") << QQuickPopup::Item;
+    QTest::newRow("Sibling item menu instead of default menu, MouseArea")
+            << testFileUrl("customContextMenuOnReleaseSiblingMouseArea.qml") << QQuickPopup::Item;
+    if (arePopupWindowsSupported()) {
+        QTest::newRow("Windowed menu instead of attached menu, TapHandler")
+                << testFileUrl("customContextMenuNotAttachedOnRelease.qml") << QQuickPopup::Window;
+        QTest::newRow("Windowed menu instead of attached menu, MouseArea")
+            << testFileUrl("customContextMenuNotAttachedOnReleaseMouseArea.qml") << QQuickPopup::Window;
+        QTest::newRow("Windowed menu instead of default menu, TapHandler")
+                << testFileUrl("customContextMenuOnRelease.qml") << QQuickPopup::Window;
+        QTest::newRow("Windowed menu instead of default menu, MouseArea")
+            << testFileUrl("customContextMenuOnReleaseMouseArea.qml") << QQuickPopup::Window;
+        QTest::newRow("Sibling item menu instead of default menu, TapHandler")
+                << testFileUrl("customContextMenuOnReleaseInSibling.qml") << QQuickPopup::Window;
+        QTest::newRow("Sibling item menu instead of default menu, MouseArea")
+                << testFileUrl("customContextMenuOnReleaseSiblingMouseArea.qml") << QQuickPopup::Window;
+    }
 }
 
 void tst_QQuickTextArea::customContextMenuOnRelease()
 {
+    QFETCH(QUrl, qmlUrl);
     QFETCH(QQuickPopup::PopupType, popupType);
 
     QQuickView window;
-    QVERIFY(QQuickTest::showView(window, testFileUrl("customContextMenuOnRelease.qml")));
+    QVERIFY(QQuickTest::showView(window, qmlUrl));
     window.requestActivate();
     QVERIFY(QTest::qWaitForWindowActive(&window));
 
     auto *ourContextMenu = window.rootObject()->property("ourContextMenu").value<QQuickMenu *>();
-    QVERIFY(ourContextMenu);
-    ourContextMenu->setPopupType(popupType);
+    std::unique_ptr<QSignalSpy> ourMenuOpenedSpy = nullptr;
+    if (ourContextMenu) {
+        ourContextMenu->setPopupType(popupType);
+        ourMenuOpenedSpy = std::make_unique<QSignalSpy>(ourContextMenu, &QQuickMenu::opened);
+    }
 
     // Right click on the TextArea to open the context menu. The user's custom context menu
     // should be visible, but not ours (ContextMenu's).
@@ -498,7 +529,13 @@ void tst_QQuickTextArea::customContextMenuOnRelease()
     auto *userContextMenu = window.rootObject()->property("userContextMenu").value<QQuickMenu *>();
     QVERIFY(userContextMenu);
     QTRY_VERIFY(userContextMenu->isOpened());
-    QTRY_VERIFY_WITH_TIMEOUT(!ourContextMenu->isVisible(), 1000);
+
+    // Delivery of the QContextMenuEvent was prevented, so neither the default context menu
+    // nor the attached context menu ever even tried to open.
+    if (ourContextMenu)
+        QCOMPARE(ourMenuOpenedSpy->size(), 0);
+    else
+        QVERIFY(window.rootObject()->findChildren<QQuickMenu *>().size() <= 1);
 }
 
 void tst_QQuickTextArea::testCursorPositionChangedOnDeleteStartWord()

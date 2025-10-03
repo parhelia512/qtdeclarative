@@ -12,9 +12,10 @@ Item {
         id: textArea
         anchors.fill: parent
 
-        TapHandler {
+        MouseArea {
+            anchors.fill: parent
             acceptedButtons: Qt.RightButton
-            onTapped: userContextMenu.popup()
+            onClicked: userContextMenu.popup()
         }
     }
 

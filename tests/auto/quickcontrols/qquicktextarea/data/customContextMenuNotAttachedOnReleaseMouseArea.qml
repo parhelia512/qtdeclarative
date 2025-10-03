@@ -7,14 +7,26 @@ Item {
 
     property alias textArea: textArea
     property alias userContextMenu: userContextMenu
+    property alias ourContextMenu: ourContextMenu
 
     TextArea {
         id: textArea
         anchors.fill: parent
 
-        TapHandler {
+        ContextMenu.menu: Menu {
+            id: ourContextMenu
+            objectName: "ourContextMenu"
+            popupType: Popup.Item
+
+            MenuItem {
+                text: "ContextMenu menu item"
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
             acceptedButtons: Qt.RightButton
-            onTapped: userContextMenu.popup()
+            onClicked: userContextMenu.popup()
         }
     }
 

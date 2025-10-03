@@ -8,7 +8,7 @@
 #include "qquickitem.h"
 #include "qquickitem_p.h"
 #include "qquickevents_p_p.h"
-#include "qquickgraphicsdevice_p.h"
+#include "qquickmousearea_p.h"
 #include "qquickwindowcontainer_p.h"
 #include "qquicksafearea_p.h"
 
@@ -16,6 +16,7 @@
 #include <QtQuick/private/qsgplaintexture_p.h>
 #include <QtQuick/private/qquickpointerhandler_p.h>
 #include <QtQuick/private/qquickpointerhandler_p_p.h>
+#include <QtQuick/private/qquicktaphandler_p.h>
 #include <private/qsgrenderloop_p.h>
 #include <private/qsgrhisupport_p.h>
 #include <private/qquickrendercontrol_p.h>
@@ -1702,6 +1703,38 @@ void QQuickWindowPrivate::maybeSynthesizeContextMenuEvent(QMouseEvent *event)
     // handling a QMouseEvent in which the right button was pressed or released.
     if (windowEventDispatch || !rmbContextMenuEventEnabled)
         return;
+
+#if QT_VERSION < QT_VERSION_CHECK(7, 0, 0)
+    /*
+        If this is a press event and the EventPoint already has a grab, it may be
+        that a TapHandler.onTapped() or MouseArea.onClicked() function
+        intends to show a context menu. Menus were often added that way; so if
+        we can detect that it's likely, then don't synthesize a QContextMenuEvent,
+        in case it could be redundant, even though we can't tell in advance
+        whether the TapHandler or MouseArea will open a menu or do something else.
+        However, we are only checking for MouseArea and TapHandler; it's also
+        possible (but hopefully much less likely) that a user adds a custom
+        QQuickItem subclass to handle mouse events to open a context menu.
+        If a bug gets written about that, we can ask them to try out the
+        ContextMenu attached property instead, or handle the QContextMenuEvent
+        in their subclass. Anyway, let's expect applications to be adjusted for
+        Qt 7 or before, so that we can get rid of this second-guessing hack.
+    */
+    const auto &firstPoint = event->points().first();
+    auto hasRightButtonTapHandler = [](const auto &passiveGrabbers) {
+        return std::find_if(passiveGrabbers.constBegin(), passiveGrabbers.constEnd(),
+            [](const auto grabber) {
+                auto *tapHandler = qmlobject_cast<QQuickTapHandler *>(grabber);
+                return tapHandler && tapHandler->acceptedButtons().testFlag(Qt::RightButton); })
+            != passiveGrabbers.constEnd();
+    };
+    if (event->type() == QEvent::MouseButtonPress && event->button() == Qt::RightButton &&
+        (qmlobject_cast<QQuickMouseArea *>(event->exclusiveGrabber(firstPoint))
+         || hasRightButtonTapHandler(event->passiveGrabbers(firstPoint)))) {
+        qCDebug(lcPtr) << "skipping QContextMenuEvent synthesis due to grabber(s)" << event;
+        return;
+    }
+#endif
 
     QWindowPrivate::maybeSynthesizeContextMenuEvent(event);
 }

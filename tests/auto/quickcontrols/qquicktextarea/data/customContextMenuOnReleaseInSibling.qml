@@ -11,6 +11,10 @@ Item {
     TextArea {
         id: textArea
         anchors.fill: parent
+    }
+
+    Item {
+        anchors.fill: textArea
 
         TapHandler {
             acceptedButtons: Qt.RightButton

@@ -55,3 +55,6 @@ endif()
 # if (ANDROID) # QTBUG-139591
 #     add_subdirectory(qtquickview)
 # endif()
+if (TARGET Qt::Quick AND TARGET Qt::Svg)
+    add_subdirectory(quickvectorimage)
+endif()

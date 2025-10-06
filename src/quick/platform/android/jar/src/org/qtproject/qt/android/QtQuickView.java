@@ -145,10 +145,10 @@ public class QtQuickView extends QtView {
         // and windowReference() returns a reference to native QQuickView
         // instance, after that. We don't load library again if the view
         // exists.
-        if (windowReference() == 0) {
+        if (getWindowReference() == 0) {
             loadQtLibraries(libName);
         } else {
-            createQuickView(m_qmlUri, getWidth(), getHeight(), 0, windowReference(),
+            createQuickView(m_qmlUri, getWidth(), getHeight(), 0, getWindowReference(),
                             m_qmlImportPaths);
         }
     }
@@ -160,7 +160,7 @@ public class QtQuickView extends QtView {
     }
 
     private boolean hasUnderlyingView() {
-        return m_windowReference != 0L;
+        return getWindowReference() != 0L;
     }
 
     /**
@@ -179,7 +179,7 @@ public class QtQuickView extends QtView {
 
     @Override
     protected void createWindow(long parentWindowReference) {
-        createQuickView(m_qmlUri, getWidth(), getHeight(), parentWindowReference, windowReference(),
+        createQuickView(m_qmlUri, getWidth(), getHeight(), parentWindowReference, getWindowReference(),
                         m_qmlImportPaths);
     }
 
@@ -200,7 +200,7 @@ public class QtQuickView extends QtView {
      **/
     public void setProperty(String propertyName, Object value)
     {
-        setRootObjectProperty(windowReference(), propertyName, value);
+        setRootObjectProperty(getWindowReference(), propertyName, value);
     }
 
     /**
@@ -223,7 +223,7 @@ public class QtQuickView extends QtView {
     @SuppressWarnings("unchecked")
     public <T> T getProperty(String propertyName)
     {
-        return (T)getRootObjectProperty(windowReference(), propertyName);
+        return (T)getRootObjectProperty(getWindowReference(), propertyName);
     }
 
     /**
@@ -279,7 +279,7 @@ public class QtQuickView extends QtView {
     void connectSignalListener(String signalName, Class<?>[] argTypes, Object listener, int id)
     {
         if (hasUnderlyingView())
-            addRootObjectSignalListener(windowReference(), signalName, argTypes, listener, id);
+            addRootObjectSignalListener(getWindowReference(), signalName, argTypes, listener, id);
         else
             m_signalQueue.add(signalName, argTypes, listener, id);
     }
@@ -297,7 +297,7 @@ public class QtQuickView extends QtView {
     public boolean disconnectSignalListener(int signalListenerId)
     {
         if (hasUnderlyingView())
-            return removeRootObjectSignalListener(windowReference(), signalListenerId);
+            return removeRootObjectSignalListener(getWindowReference(), signalListenerId);
         else
             return m_signalQueue.remove(signalListenerId);
     }
@@ -357,7 +357,7 @@ public class QtQuickView extends QtView {
      **/
     public void invokeMethod(String methodName, Object[] params)
     {
-        invokeMethod(windowReference(), methodName, params);
+        invokeMethod(getWindowReference(), methodName, params);
     }
 
     /**
@@ -369,7 +369,7 @@ public class QtQuickView extends QtView {
      */
     public void invokeMethod(String methodName)
     {
-        invokeMethod(windowReference(), methodName, new Object[] {});
+        invokeMethod(getWindowReference(), methodName, new Object[] {});
     }
 
     private void handleStatusChange(int status)

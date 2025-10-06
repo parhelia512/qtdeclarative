@@ -44,7 +44,7 @@ struct QmlPlugin
         const Loader &loader = std::get<Loader>(data);
         if (!loader)
             return {};
-#if QT_CONFIG(library) && !defined(Q_OS_MACOS)
+#if QT_CONFIG(library)
         if (!loader->unload())
             return loader->errorString();
 #endif

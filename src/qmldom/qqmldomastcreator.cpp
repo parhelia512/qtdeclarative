@@ -597,7 +597,7 @@ bool QQmlDomAstCreatorBase::visit(AST::UiPublicMember *el)
             FileLocations::addRegion(valueLoc, MainRegion, combineLocations(el->statement));
             // push it also: its needed in endVisit to add the scriptNode to it
             // do not use pushEl to avoid recreating the already created "bLoc" Map
-            nodeStack.append({ bPathFromOwner, *bPtr, bLoc });
+            nodeStack.append({ std::move(bPathFromOwner), *bPtr, std::move(bLoc) });
         }
         break;
     }
@@ -657,13 +657,13 @@ void QQmlDomAstCreatorBase::endVisit(AST::UiPublicMember *el)
         PropertyDefinition *pDefPtr =
                 valueFromMultimap(obj.m_propertyDefs, pDef.name, sEl.path.last().headIndex());
         Q_ASSERT(pDefPtr);
-        *pDefPtr = pDef;
+        *pDefPtr = std::move(pDef);
     } break;
     case DomType::MethodInfo: {
         MethodInfo m = std::get<MethodInfo>(sEl.item.value);
         MethodInfo *mPtr = valueFromMultimap(obj.m_methods, m.name, sEl.path.last().headIndex());
         Q_ASSERT(mPtr);
-        *mPtr = m;
+        *mPtr = std::move(m);
     } break;
     default:
         Q_UNREACHABLE();
@@ -826,11 +826,10 @@ bool QQmlDomAstCreatorBase::visit(AST::FunctionDeclaration *fDef)
         }
         if (args->element->initializer) {
             SourceLocation loc = combineLocations(args->element->initializer);
-            auto script = std::make_shared<ScriptExpression>(
+            param.defaultValue = std::make_shared<ScriptExpression>(
                     code.mid(loc.offset, loc.length), qmlFilePtr->engine(),
                     args->element->initializer, qmlFilePtr->astComments(),
                     ScriptExpression::ExpressionType::ArgInitializer, loc);
-            param.defaultValue = script;
         }
         if (args->element->type == AST::PatternElement::SpreadElement)
             param.isRestElement = true;
@@ -1120,7 +1119,7 @@ bool QQmlDomAstCreatorBase::visit(AST::UiScriptBinding *el)
     ++m_nestedFunctionDepth;
     QStringView code = qmlFilePtr->code();
     SourceLocation loc = combineLocations(el->statement);
-    auto script = std::make_shared<ScriptExpression>(
+    const auto script = std::make_shared<ScriptExpression>(
             code.mid(loc.offset, loc.length), qmlFilePtr->engine(), el->statement,
             qmlFilePtr->astComments(), ScriptExpression::ExpressionType::BindingExpression, loc);
     Binding bindingV(toString(el->qualifiedId), script, BindingType::Normal);

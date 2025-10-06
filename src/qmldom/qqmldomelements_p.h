@@ -193,7 +193,7 @@ public:
             return QString::number(minorVersion);
         return QString();
     }
-    int compare(const Version &o) const
+    int compare(Version o) const
     {
         int c = majorVersion - o.majorVersion;
         if (c != 0)
@@ -204,27 +204,27 @@ public:
     qint32 majorVersion;
     qint32 minorVersion;
 };
-inline bool operator==(const Version &v1, const Version &v2)
+inline bool operator==(Version v1, Version v2)
 {
     return v1.compare(v2) == 0;
 }
-inline bool operator!=(const Version &v1, const Version &v2)
+inline bool operator!=(Version v1, Version v2)
 {
     return v1.compare(v2) != 0;
 }
-inline bool operator<(const Version &v1, const Version &v2)
+inline bool operator<(Version v1, Version v2)
 {
     return v1.compare(v2) < 0;
 }
-inline bool operator<=(const Version &v1, const Version &v2)
+inline bool operator<=(Version v1, Version v2)
 {
     return v1.compare(v2) <= 0;
 }
-inline bool operator>(const Version &v1, const Version &v2)
+inline bool operator>(Version v1, Version v2)
 {
     return v1.compare(v2) > 0;
 }
-inline bool operator>=(const Version &v1, const Version &v2)
+inline bool operator>=(Version v1, Version v2)
 {
     return v1.compare(v2) >= 0;
 }
@@ -268,8 +268,8 @@ public:
     constexpr static DomType kindValue = DomType::Import;
 
     static Import fromUriString(
-            const QString &importStr, Version v = Version(), const QString &importId = QString(),
-            const ErrorHandler &handler = nullptr);
+            const QString &importStr, Version v = Version(),
+            const QString &importId = QString(), const ErrorHandler &handler = nullptr);
     static Import fromFileString(
             const QString &importStr, const QString &importId = QString(),
             const ErrorHandler &handler = nullptr);
@@ -408,7 +408,7 @@ public:
     explicit ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
                               AST::Node *ast, const std::shared_ptr<AstComments> &comments,
                               ExpressionType expressionType,
-                              SourceLocation localOffset = SourceLocation());
+                              const SourceLocation &localOffset = SourceLocation());
 
     ScriptExpression()
         : ScriptExpression(QStringView(), std::shared_ptr<QQmlJS::Engine>(), nullptr,
@@ -463,7 +463,7 @@ public:
         QMutexLocker l(mutex());
         return m_engine;
     }
-    QStringView loc2Str(SourceLocation) const;
+    QStringView loc2Str(const SourceLocation &) const;
     std::shared_ptr<AstComments> astComments() const { return m_astComments; }
     void writeOut(const DomItem &self, OutWriter &lw) const override;
     SourceLocation globalLocation(const DomItem &self) const;
@@ -477,7 +477,7 @@ protected:
         return std::make_shared<ScriptExpression>(*this);
     }
 
-    SourceLocation locationToLocal(SourceLocation x) const
+    SourceLocation locationToLocal(const SourceLocation &x) const
     {
         return SourceLocation(
                 x.offset - m_localOffset.offset, x.length, x.startLine - m_localOffset.startLine,
@@ -508,7 +508,7 @@ public:
     constexpr static DomType kindValue = DomType::Binding;
 
     Binding(const QString &m_name = QString());
-    Binding(const QString &m_name, std::unique_ptr<BindingValue> value,
+    Binding(const QString &m_name, std::unique_ptr<BindingValue> &&value,
             BindingType bindingType = BindingType::Normal);
     Binding(const QString &m_name, const std::shared_ptr<ScriptExpression> &value,
             BindingType bindingType = BindingType::Normal);
@@ -774,8 +774,8 @@ public:
     constexpr static DomType kindValue = DomType::EnumDecl;
     DomType kind() const override { return kindValue; }
 
-    EnumDecl(const QString &name = QString(), QList<EnumItem> values = QList<EnumItem>(),
-             Path pathFromOwner = Path())
+    EnumDecl(const QString &name = QString(), const QList<EnumItem> &values = QList<EnumItem>(),
+             const Path &pathFromOwner = Path())
         : CommentableDomElement(pathFromOwner), m_name(name), m_values(values)
     {
     }
@@ -789,8 +789,8 @@ public:
     void setIsFlag(bool flag) { m_isFlag = flag; }
     QString alias() const { return m_alias; }
     void setAlias(const QString &aliasName) { m_alias = aliasName; }
-    void setValues(QList<EnumItem> values) { m_values = values; }
-    Path addValue(EnumItem value)
+    void setValues(const QList<EnumItem> &values) { m_values = values; }
+    Path addValue(const EnumItem &value)
     {
         m_values.append(value);
         return Path::fromField(Fields::values).withIndex(index_type(m_values.size() - 1));
@@ -842,7 +842,7 @@ public:
     void setIdStr(const QString &id) { m_idStr = id; }
     void setName(const QString &name) { m_name = name; }
     void setDefaultPropertyName(const QString &name) { m_defaultPropertyName = name; }
-    void setPrototypePaths(QList<Path> prototypePaths) { m_prototypePaths = prototypePaths; }
+    void setPrototypePaths(const QList<Path> &prototypePaths) { m_prototypePaths = prototypePaths; }
     Path addPrototypePath(const Path &prototypePath)
     {
         index_type idx = index_type(m_prototypePaths.indexOf(prototypePath));
@@ -853,12 +853,15 @@ public:
         return Path::fromField(Fields::prototypes).withIndex(idx);
     }
     void setNextScopePath(const Path &nextScopePath) { m_nextScopePath = nextScopePath; }
-    void setPropertyDefs(QMultiMap<QString, PropertyDefinition> propertyDefs)
+    void setPropertyDefs(const QMultiMap<QString, PropertyDefinition> &propertyDefs)
     {
         m_propertyDefs = propertyDefs;
     }
-    void setBindings(QMultiMap<QString, Binding> bindings) { m_bindings = bindings; }
-    void setMethods(QMultiMap<QString, MethodInfo> functionDefs) { m_methods = functionDefs; }
+    void setBindings(const QMultiMap<QString, Binding> &bindings) { m_bindings = bindings; }
+    void setMethods(const QMultiMap<QString, MethodInfo> &functionDefs)
+    {
+        m_methods = functionDefs;
+    }
     void setChildren(const QList<QmlObject> &children)
     {
         m_children = children;
@@ -881,24 +884,24 @@ public:
     MutableDomItem addPropertyDef(MutableDomItem &self, const PropertyDefinition &propertyDef,
                                   AddOption option);
 
-    Path addBinding(Binding binding, AddOption option, Binding **bPtr = nullptr)
+    Path addBinding(const Binding &binding, AddOption option, Binding **bPtr = nullptr)
     {
         return insertUpdatableElementInMultiMap(pathFromOwner().withField(Fields::bindings), m_bindings,
                                                 binding.name(), binding, option, bPtr);
     }
-    MutableDomItem addBinding(MutableDomItem &self, Binding binding, AddOption option);
+    MutableDomItem addBinding(MutableDomItem &self, const Binding &binding, AddOption option);
     Path addMethod(const MethodInfo &functionDef, AddOption option, MethodInfo **mPtr = nullptr)
     {
         return insertUpdatableElementInMultiMap(pathFromOwner().withField(Fields::methods), m_methods,
                                                 functionDef.name, functionDef, option, mPtr);
     }
     MutableDomItem addMethod(MutableDomItem &self, const MethodInfo &functionDef, AddOption option);
-    Path addChild(QmlObject child, QmlObject **cPtr = nullptr)
+    Path addChild(const QmlObject &child, QmlObject **cPtr = nullptr)
     {
         return appendUpdatableElementInQList(pathFromOwner().withField(Fields::children), m_children,
                                              child, cPtr);
     }
-    MutableDomItem addChild(MutableDomItem &self, QmlObject child)
+    MutableDomItem addChild(MutableDomItem &self, const QmlObject &child)
     {
         Path p = addChild(child);
         return MutableDomItem(self.owner().item(), p);
@@ -1005,7 +1008,7 @@ public:
     Path attachedTypePath(const DomItem &) const { return m_attachedTypePath; }
 
     void setName(const QString &name) { m_name = name; }
-    void setEnumerations(QMultiMap<QString, EnumDecl> enumerations)
+    void setEnumerations(const QMultiMap<QString, EnumDecl> &enumerations)
     {
         m_enumerations = enumerations;
     }
@@ -1060,11 +1063,11 @@ public:
     bool iterateDirectSubpaths(const DomItem &, DirectVisitor) const override;
     const QList<Export> &exports() const & { return m_exports; }
     QString fileName() const { return m_fileName; }
-    void setExports(QList<Export> exports) { m_exports = exports; }
+    void setExports(const QList<Export> &exports) { m_exports = exports; }
     void addExport(const Export &exportedEntry) { m_exports.append(exportedEntry); }
     void setFileName(const QString &fileName) { m_fileName = fileName; }
     const QList<int> &metaRevisions() const & { return m_metaRevisions; }
-    void setMetaRevisions(QList<int> metaRevisions) { m_metaRevisions = metaRevisions; }
+    void setMetaRevisions(const QList<int> &metaRevisions) { m_metaRevisions = metaRevisions; }
     void setInterfaceNames(const QStringList& interfaces) { m_interfaceNames = interfaces; }
     const QStringList &interfaceNames() const & { return m_interfaceNames; }
     QString extensionTypeName() const { return m_extensionTypeName; }
@@ -1113,7 +1116,7 @@ public:
 
     const QMultiMap<QString, Id> &ids() const & { return m_ids; }
     Path nextComponentPath() const { return m_nextComponentPath; }
-    void setIds(QMultiMap<QString, Id> ids) { m_ids = ids; }
+    void setIds(const QMultiMap<QString, Id> &ids) { m_ids = ids; }
     void setNextComponentPath(const Path &p) { m_nextComponentPath = p; }
     void updatePathFromOwner(const Path &newPath) override;
     Path addId(const Id &id, AddOption option = AddOption::Overwrite, Id **idPtr = nullptr)
@@ -1210,14 +1213,12 @@ public:
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const;
 
-    void addImport(QStringList p, const Path &targetExports)
+    void addImport(const QStringList &p, const Path &targetExports)
     {
-        if (!p.isEmpty()) {
-            const QString current = p.takeFirst();
-            m_subImports[current].addImport(std::move(p), targetExports);
-        } else if (!m_importSourcePaths.contains(targetExports)) {
+        if (!p.isEmpty())
+            m_subImports[p.first()].addImport(p.mid(1), targetExports);
+        else if (!m_importSourcePaths.contains(targetExports))
             m_importSourcePaths.append(targetExports);
-        }
     }
 
 private:

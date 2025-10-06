@@ -699,7 +699,7 @@ MutableDomItem QmlObject::addPropertyDef(
     return self.owner().path(p);
 }
 
-MutableDomItem QmlObject::addBinding(MutableDomItem &self, Binding binding, AddOption option)
+MutableDomItem QmlObject::addBinding(MutableDomItem &self, const Binding &binding, AddOption option)
 {
     Path p = addBinding(binding, option);
     if (p && p.last().headIndex(0) > 1)
@@ -1112,7 +1112,8 @@ void QmlObject::writeOut(const DomItem &self, OutWriter &ow, const QString &onTa
 
 Binding::Binding(const QString &name) : Binding(name, std::unique_ptr<BindingValue>()) { }
 
-Binding::Binding(const QString &name, std::unique_ptr<BindingValue> value, BindingType bindingType)
+Binding::Binding(const QString &name, std::unique_ptr<BindingValue> &&value,
+                 BindingType bindingType)
     : m_bindingType(bindingType), m_name(name), m_value(std::move(value))
 {
 }
@@ -1628,7 +1629,7 @@ void BindingValue::clearValue()
 
 ScriptExpression::ScriptExpression(QStringView code, const std::shared_ptr<QQmlJS::Engine> &engine,
                                    AST::Node *ast, const std::shared_ptr<AstComments> &comments,
-                                   ExpressionType expressionType, SourceLocation localOffset)
+                                   ExpressionType expressionType, const SourceLocation &localOffset)
     : OwningItem(),
       m_expressionType(expressionType),
       m_code(code),
@@ -1790,7 +1791,7 @@ void ScriptExpression::writeOut(const DomItem &, OutWriter &lw) const
     reformatAst(lw, this);
 }
 
-QStringView ScriptExpression::loc2Str(SourceLocation astL) const
+QStringView ScriptExpression::loc2Str(const SourceLocation &astL) const
 {
     SourceLocation l = this->locationToLocal(astL); // use engine->code() instead?
     return this->code().mid(l.offset, l.length);

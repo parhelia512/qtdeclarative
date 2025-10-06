@@ -326,7 +326,7 @@ void QQmlCodeModel::callCMakeBuild(QProcessScheduler *scheduler)
             continue;
 
         const auto [program, arguments] = QQmlLSUtils::cmakeBuildCommand(path);
-        commands.append({ program, arguments });
+        commands.append({ std::move(program), std::move(arguments) });
     }
     if (commands.isEmpty())
         return;

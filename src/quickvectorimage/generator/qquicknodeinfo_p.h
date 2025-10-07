@@ -33,6 +33,8 @@ struct NodeInfo
     QString nodeId;
     QString typeName;
     QString maskId;
+    QString transformReferenceId;
+    QString customItemType;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
     QQuickAnimatedProperty opacity = QQuickAnimatedProperty(QVariant::fromValue(1.0));
     bool isDefaultTransform = true;
@@ -41,8 +43,6 @@ struct NodeInfo
     bool isDisplayed = true; // TODO: Map to display enum in QtSvg
     QQuickAnimatedProperty visibility = QQuickAnimatedProperty(QVariant::fromValue(true));
     int visibilityEndTime = -1;
-    int layerNum = -1;
-    int transformReferenceLayerNum = -1;
     QRectF bounds;
 };
 

@@ -79,19 +79,10 @@ QString QQuickQmlGenerator::commentString() const
 
 QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
 {
-    auto layerIdString = [](int layerId) {
-        return QStringLiteral("_qt_layer%1").arg(layerId);
-    };
-
     if (!info.nodeId.isEmpty())
         stream() << "objectName: \"" << info.nodeId << "\"";
 
-    QString idString;
-    if (info.layerNum >= 0)
-        idString = layerIdString(info.layerNum);
-    else
-        idString = info.id;
-
+    QString idString = info.id;
     if (!idString.isEmpty()) {
         // If input contains multiple items with the same id, then this is invalid. However we
         // shouldn't generate invalid QML from it. So we add a suffix if this is detected.
@@ -139,11 +130,10 @@ void QQuickQmlGenerator::generateNodeEnd(const NodeInfo &info)
 
 void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const NodeInfo &info)
 {
-    const bool hasTransformReference = (info.transformReferenceLayerNum >= 0);
     const bool hasTransform = info.transform.isAnimated()
                               || !info.maskId.isEmpty()
                               || !info.isDefaultTransform
-                              || hasTransformReference;
+                              || !info.transformReferenceId.isEmpty();
 
     if (hasTransform) {
         stream() << "transform: TransformGroup {";
@@ -233,6 +223,9 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                 stream(SameLine) << "}";
             }
         }
+
+        if (!info.transformReferenceId.isEmpty())
+            stream() << "Matrix4x4 { matrix: " << info.transformReferenceId << ".transformMatrix }";
 
         m_indentLevel--;
         stream() << "}";
@@ -1137,8 +1130,8 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
     if (info.stage == StructureNodeStage::Start) {
         if (isPathContainer) {
             generatePathContainer(info);
-        } else  if (info.layerNum >= 0) {
-            stream() << "LayerItem {";
+        } else if (!info.customItemType.isEmpty()) {
+            stream() << info.customItemType << " {";
         } else {
             stream() << "Item { // Structure node";
         }

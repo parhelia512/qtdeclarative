@@ -56,6 +56,8 @@ private slots:
     void propertyDeclarations_data();
     void propertyDeclarations();
 
+    void trailingCommaInUiArray();
+
 private:
     // TODO move to some utils?
     enum SyntaxKind {
@@ -1073,6 +1075,18 @@ void tst_qqmlparser::propertyDeclarations()
                  Continue);
     QCOMPARE(actualParseResult.diagnosticMessage.message,
              expectedParseResult.diagnosticMessage.message);
+}
+
+void tst_qqmlparser::trailingCommaInUiArray()
+{
+    QFile file(testFile("trailingComma.qml"));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+
+    QQmlJS::Engine engine;
+    QQmlJS::Lexer lexer(&engine);
+    lexer.setCode(file.readAll(), 1);
+    QQmlJS::Parser parser(&engine);
+    QVERIFY(parser.parse());
 }
 
 QTEST_MAIN(tst_qqmlparser)

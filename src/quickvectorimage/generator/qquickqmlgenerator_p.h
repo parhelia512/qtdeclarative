@@ -22,6 +22,7 @@
 #include <QtCore/qtextstream.h>
 #include <QtCore/qbuffer.h>
 #include <QtCore/qmap.h>
+#include <QtCore/qset.h>
 
 QT_BEGIN_NAMESPACE
 

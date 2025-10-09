@@ -165,6 +165,11 @@ public:
     void clearCache();
 
     QQmlJSScope::ConstPtr jsGlobalObject();
+    QString pathOfModule(const QString &moduleName, QTypeRevision revision) const
+    {
+        const auto it = m_seenImports.constFind({ moduleName, revision });
+        return it != m_seenImports.constEnd() ? *it : QString();
+    }
 
     struct ImportVisitorPrerequisites
     {

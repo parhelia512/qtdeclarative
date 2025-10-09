@@ -1642,10 +1642,33 @@ void tst_qmlls_modules::hover_data()
     QTest::addColumn<QLspSpecification::Position>("hoveredPosition");
     QTest::addColumn<QLspSpecification::MarkupContent>("expectedResult");
 
-    const QString filePath = u"hover/test.qml"_s;
     {
+        const QString filePath = u"hover/test.qml"_s;
         QLspSpecification::MarkupContent content{ MarkupKind::PlainText, "should fail" };
+        // note: this test fails if you have built the qttools help engine plugin (the CI doesn't seem to build it)
         QTest::addRow("hover") << filePath << QLspSpecification::Position{ 7, 24 } << content;
+    }
+
+    {
+        const QString filePath = u"hover/importpaths.qml"_s;
+        const QLspSpecification::MarkupContent expected{
+            MarkupKind::Markdown,
+            R"(Library at path %1/QtQuick/qmldir
+
+Import paths:
+%1)"_L1.arg(QLibraryInfo::path(QLibraryInfo::QmlImportsPath))
+                    .toUtf8(),
+        };
+        QTest::addRow("importpaths-no-version")
+                << filePath << QLspSpecification::Position{ 3, 11 } << expected;
+        QTest::addRow("importpaths2-no-version")
+                << filePath << QLspSpecification::Position{ 3, 3 } << expected;
+        QTest::addRow("importpaths-major-version")
+                << filePath << QLspSpecification::Position{ 4, 15 } << expected;
+        QTest::addRow("importpaths-minor-version")
+                << filePath << QLspSpecification::Position{ 4, 18 } << expected;
+        QTest::addRow("importpaths-with-version")
+                << filePath << QLspSpecification::Position{ 5, 11 } << expected;
     }
 }
 

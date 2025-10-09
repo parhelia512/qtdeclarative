@@ -74,8 +74,50 @@ void HelpManager::registerDocumentations(const QStringList &docs) const
                   [this](const auto &file) { m_helpPlugin->registerDocumentation(file); });
 }
 
+static QByteArray documentationForImports(const DomItem &item)
+{
+    DomItem domImport;
+    item.filterUp(
+            [&domImport](DomType type, const DomItem &item) {
+                if (type != DomType::Import)
+                    return true;
+                domImport = item;
+                return false;
+            },
+            FilterUpOptions::ReturnOuter);
+    if (!domImport)
+        return {};
+
+    const Import *import = domImport.as<Import>();
+    if (!import)
+        return {};
+    auto domEnvironment = item.environment().ownerAs<DomEnvironment>();
+    if (!domEnvironment)
+        return {};
+    const auto &importer = domEnvironment->semanticAnalysis().m_importer;
+    if (!importer)
+        return {};
+
+    const QString qmldirLocation = importer->pathOfModule(
+            import->uri.toString(),
+            import->version.isLatest() ? QTypeRevision()
+                                       : QTypeRevision::fromVersion(import->version.majorVersion,
+                                                                    import->version.minorVersion));
+
+    return "Library at path %1\n\nImport paths:\n%2"_L1
+            .arg(qmldirLocation, domEnvironment->loadPaths().join(u'\n'))
+            .toUtf8();
+}
+
+
 std::optional<QByteArray> HelpManager::extractDocumentation(const DomItem &item) const
 {
+    if (const QByteArray documentation = documentationForImports(item); !documentation.isEmpty())
+        return documentation;
+
+    if (!m_helpPlugin || m_helpPlugin->registeredNamespaces().empty())
+        return std::nullopt;
+
     if (item.internalKind() == DomType::ScriptIdentifierExpression) {
         const auto resolvedType =
                 QQmlLSUtils::resolveExpressionType(item, QQmlLSUtils::ResolveOwnerType);
@@ -204,11 +246,6 @@ std::optional<QByteArray>
 HelpManager::documentationForItem(const DomItem &file, QLspSpecification::Position position)
 {
     QMutexLocker guard(&m_mutex);
-    if (!m_helpPlugin)
-        return std::nullopt;
-
-    if (m_helpPlugin->registeredNamespaces().empty())
-        return std::nullopt;
 
     // Prepare Cpp types to Qml types mapping.
     const auto fileItem = file.containingFile().as<QmlFile>();

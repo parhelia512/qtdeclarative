@@ -32,6 +32,7 @@ class QQuickTextControl;
 class Q_QUICK_EXPORT QQuickTextSelection : public QObject, public QQmlParserStatus
 {
     Q_OBJECT
+    Q_INTERFACES(QQmlParserStatus)
 
     // specify the selection
     Q_PROPERTY(QQuickTextDocument *document READ document WRITE setDocument NOTIFY documentChanged FINAL REVISION(6, 11))

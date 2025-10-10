@@ -30,8 +30,10 @@ void UrlPrototype::init(ExecutionEngine *engine, Object *ctor)
 
     Scope scope(engine);
     ScopedObject o(scope);
+    ctor->defineReadonlyProperty(engine->id_prototype(), (o = this));
 
-    defineDefaultProperty(QLatin1String("toString"), method_getHref);
+    defineDefaultProperty(QStringLiteral("constructor"), (o = ctor));
+    defineDefaultProperty(engine->id_toString(), method_getHref);
     defineDefaultProperty(QLatin1String("toJSON"), method_getHref);
 
     defineAccessorProperty(QLatin1String("hash"), method_getHash, method_setHash);
@@ -768,8 +770,10 @@ void UrlSearchParamsPrototype::init(ExecutionEngine *engine, Object *ctor)
 
     Scope scope(engine);
     ScopedObject o(scope);
+    ctor->defineReadonlyProperty(engine->id_prototype(), (o = this));
 
-    defineDefaultProperty(QLatin1String("toString"), method_toString);
+    defineDefaultProperty(QStringLiteral("constructor"), (o = ctor));
+    defineDefaultProperty(engine->id_toString(), method_toString);
     defineDefaultProperty(QLatin1String("sort"), method_sort);
     defineDefaultProperty(QLatin1String("append"), method_append);
     defineDefaultProperty(QLatin1String("delete"), method_delete);

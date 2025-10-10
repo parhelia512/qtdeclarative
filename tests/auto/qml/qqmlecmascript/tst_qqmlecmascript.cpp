@@ -406,6 +406,7 @@ private slots:
     void colonAfterProtocol();
     void urlSearchParamsConstruction();
     void urlSearchParamsMethods();
+    void urlInstanceof();
     void variantConversionMethod();
     void sequenceConversionMethod();
     void proxyIteration();
@@ -10176,6 +10177,36 @@ void tst_qqmlecmascript::urlSearchParamsMethods()
 
     // Verify the end result
     QVERIFY(EVALUATE_VALUE("this.usp.toString()", QV4::ScopedValue(scope, scope.engine->newString("a=10&c=foo"))));
+}
+
+void tst_qqmlecmascript::urlInstanceof()
+{
+    QQmlEngine qmlengine;
+
+    QObject *o = new QObject(&qmlengine);
+
+    QV4::ExecutionEngine *engine = qmlengine.handle();
+    QV4::Scope scope(engine);
+
+    QV4::ScopedValue object(scope, QV4::QObjectWrapper::wrap(engine, o));
+
+    {
+        QV4::ScopedValue ret(scope, EVALUATE("this.url = new URL('http://localhost/a/b/c');"));
+        QV4::UrlObject *url = ret->as<QV4::UrlObject>();
+        QVERIFY(url != nullptr);
+
+        // protocol
+        QVERIFY(EVALUATE("this.url instanceof URL;"));
+    }
+
+    {
+        QV4::ScopedValue ret(scope, EVALUATE("this.params = new URLSearchParams();"));
+        QV4::UrlSearchParamsObject *searchParams = ret->as<QV4::UrlSearchParamsObject>();
+        QVERIFY(searchParams != nullptr);
+
+        // protocol
+        QVERIFY(EVALUATE("this.params instanceof URLSearchParams;"));
+    }
 }
 
 void tst_qqmlecmascript::variantConversionMethod()

@@ -2097,12 +2097,12 @@ void QQuickDeliveryAgentPrivate::deliverPointerEvent(QPointerEvent *event)
 
 /*! \internal
     Returns a list of all items that are spatially relevant to receive \a event
-    occurring at \a itemPos relative to \a item, starting with \a item and
-    recursively checking all the children.
+    occurring at \a scenePos, starting with \a item and recursively
+    checking all the children.
     \list
-        \li If QQuickItem::clip() is \c true \e and \a itemPos is outside of
+        \li If QQuickItem::clip() is \c true \e and \a scenePos is outside of
         QQuickItem::clipRect(), its children are also omitted. (We stop the
-        recursion, because any clipped-off portions of children under \a itemPos
+        recursion, because any clipped-off portions of children under \a scenePos
         are invisible.)
         \li Ignore any item in a subscene that "belongs to" a different
         DeliveryAgent. (In current practice, this only happens in 2D scenes in

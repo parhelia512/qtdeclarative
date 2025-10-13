@@ -58,6 +58,18 @@ qt_internal_add_test(tst_qmlls_documentationHints
     TESTDATA ${test_data}
 )
 
+
+qt_internal_add_test(tst_qmlls_differ
+    SOURCES
+    tst_qmlls_differ.h tst_qmlls_differ.cpp
+    LIBRARIES
+        Qt::Core
+        Qt::Test
+        Qt::QuickTestUtilsPrivate
+        Qt::QmlLSPrivate
+    TESTDATA ${test_data}
+)
+
 qt_internal_extend_target(tst_qmlls_utils CONDITION ANDROID OR IOS
     DEFINES
         QT_QMLLS_UTILS_DATADIR=":/domdata"

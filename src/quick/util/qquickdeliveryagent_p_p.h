@@ -37,10 +37,17 @@ class QQuickPointerHandler;
 class QQuickWindow;
 
 /*! \internal
-    Extra device-specific data to be stored in QInputDevicePrivate::qqExtra
+    Extra device-specific data to be stored in QInputDevicePrivate::qqExtra.
+
+    \c deliveryTargets is a list of objects that have already been visited
+    during event delivery:
+    - QQuickPointerHandlerPrivate::deviceDeliveryTargets() returns the whole
+      list by reference
+    - QQuickPointerHandler::handlePointerEvent() appends to it
+    - QQuickItemPrivate::handlePointerEvent() checks it to prevent delivery to
+      the same handler multiple times
 */
 struct QQuickPointingDeviceExtra {
-    // used in QQuickPointerHandlerPrivate::deviceDeliveryTargets
     QVector<QObject *> deliveryTargets;
 };
 

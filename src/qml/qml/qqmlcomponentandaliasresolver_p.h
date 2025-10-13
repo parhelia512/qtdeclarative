@@ -468,7 +468,7 @@ QQmlError QQmlComponentAndAliasResolver<ObjectContainer>::resolveAliases(int com
         const CompiledObject *obj = m_compiler->objectAt(m_objectsWithAliases.first());
         for (auto alias = obj->aliasesBegin(), end = obj->aliasesEnd(); alias != end; ++alias) {
             if (!resolvedAliases.contains(alias))
-                return error(alias->location, QQmlComponentAndAliasResolverBase::tr("Circular alias reference detected"));
+                return error(alias->location, QQmlComponentAndAliasResolverBase::tr("Cyclic alias"));
         }
     }
 

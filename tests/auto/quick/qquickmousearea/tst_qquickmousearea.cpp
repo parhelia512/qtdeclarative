@@ -1950,10 +1950,10 @@ void tst_QQuickMouseArea::cursorUpdating()
     const QPoint p(240, 40);
     const QPoint pg = window.mapToGlobal(p);
     QCursor::setPos(pg);
-    QWheelEvent wheelEvent(p, pg, QPoint(60, -400), QPoint(0, -600),
+    QWheelEvent wheelEvent(p, pg, QPoint(60, -300), QPoint(0, -450),
                            Qt::NoButton, Qt::ControlModifier, Qt::NoScrollPhase, false);
     QGuiApplication::sendEvent(&window, &wheelEvent);
-    QTRY_VERIFY(flickable->contentY() > 300);
+    QTRY_VERIFY(flickable->contentY() > 250);
     QCOMPARE(window.cursor().shape(), Qt::IBeamCursor);
 }
 #endif

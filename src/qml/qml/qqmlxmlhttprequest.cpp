@@ -1366,6 +1366,8 @@ void QQmlXMLHttpRequest::error(QNetworkReply::NetworkError error)
         error == QNetworkReply::ContentNotFoundError ||
         error == QNetworkReply::AuthenticationRequiredError ||
         error == QNetworkReply::ContentReSendError ||
+        error == QNetworkReply::ContentConflictError ||
+        error == QNetworkReply::ContentGoneError ||
         error == QNetworkReply::UnknownContentError ||
         error == QNetworkReply::ProtocolInvalidOperationError ||
         error == QNetworkReply::InternalServerError ||

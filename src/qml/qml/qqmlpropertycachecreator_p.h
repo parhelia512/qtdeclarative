@@ -853,6 +853,7 @@ inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
         const QV4::CompiledData::Property &propertyIR) const
         -> q23::expected<PropertyType, QQmlError>
 {
+    using namespace Qt::StringLiterals;
     PropertyType propertyType;
     propertyType.commonType = propertyIR.commonType();
 
@@ -875,6 +876,12 @@ inline auto QQmlPropertyCacheCreator<ObjectContainer>::tryResolvePropertyType(
     if (!imports->resolveType(typeLoader, typeName, &qmltype, nullptr, nullptr, &errors,
                               QQmlType::AnyRegistrationType, &selfReference)) {
         Q_ASSERT(!errors.isEmpty());
+
+        if (typeName == "list"_L1 && errors[0].description() == "is not a type"_L1) {
+            errors[0].setDescription(errors[0].description().append(
+                    ". It requires an element type argument (eg. list<int>)"_L1));
+        }
+
         return q23::make_unexpected(
                 qQmlCompileError(propertyIR.location, typeName + u' ' + errors[0].description()));
     }

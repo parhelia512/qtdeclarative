@@ -537,6 +537,8 @@ private slots:
 
     void colorWithoutQuick();
 
+    void listIsNotAType();
+
 private:
     QQmlEngine engine;
     QStringList defaultImportPathList;
@@ -10143,6 +10145,16 @@ void tst_qqmllanguage::colorWithoutQuick()
     const QColor expected = QColor::fromString("grey");
     QVERIFY(expected.isValid());
     QCOMPARE(t->colorProperty(), expected);
+}
+
+void tst_qqmllanguage::listIsNotAType()
+{
+    QQmlEngine engine;
+    QUrl url(testFileUrl("listIsNotAType.qml"));
+    QQmlComponent component(&engine, url);
+    QVERIFY(!component.isReady());
+    QVERIFY(component.errorString().contains(
+            "list is not a type. It requires an element type argument (eg. list<int>)"_L1));
 }
 
 QTEST_MAIN(tst_qqmllanguage)

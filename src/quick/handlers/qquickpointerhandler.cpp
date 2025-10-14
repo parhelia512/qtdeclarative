@@ -555,7 +555,7 @@ QPointF QQuickPointerHandler::eventPos(const QEventPoint &point) const
 */
 bool QQuickPointerHandler::parentContains(const QEventPoint &point) const
 {
-    return parentContains(point.scenePosition());
+    return parentContains(point.position(), point.scenePosition());
 }
 
 /*!
@@ -566,7 +566,7 @@ bool QQuickPointerHandler::parentContains(const QEventPoint &point) const
     is not called.) As a precheck, it's also required that the window contains
     \a scenePosition mapped to global coordinates, if parentItem() is in a window.
 */
-bool QQuickPointerHandler::parentContains(const QPointF &scenePosition) const
+bool QQuickPointerHandler::parentContains(const QPointF &localPosition, const QPointF &scenePosition) const
 {
     if (QQuickItem *par = parentItem()) {
         if (par->window()) {
@@ -577,11 +577,11 @@ bool QQuickPointerHandler::parentContains(const QPointF &scenePosition) const
             if (!windowGeometry.contains(screenPosition))
                 return false;
         }
-        QPointF p = par->mapFromScene(scenePosition);
         qreal m = margin();
         if (m > 0)
-            return p.x() >= -m && p.y() >= -m && p.x() <= par->width() + m && p.y() <= par->height() + m;
-        return par->contains(p);
+            return localPosition.x() >= -m && localPosition.y() >= -m &&
+                    localPosition.x() <= par->width() + m && localPosition.y() <= par->height() + m;
+        return par->contains(localPosition);
     } else if (parent() && parent()->inherits("QQuick3DModel")) {
         // If the parent is from Qt Quick 3D, assume that
         // bounds checking was already done, as part of picking.

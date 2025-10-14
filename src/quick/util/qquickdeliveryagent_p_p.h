@@ -176,7 +176,8 @@ public:
     void deliverUpdatedPoints(QPointerEvent *event);
     void deliverMatchingPointsToItem(QQuickItem *item, bool isGrabber, QPointerEvent *pointerEvent, bool handlersOnly = false);
 
-    QVector<QQuickItem *> eventTargets(QQuickItem *, const QEvent *event, QPointF scenePos, qxp::function_ref<std::optional<bool> (QQuickItem *, const QEvent *)> predicate) const;
+    QVector<QQuickItem *> eventTargets(QQuickItem *, const QEvent *event, int pointId, QPointF localPos, QPointF scenePos,
+                                       qxp::function_ref<std::optional<bool> (QQuickItem *, const QEvent *)> predicate) const;
     QVector<QQuickItem *> pointerTargets(QQuickItem *, const QPointerEvent *event, const QEventPoint &point,
                                          bool checkMouseButtons, bool checkAcceptsTouch) const;
     QVector<QQuickItem *> mergePointerTargets(const QVector<QQuickItem *> &list1, const QVector<QQuickItem *> &list2) const;
@@ -187,10 +188,15 @@ public:
         Set,
     };
     bool deliverHoverEvent(const QPointF &scenePos, const QPointF &lastScenePos, Qt::KeyboardModifiers modifiers, ulong timestamp);
-    bool deliverHoverEventRecursive(QQuickItem *, const QPointF &scenePos, const QPointF &lastScenePos, Qt::KeyboardModifiers modifiers, ulong timestamp);
-    bool deliverHoverEventToItem(QQuickItem *item, const QPointF &scenePos, const QPointF &lastScenePos, Qt::KeyboardModifiers modifiers, ulong timestamp,
+    bool deliverHoverEventRecursive(QQuickItem *, const QPointF &localPos,
+                                    const QPointF &scenePos, const QPointF &lastScenePos,
+                                    const QPointF &globalPos, Qt::KeyboardModifiers modifiers, ulong timestamp);
+    bool deliverHoverEventToItem(QQuickItem *item, const QPointF &localPos, const QPointF &scenePos,
+                                 const QPointF &lastScenePos, const QPointF &globalPos,
+                                 Qt::KeyboardModifiers modifiers, ulong timestamp,
                                  HoverChange hoverChange);
-    bool sendHoverEvent(QEvent::Type, QQuickItem *, const QPointF &scenePos, const QPointF &lastScenePos,
+    bool sendHoverEvent(QEvent::Type, QQuickItem *, const QPointF &localPos, const QPointF &scenePos,
+                        const QPointF &lastScenePos, const QPointF &globalPos,
                         Qt::KeyboardModifiers modifiers, ulong timestamp);
     bool clearHover(ulong timestamp = 0);
 

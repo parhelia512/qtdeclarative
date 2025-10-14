@@ -1873,7 +1873,7 @@ void QQuickWindowPrivate::updateCursor(const QPointF &scenePos, QQuickItem *root
     Q_Q(QQuickWindow);
     if (!rootItem)
         rootItem = contentItem;
-    auto cursorItemAndHandler = findCursorItemAndHandler(rootItem, scenePos);
+    auto cursorItemAndHandler = findCursorItemAndHandler(rootItem, scenePos, scenePos);
     if (cursorItem != cursorItemAndHandler.first || cursorHandler != cursorItemAndHandler.second ||
         (cursorItemAndHandler.second && QQuickPointerHandlerPrivate::get(cursorItemAndHandler.second)->cursorDirty)) {
         QWindow *renderWindow = QQuickRenderControl::renderWindowFor(q);
@@ -1893,12 +1893,12 @@ void QQuickWindowPrivate::updateCursor(const QPointF &scenePos, QQuickItem *root
     }
 }
 
-std::pair<QQuickItem*, QQuickPointerHandler*> QQuickWindowPrivate::findCursorItemAndHandler(QQuickItem *item, const QPointF &scenePos) const
+std::pair<QQuickItem*, QQuickPointerHandler*> QQuickWindowPrivate::findCursorItemAndHandler(QQuickItem *item,
+        const QPointF &localPos, const QPointF &scenePos) const
 {
     QQuickItemPrivate *itemPrivate = QQuickItemPrivate::get(item);
     if (itemPrivate->flags & QQuickItem::ItemClipsChildrenToShape) {
-        QPointF p = item->mapFromScene(scenePos);
-        if (!item->contains(p))
+        if (!item->contains(localPos))
             return {nullptr, nullptr};
     }
 
@@ -1908,19 +1908,23 @@ std::pair<QQuickItem*, QQuickPointerHandler*> QQuickWindowPrivate::findCursorIte
             QQuickItem *child = children.at(ii);
             if (!child->isVisible() || !child->isEnabled() || QQuickItemPrivate::get(child)->culled)
                 continue;
-            auto ret = findCursorItemAndHandler(child, scenePos);
+
+            auto childPrivate = QQuickItemPrivate::get(child);
+            QTransform childToParent;
+            childPrivate->itemToParentTransform(&childToParent);
+            const QPointF childLocalPos = childToParent.inverted().map(localPos);
+            auto ret = findCursorItemAndHandler(child, childLocalPos, scenePos);
             if (ret.first)
                 return ret;
         }
         if (itemPrivate->hasCursorHandler) {
             if (auto handler = itemPrivate->effectiveCursorHandler()) {
-                if (handler->parentContains(scenePos))
+                if (handler->parentContains(localPos, scenePos))
                     return {item, handler};
             }
         }
         if (itemPrivate->hasCursor) {
-            QPointF p = item->mapFromScene(scenePos);
-            if (item->contains(p))
+            if (item->contains(localPos))
                 return {item, nullptr};
         }
     }

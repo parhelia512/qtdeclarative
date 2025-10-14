@@ -143,7 +143,8 @@ public:
     QQuickItem *cursorItem = nullptr;
     QQuickPointerHandler *cursorHandler = nullptr;
     void updateCursor(const QPointF &scenePos, QQuickItem *rootItem = nullptr);
-    std::pair<QQuickItem*, QQuickPointerHandler*> findCursorItemAndHandler(QQuickItem *item, const QPointF &scenePos) const;
+    std::pair<QQuickItem*, QQuickPointerHandler*> findCursorItemAndHandler(QQuickItem *item,
+            const QPointF &localPos, const QPointF &scenePos) const;
 #endif
 
     void clearFocusObject() override;

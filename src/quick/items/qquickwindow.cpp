@@ -404,6 +404,7 @@ void QQuickWindow::physicalDpiChanged()
     if (d->contentItem)
         updatePixelRatioHelper(d->contentItem, newPixelRatio);
     d->forcePolish();
+    emit devicePixelRatioChanged();
 }
 
 void QQuickWindow::handleFontDatabaseChanged()
@@ -4074,6 +4075,25 @@ void QQuickWindow::runJobsAfterSwap()
     Q_D(QQuickWindow);
     d->runAndClearJobs(&d->afterSwapJobs);
 }
+
+/*!
+    \fn void QQuickWindow::devicePixelRatioChanged()
+    \since 6.11
+    This signal is emitted when the effective device pixel ratio has
+    been changed.
+    \sa effectiveDevicePixelRatio()
+ */
+
+/*!
+    \qmlsignal QtQuick::Window::devicePixelRatioChanged()
+ */
+
+/*!
+    \property QQuickWindow::devicePixelRatio
+    \since 6.11
+
+    Returns the ratio between physical pixels and device-independent pixels for the window. This value is dependent on the screen the window is on, and may change when the window is moved.
+ */
 
 /*!
     Returns the device pixel ratio for this window.

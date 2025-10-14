@@ -139,6 +139,8 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
         stream() << "transform: TransformGroup {";
         m_indentLevel++;
 
+        bool hasNonConstantTransform = false;
+
         if (!idString.isEmpty()) {
             stream() << "id: " << idString << "_transform_base_group";
 
@@ -171,6 +173,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                                 if (!translation.isNull())
                                     stream() << "Translate { x: " << translation.x() << "; y: " << translation.y() << " }";
                             } else {
+                                hasNonConstantTransform = true;
                                 stream() << "Translate { id: " << idString << "_transform_" << groupIndex << "_" << i << " }";
                             }
                             break;
@@ -180,6 +183,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                                 if (scale != QPointF(1, 1))
                                     stream() << "Scale { xScale: " << scale.x() << "; yScale: " << scale.y() << " }";
                             } else {
+                                hasNonConstantTransform = true;
                                 stream() << "Scale { id: " << idString << "_transform_" << groupIndex << "_" << i << "}";
                             }
                             break;
@@ -190,6 +194,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                                 if (!qFuzzyIsNull(angle))
                                     stream() << "Rotation { angle: " << angle << "; origin.x: " << center.x() << "; origin.y: " << center.y() << " }"; //### center relative to what?
                             } else {
+                                hasNonConstantTransform = true;
                                 stream() << "Rotation { id: " << idString << "_transform_" << groupIndex << "_" << i << " }";
                             }
                             break;
@@ -199,6 +204,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                                 if (!skew.isNull())
                                     stream() << "Shear { xAngle: " << skew.x() << "; yAngle: " << skew.y() << " }";
                             } else {
+                                hasNonConstantTransform = true;
                                 stream() << "Shear { id: " << idString << "_transform_" << groupIndex << "_" << i << " }";
                             }
                             break;
@@ -230,7 +236,8 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
         m_indentLevel--;
         stream() << "}";
 
-        generateAnimateTransform(idString, info);
+        if (hasNonConstantTransform)
+            generateAnimateTransform(idString, info);
     }
 
     generatePropertyAnimation(info.opacity, idString, QStringLiteral("opacity"));

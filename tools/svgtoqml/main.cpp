@@ -17,15 +17,9 @@
 
 int main(int argc, char *argv[])
 {
-    const QStringList platforms = QPlatformIntegrationFactory::keys();
-    const bool useOffscreenPlugin = !platforms.contains(QGuiApplication::platformName())
-                                    && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")
-                                    && platforms.contains("offscreen");
-
-    if (useOffscreenPlugin)
-        qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
-
-    QGuiApplication app(argc, argv);
+    QStringList arguments;
+    for (int i = 0; i < argc; ++i)
+        arguments.append(QString::fromLocal8Bit(argv[i]));
 
     QCommandLineParser parser;
     parser.setApplicationDescription("SVG to QML converter");
@@ -87,18 +81,28 @@ int main(int argc, char *argv[])
                                  QCoreApplication::translate("main", "Display the generated QML in a window. This is the default behavior if no "
                                                                      "output file is specified."));
     parser.addOption(guiOption);
-    parser.process(app);
+    parser.process(arguments);
     const QStringList args = parser.positionalArguments();
     if (args.size() < 1) {
         parser.showHelp(1);
     }
 
     const QString inFileName = args.at(0);
+    const auto outFileName = args.size() > 1 ? args.at(1) : QString{};
+
+    const bool needsGui = outFileName.isEmpty() || parser.isSet(guiOption);
+    const QStringList platforms = QPlatformIntegrationFactory::keys();
+    const bool useMinimalPlugin = qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")
+                                  && platforms.contains("minimal")
+                                  && !needsGui;
+    if (useMinimalPlugin)
+        qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("minimal"));
+
+    QGuiApplication app(argc, argv);
 
     QString commentString = QLatin1String("Generated from SVG file %1")
                                 .arg(QFileInfo(inFileName).fileName());
 
-    const auto outFileName = args.size() > 1 ? args.at(1) : QString{};
     const auto typeName = parser.value(typeNameOption);
     const auto assetOutputDirectory = parser.value(assetOutputDirectoryOption);
     const auto assetOutputPrefix = parser.value(assetOutputPrefixOption);
@@ -129,7 +133,7 @@ int main(int argc, char *argv[])
     generator.setRetainFilePaths(keepPaths);
     bool ok = generator.generate() && generator.save();
 
-    if (!useOffscreenPlugin && ok && (parser.isSet(guiOption) || outFileName.isEmpty())) {
+    if (needsGui && ok) {
         app.setOrganizationName("QtProject");
         const QUrl url(QStringLiteral("qrc:/main.qml"));
         QQmlApplicationEngine engine;

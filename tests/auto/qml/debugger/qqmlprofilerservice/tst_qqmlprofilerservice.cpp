@@ -29,8 +29,8 @@ public:
                 this, &QQmlProfilerTestClient::endTrace);
     }
 
-    void startTrace(qint64 timestamp, const QList<int> &engineIds);
-    void endTrace(qint64 timestamp, const QList<int> &engineIds);
+    void startTrace(qint64 timestamp, const QList<int> &engineIds) final;
+    void endTrace(qint64 timestamp, const QList<int> &engineIds) final;
 
     QPointer<QQmlProfilerClient> client; // Owned by QQmlDebugTest
     QVector<QQmlProfilerEventType> types;
@@ -40,17 +40,35 @@ public:
     QVector<QQmlProfilerEvent> jsHeapMessages;
     QVector<QQmlProfilerEvent> asynchronousMessages;
     QVector<QQmlProfilerEvent> pixmapMessages;
+    bool isComplete = false;
 
-    int numLoadedEventTypes() const override;
-    void addEventType(const QQmlProfilerEventType &type) override;
-    void addEvent(const QQmlProfilerEvent &event) override;
+    int numLoadedEventTypes() const final;
+    void addEventType(const QQmlProfilerEventType &type) final;
+    void addEvent(const QQmlProfilerEvent &event) final;
+    bool isEmpty() const final;
+    void complete(qint64 maximumTime) final;
+    void clear() final;
 
 private:
     qint64 lastTimestamp = -1;
 };
 
+void QQmlProfilerTestClient::clear()
+{
+    qmlMessages.clear();
+    javascriptMessages.clear();
+    jsHeapMessages.clear();
+    asynchronousMessages.clear();
+    pixmapMessages.clear();
+    lastTimestamp = -1;
+    isComplete = false;
+
+    QQmlProfilerEventReceiver::clear();
+}
+
 void QQmlProfilerTestClient::startTrace(qint64 timestamp, const QList<int> &engineIds)
 {
+    QQmlProfilerEventReceiver::startTrace(timestamp, engineIds);
     types.append(QQmlProfilerEventType(Event, MaximumRangeType, StartTrace));
     asynchronousMessages.append(QQmlProfilerEvent(timestamp, types.size() - 1,
                                                   engineIds.toVector()));
@@ -58,6 +76,7 @@ void QQmlProfilerTestClient::startTrace(qint64 timestamp, const QList<int> &engi
 
 void QQmlProfilerTestClient::endTrace(qint64 timestamp, const QList<int> &engineIds)
 {
+    QQmlProfilerEventReceiver::endTrace(timestamp, engineIds);
     types.append(QQmlProfilerEventType(Event, MaximumRangeType, EndTrace));
     asynchronousMessages.append(QQmlProfilerEvent(timestamp, types.size() - 1,
                                                   engineIds.toVector()));
@@ -153,6 +172,17 @@ void QQmlProfilerTestClient::addEvent(const QQmlProfilerEvent &event)
     QCOMPARE_GE(lastTimestamp, oldTimestamp);
 }
 
+bool QQmlProfilerTestClient::isEmpty() const
+{
+    return lastTimestamp == -1;
+}
+
+void QQmlProfilerTestClient::complete(qint64 maximumTime)
+{
+    isComplete = true;
+    QQmlProfilerEventReceiver::complete(maximumTime);
+}
+
 class tst_QQmlProfilerService : public QQmlDebugTest
 {
     Q_OBJECT
@@ -216,7 +246,6 @@ private slots:
 private:
     bool m_recordFromStart = true;
     bool m_flushInterval = false;
-    bool m_isComplete = false;
 
     // Don't use ({...}) here as MSVC will interpret that as the "QVector(int size)" ctor.
     const QVector<qint64> m_rangeStart = (QVector<qint64>() << RangeStart);
@@ -237,7 +266,6 @@ QQmlDebugTest::ConnectResult tst_QQmlProfilerService::connectTo(
 {
     m_recordFromStart = recordFromStart;
     m_flushInterval = flushInterval;
-    m_isComplete = false;
 
     // ### Still using qmlscene due to QTBUG-33377
     return QQmlDebugTest::connectTo(
@@ -264,7 +292,7 @@ void tst_QQmlProfilerService::checkProcessTerminated()
 void tst_QQmlProfilerService::checkTraceReceived()
 {
     QVERIFY(m_process->exitStatus() != QProcess::CrashExit);
-    QTRY_VERIFY2(m_isComplete, "No trace received in time.");
+    QTRY_VERIFY2(m_client->isComplete, "No trace received in time.");
 
     QVector<qint64> numbers;
 
@@ -454,7 +482,7 @@ QList<QQmlDebugClient *> tst_QQmlProfilerService::createClients()
     m_client->client->setRecording(m_recordFromStart);
     m_client->client->setFlushInterval(m_flushInterval);
     QObject::connect(m_client->client.data(), &QQmlProfilerClient::complete,
-                     this, [this](){ m_isComplete = true; });
+                     m_client.data(), &QQmlProfilerTestClient::complete);
     return QList<QQmlDebugClient *>({m_client->client});
 }
 

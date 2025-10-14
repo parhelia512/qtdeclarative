@@ -1,7 +1,9 @@
 // Copyright (C) 2016 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "qmlprofilerdata.h"
+#include "qqmlprofilerqtdwriter_p.h"
+
+#include <private/qobject_p.h>
 
 #include <QtCore/qfile.h>
 #include <QtCore/qqueue.h>
@@ -11,6 +13,10 @@
 #include <QtCore/qxpfunctional.h>
 
 #include <limits>
+
+QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 const char PROFILER_FILE_VERSION[] = "1.02";
 
@@ -41,49 +47,76 @@ static const char *MESSAGE_STRINGS[] = {
 Q_STATIC_ASSERT(sizeof(MESSAGE_STRINGS) == MaximumMessage * sizeof(const char *));
 
 /////////////////////////////////////////////////////////////////
-class QmlProfilerDataPrivate
+class QQmlProfilerQtdWriterPrivate : public QObjectPrivate
 {
+    Q_DECLARE_PUBLIC(QQmlProfilerQtdWriter)
 public:
-    QmlProfilerDataPrivate(QmlProfilerData *qq){ Q_UNUSED(qq); }
+    enum State {
+        Empty,
+        AcquiringData,
+        ProcessingData,
+        Done
+    };
 
     // data storage
     QVector<QQmlProfilerEventType> eventTypes;
     QVector<QQmlProfilerEvent> events;
 
-    qint64 traceStartTime;
-    qint64 traceEndTime;
+    qint64 traceStartTime = std::numeric_limits<qint64>::max();
+    qint64 traceEndTime = std::numeric_limits<qint64>::min();
 
     // internal state while collecting events
-    qint64 qmlMeasuredTime;
-    QmlProfilerData::State state;
+    qint64 qmlMeasuredTime = 0;
+    State state = Empty;
+
+    bool isEmpty() const { return events.isEmpty(); }
+    void sortStartTimes();
+    void computeQmlTime();
+    void setState(State state);
 };
 
 /////////////////////////////////////////////////////////////////
-QmlProfilerData::QmlProfilerData(QObject *parent) :
-    QQmlProfilerEventReceiver(parent), d(new QmlProfilerDataPrivate(this))
+QQmlProfilerQtdWriter::QQmlProfilerQtdWriter(QObject *parent) :
+    QQmlProfilerEventReceiver(*new QQmlProfilerQtdWriterPrivate, parent)
 {
-    d->state = Empty;
-    clear();
 }
 
-QmlProfilerData::~QmlProfilerData()
-{
-    clear();
-    delete d;
-}
+QQmlProfilerQtdWriter::~QQmlProfilerQtdWriter() = default;
 
-void QmlProfilerData::clear()
+void QQmlProfilerQtdWriter::clear()
 {
-    d->events.clear();
+    Q_D(QQmlProfilerQtdWriter);
 
-    d->traceEndTime = std::numeric_limits<qint64>::min();
+    // Do not clear the types. They persist for the whole session.
     d->traceStartTime = std::numeric_limits<qint64>::max();
+    d->traceEndTime = std::numeric_limits<qint64>::min();
+    d->events.clear();
     d->qmlMeasuredTime = 0;
+    d->setState(QQmlProfilerQtdWriterPrivate::Empty);
 
-    setState(Empty);
+    QQmlProfilerEventReceiver::clear();
 }
 
-QString QmlProfilerData::qmlRangeTypeAsString(RangeType type)
+void QQmlProfilerQtdWriter::startTrace(qint64 time, const QList<int> &engineIds)
+{
+    QQmlProfilerEventReceiver::startTrace(time, engineIds);
+
+    Q_D(QQmlProfilerQtdWriter);
+    if (time < d->traceStartTime)
+        d->traceStartTime = time;
+}
+
+void QQmlProfilerQtdWriter::endTrace(qint64 time, const QList<int> &engineIds)
+{
+    QQmlProfilerEventReceiver::endTrace(time, engineIds);
+
+    Q_D(QQmlProfilerQtdWriter);
+    if (time > d->traceEndTime)
+        d->traceEndTime = time;
+}
+
+
+static QString qmlRangeTypeAsString(RangeType type)
 {
     if (type * sizeof(char *) < sizeof(RANGE_TYPE_STRINGS))
         return QLatin1String(RANGE_TYPE_STRINGS[type]);
@@ -91,7 +124,7 @@ QString QmlProfilerData::qmlRangeTypeAsString(RangeType type)
         return QString::number(type);
 }
 
-QString QmlProfilerData::qmlMessageAsString(Message type)
+static QString qmlMessageAsString(Message type)
 {
     if (type * sizeof(char *) < sizeof(MESSAGE_STRINGS))
         return QLatin1String(MESSAGE_STRINGS[type]);
@@ -99,35 +132,14 @@ QString QmlProfilerData::qmlMessageAsString(Message type)
         return QString::number(type);
 }
 
-void QmlProfilerData::setTraceStartTime(qint64 time)
+void QQmlProfilerQtdWriter::addEvent(const QQmlProfilerEvent &event)
 {
-    if (time < d->traceStartTime)
-        d->traceStartTime = time;
-}
-
-void QmlProfilerData::setTraceEndTime(qint64 time)
-{
-    if (time > d->traceEndTime)
-        d->traceEndTime = time;
-}
-
-qint64 QmlProfilerData::traceStartTime() const
-{
-    return d->traceStartTime;
-}
-
-qint64 QmlProfilerData::traceEndTime() const
-{
-    return d->traceEndTime;
-}
-
-void QmlProfilerData::addEvent(const QQmlProfilerEvent &event)
-{
-    setState(AcquiringData);
+    Q_D(QQmlProfilerQtdWriter);
+    d->setState(QQmlProfilerQtdWriterPrivate::AcquiringData);
     d->events.append(event);
 }
 
-void QmlProfilerData::addEventType(const QQmlProfilerEventType &type)
+void QQmlProfilerQtdWriter::addEventType(const QQmlProfilerEventType &type)
 {
     QQmlProfilerEventType newType = type;
 
@@ -200,17 +212,17 @@ void QmlProfilerData::addEventType(const QQmlProfilerEventType &type)
     }
 
     newType.setDisplayName(displayName);
-    d->eventTypes.append(newType);
+    d_func()->eventTypes.append(newType);
 }
 
-void QmlProfilerData::computeQmlTime()
+void QQmlProfilerQtdWriterPrivate::computeQmlTime()
 {
     // compute levels
     qint64 level0Start = -1;
     int level = 0;
 
-    for (const QQmlProfilerEvent &event : std::as_const(d->events)) {
-        const QQmlProfilerEventType &type = d->eventTypes.at(event.typeIndex());
+    for (const QQmlProfilerEvent &event : std::as_const(events)) {
+        const QQmlProfilerEventType &type = eventTypes.at(event.typeIndex());
         if (type.message() != MaximumMessage)
             continue;
 
@@ -227,7 +239,7 @@ void QmlProfilerData::computeQmlTime()
                 break;
             case RangeEnd:
                 if (--level == 0)
-                    d->qmlMeasuredTime += event.timestamp() - level0Start;
+                    qmlMeasuredTime += event.timestamp() - level0Start;
                 break;
             default:
                 break;
@@ -244,29 +256,29 @@ bool compareStartTimes(const QQmlProfilerEvent &t1, const QQmlProfilerEvent &t2)
     return t1.timestamp() < t2.timestamp();
 }
 
-void QmlProfilerData::sortStartTimes()
+void QQmlProfilerQtdWriterPrivate::sortStartTimes()
 {
-    if (d->events.size() < 2)
+    if (events.size() < 2)
         return;
 
     // assuming startTimes is partially sorted
     // identify blocks of events and sort them with quicksort
-    QVector<QQmlProfilerEvent>::iterator itFrom = d->events.end() - 2;
-    QVector<QQmlProfilerEvent>::iterator itTo = d->events.end() - 1;
+    QVector<QQmlProfilerEvent>::iterator itFrom = events.end() - 2;
+    QVector<QQmlProfilerEvent>::iterator itTo = events.end() - 1;
 
-    while (itFrom != d->events.begin() && itTo != d->events.begin()) {
+    while (itFrom != events.begin() && itTo != events.begin()) {
         // find block to sort
-        while (itFrom != d->events.begin() && itTo->timestamp() > itFrom->timestamp()) {
+        while (itFrom != events.begin() && itTo->timestamp() > itFrom->timestamp()) {
             --itTo;
             itFrom = itTo - 1;
         }
 
         // if we're at the end of the list
-        if (itFrom == d->events.begin())
+        if (itFrom == events.begin())
             break;
 
         // find block length
-        while (itFrom != d->events.begin() && itTo->timestamp() <= itFrom->timestamp())
+        while (itFrom != events.begin() && itTo->timestamp() <= itFrom->timestamp())
             --itFrom;
 
         if (itTo->timestamp() <= itFrom->timestamp())
@@ -280,18 +292,19 @@ void QmlProfilerData::sortStartTimes()
     }
 }
 
-void QmlProfilerData::complete()
+void QQmlProfilerQtdWriter::complete(qint64 maximumTime)
 {
-    setState(ProcessingData);
-    sortStartTimes();
-    computeQmlTime();
-    setState(Done);
-    emit dataReady();
+    Q_D(QQmlProfilerQtdWriter);
+    d->setState(QQmlProfilerQtdWriterPrivate::ProcessingData);
+    d->sortStartTimes();
+    d->computeQmlTime();
+    d->setState(QQmlProfilerQtdWriterPrivate::Done);
+    QQmlProfilerEventReceiver::complete(maximumTime);
 }
 
-bool QmlProfilerData::isEmpty() const
+bool QQmlProfilerQtdWriter::isEmpty() const
 {
-    return d->events.isEmpty();
+    return d_func()->isEmpty();
 }
 
 struct StreamWriter {
@@ -302,12 +315,12 @@ struct StreamWriter {
         if (!filename.isEmpty()) {
             file.setFileName(filename);
             if (!file.open(QIODevice::WriteOnly)) {
-                error = QmlProfilerData::tr("Could not open %1 for writing").arg(filename);
+                error = QQmlProfilerQtdWriter::tr("Could not open %1 for writing").arg(filename);
                 return;
             }
         } else {
             if (!file.open(stdout, QIODevice::WriteOnly)) {
-                error = QmlProfilerData::tr("Could not open stdout for writing");
+                error = QQmlProfilerQtdWriter::tr("Could not open stdout for writing");
                 return;
             }
         }
@@ -376,7 +389,7 @@ private:
 struct DataIterator
 {
     DataIterator(
-            const QmlProfilerDataPrivate *d,
+            const QQmlProfilerQtdWriterPrivate *d,
             qxp::function_ref<void(const QQmlProfilerEvent &, qint64)> &&sendEvent)
         : d(d)
         , sendEvent(std::move(sendEvent))
@@ -389,7 +402,7 @@ private:
     void sendPending();
     void endLevel0();
 
-    const QmlProfilerDataPrivate *d = nullptr;
+    const QQmlProfilerQtdWriterPrivate *d = nullptr;
     const qxp::function_ref<void(const QQmlProfilerEvent &, qint64)> sendEvent;
 
     QQueue<QQmlProfilerEvent> pointEvents;
@@ -499,8 +512,10 @@ void DataIterator::run()
     sendPending();
 }
 
-bool QmlProfilerData::save(const QString &filename)
+bool QQmlProfilerQtdWriter::save(const QString &filename)
 {
+    Q_D(QQmlProfilerQtdWriter);
+
     if (isEmpty()) {
         emit error(tr("No data to save"));
         return false;
@@ -513,8 +528,8 @@ bool QmlProfilerData::save(const QString &filename)
     }
 
     stream.writeAttribute("version", PROFILER_FILE_VERSION);
-    stream.writeAttribute("traceStart", traceStartTime());
-    stream.writeAttribute("traceEnd", traceEndTime());
+    stream.writeAttribute("traceStart", d->traceStartTime);
+    stream.writeAttribute("traceEnd", d->traceEndTime);
 
     stream.writeStartElement("eventData");
     stream.writeAttribute("totalTime", d->qmlMeasuredTime);
@@ -613,49 +628,50 @@ bool QmlProfilerData::save(const QString &filename)
     return true;
 }
 
-void QmlProfilerData::setState(QmlProfilerData::State state)
+void QQmlProfilerQtdWriterPrivate::setState(State newState)
 {
     // It's not an error, we are continuously calling "AcquiringData" for example
-    if (d->state == state)
+    if (state == newState)
         return;
 
-    switch (state) {
+    Q_Q(QQmlProfilerQtdWriter);
+    switch (newState) {
     case Empty:
         // if it's not empty, complain but go on
         if (!isEmpty())
-            emit error("Invalid qmlprofiler state change (Empty)");
+            emit q->error("Invalid qmlprofiler state change (Empty)"_L1);
         break;
     case AcquiringData:
         // we're not supposed to receive new data while processing older data
-        if (d->state == ProcessingData)
-            emit error("Invalid qmlprofiler state change (AcquiringData)");
+        if (state == ProcessingData)
+            emit q->error("Invalid qmlprofiler state change (AcquiringData)"_L1);
         break;
     case ProcessingData:
-        if (d->state != AcquiringData)
-            emit error("Invalid qmlprofiler state change (ProcessingData)");
+        if (state != AcquiringData)
+            emit q->error("Invalid qmlprofiler state change (ProcessingData)"_L1);
         break;
     case Done:
-        if (d->state != ProcessingData && d->state != Empty)
-            emit error("Invalid qmlprofiler state change (Done)");
+        if (state != ProcessingData && state != Empty)
+            emit q->error("Invalid qmlprofiler state change (Done)"_L1);
         break;
     default:
-        emit error("Trying to set unknown state in events list");
+        emit q->error("Trying to set unknown state in events list"_L1);
         break;
     }
 
-    d->state = state;
-    emit stateChanged();
+    state = newState;
 
     // special: if we were done with an empty list, clean internal data and go back to empty
-    if (d->state == Done && isEmpty()) {
-        clear();
-    }
+    if (state == Done && isEmpty())
+        q->clear();
     return;
 }
 
-int QmlProfilerData::numLoadedEventTypes() const
+int QQmlProfilerQtdWriter::numLoadedEventTypes() const
 {
-    return d->eventTypes.size();
+    return d_func()->eventTypes.size();
 }
 
-#include "moc_qmlprofilerdata.cpp"
+QT_END_NAMESPACE
+
+#include "moc_qqmlprofilerqtdwriter_p.cpp"

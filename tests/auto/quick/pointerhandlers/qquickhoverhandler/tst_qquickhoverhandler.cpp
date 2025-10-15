@@ -51,6 +51,7 @@ private slots:
     void ensureHoverHandlerWorksWhenItemHasHoverDisabled();
     void changeCursor();
     void touchDrag();
+    void twoHandlersTwoTouches();
     void asProperty();
 
 private:
@@ -772,6 +773,47 @@ void tst_HoverHandler::touchDrag()
     QCOMPARE(handler->isHovered(), false);
 
     QTest::touchEvent(&window, touchscreen.get()).release(0, out, &window);
+}
+
+void tst_HoverHandler::twoHandlersTwoTouches()
+{
+    QQuickView window;
+    QVERIFY(QQuickTest::showView(window, testFileUrl("twoHandlers.qml")));
+    const QQuickItem *root = window.rootObject();
+    QQuickHoverHandler *left = root->findChild<QQuickHoverHandler *>("left");
+    QVERIFY(left);
+    QQuickHoverHandler *right = root->findChild<QQuickHoverHandler *>("right");
+    QVERIFY(right);
+
+    const QPoint pl = left->parentItem()->boundingRect().center().toPoint();
+    const QPoint pr = right->parentItem()->position().toPoint() + QPoint(10, 10);
+
+    // showView() moved the mouse outside the window before showing it,
+    // so we don't expect mouse interference: this is a pure touchscreen test.
+    // Press the left HoverHandler: flushFrameSynchronousEvents acts
+    // as if the cursor is there, and sends a hover event.
+    QTest::touchEvent(&window, touchscreen.get()).press(0, pl, &window);
+    QQuickTouchUtils::flush(&window);
+    QTRY_COMPARE(left->isHovered(), true);
+    QCOMPARE(right->isHovered(), false);
+
+    // press the right HoverHandler too: it doesn't hover, because only one subtree can be hovered (for now, at least)
+    QTest::touchEvent(&window, touchscreen.get()).stationary(0).press(1, pr, &window);
+    QQuickTouchUtils::flush(&window);
+    QCOMPARE(left->isHovered(), true);
+    QCOMPARE(right->isHovered(), false);
+
+    // release the left: neither HoverHandler is hovered, even though the right one is still pressed
+    QTest::touchEvent(&window, touchscreen.get()).release(0, pl, &window).stationary(1);
+    QQuickTouchUtils::flush(&window);
+    QTRY_COMPARE(left->isHovered(), false);
+    QCOMPARE(right->isHovered(), false);
+
+    // release the right
+    QTest::touchEvent(&window, touchscreen.get()).release(1, pr, &window);
+    QQuickTouchUtils::flush(&window);
+    QCOMPARE(left->isHovered(), false);
+    QCOMPARE(right->isHovered(), false);
 }
 
 void tst_HoverHandler::asProperty()

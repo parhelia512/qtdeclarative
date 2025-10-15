@@ -59,6 +59,9 @@ protected:
     bool visitSwitchNodeStart(const QSvgSwitch *node) override;
     void visitSwitchNodeEnd(const QSvgSwitch *node) override;
 
+    bool visitSymbolNodeStart(const QSvgSymbol *node) override;
+    void visitSymbolNodeEnd(const QSvgSymbol *node) override;
+
 private:
     typedef std::pair<const QSvgAbstractAnimation *, const QSvgAbstractAnimatedProperty *> AnimationPair;
     QList<AnimationPair> collectAnimations(const QSvgNode *node, const QString &propertyName);
@@ -87,6 +90,8 @@ private:
     mutable int m_nodeIdCounter = 0;
     QHash<QString, QString> m_idForNodeId;
     QSet<QString> m_generatedNodes;
+
+    int m_useLevel = 0;
 
     QString m_linkSuffix;
 };

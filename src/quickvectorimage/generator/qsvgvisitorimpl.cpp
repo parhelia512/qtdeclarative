@@ -172,6 +172,7 @@ inline bool isPathContainer(const QSvgStructureNode *node)
 
             // nodes that could go inside Shape{}
         case QSvgNode::Defs:
+        case QSvgNode::Symbol:
             break;
 
             // nodes that are done as pure ShapePath{}
@@ -1014,7 +1015,10 @@ void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 
     QString oldLinkSuffix = m_linkSuffix;
     m_linkSuffix += QStringLiteral("_use") + info.id;
+
+    m_useLevel++;
     QSvgVisitor::traverse(link);
+    m_useLevel--;
     m_linkSuffix = oldLinkSuffix;
 
     info.stage = StructureNodeStage::End;
@@ -1046,6 +1050,46 @@ bool QSvgVisitorImpl::visitDefsNodeStart(const QSvgDefs *node)
     Q_UNUSED(node)
 
     return m_generator->generateDefsNode(NodeInfo{});
+}
+
+bool QSvgVisitorImpl::visitSymbolNodeStart(const QSvgSymbol *node)
+{
+    if (m_useLevel == 0)
+        return false;
+
+    handleBaseNodeSetup(node);
+
+    StructureNodeInfo info;
+    fillCommonNodeInfo(node, info);
+    fillAnimationInfo(node, info);
+
+    QTransform oldTransform = info.transform.defaultValue().value<QTransform>();
+    info.clipBox = oldTransform.mapRect(node->clipRect());
+
+    QTransform xform = node->aspectRatioTransform();
+    if (!xform.isIdentity()) {
+        info.isDefaultTransform = false;
+        xform = xform * oldTransform;
+        info.transform.setDefaultValue(QVariant::fromValue(xform));
+    }
+    info.stage = StructureNodeStage::Start;
+
+    return m_generator->generateStructureNode(info);
+}
+
+void QSvgVisitorImpl::visitSymbolNodeEnd(const QSvgSymbol *node)
+{
+    Q_ASSERT(m_useLevel > 0);
+    handleBaseNodeSetup(node);
+
+    StructureNodeInfo info;
+    fillCommonNodeInfo(node, info);
+    fillAnimationInfo(node, info);
+
+    info.clipBox = node->clipRect();
+    info.stage = StructureNodeStage::End;
+
+    m_generator->generateStructureNode(info);
 }
 
 bool QSvgVisitorImpl::visitMaskNodeStart(const QSvgMask *node)

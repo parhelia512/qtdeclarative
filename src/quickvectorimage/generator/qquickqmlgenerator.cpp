@@ -1133,6 +1133,15 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 
     const bool isPathContainer = !info.forceSeparatePaths && info.isPathContainer;
     if (info.stage == StructureNodeStage::Start) {
+        if (!info.clipBox.isEmpty()) {
+            stream() << "Item { // Clip";
+
+            m_indentLevel++;
+            stream() << "width: " << info.clipBox.width();
+            stream() << "height: " << info.clipBox.height();
+            stream() << "clip: true";
+        }
+
         if (isPathContainer) {
             generatePathContainer(info);
         } else if (!info.customItemType.isEmpty()) {
@@ -1141,8 +1150,8 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
             stream() << "Item { // Structure node";
         }
 
+        m_indentLevel++;
         if (!info.viewBox.isEmpty()) {
-            m_indentLevel++;
             stream() << "transform: [";
             m_indentLevel++;
             bool translate = !qFuzzyIsNull(info.viewBox.x()) || !qFuzzyIsNull(info.viewBox.y());
@@ -1151,15 +1160,18 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
             stream() << "Scale { xScale: width / " << info.viewBox.width() << "; yScale: height / " << info.viewBox.height() << " }";
             m_indentLevel--;
             stream() << "]";
-            m_indentLevel--;
         }
 
-        m_indentLevel++;
         generateNodeBase(info);
     } else {
         generateNodeEnd(info);
         if (isPathContainer)
             m_inShapeItemLevel--;
+
+        if (!info.clipBox.isEmpty()) {
+            m_indentLevel--;
+            stream() << "}";
+        }
     }
 
     return true;

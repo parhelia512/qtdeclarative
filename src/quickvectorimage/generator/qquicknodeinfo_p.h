@@ -136,6 +136,7 @@ struct StructureNodeInfo : NodeInfo
     bool forceSeparatePaths = false;
     QRectF viewBox;
     QSize size;
+    QRectF clipBox;
     bool isPathContainer = false;
 };
 

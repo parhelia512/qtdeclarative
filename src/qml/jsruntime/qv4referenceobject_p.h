@@ -64,7 +64,7 @@ DECLARE_HEAP_OBJECT(ReferenceObject, Object) {
             referenceEndpoint->connect(
                 obj,
                 // Connect and signal emission work on "signal
-                // indexe"s. Those are different from "method
+                // indexes". Those are different from "method
                 // indexes".
                 // The public MetaObject interface can, generally,
                 // give us the "method index" of the notify
@@ -102,7 +102,7 @@ DECLARE_HEAP_OBJECT(ReferenceObject, Object) {
             // optimized way of connecting.
             // Nonetheless this seems to be the only place where we have
             // this kind of need, and thus go for the simpler solution,
-            // which can be changed later if the need arise.
+            // which can be changed later if the need arises.
             new(onDelete) QMetaObject::Connection(QObject::connect(obj, &QObject::destroyed, [this](){ setDirty(true); }));
         };
 

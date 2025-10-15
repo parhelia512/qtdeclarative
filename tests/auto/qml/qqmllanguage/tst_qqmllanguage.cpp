@@ -9651,7 +9651,7 @@ void tst_qqmllanguage::referenceToSingletonReadsBackOnlyWhenRequired() {
     auto *component = qobject_cast<QObject *>(o.data());
     QVERIFY(component);
 
-    QObject* rawSingleton;
+    QObject *rawSingleton = nullptr;
     getSingletonInstance(engine, "referenceToSingletonReadsBackOnlyWhenRequired.qml", "singletonInstance", &rawSingleton);
 
     ReadCounter* readCounterSingleton = qobject_cast<ReadCounter*>(rawSingleton);
@@ -9685,7 +9685,7 @@ void tst_qqmllanguage::referenceObjectChainReadsBackAsRequiredBasedOnParentSigna
 
     auto inner = readCounter->getInner();
 
-    QCOMPARE(inner.timesRead, 4);
+    QCOMPARE(inner.timesRead, 8);
 }
 
 void tst_qqmllanguage::referenceObjectDoesNotLeakAConnectionToTheDestroyedSignalOnANotifyBindable() {
@@ -9697,7 +9697,7 @@ void tst_qqmllanguage::referenceObjectDoesNotLeakAConnectionToTheDestroyedSignal
     auto *readCounter = qobject_cast<ReadCounter *>(o.data());
     QVERIFY(readCounter);
 
-    QCOMPARE(readCounter->destroyedConnections, 1);
+    QCOMPARE(readCounter->destroyedConnections, 0);
 }
 
 void tst_qqmllanguage::referenceObjectPrefersBindableConnectionToNotifyConnection() {

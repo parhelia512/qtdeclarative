@@ -364,6 +364,9 @@ void tst_QQuickContextMenu::menuItemShouldntTriggerOnRelease() // QTBUG-133302
 
 void tst_QQuickContextMenu::textControlsMenuKey()
 {
+#ifdef Q_OS_ANDROID
+    QSKIP("Crashes on android. See QTBUG-139400");
+#endif
     QQuickApplicationHelper helper(this, "textControlsAndParentMenus.qml");
     QVERIFY2(helper.ready, helper.failureMessage());
     QQuickWindow *window = helper.window;
@@ -411,6 +414,9 @@ void tst_QQuickContextMenu::textControlsMenuKey()
 
 void tst_QQuickContextMenu::mouseAreaUnderTextArea()
 {
+#ifdef Q_OS_ANDROID
+    QSKIP("Crashes on android. See QTBUG-139400");
+#endif
     if (!arePopupWindowsSupported())
         QSKIP("The platform doesn't support popup windows. Skipping test.");
 

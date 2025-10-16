@@ -121,9 +121,10 @@ struct UrlObject : Object
                 return QString();
             }
 
-            const QString origin = QLatin1String("%1://%2").arg(proto, url.host());
             const int port = url.port();
-            return port == -1 ? origin : (origin + QLatin1Char(':') + QString::number(port));
+            return port == -1
+                    ? QLatin1String("%1://%2").arg(proto, url.host())
+                    : QLatin1String("%1://%2:%3").arg(proto, url.host(), QString::number(port));
         };
 
         const QUrl url = constD()->url();

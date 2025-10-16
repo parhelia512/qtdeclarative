@@ -526,6 +526,8 @@ void tst_HoverHandler::deviceCursor()
     QVERIFY(airbrushEraserHandler);
     QQuickHoverHandler *mouseHandler = root->findChild<QQuickHoverHandler *>("mouse");
     QVERIFY(mouseHandler);
+    QQuickHoverHandler *conflictingMouseHandler = root->findChild<QQuickHoverHandler *>("conflictingMouse");
+    QVERIFY(conflictingMouseHandler);
 
     QPoint point(100, 100);
 
@@ -551,6 +553,8 @@ void tst_HoverHandler::deviceCursor()
         QCOMPARE(eraserHandler->isHovered(), eraserHandler == expectedActiveHandler);
         QCOMPARE(aibrushHandler->isHovered(), aibrushHandler == expectedActiveHandler);
         QCOMPARE(airbrushEraserHandler->isHovered(), airbrushEraserHandler == expectedActiveHandler);
+        qCDebug(lcPointerTests) << "mouse HoverHandlers hovered?"
+                                << mouseHandler->isHovered() << conflictingMouseHandler->isHovered();
     };
 
     // simulate move events from various tablet stylus types

@@ -820,8 +820,6 @@ void QQuickQmlGenerator::generateUseNode(const UseNodeInfo &info)
         stream() << "Item {";
         m_indentLevel++;
         generateNodeBase(info);
-        stream() << "x: " << info.startPos.x();
-        stream() << "y: " << info.startPos.y();
     } else {
         generateNodeEnd(info);
     }

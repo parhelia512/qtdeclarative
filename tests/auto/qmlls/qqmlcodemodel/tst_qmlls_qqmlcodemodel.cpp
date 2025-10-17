@@ -606,6 +606,50 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
     QCOMPARE(loadedQmldir(domItemB), "\"%1\""_L1.arg(importPathB + "MyModule/qmldir"_L1));
 }
 
+void tst_qmlls_qqmlcodemodel::withQmllsBuildIniRelativeImportPath()
+{
+    const QString defaultImportPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
+
+    QTemporaryDir buildPathA;
+    QVERIFY(buildPathA.isValid());
+
+    QDir(buildPathA.path()).mkdir(".qt"_L1);
+
+    {
+        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
+        QFile qmllsBuildIniFile(qmllsBuildIni);
+        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
+
+        const QString rootA = testFile("twoWorkspaces/WorkSpaceA/"_L1);
+        qmllsBuildIniFile.write("[General]\n[%1]\nimportPaths=\"%2%4%3\"\n"_L1
+                                        .arg(QString(rootA).replace("/"_L1, "<SLASH>"_L1),
+                                             "../ImportPathA", defaultImportPath,
+                                             QDir::listSeparator())
+                                        .toUtf8());
+    }
+
+    const QByteArray rootAUrl = testFileUrl("twoWorkspaces/WorkSpaceA/"_L1).toEncoded();
+    TestCodeModelManager manager;
+    manager.addRootUrls({ rootAUrl });
+    manager.setBuildPathsForRootUrl(rootAUrl, { buildPathA.path() });
+
+    const QString importPathA = testFile("twoWorkspaces/ImportPathA"_L1);
+    const QStringList expectedImportPathA{ importPathA, defaultImportPath };
+    QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
+}
+
+void tst_qmlls_qqmlcodemodel::withQmllsIniRelativeImportPath()
+{
+    const QString defaultImportPath = QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
+
+    QQmlToolingSharedSettings settings("qmlls");
+    QmlLsp::QQmlCodeModel model(QByteArray{}, nullptr, &settings);
+    const QString importPathA = testFile("twoWorkspaces"_L1);
+    const QStringList expectedImportPathA = (model.importPaths() << importPathA);
+    QCOMPARE(model.importPathsForUrl(testFileUrl("FolderWithQmllsIni/SomeType.qml").toEncoded()),
+             expectedImportPathA);
+}
+
 void tst_qmlls_qqmlcodemodel::withQmllsBuildIniWithoutRootUrls()
 {
     const QByteArray projectRootUrl = testFileUrl("twoWorkspaces/"_L1).toEncoded();

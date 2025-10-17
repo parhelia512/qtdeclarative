@@ -47,6 +47,8 @@ private slots:
     void duplicateWorkspace();
     void withQmllsBuildIni();
     void withQmllsBuildIniWithoutRootUrls();
+    void withQmllsBuildIniRelativeImportPath();
+    void withQmllsIniRelativeImportPath();
     void shortestRootUrlForFile();
     void qprocessScheduler_data();
     void qprocessScheduler();

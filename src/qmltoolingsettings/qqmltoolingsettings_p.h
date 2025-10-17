@@ -68,6 +68,11 @@ public:
     bool writeDefaults() const;
 
     QVariant value(const QString &name) const;
+    QStringList valueAsStringList(const QString &name) const;
+
+    static void resolveRelativeImportPaths(const QString &filePath, QStringList *paths);
+    QStringList valueAsAbsolutePathList(const QString &name,
+                                        const QString &baseForRelativePaths) const;
     bool isSet(const QString &name) const;
 
     bool reportConfigForFiles(const QStringList &files);
@@ -107,6 +112,19 @@ public:
     {
         QMutexLocker lock(&m_mutex);
         return QQmlToolingSettings::value(name);
+    }
+
+    QStringList valueAsStringList(const QString &name) const
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::valueAsStringList(name);
+    }
+
+    QStringList valueAsAbsolutePathList(const QString &name,
+                                        const QString &baseForRelativePaths) const
+    {
+        QMutexLocker lock(&m_mutex);
+        return QQmlToolingSettings::valueAsAbsolutePathList(name, baseForRelativePaths);
     }
 
     bool isSet(const QString &name) const

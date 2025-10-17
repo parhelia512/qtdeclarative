@@ -601,7 +601,7 @@ QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
     const QString importPaths = u"importPaths"_s;
     if (m_settings && m_settings->search(fileName, { QString(), verbose() }).isValid()
         && m_settings->isSet(importPaths)) {
-        result.append(m_settings->value(importPaths).toString().split(QDir::listSeparator()));
+        result.append(m_settings->valueAsAbsolutePathList(importPaths, fileName));
     }
 
     const QStringList buildPath = buildPathsForFileUrl(url);
@@ -807,6 +807,7 @@ ModuleSetting QQmllsBuildInformation::settingFor(const QString &filePath)
             longestMatch = matchLength;
         }
     }
+    QQmlToolingSettings::resolveRelativeImportPaths(filePath, &result.importPaths);
     return result;
 }
 

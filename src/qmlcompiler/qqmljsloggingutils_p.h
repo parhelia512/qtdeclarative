@@ -109,9 +109,10 @@ private:
 };
 
 namespace LoggingUtils {
-Q_QMLCOMPILER_EXPORT void updateLogSeverities(QList<LoggerCategory> &categories,
-                                              const QQmlToolingSettings &settings,
-                                              QCommandLineParser *parser);
+enum class CategorySelection { All, Explicit };
+Q_QMLCOMPILER_EXPORT void updateLogSeverities(
+        QList<LoggerCategory> &categories, const QQmlToolingSettings &settings,
+        QCommandLineParser *parser, CategorySelection categorySelection = CategorySelection::All);
 
 Q_QMLCOMPILER_EXPORT std::optional<QQmlJS::WarningSeverity> severityFromString(const QString &);
 Q_QMLCOMPILER_EXPORT QString severityToString(QQmlJS::WarningSeverity);

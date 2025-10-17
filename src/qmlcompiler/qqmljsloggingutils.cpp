@@ -215,22 +215,21 @@ Sets the category severity from a settings file and an optional parser.
 Calls \c {parser->showHelp(-1)} for an invalid logging severity.
 */
 void updateLogSeverities(QList<LoggerCategory> &categories,
-                     const QQmlToolingSettings &settings,
-                     QCommandLineParser *parser)
+                         const QQmlToolingSettings &settings,
+                         QCommandLineParser *parser,
+                         CategorySelection categorySelection)
 {
     bool success = true;
     for (auto &category : categories) {
+        // Disable all non-essential categories, they may still be overriden by settings or command line options
+        if (categorySelection == CategorySelection::Explicit && !category.isEssential())
+            category.setSeverity(QQmlSA::WarningSeverity::Disable);
+
         const QString value = severityValueForCategory(category, settings, parser);
         if (value.isEmpty())
             continue;
 
         const QString &name = category.id().name().toString();
-        if (category.isEssential()) {
-            qWarning() << "In order to ensure the proper function of qmllint, the severity of the "
-                          "essential category %1 cannot be changed."_L1.arg(name);
-            continue;
-        }
-
         const std::optional<QQmlJS::WarningSeverity> severity = severityFromString(value);
         if (!severity.has_value()) {
             qWarning() << "Invalid logging severity" << value << "provided for" << name
@@ -239,8 +238,16 @@ void updateLogSeverities(QList<LoggerCategory> &categories,
             continue;
         }
 
+        if (category.isEssential()) {
+            // TODO It can't be lowered, but it can still be raised or explitly set to the same level
+            qWarning() << "In order to ensure the proper function of qmllint, the severity of the "
+                          "essential category %1 cannot be changed."_L1.arg(name);
+            continue;
+        }
+
         category.setSeverity(*severity);
     }
+
     if (!success && parser)
         parser->showHelp(-1);
 }

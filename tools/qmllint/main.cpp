@@ -213,11 +213,19 @@ All warnings can be set to four levels of severity:
     // QTBUG-135020: don't break existing user configs and still accept PropertyAliasCycles
     settings.addOption("PropertyAliasCycles"_L1);
 
+    const auto onlyExplicitCategoriesOptionName = "only-explicit-categories"_L1;
+    const auto onlyExplicitCategoriesSettingName = "OnlyExplicitCategories"_L1;
+    QCommandLineOption onlyExplicitCategoriesOption(
+            QStringList() << onlyExplicitCategoriesOptionName,
+            "Enable only categories explicitly set on the command line or in the settings file."_L1);
+    parser.addOption(onlyExplicitCategoriesOption);
+    settings.addOption(onlyExplicitCategoriesSettingName, false);
+
     auto addCategory = [&](const QQmlJS::LoggerCategory &category) {
         categories.push_back(category);
 
         // We don't let the user change them, so don't offer the option either
-        if (category.isEssential())
+        if (category.isEssential()) // TODO can still be raised...
             return;
 
         const QString severity = QQmlJS::LoggingUtils::severityToString(category.severity());
@@ -358,14 +366,43 @@ All warnings can be set to four levels of severity:
     settings.saveValues();
     QJsonArray jsonFiles;
 
+    const auto checkOnlyExplicitCategories = [&](const QString &filename) -> bool {
+        if (parser.isSet(onlyExplicitCategoriesOption))
+            return true;
+
+        if (parser.isSet(ignoreSettings))
+            return false;
+
+        // We need to check for the OnlyExplicitCategories setting separately because checking for
+        // it overrides the default values for categories before we can read it.
+        QQmlToolingSettings s("qmllint"_L1, { "General"_L1, "Warnings"_L1 });
+        QQmlToolingSettings::SearchOptions options;
+        options.isQmllintSilent = true;
+        s.search(filename, options);
+        return s.value(onlyExplicitCategoriesSettingName).toBool();
+    };
+
     for (const QString &filename : positionalArguments) {
         settings.restoreValues();
+
+        const bool onlyExplicitCategories = checkOnlyExplicitCategories(filename);
+        if (onlyExplicitCategories) {
+            for (const auto &category : categories) {
+                if (!category.isEssential())
+                    settings.setValue("Warnings/"_L1 + category.settingsName(), "disable");
+            }
+        }
+
         if (!parser.isSet(ignoreSettings)) {
             QQmlToolingSettings::SearchOptions options;
             options.isQmllintSilent = silent;
             settings.search(filename, options);
         }
-        QQmlJS::LoggingUtils::updateLogSeverities(categories, settings, &parser);
+
+        const auto categorySelection = onlyExplicitCategories
+                ? QQmlJS::LoggingUtils::CategorySelection::Explicit
+                : QQmlJS::LoggingUtils::CategorySelection::All;
+        QQmlJS::LoggingUtils::updateLogSeverities(categories, settings, &parser, categorySelection);
 
         resourceFiles = defaultResourceFiles;
         resourceFiles.append(settings.valueAsAbsolutePathList(resourceSetting, filename));

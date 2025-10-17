@@ -184,6 +184,9 @@ private Q_SLOTS:
     void noSettingsPollution();
     void syntaxIsEssential();
 
+    void onlyExplicitCategories();
+    void onlyExplicitCategoriesIni();
+
 private:
     enum DefaultImportOption { NoDefaultImports, UseDefaultImports };
     enum ContainOption { StringNotContained, StringContained };
@@ -4102,6 +4105,57 @@ void TestQmllint::syntaxIsEssential()
     });
     QVERIFY(it != builtins.cend());
     QVERIFY(it->isEssential());
+}
+
+static const auto OnlyExplicitCategories_unqualified = "7:26: Unqualified access"_L1;
+static const auto OnlyExplicitCategories_unqualifiedFix = "property bool b: root.i === 1"_L1;
+static const auto OnlyExplicitCategories_comma = "11:10: Do not use comma expressions"_L1;
+static const auto OnlyExplicitCategories_ifAssign = "12:15: Assignment in condition"_L1;
+
+void TestQmllint::onlyExplicitCategories()
+{
+    const QString qmlFilePath = testFile("OnlyExplicitCategories/file.qml"_L1);
+    bool shouldSucceed = true;
+    QStringList extraArgs;
+    bool ignoreSettings = false;
+
+    QString output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign)); // per .qmllint.ini
+
+    extraArgs << "--ignore-settings"_L1;
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(output.contains(OnlyExplicitCategories_ifAssign));
+
+    extraArgs << "--only-explicit-categories"_L1;
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.isEmpty());
+
+    extraArgs << QStringList{ "--unqualified=warning"_L1 };
+    output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(!output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign));
+}
+
+void TestQmllint::onlyExplicitCategoriesIni()
+{
+    const QString qmlFilePath = testFile("OnlyExplicitCategoriesIni/file.qml"_L1);
+    bool shouldSucceed = true;
+    QStringList extraArgs;
+    bool ignoreSettings = false;
+
+    const QString output = runQmllint(qmlFilePath, shouldSucceed, extraArgs, ignoreSettings);
+    QVERIFY(!output.contains(OnlyExplicitCategories_unqualified));
+    QVERIFY(!output.contains(OnlyExplicitCategories_unqualifiedFix));
+    QVERIFY(output.contains(OnlyExplicitCategories_comma));
+    QVERIFY(!output.contains(OnlyExplicitCategories_ifAssign));
 }
 
 void TestQmllint::crashes()

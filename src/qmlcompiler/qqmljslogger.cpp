@@ -147,7 +147,7 @@ warning levels.
     X(qmlStalePropertyRead, "stale-property-read", "StalePropertyRead",                            \
       "Warn about bindings reading non-constant and non-notifiable properties", Warning,           \
       NonEssential)                                                                                \
-    X(qmlSyntax, "syntax", "", "Syntax errors", Warning, Essential)                                \
+    X(qmlSyntax, "syntax", "Syntax", "Syntax errors", Warning, Essential)                          \
     X(qmlSyntaxDuplicateIds, "syntax.duplicate-ids", "", "ID duplication", Error, NonEssential)    \
     X(qmlSyntaxIdQuotation, "syntax.id-quotation", "", "ID quotation", Warning, NonEssential)      \
     X(qmlTopLevelComponent, "top-level-component", "TopLevelComponent",                            \

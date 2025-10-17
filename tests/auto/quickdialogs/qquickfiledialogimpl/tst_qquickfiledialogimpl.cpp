@@ -1614,6 +1614,10 @@ void tst_QQuickFileDialogImpl::selectExistingFileShouldWarnUserWhenFileModeEqual
     QVERIFY(dialogHelper.isQuickDialogOpen());
 
     QVERIFY(QQuickTest::qWaitForPolish(confirmationDialog->popupItem()));
+    QTRY_VERIFY(confirmationButtonBox->standardButton(QPlatformDialogHelper::Yes)->hasActiveFocus());
+    QVERIFY(!confirmationButtonBox->standardButton(QPlatformDialogHelper::No)->hasActiveFocus());
+    QVERIFY(!confirmationButtonBox->standardButton(QPlatformDialogHelper::No)->hasFocus());
+
     QTRY_COMPARE(dialogHelper.popupWindow()->activeFocusItem(), confirmationButtonBox->standardButton(QPlatformDialogHelper::Yes));
 
     // Yes button should have focus by default

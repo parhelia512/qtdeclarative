@@ -592,4 +592,50 @@ TestCase {
         control.delegate = delegateComponent1
         verify(delegateComponent2)
     }
+
+    function test_defaultButtonGetsFocus() {
+        let control = createTemporaryObject(buttonBox, testCase)
+        verify(control)
+
+        control.forceActiveFocus()
+
+        control.standardButtons = DialogButtonBox.Ok | DialogButtonBox.Cancel | DialogButtonBox.Help
+
+        let okButton = control.standardButton(DialogButtonBox.Ok)
+        verify(okButton)
+
+        let cancelButton = control.standardButton(DialogButtonBox.Cancel)
+        verify(cancelButton)
+
+        let helpButton = control.standardButton(DialogButtonBox.Help)
+        verify(helpButton)
+
+        compare(control.focus, true)
+        tryCompare(control.contentItem, "focus", true)
+
+        // The first button with the accept role gets focus
+        compare(okButton.focus, true)
+        compare(okButton.activeFocus, true)
+        compare(okButton.highlighted, false)
+
+        compare(cancelButton.focus, false)
+        compare(cancelButton.activeFocus, false)
+        compare(cancelButton.highlighted, false)
+        compare(helpButton.focus, false)
+        compare(helpButton.activeFocus, false)
+        compare(helpButton.highlighted, false)
+
+        control.defaultStandardButton = DialogButtonBox.Cancel
+
+        compare((control.contentItem as ListView)?.focus, true)
+        tryCompare(okButton, "activeFocus", false)
+        compare(okButton.focus, false)
+        compare(okButton.highlighted, false)
+        compare(cancelButton.focus, true)
+        compare(cancelButton.activeFocus, true)
+        compare(cancelButton.highlighted, true)
+        compare(helpButton.focus, false)
+        compare(helpButton.activeFocus, false)
+        compare(helpButton.highlighted, false)
+    }
 }

@@ -47,6 +47,7 @@ FileDialogImpl {
 
         footer: DialogButtonBox {
             standardButtons: DialogButtonBox.Yes | DialogButtonBox.No
+            defaultStandardButton: DialogButtonBox.Yes
         }
 
         Overlay.modal: Rectangle {

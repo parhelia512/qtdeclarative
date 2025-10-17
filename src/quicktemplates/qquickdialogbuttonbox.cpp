@@ -14,6 +14,7 @@
 #include <QtQml/qqmlengine.h>
 #include <QtQml/qqmlcontext.h>
 #include <QtQml/qqmlcomponent.h>
+#include <QtQuick/private/qquickitemview_p.h>
 
 #include <algorithm>
 
@@ -288,6 +289,55 @@ void QQuickDialogButtonBoxPrivate::updateLayout()
         q->insertItem(i, buttons.at(i));
 }
 
+void QQuickDialogButtonBoxPrivate::updateFocus()
+{
+    Q_Q(QQuickDialogButtonBox);
+    const int count = contentModel->count();
+    if (count <= 0)
+        return;
+
+    // Give focus to the first default button
+    int indexOfFocusButton = -1;
+    QQuickButton *buttonToHighlight = nullptr;
+    for (int i = 0; i < count; ++i) {
+        QQuickItem *item = q->itemAt(i);
+        if (auto *button = qobject_cast<QQuickButton *>(item)) {
+            const auto stdButton = standardButton(button);
+            const bool isDefaultStdbutton = defaultStandardButton != QPlatformDialogHelper::NoButton && stdButton == defaultStandardButton;
+            const bool isDefaultButton = defaultButton == button;
+            if (isDefaultButton || isDefaultStdbutton) {
+                buttonToHighlight = button;
+                indexOfFocusButton = i;
+                break;
+            }
+        }
+    }
+    // Give focus to the first button with the accept role, if there are no default buttons
+    if (indexOfFocusButton < 0) {
+        for (int i = 0; i < count; ++i) {
+            QQuickAbstractButton *button = qobject_cast<QQuickAbstractButton *>(q->itemAt(i));
+            if (button && QQuickDialogPrivate::buttonRole(button) == QPlatformDialogHelper::ButtonRole::AcceptRole) {
+                indexOfFocusButton = i;
+                break;
+            }
+        }
+    }
+
+    if (QQuickItemView *itemView = qobject_cast<QQuickItemView *>(contentItem)) {
+        // QQuickItemView has the ItemIsFocusScope flag, and also calls setFocus(true) for the first delegate item it creates
+        // In order for the default button to have active focus, we call setFocus(true) for both the item view, and the default button.
+        itemView->setCurrentIndex(indexOfFocusButton);
+        itemView->setFocus(indexOfFocusButton >= 0);
+    }
+
+    for (int i = 0; i < count; ++i) {
+        if (auto *button = qobject_cast<QQuickButton *>(contentModel->get(i))) {
+            button->setFocus(i == indexOfFocusButton);
+            button->setHighlighted(button == buttonToHighlight);
+        }
+    }
+}
+
 qreal QQuickDialogButtonBoxPrivate::getContentWidth() const
 {
     Q_Q(const QQuickDialogButtonBox);
@@ -455,6 +505,7 @@ QQuickDialogButtonBox::QQuickDialogButtonBox(QQuickItem *parent)
     : QQuickContainer(*(new QQuickDialogButtonBoxPrivate), parent)
 {
     Q_D(QQuickDialogButtonBox);
+    setFlag(ItemIsFocusScope);
     d->changeTypes |= QQuickItemPrivate::ImplicitWidth | QQuickItemPrivate::ImplicitHeight;
     d->buttonLayout = platformButtonLayout();
     d->setSizePolicy(QLayoutPolicy::Preferred, QLayoutPolicy::Fixed);
@@ -637,6 +688,84 @@ QQuickAbstractButton *QQuickDialogButtonBox::standardButton(QPlatformDialogHelpe
     return nullptr;
 }
 
+
+/*!
+    \qmlproperty enumeration QtQuick.Controls::DialogButtonBox::defaultStandardButton
+    \since 6.11
+
+    This property holds the default standard button.
+
+    The default standard button will be
+    \l {QtQuick.Controls::Button::highlighted}{highlighted} and receive focus.
+
+    Only one button in the button box can be made default.
+    This property cannot be used together with the
+    \l {DialogButtonBox::defaultButton} {defaultButton} property.
+
+    \sa standardButtons, {DialogButtonBox::defaultButton}
+*/
+QPlatformDialogHelper::StandardButton QQuickDialogButtonBox::defaultStandardButton() const
+{
+    Q_D(const QQuickDialogButtonBox);
+    return d->defaultStandardButton;
+}
+
+void QQuickDialogButtonBox::setDefaultStandardButton(QPlatformDialogHelper::StandardButton button)
+{
+    Q_D(QQuickDialogButtonBox);
+    if (d->defaultStandardButton == button)
+        return;
+
+    d->defaultStandardButton = button;
+
+    if (isComponentComplete())
+        polish();
+
+    emit defaultStandardButtonChanged();
+}
+
+/*!
+    \qmlproperty AbstractButton QtQuick.Controls::DialogButtonBox::defaultButton
+    \since 6.11
+
+    This property holds the default button.
+
+    The default button will be
+    \l {QtQuick.Controls::Button::highlighted}{highlighted} and receive focus.
+
+    Only one button in the button box can be made default.
+    This property cannot be used together with the
+    \l {DialogButtonBox::defaultStandardButton} {defaultStandardButton} property.
+
+    \sa standardButtons, defaultStandardButton
+*/
+
+QQuickAbstractButton *QQuickDialogButtonBox::defaultButton() const
+{
+    Q_D(const QQuickDialogButtonBox);
+    return d->defaultButton;
+}
+
+void QQuickDialogButtonBox::setDefaultButton(QQuickAbstractButton *button)
+{
+    Q_D(QQuickDialogButtonBox);
+    if (d->defaultButton == button)
+        return;
+
+    if (d->defaultButton)
+        removeItem(d->defaultButton);
+
+    d->defaultButton = button;
+
+    if (d->defaultButton)
+        addItem(d->defaultButton);
+
+    if (isComponentComplete())
+        polish();
+
+    emit defaultButtonChanged();
+}
+
 /*!
     \qmlproperty Component QtQuick.Controls::DialogButtonBox::delegate
 
@@ -709,6 +838,7 @@ void QQuickDialogButtonBox::updatePolish()
     Q_D(QQuickDialogButtonBox);
     QQuickContainer::updatePolish();
     d->updateLayout();
+    d->updateFocus();
 }
 
 bool QQuickDialogButtonBox::event(QEvent *e)
@@ -724,6 +854,7 @@ void QQuickDialogButtonBox::componentComplete()
     Q_D(QQuickDialogButtonBox);
     QQuickContainer::componentComplete();
     d->updateLayout();
+    d->updateFocus();
 }
 
 void QQuickDialogButtonBox::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
@@ -772,6 +903,16 @@ void QQuickDialogButtonBox::itemRemoved(int index, QQuickItem *item)
     d->updateImplicitContentSize();
     if (isComponentComplete())
         polish();
+}
+
+void QQuickDialogButtonBox::itemChange(QQuickItem::ItemChange change, const QQuickItem::ItemChangeData &data)
+{
+    QQuickContainer::itemChange(change, data);
+    if (change != QQuickItem::ItemVisibleHasChanged || !isComponentComplete() || !data.boolValue)
+        return;
+
+    Q_D(QQuickDialogButtonBox);
+    d->updateFocus();
 }
 
 #if QT_CONFIG(accessibility)

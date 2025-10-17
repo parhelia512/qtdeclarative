@@ -5,6 +5,7 @@
 #include "qquickdialog_p.h"
 #include "qquickdialog_p_p.h"
 #include "qquickdialogbuttonbox_p.h"
+#include "qquickdialogbuttonbox_p_p.h"
 #include "qquickabstractbutton_p.h"
 #include "qquickpopupitem_p_p.h"
 #include "qquickpopupwindow_p_p.h"
@@ -558,6 +559,18 @@ void QQuickDialog::done(int result)
         emit rejected();
 
     close();
+}
+
+void QQuickDialog::itemChange(QQuickItem::ItemChange change, const QQuickItem::ItemChangeData &data)
+{
+    QQuickPopup::itemChange(change, data);
+
+    if (change != QQuickItem::ItemVisibleHasChanged || !isComponentComplete() || !data.boolValue)
+        return;
+
+    Q_D(QQuickDialog);
+    if (d->buttonBox)
+        d->buttonBox->forceActiveFocus(Qt::OtherFocusReason);
 }
 
 #if QT_CONFIG(accessibility)

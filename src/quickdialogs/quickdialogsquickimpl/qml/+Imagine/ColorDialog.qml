@@ -252,6 +252,7 @@ ColorDialogImpl {
         DialogButtonBox {
             id: buttonBox
             standardButtons: control.standardButtons
+            defaultStandardButton: T.Dialog.Ok
             spacing: 12
 
             Layout.bottomMargin: 16

@@ -51,6 +51,7 @@ FileDialogImpl {
         footer: DialogButtonBox {
             alignment: Qt.AlignHCenter
             standardButtons: DialogButtonBox.Yes | DialogButtonBox.No
+            defaultStandardButton: DialogButtonBox.Yes
         }
     }
 

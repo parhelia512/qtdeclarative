@@ -493,7 +493,7 @@ void tst_QQuickFontDialogImpl::searchFamily()
     const QPoint familyEditCenterPos =
             familyEdit->mapToScene({ familyEdit->width() / 2, familyEdit->height() / 2 }).toPoint();
     QTest::mouseClick(dialogHelper.popupWindow(), Qt::LeftButton, Qt::NoModifier, familyEditCenterPos);
-    QVERIFY_ACTIVE_FOCUS(familyEdit);
+    QTRY_VERIFY_ACTIVE_FOCUS(familyEdit);
 
     QSignalSpy familyListViewCurrentIndexSpy(fontFamilyListView, SIGNAL(currentIndexChanged()));
     QVERIFY(familyListViewCurrentIndexSpy.isValid());

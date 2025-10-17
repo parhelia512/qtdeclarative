@@ -756,7 +756,7 @@ void tst_HoverHandler::touchDrag()
     QTest::touchEvent(&window, touchscreen.get()).move(0, in, &window);
     QQuickTouchUtils::flush(&window);
     QTRY_COMPARE(handler->isHovered(), true);
-    QCOMPARE(handler->point().scenePosition(), in);
+    QCOMPARE(handler->point().scenePosition().toPoint(), in);
 
     in += {10, 10};
     QTest::touchEvent(&window, touchscreen.get()).move(0, in, &window);
@@ -764,7 +764,7 @@ void tst_HoverHandler::touchDrag()
     // ensure that the color change is visible
     QTRY_COMPARE_GE(frameSyncSpy.size(), 1);
     QCOMPARE(handler->isHovered(), true);
-    QCOMPARE(handler->point().scenePosition(), in);
+    QCOMPARE(handler->point().scenePosition().toPoint(), in);
 
     QTest::touchEvent(&window, touchscreen.get()).move(0, out, &window);
     QQuickTouchUtils::flush(&window);

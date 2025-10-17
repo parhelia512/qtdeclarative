@@ -1165,18 +1165,31 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
     if (!m_linkSuffix.isEmpty())
         info.id += m_linkSuffix;
 
-    if (node->hasMask() || node->type() == QSvgNode::Type::Mask)
-        info.bounds = node->bounds();
     info.nodeId = node->nodeId();
     info.typeName = node->typeName();
     info.isDefaultTransform = node->style().transform.isDefault();
-    info.transform.setDefaultValue(QVariant::fromValue(!info.isDefaultTransform
-                                                           ? node->style().transform->qtransform()
-                                                           : QTransform()));
+
+    QTransform xf = !info.isDefaultTransform ? node->style().transform->qtransform() : QTransform();
+    info.transform.setDefaultValue(QVariant::fromValue(xf));
     info.isDefaultOpacity = node->style().opacity.isDefault();
     info.opacity.setDefaultValue(!info.isDefaultOpacity ? node->style().opacity->opacity() : 1.0);
     info.isVisible = node->isVisible();
     info.isDisplayed = node->displayMode() != QSvgNode::DisplayMode::NoneMode;
+
+    if (node->hasMask() || node->type() == QSvgNode::Type::Mask) {
+        info.bounds = node->bounds();
+
+        if (!xf.isIdentity()) {
+            bool ok;
+            xf = xf.inverted(&ok);
+            if (ok) {
+                info.bounds = xf.mapRect(info.bounds);
+            } else {
+                qCWarning(lcQuickVectorImage)
+                << "Masked item with non-invertible transform currently not supported.";
+            }
+        }
+    }
 
     if (node->hasMask()) {
         info.maskId = m_idForNodeId.value(node->maskId());

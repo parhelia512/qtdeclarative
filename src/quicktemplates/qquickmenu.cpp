@@ -1860,7 +1860,7 @@ void QQuickMenu::setTitle(const QString &title)
     \qmlproperty color QtQuick.Controls::Menu::icon.color
     \qmlproperty bool QtQuick.Controls::Menu::icon.cache
 
-    This property group was added in QtQuick.Controls 6.5.
+    \since QtQuick.Controls 6.5
 
     \include qquickicon.qdocinc grouped-properties
 

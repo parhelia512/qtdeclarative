@@ -800,7 +800,7 @@ void QQuickAbstractButton::setIndicator(QQuickItem *indicator)
     \qmlproperty color QtQuick.Controls::AbstractButton::icon.color
     \qmlproperty bool QtQuick.Controls::AbstractButton::icon.cache
 
-    This property group was added in QtQuick.Controls 2.3.
+    \since QtQuick.Controls 2.3
 
     \include qquickicon.qdocinc grouped-properties
 

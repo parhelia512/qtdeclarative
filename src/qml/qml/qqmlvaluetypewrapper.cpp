@@ -544,6 +544,8 @@ bool QQmlValueTypeWrapper::write(QObject *target, int propertyIndex) const
     });
 
     if (d()->isReference()) {
+        QT_WARNING_PUSH
+        QT_WARNING_DISABLE_GCC("-Walloca-larger-than="); // for size = alignment = 0
         if (!d()->gadgetPtr()) {
             const size_t size = d()->metaType().sizeOf();
             const size_t alignment = d()->metaType().alignOf();
@@ -555,6 +557,7 @@ bool QQmlValueTypeWrapper::write(QObject *target, int propertyIndex) const
             d()->metaType().construct(d()->gadgetPtr(), nullptr);
             destructGadgetOnExit = true;
         }
+        QT_WARNING_POP
         if (!readReferenceValue())
             return false;
     }

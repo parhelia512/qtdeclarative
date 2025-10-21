@@ -11,6 +11,7 @@
 #include <QtQuick/private/qquickmousearea_p.h>
 #include <qpa/qwindowsysteminterface.h>
 
+#include <private/qguiapplication_p.h>
 #include <private/qquickwindow_p.h>
 
 #include <QtQml/qqmlengine.h>
@@ -393,6 +394,17 @@ void tst_HoverHandler::movingItemWithHoverHandler()
     QCursor::setPos(paddlePos);
     window->show();
     QVERIFY(QTest::qWaitForWindowExposed(window));
+    // If the cursor is in a specific known position and the window is shown under it,
+    // QGuiApplicationPrivate::lastCursorPosition must be set.
+    // Usually, QGuiApplicationPrivate::processEnterEvent() will do that.
+    // Otherwise this test will fail (not Qt Quick's fault).
+    // We do not call QTest::mouseMove() here, because we are testing the expectation
+    // that QQuickDeliveryAgentPrivate::flushFrameSynchronousEvents() updates the hover
+    // state of items that move under or away from the last known mouse cursor position.
+    if (!QTest::qWaitFor([paddlePos]() { return QGuiApplicationPrivate::lastCursorPosition.toPoint() == paddlePos; }))
+        QSKIP("QCursor::setPos() doesn't work, or didn't update QGuiApplicationPrivate::lastCursorPosition");
+    qCDebug(lcPointerTests) << "QGuiApplicationPrivate::lastCursorPosition after QCursor::setPos()"
+                            << QGuiApplicationPrivate::lastCursorPosition.toPoint();
 
     QTRY_COMPARE(paddleHH->isHovered(), true);
     // TODO check the cursor shape after fixing QTBUG-53987

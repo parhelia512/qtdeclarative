@@ -28,4 +28,18 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    MenuBarItem {
+        text: "Original icon color"
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+    }
+
+    MenuBarItem {
+        text: "Original icon color (action)"
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

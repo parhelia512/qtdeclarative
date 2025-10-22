@@ -72,4 +72,18 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    // Original icon color
+    RoundButton {
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+    }
+
+    // Original icon color (action)
+    RoundButton {
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

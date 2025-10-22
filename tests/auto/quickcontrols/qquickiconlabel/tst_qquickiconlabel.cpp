@@ -371,6 +371,8 @@ void tst_qquickiconlabel::defaultIconColor_data()
 
     const auto grey = QColor("grey");
     const auto green = QColor("green");
+    const auto red = QColor("red");
+    const auto transparent = QColor("transparent");
 
     QTest::addRow("default icon color set")
         << "defaultIconColorSet.qml" << grey << grey;
@@ -380,6 +382,12 @@ void tst_qquickiconlabel::defaultIconColor_data()
         << "menuItemActionDefaultIconColorSet.qml" << grey << grey;
     QTest::addRow("menu item action icon color and default icon color set")
         << "menuItemActionIconColorAndDefaultIconColorSet.qml" << green << green;
+    QTest::addRow("no icon color set")
+        << "noIconColorSet.qml" << transparent << red;
+    QTest::addRow("transparent icon color and default icon colour set")
+        << "transparentIconColorAndDefaultIconColorSet.qml" << transparent << red;
+    QTest::addRow("transparent action icon color and default icon colour set")
+        << "transparentActionIconColorAndDefaultIconColorSet.qml" << transparent << red;
 }
 
 void tst_qquickiconlabel::defaultIconColor()

@@ -29,4 +29,18 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    ToolButton {
+        text: "Original icon color"
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+    }
+
+    ToolButton {
+        text: "Original icon color (action)"
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

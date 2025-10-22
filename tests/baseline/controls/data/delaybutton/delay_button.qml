@@ -69,4 +69,20 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    DelayButton {
+        text: "Original icon color"
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+        visible: contentItem instanceof IconLabel
+    }
+
+    DelayButton {
+        text: "Original icon color (action)"
+        visible: contentItem instanceof IconLabel
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

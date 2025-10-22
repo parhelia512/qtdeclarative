@@ -83,4 +83,18 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    SwitchDelegate {
+        text: "Original icon color"
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+    }
+
+    SwitchDelegate {
+        text: "Original icon color (action)"
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

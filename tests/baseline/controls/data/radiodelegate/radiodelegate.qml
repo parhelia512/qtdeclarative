@@ -90,4 +90,18 @@ FlowPane {
             icon.color: "green"
         }
     }
+
+    RadioDelegate {
+        text: "Original icon color"
+        icon.source: "../shared/heart.svg"
+        icon.color: "transparent"
+    }
+
+    RadioDelegate {
+        text: "Original icon color (action)"
+        action: Action {
+            icon.source: "../shared/heart.svg"
+            icon.color: "transparent"
+        }
+    }
 }

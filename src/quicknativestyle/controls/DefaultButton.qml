@@ -34,7 +34,6 @@ T.Button {
 
     icon.width: 24
     icon.height: 24
-    icon.color: control.palette.buttonText
 
     contentItem: IconLabel {
         spacing: control.spacing
@@ -42,9 +41,10 @@ T.Button {
         display: control.display
 
         icon: control.icon
+        defaultIconColor: control.palette.buttonText
         text: control.text
         font: control.font
-        color: control.palette.buttonText
+        color: defaultIconColor
 
         readonly property bool __ignoreNotCustomizable: true
     }

@@ -10,6 +10,7 @@
 #include "qquickaction_p_p.h"
 #include "qquickshortcutcontext_p_p.h"
 #include "qquickdeferredexecute_p_p.h"
+#include "qquickicon_p_p.h"
 
 #include <QtGui/qstylehints.h>
 #include <QtGui/qguiapplication.h>
@@ -364,6 +365,16 @@ void QQuickAbstractButtonPrivate::updateEffectiveIcon()
         return;
 
     effectiveIcon = newEffectiveIcon;
+
+    if (action && !QQuickIconPrivate::isResolved(effectiveIcon, QQuickIconPrivate::ColorResolved)) {
+        // A color wasn't set on the button's icon (which should always win over an Action's).
+        if (QQuickIconPrivate::isResolved(action->icon(), QQuickIconPrivate::ColorResolved)) {
+            // A color was set on the action's icon; mark the effective icon's color as being
+            // explicitly set so that QQuickIconLabel can detect that it's set and respect it.
+            effectiveIcon.resolveColor();
+        }
+    }
+
     emit q->iconChanged();
 }
 

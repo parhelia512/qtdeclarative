@@ -42,7 +42,9 @@ qt_internal_add_qml_module(QuickTemplates2
         qquickframe.cpp qquickframe_p.h
         qquickframe_p_p.h
         qquickgroupbox.cpp qquickgroupbox_p.h
-        qquickicon.cpp qquickicon_p.h
+        qquickicon.cpp
+        qquickicon_p.h
+        qquickicon_p_p.h
         qquickindicatorbutton_p.cpp qquickindicatorbutton_p.h
         qquickitemdelegate.cpp qquickitemdelegate_p.h
         qquickitemdelegate_p_p.h

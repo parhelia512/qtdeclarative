@@ -29,24 +29,6 @@ T.ToolButton {
 
     icon.width: __config.icon.width
     icon.height: __config.icon.height
-    icon.color: __buttonText
-
-    readonly property color __buttonText: {
-        if (control.down) {
-            return (control.checked || control.highlighted)
-                ? Application.styleHints.colorScheme == Qt.Light
-                    ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.5)
-                : (Application.styleHints.colorScheme === Qt.Light
-                    ? Qt.rgba(control.palette.buttonText.r, control.palette.buttonText.g, control.palette.buttonText.b, 0.62)
-                    : Qt.rgba(control.palette.buttonText.r, control.palette.buttonText.g, control.palette.buttonText.b, 0.7725))
-        } else if (control.checked || control.highlighted) {
-            return (Application.styleHints.colorScheme === Qt.Dark && !control.enabled)
-                ? Qt.rgba(1, 1, 1, 0.5302)
-                : (Application.styleHints.colorScheme === Qt.Dark ? "black" : "white")
-        } else {
-            return control.palette.buttonText
-        }
-    }
 
     readonly property string __currentState: [
         control.checked && "checked",
@@ -64,9 +46,25 @@ T.ToolButton {
         display: control.display
 
         icon: control.icon
+        defaultIconColor: {
+            if (control.down) {
+                return (control.checked || control.highlighted)
+                    ? Application.styleHints.colorScheme == Qt.Light
+                        ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.5)
+                    : (Application.styleHints.colorScheme === Qt.Light
+                        ? Qt.rgba(control.palette.buttonText.r, control.palette.buttonText.g, control.palette.buttonText.b, 0.62)
+                        : Qt.rgba(control.palette.buttonText.r, control.palette.buttonText.g, control.palette.buttonText.b, 0.7725))
+            } else if (control.checked || control.highlighted) {
+                return (Application.styleHints.colorScheme === Qt.Dark && !control.enabled)
+                    ? Qt.rgba(1, 1, 1, 0.5302)
+                    : (Application.styleHints.colorScheme === Qt.Dark ? "black" : "white")
+            } else {
+                return control.palette.buttonText
+            }
+        }
         text: control.text
         font: control.font
-        color: control.icon.color
+        color: defaultIconColor
     }
 
     background: ButtonBackground {

@@ -70,7 +70,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("qmllint");
     QCoreApplication::setApplicationVersion(QT_VERSION_STR);
     QCommandLineParser parser;
-    QQmlToolingSettings settings(QLatin1String("qmllint"));
+    QQmlToolingSettings settings(QLatin1String("qmllint"),
+                                 { QLatin1String("General"), QLatin1String("Warnings") });
     parser.setApplicationDescription(QLatin1String(R"(QML syntax verifier and analyzer
 
 All warnings can be set to three levels:
@@ -340,8 +341,11 @@ All warnings can be set to three levels:
     QJsonArray jsonFiles;
 
     for (const QString &filename : positionalArguments) {
-        if (!parser.isSet(ignoreSettings))
-            settings.search(filename);
+        if (!parser.isSet(ignoreSettings)) {
+            QQmlToolingSettings::SearchOptions options;
+            options.isQmllintSilent = silent;
+            settings.search(filename, options);
+        }
         updateLogLevels();
 
         resourceFiles = defaultResourceFiles;

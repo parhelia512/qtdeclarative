@@ -28,13 +28,16 @@ QT_BEGIN_NAMESPACE
 class QQmlToolingSettings
 {
 public:
-    QQmlToolingSettings(const QString &toolName);
+    QQmlToolingSettings(const QString &toolName,
+                        const QStringList &recognizedIniSections = { QStringLiteral("General") });
     struct SearchOptions
     {
         SearchOptions();
-        SearchOptions(QString settingFileName, bool reportFoundSettingsFiles = false);
+        SearchOptions(QString settingFileName, bool reportFoundSettingsFiles = false,
+                      bool isQmllintSilent = false);
         QString settingsFileName;
         bool reportFoundSettingsFiles = false;
+        bool isQmllintSilent = false;
     };
     struct SearchResult
     {
@@ -83,8 +86,9 @@ private:
     QString m_currentSettingsPath;
     QVariantHash m_values;
     Searcher m_searcher;
+    QStringList m_recognizedIniSections;
 
-    SearchResult read(const QString &settingsFilePath);
+    SearchResult read(const QString &settingsFilePath, SearchOptions options);
 };
 
 class QQmlToolingSharedSettings : private QQmlToolingSettings

@@ -153,6 +153,8 @@ private Q_SLOTS:
 
     void maxWarnings();
 
+    void unrecognizedIniSection();
+
 #if QT_CONFIG(library)
     void hasTestPlugin();
     void testPlugin_data();
@@ -2599,7 +2601,7 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
         }
 
         if (options.readSettings) {
-            QQmlToolingSettings settings(QLatin1String("qmllint"));
+            QQmlToolingSettings settings(QLatin1String("qmllint"), { "General"_L1, "Warnings"_L1 });
             if (settings.search(lintedFile).isValid())
                 QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
         }
@@ -3717,6 +3719,17 @@ void TestQmllint::errorCategory()
         QVERIFY(output.startsWith("Warning: "));
     }
 
+}
+
+void TestQmllint::unrecognizedIniSection()
+{
+    const QString iniFilePath = testFile("UnrecognizedIniSection/.qmllint.ini"_L1);
+    const QString qmlFilePath = testFile("UnrecognizedIniSection/file.qml"_L1);
+
+    bool shouldSucceed = true;
+    bool ignoreSettings = false;
+    const auto output = runQmllint(qmlFilePath, shouldSucceed, {}, ignoreSettings);
+    QVERIFY(output.contains("Unrecognized section \"Warning\" in %1"_L1.arg(iniFilePath)));
 }
 
 QTEST_GUILESS_MAIN(TestQmllint)

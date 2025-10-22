@@ -18,8 +18,9 @@ using namespace Qt::StringLiterals;
 
 QQmlToolingSettings::SearchOptions::SearchOptions() = default;
 QQmlToolingSettings::SearchOptions::SearchOptions(
-        QString settingFileName, bool reportFoundSettingsFiles)
-    : settingsFileName(settingFileName), reportFoundSettingsFiles(reportFoundSettingsFiles)
+        QString settingFileName, bool reportFoundSettingsFiles, bool isQmllintSilent)
+    : settingsFileName(settingFileName), reportFoundSettingsFiles(reportFoundSettingsFiles),
+      isQmllintSilent(isQmllintSilent)
 {
 
 }
@@ -31,12 +32,15 @@ void QQmlToolingSettings::addOption(const QString &name, const QVariant &default
     }
 }
 
-QQmlToolingSettings::QQmlToolingSettings(const QString &toolName)
-    : m_searcher(u".%1.ini"_s.arg(toolName), u"%1.ini"_s.arg(toolName))
+QQmlToolingSettings::QQmlToolingSettings(const QString &toolName,
+                                         const QStringList &recognizedIniSections)
+    : m_searcher(u".%1.ini"_s.arg(toolName), u"%1.ini"_s.arg(toolName)),
+      m_recognizedIniSections(recognizedIniSections)
 {
 }
 
-QQmlToolingSettings::SearchResult QQmlToolingSettings::read(const QString &settingsFilePath)
+QQmlToolingSettings::SearchResult QQmlToolingSettings::read(const QString &settingsFilePath,
+                                                            SearchOptions options)
 {
 #if QT_CONFIG(settings)
     Q_ASSERT(QFileInfo::exists(settingsFilePath));
@@ -45,6 +49,19 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::read(const QString &setti
         return { SearchResult::ResultType::Found, settingsFilePath };
 
     QSettings settings(settingsFilePath, QSettings::IniFormat);
+
+    if (!options.isQmllintSilent) {
+        const QStringList sections = settings.childGroups() << QLatin1String("General");
+        for (const QString &section : sections) {
+            if (!m_recognizedIniSections.contains(section)) {
+                qWarning().noquote()
+                        << "Unrecognized section \"%1\" in %2\n"_L1.arg(section).arg(settingsFilePath)
+                                + "Recognized sections are: ["_L1
+                                + m_recognizedIniSections.join(", "_L1) + u']';
+            }
+        }
+    }
+
     for (const QString &key : settings.allKeys())
         m_values[key] = settings.value(key).toString();
 
@@ -181,11 +198,11 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::search(
     // If a specific settings file is provided, read it directly
     if (!options.settingsFileName.isEmpty()) {
         QFileInfo fileInfo(options.settingsFileName);
-        return fileInfo.exists() ? read(fileInfo.absoluteFilePath()) : SearchResult();
+        return fileInfo.exists() ? read(fileInfo.absoluteFilePath(), options) : SearchResult();
     }
 
     if (const SearchResult result = m_searcher.search(path); result.isValid())
-        return read(result.iniFilePath);
+        return read(result.iniFilePath, options);
 
     return SearchResult();
 }

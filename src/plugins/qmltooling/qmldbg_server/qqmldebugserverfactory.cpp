@@ -621,6 +621,8 @@ bool QQmlDebugServerImpl::addService(const QString &name, QQmlDebugService *serv
 
 bool QQmlDebugServerImpl::removeService(const QString &name)
 {
+    if (m_thread.isRunning())
+        qFatal("QML debugging framework was not cleaned up. Did you leak your QCoreApplication?");
     // to be executed after thread ends
     Q_ASSERT(!m_thread.isRunning());
 

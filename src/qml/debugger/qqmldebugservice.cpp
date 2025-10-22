@@ -7,8 +7,9 @@
 #include <private/qqmlcontext_p.h>
 
 #include <QtCore/QDebug>
-#include <QtCore/QStringList>
 #include <QtCore/QFileInfo>
+#include <QtCore/QStringList>
+#include <QtCore/QThread>
 
 QT_BEGIN_NAMESPACE
 
@@ -54,6 +55,12 @@ QQmlDebugService::QQmlDebugService(const QString &name, float version, QObject *
 
 QQmlDebugService::~QQmlDebugService()
 {
+    QThread *currentThread = QThread::currentThread();
+    QThread *mainThread = thread();
+    if (currentThread != mainThread) {
+        qFatal("Qml debugging framework was cleaned up from wrong thread. Did you leak your "
+               "QCoreApplication?");
+    }
     Q_D(QQmlDebugService);
     QQmlDebugConnector *server = QQmlDebugConnector::instance();
 

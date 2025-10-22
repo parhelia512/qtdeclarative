@@ -9,6 +9,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QElapsedTimer>
+#include <QtCore/QThread>
 
 //
 //  W A R N I N G
@@ -34,7 +35,15 @@ public:
 
     QQmlAbstractProfilerAdapter(QObject *parent = nullptr) :
         QObject(parent), service(nullptr), waiting(true), featuresEnabled(0) {}
-    ~QQmlAbstractProfilerAdapter() override {}
+    ~QQmlAbstractProfilerAdapter() override
+    {
+        QThread *currentThread = QThread::currentThread();
+        QThread *mainThread = thread();
+        if (currentThread != mainThread) {
+            qFatal("Qml debugging framework was cleaned up from wrong thread. Did you leak your "
+                   "QCoreApplication?");
+        }
+    }
     void setService(QQmlProfilerService *new_service) { service = new_service; }
 
     virtual qint64 sendMessages(qint64 until, QList<QByteArray> &messages) = 0;

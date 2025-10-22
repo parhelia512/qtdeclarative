@@ -310,6 +310,9 @@ void tst_QQuickContextMenu::menuItemShouldntTriggerOnRelease() // QTBUG-133302
 #ifdef Q_OS_ANDROID
     QSKIP("Crashes on android. See QTBUG-137400");
 #endif
+
+    QSKIP("Test function has been flaky from the start, QTBUG-141406.");
+
     QQuickApplicationHelper helper(this, "windowedContextMenuOnControl.qml");
     QVERIFY2(helper.ready, helper.failureMessage());
     QQuickWindow *window = helper.window;

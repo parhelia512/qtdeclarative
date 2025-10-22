@@ -12,7 +12,7 @@ using namespace Qt::StringLiterals;
 
 UserContextProperties::UserContextProperties(const QQmlToolingSettings &settings)
 {
-    auto listFromSettings = [settings](QLatin1String key) -> QStringList {
+    auto listFromSettings = [&settings](QLatin1String key) -> QStringList {
         if (!settings.isSet(key))
             return {};
         return settings.value(key).toString().split(u',', Qt::SkipEmptyParts);

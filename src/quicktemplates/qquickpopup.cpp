@@ -354,7 +354,8 @@ Q_STATIC_LOGGING_CATEGORY(lcQuickPopup, "qt.quick.controls.popup")
     \section1 Property Propagation
 
     Popup inherits fonts, palettes and attached properties through its parent
-    window, not its \l {Visual Parent}{object or visual parent}:
+    window, not its
+    \l {Concepts - Visual Parent in Qt Quick#Visual Parent}{object or visual parent}:
 
     \snippet qtquickcontrols-popup-property-propagation.qml file
 

@@ -67,7 +67,7 @@ static const int SUBMENU_DELAY = 225;
              \caption Native macOS menu.
           \li \image qtquickcontrols-menu.png
              \caption Non-native \l {Material Style}{Material style} menu.
-   \endtable
+    \endtable
 
     Menu has two main use cases:
     \list
@@ -88,7 +88,7 @@ static const int SUBMENU_DELAY = 225;
 
     \snippet qtquickcontrols-menu-closepolicy.qml closePolicy
 
-    Since QtQuick.Controls 2.3 (Qt 5.10), it is also possible to create sub-menus
+    Since \l{QtQuick.Controls} 2.3 (Qt 5.10), it is also possible to create sub-menus
     and declare Action objects inside Menu:
 
     \snippet qtquickcontrols-menu-submenus-and-actions.qml root

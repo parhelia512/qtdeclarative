@@ -804,9 +804,9 @@ void QQuickSpinBox::setValueFromText(const QJSValue &callback)
     \qmlproperty real QtQuick.Controls::SpinBox::up.implicitIndicatorHeight
 
     These properties hold the up indicator item and whether it is pressed or
-    hovered. The \c up.hovered property was introduced in QtQuick.Controls 2.1,
+    hovered. The \c up.hovered property was introduced in \l{QtQuick.Controls} 2.1,
     and the \c up.implicitIndicatorWidth and \c up.implicitIndicatorHeight
-    properties were introduced in QtQuick.Controls 2.5.
+    properties were introduced in \l{QtQuick.Controls} 2.5.
 
     \sa increase()
 */
@@ -824,9 +824,9 @@ QQuickIndicatorButton *QQuickSpinBox::up() const
     \qmlproperty real QtQuick.Controls::SpinBox::down.implicitIndicatorHeight
 
     These properties hold the down indicator item and whether it is pressed or
-    hovered. The \c down.hovered property was introduced in QtQuick.Controls 2.1,
+    hovered. The \c down.hovered property was introduced in \l{QtQuick.Controls} 2.1,
     and the \c down.implicitIndicatorWidth and \c down.implicitIndicatorHeight
-    properties were introduced in QtQuick.Controls 2.5.
+    properties were introduced in \l{QtQuick.Controls} 2.5.
 
     \sa decrease()
 */

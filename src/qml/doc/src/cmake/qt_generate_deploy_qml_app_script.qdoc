@@ -138,7 +138,7 @@ same target.
 
 \section1 Example
 
-The following example shows how to deploy a QtQuick app.
+The following example shows how to deploy a Qt Quick app.
 
 \badcode
 cmake_minimum_required(VERSION 3.16...3.22)

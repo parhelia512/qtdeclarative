@@ -375,7 +375,7 @@ or methods to exist in the new version while remaining compatible with
 previous versions.
 
 Consider these two QML files:
-\code
+\qml
 // main.qml
 import QtQuick 1.0
 
@@ -383,16 +383,16 @@ Item {
     id: root
     MyType {}
 }
-\endcode
+\endqml
 
-\code
+\qml
 // MyType.qml
 import MyTypes 1.0
 
 CppType {
     value: root.x
 }
-\endcode
+\endqml
 
 where \c CppType maps to the C++ class \c CppType.
 

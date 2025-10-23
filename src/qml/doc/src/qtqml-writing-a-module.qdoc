@@ -166,7 +166,7 @@ Item {
 }
 \endqml
 
-You can also avoid the incompatibility by importing a specific version of QtQuick:
+You can also avoid the incompatibility by importing a specific version of \l[QML]{QtQuick}:
 
 \qml
 // make sure Rectangle has no topLeftRadius property

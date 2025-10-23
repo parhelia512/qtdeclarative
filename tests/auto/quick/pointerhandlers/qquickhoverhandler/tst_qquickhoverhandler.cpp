@@ -800,8 +800,8 @@ void tst_HoverHandler::twoHandlersTwoTouches()
     // press the right HoverHandler too: it doesn't hover, because only one subtree can be hovered (for now, at least)
     QTest::touchEvent(&window, touchscreen.get()).stationary(0).press(1, pr, &window);
     QQuickTouchUtils::flush(&window);
-    QCOMPARE(left->isHovered(), true);
     QCOMPARE(right->isHovered(), false);
+    QCOMPARE(left->isHovered(), true);
 
     // release the left: neither HoverHandler is hovered, even though the right one is still pressed
     QTest::touchEvent(&window, touchscreen.get()).release(0, pl, &window).stationary(1);

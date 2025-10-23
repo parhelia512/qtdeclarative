@@ -38,7 +38,8 @@ struct QmlPlugin
     QString unloadOrErrorMessage() const
     {
         if (auto instance = std::get_if<QQmlExtensionPlugin *>(&data)) {
-            (*instance)->unregisterTypes();
+            if (*instance)
+                (*instance)->unregisterTypes();
             return {};
         }
         const Loader &loader = std::get<Loader>(data);

@@ -119,6 +119,8 @@ private:
     void generateTransform(const QTransform &xf);
     void generatePathContainer(const StructureNodeInfo &info);
     void generateAnimateTransform(const QString &targetName, const NodeInfo &info);
+    void generateAnimateMotionPath(const QString &targetName,
+                                   const QQuickAnimatedProperty &property);
     void generateAnimationBindings();
     void generateItemAnimations(const QString &idString, const NodeInfo &nodeInfo);
     void generateEasing(const QQuickAnimatedProperty::PropertyAnimation &animation, int time);

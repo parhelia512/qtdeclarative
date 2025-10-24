@@ -1442,6 +1442,94 @@ void QSvgVisitorImpl::fillTransformAnimationInfo(const QSvgNode *node, NodeInfo 
     }
 }
 
+void QSvgVisitorImpl::fillMotionPathAnimationInfo(const QSvgNode *node, NodeInfo &info)
+{
+    QList<AnimationPair> animations = collectAnimations(node, QStringLiteral("offset-distance"));
+    if (animations.isEmpty())
+        return;
+
+    if (animations.size() > 1) {
+        qCWarning(lcQuickVectorImage)
+            << "Not supported: More than one offset path animation on same node";
+    }
+
+    if (node->style().offset == nullptr) {
+        qCWarning(lcQuickVectorImage) << "Motion path animation: No offset path";
+        return;
+    }
+
+    const AnimationPair &animationPair = animations.first();
+
+    const QSvgAbstractAnimation *animation = animationPair.first;
+    const QSvgAbstractAnimatedProperty *property = animationPair.second;
+
+    const int start = animation->start();
+    const int repeatCount = animation->iterationCount();
+    const int duration = animation->duration();
+
+    qCDebug(lcVectorImageAnimations) << "Motion path animation:"
+                                     << "start == " << start
+                                     << ", repeatCount == " << repeatCount
+                                     << "; duration == " << duration;
+
+
+    QQuickAnimatedProperty::PropertyAnimation outAnimation;
+    outAnimation.repeatCount = repeatCount;
+    outAnimation.startOffset = start;
+
+    QPainterPath originalPath = node->style().offset->path();
+
+    qreal baseRotation;
+    bool adaptAngle;
+    switch (node->style().offset->rotateType()) {
+    case QtSvg::OffsetRotateType::Auto:
+        adaptAngle = true;
+        baseRotation = 0.0;
+        break;
+    case QtSvg::OffsetRotateType::Angle:
+        adaptAngle = false;
+        baseRotation = node->style().offset->rotateAngle();
+        break;
+    case QtSvg::OffsetRotateType::AutoAngle:
+        adaptAngle = true;
+        baseRotation = node->style().offset->rotateAngle();
+        break;
+    case QtSvg::OffsetRotateType::Reverse:
+        adaptAngle = true;
+        baseRotation = 180.0;
+        break;
+    case QtSvg::OffsetRotateType::ReverseAngle:
+        adaptAngle = true;
+        baseRotation = node->style().offset->rotateAngle() + 180.0f;
+        break;
+    default:
+        Q_UNREACHABLE();
+    }
+
+    // Default value holds additional parameters
+    info.motionPath.setDefaultValue(QVariant::fromValue(QVariantPair(adaptAngle, baseRotation)));
+
+    const QList<qreal> propertyKeyFrames = property->keyFrames();
+
+    qreal previousT = 0.0;
+    for (int j = 0; j < propertyKeyFrames.size(); ++j) {
+        const int time = qRound(propertyKeyFrames.at(j) * duration);
+
+        qreal t = calculateInterpolatedValue(property, j, 0).toReal();
+
+        if (time > 0) {
+            QPainterPath path = originalPath.trimmed(previousT, t);
+
+            outAnimation.frames[time] = QVariant::fromValue(path);
+            qCDebug(lcVectorImageAnimations) << "        -> Frame " << time << " is " << path;
+        }
+
+        previousT = t;
+    }
+
+    info.motionPath.addAnimation(outAnimation);
+}
+
 void QSvgVisitorImpl::fillPathAnimationInfo(const QSvgNode *node, PathNodeInfo &info)
 {
     fillColorAnimationInfo(node, info);
@@ -1457,6 +1545,7 @@ void QSvgVisitorImpl::fillAnimationInfo(const QSvgNode *node, NodeInfo &info)
     }
 
     fillTransformAnimationInfo(node, info);
+    fillMotionPathAnimationInfo(node, info);
 }
 
 void QSvgVisitorImpl::handleBaseNodeSetup(const QSvgNode *node)

@@ -107,6 +107,8 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
     if (!info.isDefaultOpacity)
         stream() << "opacity: " << info.opacity.defaultValue().toReal();
 
+    stream() << "transformOrigin: Item.TopLeft";
+
     if (!info.maskId.isEmpty()) {
         stream() << "layer.enabled: true";
         stream() << "visible: false";
@@ -133,7 +135,8 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
     const bool hasTransform = info.transform.isAnimated()
                               || !info.maskId.isEmpty()
                               || !info.isDefaultTransform
-                              || !info.transformReferenceId.isEmpty();
+                              || !info.transformReferenceId.isEmpty()
+                              || info.motionPath.isAnimated();
 
     if (hasTransform) {
         stream() << "transform: TransformGroup {";
@@ -223,6 +226,37 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                     stream() << "}";
                 }
             }
+
+            if (info.motionPath.isAnimated()) {
+                QVariantPair defaultProps = info.motionPath.defaultValue().value<QVariantPair>();
+                const bool adaptAngle = defaultProps.first.toBool();
+                const qreal baseRotation = defaultProps.second.toReal();
+                if (adaptAngle || !qFuzzyIsNull(baseRotation)) {
+                    stream() << "Rotation {";
+                    m_indentLevel++;
+
+                    if (adaptAngle) {
+                        stream() << "angle: " << idString
+                                 << "_motion_animation.currentInterpolator.angle";
+                        if (!qFuzzyIsNull(baseRotation))
+                            stream(SameLine) << " + " << baseRotation;
+                    } else {
+                        stream() << "angle: " << baseRotation;
+                    }
+
+                    m_indentLevel--;
+                    stream() << "}";
+                }
+
+                stream() << "Translate {";
+                m_indentLevel++;
+
+                stream() << "x: " << idString << "_motion_animation.currentInterpolator.x";
+                stream() << "y: " << idString << "_motion_animation.currentInterpolator.y";
+
+                m_indentLevel--;
+                stream() << "}";
+            }
         }
 
         if (!info.isDefaultTransform) {
@@ -257,6 +291,8 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
             stream() << "}";
         }
     }
+
+    generateAnimateMotionPath(idString, info.motionPath);
 
     generatePropertyAnimation(info.opacity, idString, QStringLiteral("opacity"));
     generatePropertyAnimation(info.visibility, idString, QStringLiteral("visible"));
@@ -862,6 +898,127 @@ void QQuickQmlGenerator::generatePathContainer(const StructureNodeInfo &info)
     m_indentLevel--;
 
     m_inShapeItemLevel++;
+}
+
+void QQuickQmlGenerator::generateAnimateMotionPath(const QString &targetName,
+                                                   const QQuickAnimatedProperty &property)
+{
+    if (!property.isAnimated())
+        return;
+
+    Q_ASSERT(property.animationCount() == 1);
+    const auto &animation = property.animation(0);
+
+    qsizetype count = 0;
+    for (auto it = animation.frames.constBegin(); it != animation.frames.constEnd(); ++it, ++count) {
+        QPainterPath path = it.value().value<QPainterPath>();
+
+        // If the animation starts with an empty path (a pause animation), then we get the first
+        // valid path and use this, just to get the correct position and angle at the beginning.
+        // This path is never actually interpolated over, because we use a PauseAnimation later
+        // instead of a PropertyAnimation, but it is used as the default start position
+        qreal angle = 0.0;
+        QPointF position;
+        if (path.isEmpty() && it == animation.frames.constBegin()) {
+            for (auto jt = std::next(it); jt != animation.frames.constEnd(); ++jt) {
+                const QPainterPath &nextPath = jt.value().value<QPainterPath>();
+                if (!nextPath.isEmpty()) {
+                    position = nextPath.pointAtPercent(0.0);
+                    angle = -nextPath.angleAtPercent(0.0);
+                    break;
+                }
+            }
+
+            stream() << "QtObject {";
+            m_indentLevel++;
+
+            stream() << "id: " << targetName << "_pathInterpolator_" << count;
+            stream() << "property real x: " << position.x();
+            stream() << "property real y: " << position.y();
+            stream() << "property real angle: " << angle;
+
+            m_indentLevel--;
+            stream() << "}";
+
+        } else if (!path.isEmpty()) {
+            stream() << "PathInterpolator {";
+            m_indentLevel++;
+
+            stream() << "id: " << targetName << "_pathInterpolator_" << count;
+            const QString svgPathString = QQuickVectorImageGenerator::Utils::toSvgString(path);
+
+            stream() << "path: Path { PathSvg { path: \"" << svgPathString << "\" } }";
+
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+
+    const QString mainAnimationId = targetName + QStringLiteral("_motion_animation");
+
+    QString prefix;
+    if (Q_UNLIKELY(!isRuntimeGenerator()))
+        prefix = QStringLiteral(".animations");
+    stream() << "Connections { target: " << m_topLevelIdString << prefix << "; function onRestart() {" << mainAnimationId << ".restart() } }";
+
+    stream() << "SequentialAnimation {";
+    m_indentLevel++;
+
+    stream() << "id: " << mainAnimationId;
+    stream() << "property var currentInterpolator: " << targetName << "_pathInterpolator_0";
+
+    generateAnimationBindings();
+
+    Q_ASSERT(property.animationCount() == 1);
+
+    int previousTime = 0;
+    count = 0;
+    for (auto it = animation.frames.constBegin(); it != animation.frames.constEnd(); ++it, ++count) {
+        const int time = it.key();
+        const int frameTime = time - previousTime;
+        const QPainterPath path = it.value().value<QPainterPath>();
+        if (frameTime > 0) {
+            if (path.isEmpty()) {
+                stream() << "PauseAnimation { duration: " << frameTime << " }";
+            } else {
+                stream() << "ScriptAction {";
+                m_indentLevel++;
+
+                stream() << "script: {";
+                m_indentLevel++;
+
+                stream() << mainAnimationId << ".currentInterpolator = "
+                         << targetName << "_pathInterpolator_" << count;
+
+                m_indentLevel--;
+                stream() << "}";
+
+                m_indentLevel--;
+                stream() << "}";
+
+                stream() << "PropertyAnimation {";
+                m_indentLevel++;
+
+                stream() << "id: " << targetName << "_motionAnimation_" << count;
+
+                stream() << "duration: " << frameTime;
+                stream() << "target: " << targetName << "_pathInterpolator_" << count;
+                stream() << "property: \"progress\"";
+                stream() << "from: 0; to: 1";
+
+                generateEasing(animation, time);
+
+                m_indentLevel--;
+                stream() << "}";
+            }
+        }
+
+        previousTime = time;
+    }
+
+    m_indentLevel--;
+    stream() << "}";
+
 }
 
 void QQuickQmlGenerator::generateAnimatedPropertySetter(const QString &targetName,

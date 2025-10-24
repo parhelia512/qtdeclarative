@@ -39,6 +39,12 @@ struct NodeInfo
     QString customItemType;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
     QQuickAnimatedProperty opacity = QQuickAnimatedProperty(QVariant::fromValue(1.0));
+
+    // Special case: Motion path holds curves that the node moves along. The default value
+    // holds additional parameters: First of the pair is whether or not the node adapts to
+    // the angle of the tangent of the path. Second is an additional rotation to apply on top
+    QQuickAnimatedProperty motionPath = QQuickAnimatedProperty(QVariant::fromValue(QVariantPair(false, 0.0)));
+
     bool isDefaultTransform = true;
     bool isDefaultOpacity = true;
     bool isVisible = true;

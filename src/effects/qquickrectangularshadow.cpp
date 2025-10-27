@@ -76,10 +76,9 @@ QT_BEGIN_NAMESPACE
     \li Blurring is calculated mathematically in the shader rather than using
     Gaussian blur, which CSS box-shadow implementations often use. This makes
     the shadow look slightly different, especially with larger blur values.
-    \li All the rectangle corners must have an even radius. When creating a
-    shadow for a \l Rectangle with different radiuses, select the best-matching
-    radius for the shadow or use an alternative shadow method, for example,
-    \l MultiEffect.
+    \li Since Qt 6.11, RectangularShadow also supports individual corner
+    radius values. When not needed, for best performance, set only the common
+    \l radius.
     \endlist
 
     Here is a table with screenshots to compare the rendering output of

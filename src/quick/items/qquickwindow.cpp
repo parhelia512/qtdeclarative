@@ -728,6 +728,15 @@ QQuickWindowPrivate::QQuickWindowPrivate()
 
 QQuickWindowPrivate::~QQuickWindowPrivate()
 {
+#ifdef QT_BUILD_INTERNAL
+    qCDebug(lcQuickWindow, "lifetime total, in all windows: constructed %d QQuickItems, %d ExtraData (%d%%)",
+            QQuickItemPrivate::item_counter, QQuickItemPrivate::itemExtra_counter,
+            QQuickItemPrivate::itemExtra_counter * 100 / QQuickItemPrivate::item_counter);
+    qCDebug(lcQuickWindow, "transform accessor calls: itemToParent %lld itemToWindow %lld windowToItem %lld",
+            QQuickItemPrivate::itemToParentTransform_counter,
+            QQuickItemPrivate::itemToWindowTransform_counter,
+            QQuickItemPrivate::windowToItemTransform_counter);
+#endif
     inDestructor = true;
     redirect.rt.reset(rhi);
     if (QQmlInspectorService *service = QQmlDebugConnector::service<QQmlInspectorService>())

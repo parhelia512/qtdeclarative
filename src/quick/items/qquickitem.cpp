@@ -3201,6 +3201,9 @@ qreal QQuickItemPrivate::effectiveDevicePixelRatio() const
 QTransform QQuickItemPrivate::windowToItemTransform() const
 {
     // XXX todo - optimize
+#ifdef QT_BUILD_INTERNAL
+    ++windowToItemTransform_counter;
+#endif
     return itemToWindowTransform().inverted();
 }
 
@@ -3209,6 +3212,9 @@ QTransform QQuickItemPrivate::windowToItemTransform() const
 */
 QTransform QQuickItemPrivate::itemToWindowTransform() const
 {
+#ifdef QT_BUILD_INTERNAL
+    ++itemToWindowTransform_counter;
+#endif
     // item's parent must not be itself, otherwise calling itemToWindowTransform() on it is infinite recursion
     Q_ASSERT(!parentItem || QQuickItemPrivate::get(parentItem) != this);
     QTransform rv = parentItem ? QQuickItemPrivate::get(parentItem)->itemToWindowTransform() : QTransform();
@@ -3221,6 +3227,9 @@ QTransform QQuickItemPrivate::itemToWindowTransform() const
 */
 void QQuickItemPrivate::itemToParentTransform(QTransform *t) const
 {
+#ifdef QT_BUILD_INTERNAL
+    ++itemToParentTransform_counter;
+#endif
     /* Read the current x and y values. As this is an internal method,
        we don't care about it being usable in bindings. Instead, we
        care about performance here, and thus we read the value with
@@ -3327,6 +3336,9 @@ QQuickItemPrivate::QQuickItemPrivate()
     , paintNode(nullptr)
     , szPolicy(QLayoutPolicy::Fixed, QLayoutPolicy::Fixed)
 {
+#ifdef QT_BUILD_INTERNAL
+    ++item_counter;
+#endif
 }
 
 QQuickItemPrivate::~QQuickItemPrivate()
@@ -10140,6 +10152,9 @@ QQuickItemPrivate::ExtraData::ExtraData()
   origin(QQuickItem::Center),
   transparentForPositioner(false)
 {
+#ifdef QT_BUILD_INTERNAL
+    ++QQuickItemPrivate::itemExtra_counter;
+#endif
 }
 
 

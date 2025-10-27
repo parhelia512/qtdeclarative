@@ -777,6 +777,14 @@ public:
     QLayoutPolicy sizePolicy() const;
     void setSizePolicy(const QLayoutPolicy::Policy &horizontalPolicy, const QLayoutPolicy::Policy &verticalPolicy);
     QLayoutPolicy szPolicy;
+
+#ifdef QT_BUILD_INTERNAL
+    inline static quint32 item_counter = 0;
+    inline static quint32 itemExtra_counter = 0;
+    inline static quint64 itemToParentTransform_counter = 0;
+    inline static quint64 itemToWindowTransform_counter = 0;
+    inline static quint64 windowToItemTransform_counter = 0;
+#endif
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QQuickItemPrivate::ExtraDataTags)

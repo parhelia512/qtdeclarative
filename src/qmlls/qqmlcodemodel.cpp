@@ -595,13 +595,13 @@ QStringList QQmlCodeModel::buildPaths()
 
 QStringList QQmlCodeModel::importPathsForUrl(const QByteArray &url)
 {
-    const QString fileName = url2Path(url);
     QStringList result = importPaths();
 
-    const QString importPaths = u"importPaths"_s;
+    const QString importPathsKey = u"importPaths"_s;
+    const QString fileName = url2Path(url);
     if (m_settings && m_settings->search(fileName, { QString(), verbose() }).isValid()
-        && m_settings->isSet(importPaths)) {
-        result.append(m_settings->valueAsAbsolutePathList(importPaths, fileName));
+        && m_settings->isSet(importPathsKey)) {
+        result.append(m_settings->valueAsAbsolutePathList(importPathsKey, fileName));
     }
 
     const QStringList buildPath = buildPathsForFileUrl(url);

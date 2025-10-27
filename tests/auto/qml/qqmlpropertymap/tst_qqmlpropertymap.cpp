@@ -44,6 +44,7 @@ private slots:
     void freeze();
     void cachedSignals();
     void signalIndices();
+    void metaTypeFromType();
 };
 
 class LazyPropertyMap : public QQmlPropertyMap, public QQmlParserStatus
@@ -682,6 +683,13 @@ void tst_QQmlPropertyMap::signalIndices()
     QSignalSpy spy(&map, method);
     map.insert(QLatin1String("key1"), 200);
     QCOMPARE(spy.size(), 1);
+}
+
+void tst_QQmlPropertyMap::metaTypeFromType()
+{
+    // Should not cause a deprecation warning when compiling.
+    const QMetaType metaType = QMetaType::fromType<QQmlPropertyMap>();
+    QCOMPARE(metaType.name(), "QQmlPropertyMap");
 }
 
 QTEST_MAIN(tst_QQmlPropertyMap)

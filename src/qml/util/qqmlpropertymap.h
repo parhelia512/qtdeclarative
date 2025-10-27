@@ -61,11 +61,23 @@ protected:
     }
 
 private:
+    friend class QtPrivate::QMetaTypeForType<QQmlPropertyMap>;
+
     QQmlPropertyMap(const QMetaObject *staticMetaObject, QObject *parent);
 
     Q_DECLARE_PRIVATE(QQmlPropertyMap)
     Q_DISABLE_COPY(QQmlPropertyMap)
 };
+
+namespace QtPrivate {
+template<>
+constexpr QMetaTypeInterface::DefaultCtrFn QMetaTypeForType<QQmlPropertyMap>::getDefaultCtr()
+{
+    return [](const QMetaTypeInterface *, void *addr) {
+        new (addr) QQmlPropertyMap(&QQmlPropertyMap::staticMetaObject, nullptr);
+    };
+}
+}
 
 namespace QQmlPrivate {
 

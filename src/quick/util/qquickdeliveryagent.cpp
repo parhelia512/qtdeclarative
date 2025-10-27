@@ -1217,9 +1217,15 @@ bool QQuickDeliveryAgentPrivate::deliverHoverEventRecursive(QQuickItem *item,
         childPrivate->itemToParentTransform(&childToParent);
         const QPointF childLocalPos = childToParent.inverted().map(localPos);
 
-        if (childPrivate->flags & QQuickItem::ItemClipsChildrenToShape) {
-            if (!child->contains(childLocalPos))
-                continue;
+        // If the child clips, or all children are inside, and scenePos is
+        // outside its rectangular bounds, we can skip this item and all its
+        // children, to save time.
+        if (childPrivate->effectivelyClipsEventHandlingChildren() &&
+            !childPrivate->eventHandlingBounds().contains(childLocalPos)) {
+#ifdef QT_BUILD_INTERNAL
+            ++QQuickItemPrivate::effectiveClippingSkips_counter;
+#endif
+            continue;
         }
 
         // Recurse into the child
@@ -2098,17 +2104,38 @@ void QQuickDeliveryAgentPrivate::deliverPointerEvent(QPointerEvent *event)
     Returns a list of all items that are spatially relevant to receive \a event
     occurring at \a scenePos, starting with \a item and recursively
     checking all the children.
+
+    \a localPos is the same as \a scenePos mapped to \a item (given as an
+    optimization, to avoid mapping it again). If \a pointId is given (if
+    pointId >= 0), the event is a QPointerEvent: so the expectation is that
+    this function must map the position to each child, during recursion.
+    The reason we need to do it is that \a predicate may expect the QEventPoint
+    to be localized already. eventTargets() is able to do the mapping using
+    only QQuickItemPrivate::itemToParentTransform(), which is cheaper than
+    calling windowToItemTransform() at each step.
+
+    \a event could alternatively be a QContextMenuEvent: then there is no
+    QEventPoint available, so pointId is given as -1 to indicate that
+    this function does \e not have responsibility to remap it to each child.
+
     \list
-        \li If QQuickItem::clip() is \c true \e and \a scenePos is outside of
-        QQuickItem::clipRect(), its children are also omitted. (We stop the
-        recursion, because any clipped-off portions of children under \a scenePos
-        are invisible.)
+        \li If QQuickItemPrivate::effectivelyClipsEventHandlingChildren() is
+        \c true \e and \a scenePos is outside of QQuickItem::clipRect(), and
+        \a item is \e not the root item, its children are also omitted.
+        (We stop the recursion, because any clipped-off portions of children
+        under \a scenePos are invisible; or, because we know that all children
+        are fully inside the parent.)
         \li Ignore any item in a subscene that "belongs to" a different
         DeliveryAgent. (In current practice, this only happens in 2D scenes in
         Qt Quick 3D.)
         \li Ignore any item for which the given \a predicate returns \c false;
         include any item for which the predicate returns \c true.
     \endlist
+
+    \note If \c {QQuickView::resizeMode() == SizeViewToRootObject} (the default),
+    the root item might not fill the window: so we don't check
+    effectivelyClipsEventHandlingChildren() on it. It could even be 0 x 0 if
+    width and height aren't declared.)
 */
 // FIXME: should this be iterative instead of recursive?
 QVector<QQuickItem *> QQuickDeliveryAgentPrivate::eventTargets(QQuickItem *item, const QEvent *event, int pointId,
@@ -2116,12 +2143,18 @@ QVector<QQuickItem *> QQuickDeliveryAgentPrivate::eventTargets(QQuickItem *item,
 {
     QVector<QQuickItem *> targets;
     auto itemPrivate = QQuickItemPrivate::get(item);
-    bool relevant = item->contains(localPos);
-    // if the item clips, we can potentially return early
-    if (itemPrivate->flags & QQuickItem::ItemClipsChildrenToShape) {
-        if (!item->clipRect().contains(localPos))
-            return targets;
+
+    // If the item clips, or all children are inside, and it's not the root item,
+    // and scenePos is outside its rectangular bounds, we can skip this item
+    // and all its children, to save time. (This check is performance-sensitive!)
+    if (item != rootItem && !itemPrivate->eventHandlingBounds().contains(localPos) &&
+         itemPrivate->effectivelyClipsEventHandlingChildren()) {
+        qCDebug(lcPtrLoc) << "skipping because" << localPos << "is outside rectangular bounds of" << item;
+        return targets;
     }
+
+    // If we didn't return early: check containment more thoroughly, then build
+    // a list of children in paint order, modified to respect z property adjustments.
     QList<QQuickItem *> children = itemPrivate->paintOrderChildItems();
     if (pointId >= 0) {
         // If pointId is set, it's meant to indicate that this is a QPointerEvent, not e.g. a QContextMenuEvent.
@@ -2134,14 +2167,16 @@ QVector<QQuickItem *> QQuickDeliveryAgentPrivate::eventTargets(QQuickItem *item,
         QMutableEventPoint::setPosition(*point, localPos);
     }
     const std::optional<bool> override = predicate(item, event);
-    if (override.has_value())
-        relevant = override.value();
+    const bool relevant = override.has_value() ? override.value()
+                                               : item == rootItem || item->contains(localPos);
     if (relevant) {
         auto it = std::lower_bound(children.begin(), children.end(), 0,
            [](auto lhs, auto rhs) -> bool { return lhs->z() < rhs; });
         children.insert(it, item);
     }
 
+    // The list of children is in paint order (parents and lower-z items first):
+    // iterate in reverse order (children and higher-z items go first into the targets list).
     for (int ii = children.size() - 1; ii >= 0; --ii) {
         QQuickItem *child = children.at(ii);
         auto childPrivate = QQuickItemPrivate::get(child);

@@ -109,7 +109,7 @@ bool QQuickMouseAreaPrivate::propagateHelper(QQuickMouseEvent *ev, QQuickItem *i
     Q_Q(const QQuickMouseArea);
     QQuickItemPrivate *itemPrivate = QQuickItemPrivate::get(item);
 
-    if (itemPrivate->flags & QQuickItem::ItemClipsChildrenToShape) {
+    if (itemPrivate->effectivelyClipsEventHandlingChildren()) {
         QPointF p = item->mapFromScene(sp);
         if (!item->contains(p))
             return false;

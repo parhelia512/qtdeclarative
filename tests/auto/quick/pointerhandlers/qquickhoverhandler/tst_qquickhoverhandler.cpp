@@ -7,6 +7,7 @@
 #include <QtQuick/qquickview.h>
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/private/qquickhoverhandler_p.h>
+#include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickpointerhandler_p_p.h>
 #include <QtQuick/private/qquickmousearea_p.h>
 #include <qpa/qwindowsysteminterface.h>
@@ -54,6 +55,8 @@ private slots:
     void touchDrag();
     void twoHandlersTwoTouches();
     void asProperty();
+    void effectivelyClips_data();
+    void effectivelyClips();
 
 private:
     void createView(QScopedPointer<QQuickView> &window, const char *fileName);
@@ -419,7 +422,7 @@ void tst_HoverHandler::movingItemWithHoverHandler()
     // and then each HoverHandler's QQuickPointerHandler::handlePointerEvent() adds itself again.
     // As long as we visit the same handlers each time, the list should not grow. (QTBUG-135975)
     qCDebug(lcPointerTests) << "deviceDeliveryTargets after paddle movement" << deliveryTargets;
-    QCOMPARE(deliveryTargets.size(), targetsCount);
+    QCOMPARE(deliveryTargets.size(), 0);
 
     paddle->setX(p.x() - paddle->width() / 2);
     QTRY_COMPARE(paddleHH->isHovered(), true);
@@ -427,7 +430,7 @@ void tst_HoverHandler::movingItemWithHoverHandler()
 
     paddle->setX(540);
     QTRY_COMPARE(paddleHH->isHovered(), false);
-    QCOMPARE(deliveryTargets.size(), targetsCount);
+    QCOMPARE(deliveryTargets.size(), 0);
 }
 
 void tst_HoverHandler::margin() // QTBUG-85303
@@ -839,6 +842,167 @@ void tst_HoverHandler::asProperty()
     QCOMPARE(handler->isHovered(), false);
     QTest::mouseMove(&window, root->boundingRect().center().toPoint());
     QTRY_COMPARE(handler->isHovered(), true);
+}
+
+void tst_HoverHandler::effectivelyClips_data()
+{
+    QTest::addColumn<QPoint>("cursorPos");
+    QTest::addColumn<QPoint>("goatPos");
+    QTest::addColumn<qreal>("scale");
+    QTest::addColumn<int>("rotation");
+    QTest::addColumn<bool>("expectRootContainsChildren");
+    QTest::addColumn<bool>("expectShadowContainsChildren");
+    QTest::addColumn<bool>("expectFrameContainsChildren");
+    QTest::addColumn<bool>("expectShadowHovered");
+    QTest::addColumn<bool>("expectFrameHovered");
+    QTest::addColumn<bool>("expectGoatHovered");
+    QTest::addColumn<Qt::CursorShape>("expectedCursor");
+
+    QTest::newRow("shrinkAndRotate") << QPoint(90, 150) << QPoint() << 0.7 << 15
+                                     << true << true << false   << false << true << false << Qt::UpArrowCursor;
+    QTest::newRow("rotate") << QPoint(90, 150) << QPoint() << 1.0 << 10
+                            << true << true << false   << false << true << true << Qt::SizeAllCursor;
+    QTest::newRow("pokeHornsOut") << QPoint(90, 150) << QPoint(0, -10) << 1.0 << 0
+                                  << true << true << false   << false << true << false << Qt::UpArrowCursor;
+    QTest::newRow("pokeHornsWayOut") << QPoint(90, 150) << QPoint(0, -30) << 1.0 << 0
+                                     << true << true << false   << false << true << false << Qt::UpArrowCursor;
+}
+
+void tst_HoverHandler::effectivelyClips() // QTBUG-140340
+{
+    QFETCH(QPoint, cursorPos);
+    QFETCH(QPoint, goatPos);
+    QFETCH(qreal, scale);
+    QFETCH(int, rotation);
+    QFETCH(bool, expectRootContainsChildren);
+    QFETCH(bool, expectShadowContainsChildren);
+    QFETCH(bool, expectFrameContainsChildren);
+    QFETCH(bool, expectShadowHovered);
+    QFETCH(bool, expectFrameHovered);
+    QFETCH(bool, expectGoatHovered);
+    QFETCH(Qt::CursorShape, expectedCursor);
+
+    // reset counters
+#ifdef QT_BUILD_INTERNAL
+    QQuickItemPrivate::eventHandlingChildrenWithinBounds_counter = 0;
+    QQuickItemPrivate::itemToParentTransform_counter = 0;
+    QQuickItemPrivate::itemToWindowTransform_counter = 0;
+    QQuickItemPrivate::windowToItemTransform_counter = 0;
+    QQuickItemPrivate::effectiveClippingSkips_counter = 0;
+#endif
+
+    QQuickView window;
+    QVERIFY(QQuickTest::showView(window, testFileUrl("goat.qml")));
+    QSignalSpy renderSpy(&window, &QQuickWindow::afterRendering);
+    QQuickItem *root = window.rootObject();
+    QQuickItemPrivate *rootPrivate = QQuickItemPrivate::get(root);
+    QQuickHoverHandler *shadowHandler = root->findChild<QQuickHoverHandler *>("shadow");
+    QVERIFY(shadowHandler);
+    QQuickItemPrivate *shadowPrivate = QQuickItemPrivate::get(shadowHandler->parentItem());
+    QQuickHoverHandler *frameHandler = root->findChild<QQuickHoverHandler *>("frame");
+    QVERIFY(frameHandler);
+    QQuickItemPrivate *framePrivate = QQuickItemPrivate::get(frameHandler->parentItem());
+    QQuickHoverHandler *goatHandler = root->findChild<QQuickHoverHandler *>("goat");
+    QQuickItem *goat = goatHandler->parentItem();
+    QVERIFY(goatHandler);
+    QQuickHoverHandler *pupilHandler = root->findChild<QQuickHoverHandler *>("pupil");
+    QVERIFY(pupilHandler);
+
+    // nothing poking out, so far
+    QVERIFY(rootPrivate->effectivelyClipsEventHandlingChildren());
+    QVERIFY(shadowPrivate->effectivelyClipsEventHandlingChildren());
+    QVERIFY(framePrivate->effectivelyClipsEventHandlingChildren());
+
+    // expect to initially hover the pupil of the eye
+    const QPoint cursorGlobalPos = window.mapToGlobal(cursorPos);
+    QCursor::setPos(cursorGlobalPos);
+    bool cursorSet = true;
+    if (!QTest::qWaitFor([cursorGlobalPos]() {
+            return QGuiApplicationPrivate::lastCursorPosition.toPoint() == cursorGlobalPos; })) {
+        qCDebug(lcPointerTests) << "QCursor::setPos doesn't work: expected"
+                                << cursorGlobalPos << "got" << QGuiApplicationPrivate::lastCursorPosition;
+        cursorSet = false;
+    }
+
+    auto checkPupilHovered = [pupilHandler, goatHandler, frameHandler, shadowHandler, &window]() {
+        QTRY_COMPARE(pupilHandler->isHovered(), true);
+        QCOMPARE(goatHandler->isHovered(), true);
+        QCOMPARE(frameHandler->isHovered(), true);
+        QCOMPARE(shadowHandler->isHovered(), false);
+        QCOMPARE(window.cursor(), Qt::CrossCursor);
+    };
+    auto checkOtherHovered = [pupilHandler, goatHandler, frameHandler, shadowHandler,
+                              expectShadowHovered, expectFrameHovered, expectGoatHovered,
+                              &window, expectedCursor]() {
+        qCDebug(lcPointerTests) << "hovered"
+                                << pupilHandler->isHovered() << shadowHandler->isHovered()
+                                << frameHandler->isHovered() << goatHandler->isHovered()
+                                << "cursor" << window.cursor();
+        QTRY_COMPARE(pupilHandler->isHovered(), false);
+        QCOMPARE(goatHandler->isHovered(), expectGoatHovered);
+        QCOMPARE(frameHandler->isHovered(), expectFrameHovered);
+        QCOMPARE(shadowHandler->isHovered(), expectShadowHovered);
+        QCOMPARE(window.cursor(), expectedCursor);
+    };
+    if (cursorSet)
+        checkPupilHovered();
+
+    // fake an animation by changing properties back and forth, watch hover and cursor changes
+    for (int i = 0; i < 10; ++i) {
+        int renderCount = renderSpy.size();
+        if (i % 2) {
+            goat->setPosition({});
+            goat->setScale(1);
+            goat->setRotation(0);
+            QTRY_COMPARE_GT(renderSpy.size(), renderCount);
+            if (cursorSet)
+                checkPupilHovered();
+        } else {
+            // If the goat's rectangular bounds poke out of the frame, the frame notices;
+            // but the shadow has no child items.
+            // If it pokes outside the declared root item as well, though,
+            // rootPrivate->eventHandlingChildrenWithinBounds doesn't currently get updated.
+            // Perhaps it should: but that would be more expensive
+            // (transformChanged() would need to traverse up the hierarchy every time).
+            goat->setPosition(goatPos);
+            goat->setScale(scale);
+            goat->setRotation(rotation);
+            QTRY_COMPARE_GT(renderSpy.size(), renderCount);
+            QCOMPARE(shadowPrivate->effectivelyClipsEventHandlingChildren(), expectShadowContainsChildren);
+            qCDebug(lcPointerTests) << "step" << i << ": item contains children:"
+                                    << rootPrivate->effectivelyClipsEventHandlingChildren()
+                                    << framePrivate->effectivelyClipsEventHandlingChildren()
+                                    << "expected" << expectRootContainsChildren << expectFrameContainsChildren;
+            if (i > 0)
+                QCOMPARE(framePrivate->effectivelyClipsEventHandlingChildren(), expectFrameContainsChildren);
+            QCOMPARE(rootPrivate->effectivelyClipsEventHandlingChildren(), expectRootContainsChildren);
+            if (cursorSet)
+                checkOtherHovered();
+        }
+    }
+
+#ifdef QT_BUILD_INTERNAL
+    qCDebug(lcPointerTests) << "counters"
+        << QQuickItemPrivate::eventHandlingChildrenWithinBounds_counter
+        << QQuickItemPrivate::itemToParentTransform_counter
+        << QQuickItemPrivate::itemToWindowTransform_counter
+        << QQuickItemPrivate::windowToItemTransform_counter
+        << QQuickItemPrivate::effectiveClippingSkips_counter;
+    // Example counts:
+    // 6 231 127 27 10
+    // 6 157 55 9 10
+    // 6 237 135 29 10
+
+    // Check that we didn't call the transform functions exceessively often
+    // (these numbers can be adjusted if we do something that causes a moderate increase,
+    // but try to avoid really pessimizing it again)
+    QCOMPARE_LT(QQuickItemPrivate::itemToParentTransform_counter, 280ull);
+    QCOMPARE_LT(QQuickItemPrivate::itemToWindowTransform_counter, 160ull);
+    QCOMPARE_LT(QQuickItemPrivate::windowToItemTransform_counter, 36ull);
+    // Check that we were able to skip hover delivery to some items because
+    // effectivelyClipsEventHandlingChildren() was true and the mouse position was outside.
+    QCOMPARE_GE(QQuickItemPrivate::effectiveClippingSkips_counter, 10ull);
+#endif
 }
 
 QTEST_MAIN(tst_HoverHandler)

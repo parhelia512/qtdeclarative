@@ -207,6 +207,19 @@ QQuickFlickablePrivate::AxisData::~AxisData()
 
 class QQuickFlickableContentItem : public QQuickItem
 {
+public:
+    explicit QQuickFlickableContentItem(QQuickItem *parent = nullptr) : QQuickItem(parent)
+    {
+        auto *d = QQuickItemPrivate::get(this);
+        // A user can set contentWidth/contentHeight to make this item
+        // arbitrarily small (or large); yet, the expectation is that pointer handlers
+        // declared in the Flickable react to events within the whole Flickable.
+        // So assume the contentItem doesn't fully contain all its children (don't check).
+        d->eventHandlingChildrenWithinBounds = false;
+        d->eventHandlingChildrenWithinBoundsSet = true;
+    }
+
+private:
     /*!
         \internal
         The flickable area inside the viewport can be bigger than the bounds of the

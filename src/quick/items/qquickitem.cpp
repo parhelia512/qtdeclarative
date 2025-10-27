@@ -65,6 +65,7 @@ QT_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcHandlerParent, "qt.quick.handler.parent")
 Q_LOGGING_CATEGORY(lcVP, "qt.quick.viewport")
+Q_STATIC_LOGGING_CATEGORY(lcEffClip, "qt.quick.effectiveclip")
 Q_STATIC_LOGGING_CATEGORY(lcChangeListeners, "qt.quick.item.changelisteners")
 
 // after 100ms, a mouse/non-mouse cursor conflict is resolved in favor of the mouse handler
@@ -3317,6 +3318,8 @@ QQuickItemPrivate::QQuickItemPrivate()
     , inDestructor(false)
     , focusReason(Qt::OtherFocusReason)
     , focusPolicy(Qt::NoFocus)
+    , eventHandlingChildrenWithinBounds(false)
+    , eventHandlingChildrenWithinBoundsSet(false)
     , dirtyAttributes(0)
     , nextDirtyItem(nullptr)
     , prevDirtyItem(nullptr)
@@ -5539,6 +5542,21 @@ bool QQuickItemPrivate::transformChanged(QQuickItem *transformedItem)
     if (thisWantsIt && q->clip() && !(dirtyAttributes & QQuickItemPrivate::Clip))
         dirty(QQuickItemPrivate::Clip);
 
+    // Recheck each parent that so far has had all its children within bounds.
+    // If this item or any ancestor has moved out of the bounds of its parent,
+    // consider it to be a rogue from now on, and don't check anymore.
+    QQuickItemPrivate *itemPriv = this;
+    while (itemPriv->parentItem) {
+        auto *parentPriv = QQuickItemPrivate::get(itemPriv->parentItem);
+        if (parentPriv->eventHandlingChildrenWithinBounds) {
+            Q_ASSERT(parentPriv->eventHandlingChildrenWithinBoundsSet);
+            if (itemPriv->parentFullyContains())
+                break; // child moved, but did not move outside its parent: no change to any parents then
+            else
+                parentPriv->eventHandlingChildrenWithinBounds = false; // keep checking further up
+        }
+        itemPriv = parentPriv;
+    }
     return ret;
 }
 
@@ -6795,6 +6813,99 @@ void QQuickItemPrivate::setEffectiveEnableRecur(QQuickItem *scope, bool newEffec
     }
 #endif
     emit q->enabledChanged();
+}
+
+/*! \internal
+    Check all the item's pointer handlers to find the biggest value
+    of the QQuickPointerHandler::margin property. (Usually \c 0)
+*/
+qreal QQuickItemPrivate::biggestPointerHandlerMargin() const
+{
+    if (hasPointerHandlers()) {
+        if (extra->biggestPointerHandlerMarginCache < 0) {
+            const auto maxMarginIt = std::max_element(extra->pointerHandlers.constBegin(),
+                                                      extra->pointerHandlers.constEnd(),
+                [](const QQuickPointerHandler *a, const QQuickPointerHandler *b) {
+                    return a->margin() < b->margin(); });
+            Q_ASSERT(maxMarginIt != extra->pointerHandlers.constEnd());
+            extra->biggestPointerHandlerMarginCache = (*maxMarginIt)->margin();
+        }
+        return extra->biggestPointerHandlerMarginCache;
+    }
+    return 0;
+}
+
+/*! \internal
+    The rectangular bounds within which events should be delivered to the item,
+    as a first approximation: like QQuickItem::boundingRect() but with \a margin added,
+    if given, or if any of the item's handlers have the QQuickPointerHandler::margin property set.
+    This function is used for a quick precheck, but QQuickItem::contains() is more
+    authoritative (and complex).
+*/
+QRectF QQuickItemPrivate::eventHandlingBounds(qreal margin) const
+{
+    const qreal biggestMargin = margin > 0 ? margin : biggestPointerHandlerMargin();
+    return QRectF(-biggestMargin, -biggestMargin, width + biggestMargin, height + biggestMargin);
+}
+
+/*! \internal
+    Returns whether this item's bounding box fully fits within the
+    parent item's bounding box.
+*/
+bool QQuickItemPrivate::parentFullyContains() const
+{
+    Q_Q(const QQuickItem);
+    if (!parentItem)
+        return true;
+    QTransform t;
+    itemToParentTransform(&t);
+    const auto bounds = eventHandlingBounds();
+    const auto boundsInParent = t.mapRect(bounds);
+    const bool ret = parentItem->clipRect().contains(boundsInParent);
+    qCDebug(lcEffClip) << "in parent bounds?" << ret << q << boundsInParent << parentItem << parentItem->clipRect();
+    return ret;
+}
+
+/*! \internal
+    Returns whether it's ok to skip pointer event delivery to this item and its children
+    when we can see that none of the QEventPoints fall inside.
+*/
+bool QQuickItemPrivate::effectivelyClipsEventHandlingChildren() const
+{
+    Q_Q(const QQuickItem);
+    // if clipping is turned on, then by definition nothing appears outside
+    if (flags & QQuickItem::ItemClipsChildrenToShape) {
+        qCDebug(lcEffClip) << q << "result: true because clip is true";
+        return true;
+    }
+    if (!eventHandlingChildrenWithinBoundsSet) {
+        // start optimistic, then check for outlying children
+        eventHandlingChildrenWithinBounds = true;
+        for (const auto *child : childItems) {
+            const auto *childPriv = QQuickItemPrivate::get(child);
+            // If the child doesn't handle pointer events, it doesn't matter whether it goes outside its parent
+            // (shadows and other control-external decorations should be in this category, for example).
+            if (!(childPriv->hoverEnabled || childPriv->subtreeHoverEnabled || childPriv->touchEnabled ||
+                  childPriv->hasCursor || childPriv->hasCursorHandler || child->acceptedMouseButtons() ||
+                  childPriv->hasPointerHandlers())) {
+                qCDebug(lcEffClip) << child << "doesn't handle pointer events";
+                continue;
+            }
+            if (!childPriv->parentFullyContains()) {
+                eventHandlingChildrenWithinBounds = false;
+                qCDebug(lcEffClip) << "child goes outside: giving up" << child;
+                break; // out of for loop
+            }
+        }
+#ifdef QT_BUILD_INTERNAL
+        if (!eventHandlingChildrenWithinBoundsSet && eventHandlingChildrenWithinBounds)
+            ++eventHandlingChildrenWithinBounds_counter;
+#endif
+        // now we know... but we'll check again if transformChanged() happens
+        eventHandlingChildrenWithinBoundsSet = true;
+        qCDebug(lcEffClip) << q << q->clipRect() << "result:" << static_cast<bool>(eventHandlingChildrenWithinBounds);
+    }
+    return eventHandlingChildrenWithinBounds;
 }
 
 bool QQuickItemPrivate::isTransparentForPositioner() const
@@ -10139,7 +10250,7 @@ void QQuickItemLayer::updateMatrix()
 #endif // quick_shadereffect
 
 QQuickItemPrivate::ExtraData::ExtraData()
-: z(0), scale(1), rotation(0), opacity(1),
+: z(0), scale(1), rotation(0), opacity(1), biggestPointerHandlerMarginCache(-1),
   contents(nullptr), screenAttached(nullptr), layoutDirectionAttached(nullptr),
   enterKeyAttached(nullptr),
   keyHandler(nullptr), contextMenu(nullptr),

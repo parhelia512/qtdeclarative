@@ -427,6 +427,7 @@ public:
         qreal scale;
         qreal rotation;
         qreal opacity;
+        qreal biggestPointerHandlerMarginCache;
 
         QQuickContents *contents;
         QQuickScreenAttached *screenAttached;
@@ -557,6 +558,12 @@ public:
     quint32 focusReason:4;
     quint32 focusPolicy:4;
     // Bit 53
+
+    // eventHandlingChildrenWithinBounds is true if all children recursively
+    // are known to be within their parents' bounds.
+    // eventHandlingChildrenWithinBoundsSet is true only when we've checked.
+    mutable quint32 eventHandlingChildrenWithinBounds:1;
+    mutable quint32 eventHandlingChildrenWithinBoundsSet:1;
 
     enum DirtyType {
         TransformOrigin         = 0x00000001,
@@ -731,6 +738,10 @@ public:
     bool calcEffectiveEnable() const;
     void setEffectiveEnableRecur(QQuickItem *scope, bool);
 
+    qreal biggestPointerHandlerMargin() const;
+    QRectF eventHandlingBounds(qreal margin = 0) const;
+    bool parentFullyContains() const;
+    bool effectivelyClipsEventHandlingChildren() const;
 
     inline QSGTransformNode *itemNode();
     inline QSGNode *childContainerNode();
@@ -781,9 +792,11 @@ public:
 #ifdef QT_BUILD_INTERNAL
     inline static quint32 item_counter = 0;
     inline static quint32 itemExtra_counter = 0;
+    inline static quint32 eventHandlingChildrenWithinBounds_counter = 0;
     inline static quint64 itemToParentTransform_counter = 0;
     inline static quint64 itemToWindowTransform_counter = 0;
     inline static quint64 windowToItemTransform_counter = 0;
+    inline static quint64 effectiveClippingSkips_counter = 0;
 #endif
 };
 

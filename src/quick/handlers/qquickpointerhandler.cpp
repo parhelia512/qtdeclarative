@@ -102,6 +102,11 @@ void QQuickPointerHandler::setMargin(qreal pointDistanceThreshold)
         return;
 
     d->m_margin = pointDistanceThreshold;
+    if (auto *parent = parentItem()) {
+        QQuickItemPrivate *itemPriv = QQuickItemPrivate::get(parent);
+        // invalidate the cache: the new max margin may depend on this and other handlers
+        itemPriv->extra.value().biggestPointerHandlerMarginCache = -1;
+    }
     emit marginChanged();
 }
 

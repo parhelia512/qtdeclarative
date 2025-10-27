@@ -732,10 +732,14 @@ QQuickWindowPrivate::~QQuickWindowPrivate()
     qCDebug(lcQuickWindow, "lifetime total, in all windows: constructed %d QQuickItems, %d ExtraData (%d%%)",
             QQuickItemPrivate::item_counter, QQuickItemPrivate::itemExtra_counter,
             QQuickItemPrivate::itemExtra_counter * 100 / QQuickItemPrivate::item_counter);
-    qCDebug(lcQuickWindow, "transform accessor calls: itemToParent %lld itemToWindow %lld windowToItem %lld",
+    qCDebug(lcQuickWindow, "event-handling items fully within parent bounds: %d (%d%%)",
+            QQuickItemPrivate::eventHandlingChildrenWithinBounds_counter,
+            QQuickItemPrivate::eventHandlingChildrenWithinBounds_counter * 100 / QQuickItemPrivate::item_counter);
+    qCDebug(lcQuickWindow, "transform accessor calls: itemToParent %lld itemToWindow %lld windowToItem %lld; skipped due to effectiveClipping: %lld",
             QQuickItemPrivate::itemToParentTransform_counter,
             QQuickItemPrivate::itemToWindowTransform_counter,
-            QQuickItemPrivate::windowToItemTransform_counter);
+            QQuickItemPrivate::windowToItemTransform_counter,
+            QQuickItemPrivate::effectiveClippingSkips_counter);
 #endif
     inDestructor = true;
     redirect.rt.reset(rhi);
@@ -1897,19 +1901,19 @@ std::pair<QQuickItem*, QQuickPointerHandler*> QQuickWindowPrivate::findCursorIte
         const QPointF &localPos, const QPointF &scenePos) const
 {
     QQuickItemPrivate *itemPrivate = QQuickItemPrivate::get(item);
-    if (itemPrivate->flags & QQuickItem::ItemClipsChildrenToShape) {
-        if (!item->contains(localPos))
-            return {nullptr, nullptr};
+    if (itemPrivate->effectivelyClipsEventHandlingChildren() &&
+        !itemPrivate->eventHandlingBounds().contains(localPos)) {
+#ifdef QT_BUILD_INTERNAL
+        ++QQuickItemPrivate::effectiveClippingSkips_counter;
+#endif
+        return {nullptr, nullptr};
     }
 
     if (itemPrivate->subtreeCursorEnabled) {
         QList<QQuickItem *> children = itemPrivate->paintOrderChildItems();
         for (int ii = children.size() - 1; ii >= 0; --ii) {
             QQuickItem *child = children.at(ii);
-            if (!child->isVisible() || !child->isEnabled() || QQuickItemPrivate::get(child)->culled)
-                continue;
-
-            auto childPrivate = QQuickItemPrivate::get(child);
+            const QQuickItemPrivate *childPrivate = QQuickItemPrivate::get(child);
             QTransform childToParent;
             childPrivate->itemToParentTransform(&childToParent);
             const QPointF childLocalPos = childToParent.inverted().map(localPos);

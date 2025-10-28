@@ -11,6 +11,7 @@ qt_add_qml_module(tst_qqmlimport_static_module
         SomeComponent.qml
     NO_GENERATE_PLUGIN_SOURCE
     NO_PLUGIN_OPTIONAL
+    RESOURCE_PREFIX "/"
 )
 
 qt_autogen_tools_initial_setup(tst_qqmlimport_static_moduleplugin)

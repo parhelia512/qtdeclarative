@@ -46,7 +46,8 @@ static const char *features[] = {
     "binding",
     "handlingsignal",
     "inputevents",
-    "debugmessages"
+    "debugmessages",
+    "quick3d",
 };
 
 Q_STATIC_ASSERT(sizeof(features) == MaximumProfileFeature * sizeof(char *));

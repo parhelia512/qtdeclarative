@@ -42,7 +42,8 @@ static const char *MESSAGE_STRINGS[] = {
     "PixmapCache",
     "SceneGraph",
     "MemoryAllocation",
-    "DebugMessage"
+    "DebugMessage",
+    "Quick3D", // Not "Quick3DFrame" unfortunately. See precedence in Qt Creator.
 };
 
 Q_STATIC_ASSERT(sizeof(MESSAGE_STRINGS) == MaximumMessage * sizeof(const char *));
@@ -196,6 +197,9 @@ void QQmlProfilerQtdWriter::addEventType(const QQmlProfilerEventType &type)
         break;
     case DebugMessage:
         displayName = QString::fromLatin1("DebugMessage:%1").arg(type.detailType());
+        break;
+    case Quick3DFrame:
+        displayName = QString::fromLatin1("Quick3DFrame:%1").arg(type.detailType());
         break;
     case MaximumMessage: {
         const QQmlProfilerEventLocation eventLocation = type.location();

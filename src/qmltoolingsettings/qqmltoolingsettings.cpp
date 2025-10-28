@@ -16,6 +16,14 @@
 
 using namespace Qt::StringLiterals;
 
+QQmlToolingSettings::SearchOptions::SearchOptions() = default;
+QQmlToolingSettings::SearchOptions::SearchOptions(
+        QString settingFileName, bool reportFoundSettingsFiles)
+    : settingsFileName(settingFileName), reportFoundSettingsFiles(reportFoundSettingsFiles)
+{
+
+}
+
 void QQmlToolingSettings::addOption(const QString &name, const QVariant &defaultValue)
 {
     if (defaultValue.isValid()) {

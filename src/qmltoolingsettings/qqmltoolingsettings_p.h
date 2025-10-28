@@ -31,8 +31,10 @@ public:
     QQmlToolingSettings(const QString &toolName);
     struct SearchOptions
     {
+        SearchOptions();
+        SearchOptions(QString settingFileName, bool reportFoundSettingsFiles = false);
         QString settingsFileName;
-        bool reportFoundSettingsFiles;
+        bool reportFoundSettingsFiles = false;
     };
     struct SearchResult
     {

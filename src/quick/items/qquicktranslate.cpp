@@ -258,10 +258,10 @@ class QQuickRotationPrivate : public QQuickTransformPrivate
 {
 public:
     QQuickRotationPrivate()
-        : angle(0), axis(0, 0, 1), distanceToPlane(1024.0) {}
+        : origin(), axis(0, 0, 1), angle(0), distanceToPlane(1024.0) {}
     QVector3D origin;
-    qreal angle;
     QVector3D axis;
+    qreal angle;
     qreal distanceToPlane;
 };
 

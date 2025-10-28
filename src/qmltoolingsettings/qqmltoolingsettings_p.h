@@ -32,7 +32,7 @@ public:
     struct SearchOptions
     {
         QString settingsFileName;
-        bool verbose;
+        bool reportFoundSettingsFiles;
     };
     struct SearchResult
     {

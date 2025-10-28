@@ -166,7 +166,7 @@ QQmlToolingSettings::SearchResult QQmlToolingSettings::search(
         const QString &path, const SearchOptions &options)
 {
     const auto maybeReport = qScopeGuard([&]() {
-        if (options.verbose)
+        if (options.reportFoundSettingsFiles)
             reportConfigForFiles({ path });
     });
 

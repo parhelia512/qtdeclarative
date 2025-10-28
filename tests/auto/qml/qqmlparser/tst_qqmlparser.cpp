@@ -892,66 +892,6 @@ void tst_qqmlparser::invalidImportVersion()
     QVERIFY(regexp.match(parser.errorMessage()).hasMatch());
 }
 
-// TODO move somewhere to make more visible? (QTBUG-138020)
-namespace Syntax {
-using Token = QQmlJSGrammar::VariousConstants;
-static constexpr auto spellFor(Token token) -> QLatin1StringView
-{
-    switch (token) {
-    case Token::T_COLON:
-        return QLatin1StringView(":");
-    case Token::T_VAR:
-        return QLatin1StringView("var");
-    case Token::T_PROPERTY:
-        return QLatin1StringView("property");
-    case Token::T_DEFAULT:
-        return QLatin1StringView("default");
-    case Token::T_READONLY:
-        return QLatin1StringView("readonly");
-    case Token::T_REQUIRED:
-        return QLatin1StringView("required");
-    case Token::T_FINAL:
-        return QLatin1StringView("final");
-    case Token::T_VIRTUAL:
-        return QLatin1StringView("virtual");
-    case Token::T_OVERRIDE:
-        return QLatin1StringView("override");
-    default:
-        break;
-    }
-    Q_UNREACHABLE_RETURN({});
-}
-
-using Word = std::variant<Token, QLatin1StringView>;
-static inline auto stringView(const Word &word) -> QLatin1StringView
-{
-    return std::holds_alternative<Token>(word) ? spellFor(std::get<Token>(word))
-                                               : std::get<QLatin1StringView>(word);
-}
-
-using Phrase = QList<Word>;
-static inline auto toString(const Phrase &phrase) -> QString
-{
-    QString result;
-    for (const auto &word : phrase) {
-        result += stringView(word) + QChar(' ');
-    }
-    return result;
-}
-
-// comfort
-Phrase operator+(const Word &word, const Phrase &phrase)
-{
-    return Phrase{ word } + phrase;
-};
-
-Phrase operator+(const Word &word1, const Word &word2)
-{
-    return Phrase{ word1, word2 };
-};
-
-} // namespace Syntax
-
 void tst_qqmlparser::propertyDeclarations_data()
 {
     using namespace Syntax;

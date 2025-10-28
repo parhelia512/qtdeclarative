@@ -464,6 +464,9 @@ struct Q_QML_COMPILER_EXPORT Pragma
 
 struct Q_QML_COMPILER_EXPORT Document
 {
+    // disable it explicitly, it's implicitly deleted because of the Engine::_pool
+    Q_DISABLE_COPY_MOVE(Document)
+
     Document(const QString &fileName, const QString &finalUrl, bool debugMode);
     QString code;
     QQmlJS::Engine jsParserEngine;

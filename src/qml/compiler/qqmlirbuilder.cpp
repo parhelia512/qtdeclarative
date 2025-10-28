@@ -1045,6 +1045,8 @@ bool IRBuilder::visit(QQmlJS::AST::UiPublicMember *node)
             Property *property = New<Property>();
             property->setIsReadOnly(node->isReadonly());
             property->setIsRequired(node->isRequired());
+            property->setIsVirtual(node->isVirtual());
+            property->setIsOverride(node->isOverride());
             property->setIsFinal(node->isFinal());
 
             const QV4::CompiledData::CommonType builtinPropertyType

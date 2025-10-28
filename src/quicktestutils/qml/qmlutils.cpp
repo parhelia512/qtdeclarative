@@ -137,6 +137,41 @@ void gc(QQmlEngine &engine, GCFlags flags)
     gc(*engine.handle(), flags);
 }
 
+namespace Syntax {
+
+auto stringView(const Word &word) -> QLatin1StringView
+{
+    return std::holds_alternative<Token>(word) ? spellFor(std::get<Token>(word))
+                                               : std::get<QLatin1StringView>(word);
+}
+
+auto toString(const Phrase &phrase) -> QString
+{
+    QString result;
+    for (const auto &word : phrase) {
+        result += stringView(word) + QLatin1Char(' ');
+    }
+    return result;
+}
+
+// comfort
+auto operator+(const Word &word, const Phrase &phrase) -> Phrase
+{
+    return Phrase{ word } + phrase;
+};
+
+auto operator+(const Word &word1, const Word &word2) -> Phrase
+{
+    return Phrase{ word1, word2 };
+};
+
+auto objectDeclaration(Phrase &&objectMember, QLatin1StringView objName) -> Phrase
+{
+    return Phrase{} << Word(objName) << Word(Token::T_LBRACE) << std::move(objectMember)
+                    << Word(Token::T_RBRACE);
+}
+
+} // namespace Syntax
 
 QT_END_NAMESPACE
 

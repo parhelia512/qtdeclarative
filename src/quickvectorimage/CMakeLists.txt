@@ -64,5 +64,5 @@ qt_internal_add_shaders(QuickVectorImageHelpers "vectorimage_shaders"
     PREFIX
         "/qt-project.org/quickvectorimage/"
     FILES
-        "helpers/shaders_ng/luminancemask.frag"
+        "helpers/shaders_ng/genericmask.frag"
 )

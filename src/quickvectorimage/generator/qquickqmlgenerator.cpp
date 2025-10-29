@@ -301,9 +301,11 @@ void QQuickQmlGenerator::generateMaskUse(const NodeInfo &info)
     stream() << "width: " << maskId << ".sourceRect.width";
     stream() << "height: " << maskId << ".sourceRect.height";
 
-    stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/luminancemask.frag.qsb\"";
+    stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/genericmask.frag.qsb\"";
     stream() << "property var source: " << info.id;
     stream() << "property var maskSource: " << maskId;
+    stream() << "property bool isAlpha: " << (info.isMaskAlpha ? "true" : "false");
+    stream() << "property bool isInverted: " << (info.isMaskInverted ? "true" : "false");
 
     generateItemAnimations(maskShaderId, info);
 

@@ -41,6 +41,8 @@ struct NodeInfo
     bool isDefaultOpacity = true;
     bool isVisible = true;
     bool isDisplayed = true; // TODO: Map to display enum in QtSvg
+    bool isMaskAlpha = false;
+    bool isMaskInverted = false;
     QQuickAnimatedProperty visibility = QQuickAnimatedProperty(QVariant::fromValue(true));
     int visibilityEndTime = -1;
     QRectF bounds;

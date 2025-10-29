@@ -9,6 +9,8 @@ layout(std140, binding = 0) uniform buf {
     // if the built-in vertex shader is used.
     mat4 qt_Matrix;
     float qt_Opacity;
+    bool isAlpha;
+    bool isInverted;
 };
 
 layout(binding = 1) uniform sampler2D source;
@@ -17,6 +19,8 @@ layout(binding = 2) uniform sampler2D maskSource;
 void main()
 {
     vec4 maskSample = texture(maskSource, qt_TexCoord0.st);
-    float luminance = 0.2126 * maskSample.r + 0.7152 * maskSample.g + 0.0722 * maskSample.b;
-    fragColor = texture(source, qt_TexCoord0.st) * luminance * qt_Opacity;
+    float maskVal = isAlpha ? maskSample.a
+                            : 0.2126 * maskSample.r + 0.7152 * maskSample.g + 0.0722 * maskSample.b;
+    maskVal = isInverted ? (1 - maskVal) : maskVal;
+    fragColor = texture(source, qt_TexCoord0.st) * maskVal * qt_Opacity;
 }

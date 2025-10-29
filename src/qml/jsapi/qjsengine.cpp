@@ -1275,6 +1275,10 @@ void QJSEnginePrivate::addToDebugServer(QJSEngine *q)
     if (!server || server->hasEngine(q))
         return;
 
+    // Initialize the type loader before attaching debug services. We'll need it anyway and
+    // we don't want the preview service to block on resolving some paths from QLibraryInfo.
+    QQmlTypeLoader::get(q);
+
     server->open();
     server->addEngine(q);
 }

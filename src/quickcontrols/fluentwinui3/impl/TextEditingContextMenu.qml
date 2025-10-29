@@ -7,7 +7,7 @@ import QtQuick.Controls.FluentWinUI3.impl as FluentWinUI3Impl
 
 Menu {
     id: menu
-    popupType: Popup.Window
+    popupType: Qt.platform.pluginName !== "wayland" ? Popup.Window : Popup.Item
 
     required property var control
 

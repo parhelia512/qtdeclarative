@@ -7,7 +7,7 @@ import QtQuick.Controls.Fusion.impl as FusionImpl
 
 Menu {
     id: menu
-    popupType: Popup.Window
+    popupType: Qt.platform.pluginName !== "wayland" ? Popup.Window : Popup.Item
 
     required property var control
 

@@ -243,10 +243,6 @@ All warnings can be set to three levels:
     if (parser.isSet("version"))
         parser.showVersion();
 
-    auto updateLogLevels = [&]() {
-        QQmlJS::LoggingUtils::updateLogLevels(categories, settings, &parser);
-    };
-
     bool silent = parser.isSet(silentOption);
     bool useAbsolutePath = parser.isSet(absolutePath);
     bool useJson = parser.isSet(jsonOption);
@@ -312,8 +308,6 @@ All warnings can be set to three levels:
     if (!parser.unknownOptionNames().isEmpty())
         parser.process(app);
 
-    updateLogLevels();
-
     if (parser.isSet(listPluginsOption)) {
         const std::vector<QQmlJSLinter::Plugin> &plugins = linter.plugins();
         if (!plugins.empty()) {
@@ -346,7 +340,7 @@ All warnings can be set to three levels:
             options.isQmllintSilent = silent;
             settings.search(filename, options);
         }
-        updateLogLevels();
+        QQmlJS::LoggingUtils::updateLogLevels(categories, settings, &parser);
 
         resourceFiles = defaultResourceFiles;
         resourceFiles.append(settings.valueAsAbsolutePathList(resourceSetting, filename));

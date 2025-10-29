@@ -1203,6 +1203,130 @@ static void updateHighlightsOnInsert(HighlightsContainer &highlights,
     updateCursorPositionByDiff(diff.text, cursor);
 }
 
+//
+// Utilities for deletion handling
+//
+static bool spansAcrossDeletion(const QQmlJS::SourceLocation &t, quint32 delStart, quint32 delEnd)
+{
+    return t.begin() < delStart && t.end() > delEnd;
+}
+
+static bool leftFragmentRemains(const QQmlJS::SourceLocation &t, quint32 delStart, quint32 delEnd)
+{
+    return t.begin() < delStart && t.end() <= delEnd;
+}
+
+static bool rightFragmentRemains(const QQmlJS::SourceLocation &t, quint32 delStart, quint32 delEnd)
+{
+    return t.begin() >= delStart && t.end() > delEnd;
+}
+
+//
+// Shift token after deletion
+//
+static void shiftTokenAfterDelete(QQmlJS::SourceLocation &t, int newlines, int lastLen,
+                                  const QQmlJS::SourceLocation &cursor, int diffLen)
+{
+    t.offset -= diffLen;
+
+    // Adjust column on deletion end line
+    if (t.startLine == cursor.startLine + newlines) {
+        if (newlines > 0) {
+            t.startColumn = cursor.startColumn + (t.startColumn - lastLen) - 1;
+        } else {
+            t.startColumn -= lastLen;
+        }
+    }
+
+    // Shift line upwards
+    t.startLine -= newlines;
+}
+
+//
+// Apply overlap logic
+//
+static void applyDeletionOverlap(QQmlJS::SourceLocation &t, quint32 delStart, quint32 delEnd,
+                                 int newlines, quint32 delStartLine, quint32 delStartColumn)
+{
+    const quint32 deletedLen = delEnd - delStart;
+
+    if (spansAcrossDeletion(t, delStart, delEnd)) {
+        // Middle removed
+        t.length -= deletedLen;
+        return;
+    }
+
+    if (leftFragmentRemains(t, delStart, delEnd)) {
+        // Left side remains
+        t.length = delStart - t.begin();
+        return;
+    }
+
+    if (rightFragmentRemains(t, delStart, delEnd)) {
+        // Right side remains, shifted to the deletion start
+        quint32 overlap = delEnd - t.begin();
+        t.offset = delStart;
+        t.length -= overlap;
+
+        t.startColumn = delStartColumn;
+        if (newlines > 0)
+            t.startLine = delStartLine;
+
+        return;
+    }
+
+    // Fully removed
+    t.length = 0;
+}
+
+static void updateHighlightsOnDelete(HighlightsContainer &highlights,
+                                     QQmlJS::SourceLocation &cursor, const QQmlLSUtils::Diff &diff)
+{
+    const auto [newlines, lastLen] = newlineCountAndLastLineLength(diff.text);
+    const int diffLen = diff.text.size();
+
+    cursor.length = diffLen;
+
+    const quint32 delStart = cursor.offset;
+    const quint32 delEnd = cursor.offset + diffLen;
+
+    HighlightsContainer shifts;
+
+    for (auto item : highlights) {
+        auto &token = item.loc;
+
+        //
+        // Case A: token fully before deleted region
+        //
+        if (tokenBeforeOffset(token, delStart)) {
+            shifts.insert(token.offset, item);
+            continue;
+        }
+
+        //
+        // Case B: token fully after deleted region
+        //
+        if (tokenAfterOffset(token, delEnd)) {
+            shiftTokenAfterDelete(token, newlines, lastLen, cursor, diffLen);
+            shifts.insert(token.offset, item);
+            continue;
+        }
+
+        //
+        // Case C: deletion overlaps token
+        //
+        applyDeletionOverlap(token, delStart, delEnd, newlines, cursor.startLine,
+                             cursor.startColumn);
+
+        if (token.length == 0)
+            continue; // fully removed
+
+        shifts.insert(token.offset, item);
+    }
+
+    highlights.swap(shifts);
+}
+
 /*
 Equal:
 - Just advance the running offset by length.
@@ -1219,7 +1343,15 @@ Insert:
                         expand length, adjust line/column if needed.
 
 Delete:
-- TODO: implement deletion handling
+- Case A: token before deletion offset: no highlight change
+- case B: token after deletion offset: slide all offsets backward by the length of the deleted text.
+          sub case: if the deletion ends on the same line as the token, adjust the column accordingly.
+- case C: deletion overlaps token:
+        sub case 1: spans across deletion: reduce length by deleted length
+        sub case 2: left fragment remains: adjust length to the left fragment length
+        sub case 3: right fragment remains: adjust offset to deletion start, adjust length to right fragment length,
+                        adjust line/column if needed.
+        sub case 4: fully removed: remove the token from the map.
 */
 void Utils::applyDiffs(HighlightsContainer &highlights, const QList<QQmlLSUtils::Diff> &diffs)
 {
@@ -1244,7 +1376,8 @@ void Utils::applyDiffs(HighlightsContainer &highlights, const QList<QQmlLSUtils:
             break;
         }
         case Diff::Delete: {
-            // TODO: implement deletion handling
+            updateHighlightsOnDelete(highlights, cursor, diff);
+            break;
         }
         }
     }

@@ -213,6 +213,53 @@ void tst_qmlls_differ::applyDiffs_data()
                     << code << modifiedCode << codeTokens << modifiedCodeTokens;
         }
     }
+
+    // Test cases for deletions
+    {
+        const QString code = QStringLiteral("line1 line11\n");
+        QmlHighlighting::HighlightsContainer codeTokens;
+        codeTokens.insert(0, makeToken(0, 5, 1, 1));
+        codeTokens.insert(6, makeToken(6, 6, 1, 7));
+        {
+            // delete from the left but don't eat the entire token
+            QString modifiedCode(code);
+            modifiedCode.remove(0, 3); // remove the first "lin"
+            QmlHighlighting::HighlightsContainer modifiedCodeTokens;
+            modifiedCodeTokens.insert(0, makeToken(0, 2, 1, 1));
+            modifiedCodeTokens.insert(3, makeToken(3, 6, 1, 4));
+            QTest::newRow("delete a lhs part of the token")
+                    << code << modifiedCode << codeTokens << modifiedCodeTokens;
+        }
+        {
+            // delete the entire second token and right of the first token
+            QString modifiedCode(code);
+            modifiedCode.remove(3, 9); // remove "e1 line11", lin remains
+            QmlHighlighting::HighlightsContainer modifiedCodeTokens;
+            modifiedCodeTokens.insert(0, makeToken(0, 3, 1, 1));
+            QTest::newRow("delete a rhs part of the token")
+                    << code << modifiedCode << codeTokens << modifiedCodeTokens;
+        }
+        {
+            // delete multiline, opposite of multi line insert at the middle of the first line test
+            const QString code = QStringLiteral("line1A\nBB\nCCC line11\nline2\nline3");
+            HighlightsContainer codeTokens;
+            codeTokens.insert(0, makeToken(0, 6, 1, 1)); // line1A
+            codeTokens.insert(7, makeToken(7, 2, 2, 1)); // BB
+            codeTokens.insert(10, makeToken(10, 3, 3, 1)); // CCC
+            codeTokens.insert(14, makeToken(14, 6, 3, 5)); // line11
+            codeTokens.insert(21, makeToken(21, 5, 4, 1)); // line2
+            codeTokens.insert(27, makeToken(27, 5, 5, 1)); // line3
+            QString modifiedCode(code);
+            modifiedCode.remove(5, 8); // remove "A\nBB\nCCC"
+            QmlHighlighting::HighlightsContainer modifiedCodeTokens;
+            modifiedCodeTokens.insert(0, makeToken(0, 5, 1, 1));
+            modifiedCodeTokens.insert(6, makeToken(6, 6, 1, 7));
+            modifiedCodeTokens.insert(13, makeToken(13, 5, 2, 1));
+            modifiedCodeTokens.insert(19, makeToken(19, 5, 3, 1));
+            QTest::newRow("multi line delete at the middle of the first line")
+                    << code << modifiedCode << codeTokens << modifiedCodeTokens;
+        }
+    }
 }
 
 void tst_qmlls_differ::applyDiffs()

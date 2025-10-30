@@ -93,9 +93,9 @@ void QQuickAttachedPropertyPropagatorPrivate::itemWindowChanged(QQuickWindow *wi
     Q_Q(QQuickAttachedPropertyPropagator);
     qCDebug(lcAttachedPropertyPropagator).noquote().nospace() << "window of " << q << " changed to "
         << window << "...";
-    QQuickAttachedPropertyPropagator *attachedParent = findAttachedParent(firstCppMetaObject(q), q->parent());
+    QQuickAttachedPropertyPropagator *attachedParent = findAttachedParent(attacherMetaObject, q->parent());
     if (!attachedParent)
-        attachedParent = QQuickAttachedPropertyPropagator::attachedObject(firstCppMetaObject(q), window);
+        attachedParent = QQuickAttachedPropertyPropagator::attachedObject(attacherMetaObject, window);
     setAttachedParent(attachedParent);
     qCDebug(lcAttachedPropertyPropagator).noquote()
         << "... finished handling parent window change of" << q;
@@ -107,10 +107,10 @@ void QQuickAttachedPropertyPropagatorPrivate::transientParentWindowChanged(QWind
     QQuickAttachedPropertyPropagator *attachedParent = nullptr;
     qCDebug(lcAttachedPropertyPropagator).noquote().nospace() << "transient parent window of "
         << q << " changed to " << newTransientParent << "...";
-    attachedParent = findAttachedParent(firstCppMetaObject(q), q->parent());
+    attachedParent = findAttachedParent(attacherMetaObject, q->parent());
     if (!attachedParent) {
         attachedParent = QQuickAttachedPropertyPropagator::attachedObject(
-            firstCppMetaObject(q), newTransientParent);
+            attacherMetaObject, newTransientParent);
     }
     setAttachedParent(attachedParent);
     qCDebug(lcAttachedPropertyPropagator).noquote()
@@ -124,7 +124,7 @@ void QQuickAttachedPropertyPropagatorPrivate::itemParentChanged(QQuickItem *item
     Q_UNUSED(parent)
     qCDebug(lcAttachedPropertyPropagator).noquote().nospace() << "parent item of attachee " << item
         << " changed to " << parent << "; calling findAttachedParent()...";
-    setAttachedParent(findAttachedParent(firstCppMetaObject(q), q->parent()));
+    setAttachedParent(findAttachedParent(attacherMetaObject, q->parent()));
     qCDebug(lcAttachedPropertyPropagator).noquote()
         << "... finished handling item parent change of" << item;
 }
@@ -389,15 +389,20 @@ void QQuickAttachedPropertyPropagator::initialize()
 {
     Q_D(QQuickAttachedPropertyPropagator);
     using Private = QQuickAttachedPropertyPropagatorPrivate;
+    auto ownMetaObject = Private::firstCppMetaObject(this);
+    if (auto type = QQmlMetaType::firstQmlTypeForAttachmentMetaObject(ownMetaObject); type.isValid()) {
+        d->attacherMetaObject = type.metaObject();
+    }
+
     qCDebug(lcAttachedPropertyPropagator) << "initialize called for" << parent()
         << "- looking for attached parent...";
-    QQuickAttachedPropertyPropagator *attachedParent = Private::findAttachedParent(metaObject(), parent());
+    QQuickAttachedPropertyPropagator *attachedParent = Private::findAttachedParent(d->attacherMetaObject, parent());
     if (attachedParent)
         d->setAttachedParent(attachedParent);
 
     qCDebug(lcAttachedPropertyPropagator) << "- looking for attached children";
     const QList<QQuickAttachedPropertyPropagator *> attachedChildren
-        = Private::findAttachedChildren(metaObject(), parent());
+        = Private::findAttachedChildren(d->attacherMetaObject, parent());
     qCDebug(lcAttachedPropertyPropagator) << "- found" << attachedChildren.size()
         << "attached children of" << parent();
     for (QQuickAttachedPropertyPropagator *child : attachedChildren) {

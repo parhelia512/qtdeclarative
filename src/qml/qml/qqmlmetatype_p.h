@@ -147,6 +147,7 @@ public:
     static QQmlType qmlType(const QMetaObject *);
     static QQmlType qmlType(const QMetaObject *metaObject, const QHashedStringRef &module, QTypeRevision version);
     static QQmlType qmlTypeById(int qmlTypeId);
+    static QQmlType firstQmlTypeForAttachmentMetaObject(const QMetaObject *attachmentMetaObject);
 
     static QQmlType qmlType(QMetaType metaType);
     static QQmlType qmlListType(QMetaType metaType);

@@ -1332,6 +1332,38 @@ QQmlType QQmlMetaType::qmlTypeById(int qmlTypeId)
 }
 
 /*!
+    \internal
+    Returns the first QQmlType whose attachedPropertiesType equals \a attachmentMetaObject
+    Note that a single attachment type can be provided by multiple types, though that is rare
+    in practice.
+    Also, in case of self-attachment, we always return the type with the self-attachment, even
+    if another type would come first in the list. This is an optimization for the common case.
+    Returns \c nullptr if no match is fonud
+ */
+QQmlType QQmlMetaType::firstQmlTypeForAttachmentMetaObject(const QMetaObject *attachmentMetaObject)
+{
+    const QQmlMetaTypeDataPtr data;
+    if (auto qmlTypePriv = data->metaObjectToType.value(attachmentMetaObject)) {
+        // quick check to handle the case where we deal with self attachment
+        if (qmlTypePriv->regType == QQmlType::CppType &&
+            qmlTypePriv->extraData.cppTypeData->attachedPropertiesType == attachmentMetaObject)
+            return QQmlType(qmlTypePriv);
+    }
+    auto getAttachmentMetaObject = [](const QQmlTypePrivate *priv) -> const QMetaObject * {
+        if (priv->regType != QQmlType::CppType)
+            return nullptr;
+        return priv->extraData.cppTypeData->attachedPropertiesType;
+    };
+    auto it = std::find_if(data->metaObjectToType.constBegin(),
+                 data->metaObjectToType.constEnd(),
+                 [&](const QQmlTypePrivate *type) { return attachmentMetaObject == getAttachmentMetaObject(type);  }
+    );
+    if (it == data->metaObjectToType.constEnd())
+        return QQmlType();
+    return QQmlType(*it);
+}
+
+/*!
     Returns the type (if any) that corresponds to \a metaType.
     Returns an invalid QQmlType if no such type is registered.
 */

@@ -12,6 +12,7 @@
 #include <private/qqmlpropertyvalueinterceptor_p.h>
 #include <private/qqmlengine_p.h>
 #include <private/qqmlanybinding_p.h>
+#include <private/qqmlcomponentattached_p.h>
 #include <QtQuickTestUtils/private/qmlutils_p.h>
 
 using namespace Qt::StringLiterals;
@@ -56,6 +57,8 @@ private slots:
     void builtins();
 
     void renameMetaType();
+
+    void firstQmlTypeForAttachmentMetaObject();
 };
 
 class TestType : public QObject
@@ -77,6 +80,18 @@ class TestType2 : public QObject
 class TestType3 : public QObject
 {
     Q_OBJECT
+};
+
+class WithAttachedAttached : public QObject {
+    Q_OBJECT
+
+};
+
+class WithAttached  : public QObject
+{
+    Q_OBJECT
+    QML_ATTACHED(WithAttachedAttached)
+    static WithAttachedAttached *qmlAttachedProperties(QObject *) { return new WithAttachedAttached; }
 };
 
 class ExternalEnums : public QObject
@@ -889,6 +904,15 @@ void tst_qqmlmetatype::renameMetaType()
         QCOMPARE(QMetaType::fromName(newTypeName), metaType);
         QVERIFY(!QMetaType::fromName(metaTypeName).isValid());
     }
+}
+
+void tst_qqmlmetatype::firstQmlTypeForAttachmentMetaObject()
+{
+    auto componentAttachedType = QQmlMetaType::firstQmlTypeForAttachmentMetaObject(&QQmlComponentAttached::staticMetaObject);
+    QVERIFY(componentAttachedType.isValid());
+    qmlRegisterType<WithAttached>("Test", 1, 0, "TestType");
+    auto withAttachedType = QQmlMetaType::firstQmlTypeForAttachmentMetaObject(&WithAttachedAttached::staticMetaObject);
+    QVERIFY(withAttachedType.isValid());
 }
 
 QTEST_MAIN(tst_qqmlmetatype)

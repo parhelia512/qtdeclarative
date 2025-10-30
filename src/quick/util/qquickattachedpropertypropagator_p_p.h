@@ -56,6 +56,7 @@ public:
 
     QList<QQuickAttachedPropertyPropagator *> attachedChildren;
     QPointer<QQuickAttachedPropertyPropagator> attachedParent;
+    const QMetaObject *attacherMetaObject = nullptr;
 };
 
 } // namespace QtPrivate

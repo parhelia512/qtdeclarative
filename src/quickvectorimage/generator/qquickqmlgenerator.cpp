@@ -140,6 +140,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
         m_indentLevel++;
 
         bool hasNonConstantTransform = false;
+        int earliestOverrideGroup = -1;
 
         if (!idString.isEmpty()) {
             stream() << "id: " << idString << "_transform_base_group";
@@ -159,6 +160,11 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
                     int nextAnimationStart = groupIndex + 1 < info.transform.animationGroupCount()
                                                  ? info.transform.animationGroup(groupIndex + 1)
                                                  : info.transform.animationCount();
+
+                    const QQuickAnimatedProperty::PropertyAnimation &firstAnimation = info.transform.animation(animationStart);
+                    const bool replace = firstAnimation.flags & QQuickAnimatedProperty::PropertyAnimation::ReplacePreviousAnimations;
+                    if (replace && earliestOverrideGroup < 0)
+                        earliestOverrideGroup = groupIndex;
 
                     for (int i = nextAnimationStart - 1; i >= animationStart; --i) {
                         const QQuickAnimatedProperty::PropertyAnimation &animation = info.transform.animation(i);
@@ -236,8 +242,20 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
         m_indentLevel--;
         stream() << "}";
 
-        if (hasNonConstantTransform)
+        if (hasNonConstantTransform) {
             generateAnimateTransform(idString, info);
+        } else if (info.transform.isAnimated() && earliestOverrideGroup >= 0) {
+            // We have animations, but they are all constant? Then we still need to respect the
+            // override flag of the animations
+            stream() << "Component.onCompleted: {";
+            m_indentLevel++;
+
+            stream() << idString << "_transform_base_group.activateOverride("
+                     << idString << "_transform_group_" << earliestOverrideGroup << ")";
+
+            m_indentLevel--;
+            stream() << "}";
+        }
     }
 
     generatePropertyAnimation(info.opacity, idString, QStringLiteral("opacity"));

@@ -39,6 +39,9 @@ public:
         quint8 flags = NoFlags;
 
         bool isConstant() const {
+            if (startOffset > 0)
+                return false;
+
             for (const auto& frame : frames) {
                 if (frame != frames.first())
                     return false;

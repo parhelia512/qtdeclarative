@@ -1560,7 +1560,7 @@ void tst_QQuickPathView::mouseDrag()
     QCOMPARE(draggingSpy.size(), 2);
     QCOMPARE(dragStartedSpy.size(), 1);
     QCOMPARE(dragEndedSpy.size(), 1);
-    QTRY_COMPARE(movingSpy.size(), 2);
+    QTRY_COMPARE_EQ_WITH_TIMEOUT(movingSpy.size(), 2, 2000);
     QTRY_COMPARE(moveEndedSpy.size(), 1);
     QCOMPARE(moveStartedSpy.size(), 1);
 

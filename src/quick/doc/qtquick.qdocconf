@@ -63,7 +63,9 @@ depends += \
     qtsvg \
     qmake \
     qtcmake \
-    qtquickeffectmaker
+    qtquickeffectmaker \
+    qtlocation \
+    qtmultimedia
 
 {headerdirs,sourcedirs} += \
     .. \

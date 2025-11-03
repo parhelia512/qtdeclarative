@@ -347,6 +347,11 @@ void ExecutionEngine::initializeStaticMembers()
         QMetaType::registerConverter<QJSValue, QSequentialIterable>(jsvalueToSequence);
 }
 
+/*!
+    \class QV4::ExecutionEngine
+    \inmodule QtQml
+    \internal
+*/
 ExecutionEngine::ExecutionEngine(QJSEngine *jsEngine)
     : executableAllocator(new QV4::ExecutableAllocator)
     , regExpAllocator(new QV4::ExecutableAllocator)

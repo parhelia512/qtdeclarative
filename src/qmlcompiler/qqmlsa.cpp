@@ -705,6 +705,7 @@ QQmlJSMetaMethod MethodPrivate::method(const QQmlSA::Method &method)
 
 /*!
     \class QQmlSA::PropertyPrivate
+    \inmodule QtQmlCompiler
     \internal
 */
 PropertyPrivate::PropertyPrivate(Property *iface) : q_ptr{ iface } { }

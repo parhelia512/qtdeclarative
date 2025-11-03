@@ -20,6 +20,12 @@ Q_STATIC_LOGGING_CATEGORY(lcTypeRegistration, "qt.qml.typeregistration")
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQmlMetaType
+    \inmodule QtQml
+    \internal
+*/
+
 struct LockedData : private QQmlMetaTypeData
 {
     friend class QQmlMetaTypeDataPtr;

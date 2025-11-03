@@ -10,6 +10,11 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQmlAbstractBinding
+    \inmodule QtQml
+    \internal
+*/
 QQmlAbstractBinding::QQmlAbstractBinding()
     : m_targetIndex(-1)
 {

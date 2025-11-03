@@ -80,6 +80,12 @@ qWarning() << "Pixel size should now be 24:" << property.read().toInt();
 */
 
 /*!
+    \class QQmlPropertyPrivate
+    \inmodule QtQml
+    \internal
+*/
+
+/*!
     Create an invalid QQmlProperty.
 */
 QQmlProperty::QQmlProperty() = default;

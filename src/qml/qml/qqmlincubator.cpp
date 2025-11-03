@@ -715,13 +715,15 @@ QObject *QQmlIncubator::object() const
 }
 
 /*!
-Return a pointer to a list of properties which are required but haven't
-been set yet.
-This list can be modified, so that subclasses which implement special logic
-setInitialProperties can mark properties set there as no longer required.
+    \internal
+    Return a pointer to a list of properties which are required but
+    haven't been set yet.
+    This list can be modified, so that subclasses which implement
+    special logic setInitialProperties can mark properties set there
+    as no longer required.
 
-\sa QQmlIncubator::setInitialProperties
-\since 5.15
+    \sa QQmlIncubator::setInitialProperties
+    \since 5.15
 */
 RequiredProperties *QQmlIncubatorPrivate::requiredProperties()
 {

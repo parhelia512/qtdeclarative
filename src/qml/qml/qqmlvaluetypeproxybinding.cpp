@@ -47,7 +47,9 @@ QQmlAbstractBinding *QQmlValueTypeProxyBinding::binding(QQmlPropertyIndex proper
 }
 
 /*!
-Removes a collection of bindings, corresponding to the set bits in \a mask.
+    \internal
+    Removes a collection of bindings, corresponding to the set bits
+    in \a mask.
 */
 void QQmlValueTypeProxyBinding::removeBindings(quint32 mask)
 {

@@ -124,6 +124,7 @@ void QQmlPropertyData::load(const QMetaMethod &m)
 }
 
 /*!
+    \internal
     Creates a standalone QQmlPropertyCache of \a metaObject. It is separate from the usual
     QQmlPropertyCache hierarchy. It's parent is not equal to any other QQmlPropertyCache
     created from QObject::staticMetaObject, for example.

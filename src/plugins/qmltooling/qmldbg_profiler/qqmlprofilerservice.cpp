@@ -21,6 +21,11 @@ QT_BEGIN_NAMESPACE
 
 Q_QML_DEBUG_PLUGIN_LOADER(QQmlAbstractProfilerAdapter)
 
+/*!
+    \class QQmlProfilerServiceImpl
+    \inmodule QtQml
+    \internal
+*/
 QQmlProfilerServiceImpl::QQmlProfilerServiceImpl(QObject *parent) :
     QQmlConfigurableDebugService<QQmlProfilerService>(1, parent),
     m_waitingForStop(false), m_globalEnabled(false), m_globalFeatures(0)

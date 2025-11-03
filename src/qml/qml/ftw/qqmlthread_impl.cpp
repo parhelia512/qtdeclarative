@@ -236,8 +236,10 @@ QThread *QQmlThread::thread() const
 }
 
 /*!
- * And object living in the QML thread, in case you want to parent other objects to it.
- */
+    \internal
+    An object living in the QML thread, in case you want to parent
+    other objects to it.
+*/
 QObject *QQmlThread::threadObject() const
 {
     return &d->m_threadObject;

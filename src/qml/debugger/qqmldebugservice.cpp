@@ -111,6 +111,7 @@ void ObjectReferenceHash::remove(QObject *obj)
 }
 
 /*!
+    \internal
     Returns a unique id for \a object.  Calling this method multiple times
     for the same object will return the same id.
 */
@@ -132,7 +133,9 @@ int QQmlDebugService::idForObject(QObject *object)
 }
 
 /*!
-    Returns the mapping of objects to unique \a ids, created through calls to idForObject().
+    \internal
+    Returns the mapping of objects to unique \a ids, created through
+    calls to idForObject().
 */
 const QHash<int, QObject *> &QQmlDebugService::objectsForIds()
 {

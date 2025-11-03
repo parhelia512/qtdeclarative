@@ -33,7 +33,9 @@ void ResolvedTypeReference::doDynamicTypeCheck()
 }
 
 /*!
-Returns the property cache, creating one if it doesn't already exist.  The cache is not referenced.
+    \internal
+    Returns the property cache, creating one if it doesn't already exist. The
+    cache is not referenced.
 */
 QQmlPropertyCache::ConstPtr ResolvedTypeReference::createPropertyCache()
 {

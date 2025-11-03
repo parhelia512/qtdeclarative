@@ -2894,8 +2894,9 @@ bool QQmlListModelParser::applyProperty(
                 subModel = model->getListProperty(outterElementIndex, role);
                 if (subModel == nullptr) {
                     subModel = new ListModel(role.subLayout, nullptr);
-                    QVariant vModel = QVariant::fromValue(subModel);
-                    model->setOrCreateProperty(outterElementIndex, elementName, vModel);
+                    model->setOrCreateProperty(
+                            outterElementIndex, elementName,
+                            QVariant::fromValue(subModel));
                 }
             }
         }
@@ -2906,7 +2907,8 @@ bool QQmlListModelParser::applyProperty(
         for (quint32 i = 0; i < target->nBindings; ++i, ++subBinding) {
             roleSet |= applyProperty(compilationUnit, subBinding, subModel, owner, elementIndex);
         }
-
+    } else if (!model) {
+        return false;
     } else {
         QVariant value;
 
@@ -2924,9 +2926,8 @@ bool QQmlListModelParser::applyProperty(
         } else if (bindingType == QV4::CompiledData::Binding::Type_Script) {
             QString scriptStr = compilationUnit->bindingValueAsScriptString(binding);
             if (definesEmptyList(scriptStr)) {
-                const ListLayout::Role &role = model->getOrCreateListRole(elementName);
-                ListModel *emptyModel = new ListModel(role.subLayout, nullptr);
-                value = QVariant::fromValue(emptyModel);
+                value = QVariant::fromValue(
+                        new ListModel(model->getOrCreateListRole(elementName).subLayout, nullptr));
             } else if (binding->isFunctionExpression()) {
                 QQmlBinding::Identifier id = binding->value.compiledScriptIndex;
                 Q_ASSERT(id != QQmlBinding::Invalid);
@@ -2959,8 +2960,6 @@ bool QQmlListModelParser::applyProperty(
             Q_UNREACHABLE();
         }
 
-        if (!model)
-            return roleSet;
         model->setOrCreateProperty(outterElementIndex, elementName, value);
         auto listModel = model->m_modelCache;
         if (isTranslationBinding && listModel) {

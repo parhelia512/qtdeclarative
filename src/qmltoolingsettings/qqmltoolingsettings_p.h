@@ -33,7 +33,7 @@ public:
     struct SearchOptions
     {
         SearchOptions();
-        SearchOptions(QString settingFileName, bool reportFoundSettingsFiles = false,
+        SearchOptions(const QString &settingFileName, bool reportFoundSettingsFiles = false,
                       bool isQmllintSilent = false);
         QString settingsFileName;
         bool reportFoundSettingsFiles = false;

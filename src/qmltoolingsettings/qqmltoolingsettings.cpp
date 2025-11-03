@@ -18,7 +18,7 @@ using namespace Qt::StringLiterals;
 
 QQmlToolingSettings::SearchOptions::SearchOptions() = default;
 QQmlToolingSettings::SearchOptions::SearchOptions(
-        QString settingFileName, bool reportFoundSettingsFiles, bool isQmllintSilent)
+        const QString &settingFileName, bool reportFoundSettingsFiles, bool isQmllintSilent)
     : settingsFileName(settingFileName), reportFoundSettingsFiles(reportFoundSettingsFiles),
       isQmllintSilent(isQmllintSilent)
 {

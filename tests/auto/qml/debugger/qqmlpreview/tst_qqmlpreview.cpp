@@ -63,6 +63,7 @@ private slots:
     void singleton();
     void handleInput();
     void setAnimationSpeed();
+    void createDirectory();
 };
 
 tst_QQmlPreview::tst_QQmlPreview()
@@ -547,6 +548,23 @@ void tst_QQmlPreview::setAnimationSpeed()
 
     m_client->triggerAnimationSpeed(1);
     checkAnimationSpeed(m_process, 10);
+}
+
+void tst_QQmlPreview::createDirectory()
+{
+    const QString file("mkdir.qml");
+
+    QQmlDebugTest::connectTo(
+            debugJsServerPath("qqmlpreview"),
+            QStringLiteral("QmlPreview,CanvasFrameRate,EventReplay,EngineControl"),
+            testFile(file), true, {"TEST_MKDIR_RMDIR=1"});
+
+    QVERIFY(m_client);
+    QTRY_COMPARE(m_client->state(), QQmlDebugClient::Enabled);
+    m_client->triggerLoad(testFileUrl(file));
+    QTRY_VERIFY(m_files.contains(testFile(file)));
+
+    verifyProcessOutputContains("mkdir rmdir ok");
 }
 
 QTEST_MAIN(tst_QQmlPreview)

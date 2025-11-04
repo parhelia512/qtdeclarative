@@ -6,10 +6,10 @@
 #include <private/qqmldata_p.h>
 #include <private/qqmlcontext_p.h>
 
-#include <QtCore/QDebug>
-#include <QtCore/QFileInfo>
-#include <QtCore/QStringList>
-#include <QtCore/QThread>
+#include <QtCore/qdebug.h>
+#include <QtCore/qfileinfo.h>
+#include <QtCore/qstringlist.h>
+#include <QtCore/qthread.h>
 
 QT_BEGIN_NAMESPACE
 

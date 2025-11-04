@@ -17,6 +17,7 @@ qt_internal_add_qml_module(QuickTemplates2
     SOURCES
         qquickabstractbutton.cpp qquickabstractbutton_p.h
         qquickabstractbutton_p_p.h
+        qquickabstractspinbox_p.h
         qquickaction.cpp qquickaction_p.h
         qquickactiongroup.cpp qquickactiongroup_p.h
         qquickapplicationwindow.cpp
@@ -37,6 +38,7 @@ qt_internal_add_qml_module(QuickTemplates2
         qquickdeferredpointer_p_p.h
         qquickdelaybutton.cpp qquickdelaybutton_p.h
         qquickdial.cpp qquickdial_p.h
+        qquickdoublespinbox.cpp qquickdoublespinbox_p.h
         qquickdrawer.cpp qquickdrawer_p.h
         qquickdrawer_p_p.h
         qquickframe.cpp qquickframe_p.h

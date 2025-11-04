@@ -14,6 +14,7 @@ set(qml_files
     "CheckDelegate.qml"
     "ComboBox.qml"
     "DelayButton.qml"
+    "DoubleSpinBox.qml"
     "Frame.qml"
     "GroupBox.qml"
     "ItemDelegate.qml"

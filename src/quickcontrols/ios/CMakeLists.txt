@@ -15,6 +15,7 @@ set(qml_files
     "CheckBox.qml"
     "RadioButton.qml"
     "SpinBox.qml"
+    "DoubleSpinBox.qml"
     "ProgressBar.qml"
     "Dial.qml"
     "PageIndicator.qml"

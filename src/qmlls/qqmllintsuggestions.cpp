@@ -325,7 +325,7 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
     const QStringList qmltypesFiles;
     const QStringList resourceFiles = QQmlJSUtils::resourceFilesFromBuildFolders(imports);
 
-    QList<QQmlJS::LoggerCategory> categories = QQmlJSLogger::defaultCategories();
+    QList<QQmlJS::LoggerCategory> categories = QQmlJSLogger::builtinCategories();
 
     QQmlJSLinter linter(imports);
 

@@ -268,7 +268,7 @@ private:
 
     QStringList m_defaultImportPaths;
     QQmlJSLinter m_linter;
-    QList<QQmlJS::LoggerCategory> m_categories = QQmlJSLogger::defaultCategories();
+    QList<QQmlJS::LoggerCategory> m_categories = QQmlJSLogger::builtinCategories();
 };
 
 Q_DECLARE_METATYPE(TestQmllint::Result)
@@ -2452,7 +2452,7 @@ void TestQmllint::compilerWarnings()
     QFETCH(Result, result);
     QFETCH(bool, enableCompilerWarnings);
 
-    auto categories = QQmlJSLogger::defaultCategories();
+    auto categories = QQmlJSLogger::builtinCategories();
 
     auto category = std::find_if(categories.begin(), categories.end(), [](const QQmlJS::LoggerCategory& category) {
         return category.id() == qmlCompiler;
@@ -2988,7 +2988,7 @@ void TestQmllint::incorrectImportFromHost()
 
 void TestQmllint::attachedPropertyReuse()
 {
-    auto categories = QQmlJSLogger::defaultCategories();
+    auto categories = QQmlJSLogger::builtinCategories();
     auto category = std::find_if(categories.begin(), categories.end(), [](const QQmlJS::LoggerCategory& category) {
         return category.id() == qmlAttachedPropertyReuse;
     });

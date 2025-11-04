@@ -223,7 +223,7 @@ All warnings can be set to three levels:
                            QQmlJS::LoggingUtils::levelToString(category));
     };
 
-    for (const auto &category : QQmlJSLogger::defaultCategories()) {
+    for (const auto &category : QQmlJSLogger::builtinCategories()) {
         addCategory(category);
     }
 

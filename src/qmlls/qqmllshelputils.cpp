@@ -104,8 +104,8 @@ static QByteArray documentationForImports(const DomItem &item)
                                        : QTypeRevision::fromVersion(import->version.majorVersion,
                                                                     import->version.minorVersion));
 
-    return "Library at path %1\n\nImport paths:\n%2"_L1
-            .arg(qmldirLocation, domEnvironment->loadPaths().join(u'\n'))
+    return "Library at path %1\n\nImport paths:\n\n * %2"_L1
+            .arg(qmldirLocation, domEnvironment->loadPaths().join("\n * "_L1))
             .toUtf8();
 }
 

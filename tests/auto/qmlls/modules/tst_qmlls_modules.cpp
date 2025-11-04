@@ -1655,7 +1655,8 @@ void tst_qmlls_modules::hover_data()
             R"(Library at path %1/QtQuick/qmldir
 
 Import paths:
-%1)"_L1.arg(QLibraryInfo::path(QLibraryInfo::QmlImportsPath))
+
+ * %1)"_L1.arg(QLibraryInfo::path(QLibraryInfo::QmlImportsPath))
                     .toUtf8(),
         };
         QTest::addRow("importpaths-no-version")

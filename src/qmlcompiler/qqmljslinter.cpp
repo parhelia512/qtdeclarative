@@ -158,7 +158,6 @@ QQmlJSLinter::Plugin::Plugin(QQmlJSLinter::Plugin &&plugin) noexcept
     , m_categories(std::move(plugin.m_categories))
     , m_instance(std::move(plugin.m_instance))
     , m_loader(std::move(plugin.m_loader))
-    , m_isBuiltin(std::move(plugin.m_isBuiltin))
     , m_isInternal(std::move(plugin.m_isInternal))
     , m_isValid(std::move(plugin.m_isValid))
 {

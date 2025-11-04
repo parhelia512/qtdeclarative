@@ -12,6 +12,12 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQmlDebugService
+    \inmodule QtQml
+    \internal
+*/
+
 class QQmlDebugServer;
 
 class QQmlDebugServicePrivate : public QObjectPrivate

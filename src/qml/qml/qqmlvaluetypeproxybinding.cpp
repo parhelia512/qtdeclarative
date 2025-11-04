@@ -5,6 +5,11 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQmlValueTypeProxyBinding
+    \inmodule QtQml
+    \internal
+*/
 QQmlValueTypeProxyBinding::QQmlValueTypeProxyBinding(QObject *o, QQmlPropertyIndex index)
     : QQmlAbstractBinding(),
       m_bindings(nullptr)

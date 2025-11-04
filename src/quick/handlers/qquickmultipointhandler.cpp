@@ -24,6 +24,12 @@ QT_BEGIN_NAMESPACE
     for any type of handler which requires and acts upon a specific number
     of multiple touchpoints.
 */
+
+/*!
+    \class QQuickMultiPointHandler
+    \inmodule QtQuick
+    \internal
+*/
 QQuickMultiPointHandler::QQuickMultiPointHandler(QQuickItem *parent, int minimumPointCount, int maximumPointCount)
     : QQuickPointerDeviceHandler(*(new QQuickMultiPointHandlerPrivate(minimumPointCount, maximumPointCount)), parent)
 {

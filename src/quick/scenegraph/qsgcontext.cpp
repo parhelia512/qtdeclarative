@@ -431,6 +431,11 @@ QSGRendererInterface *QSGContext::rendererInterface(QSGRenderContext *renderCont
     return nullptr;
 }
 
+/*!
+    \class QSGRenderContext
+    \inmodule QtQuick
+    \internal
+*/
 QSGRenderContext::QSGRenderContext(QSGContext *context)
     : m_sg(context)
 {

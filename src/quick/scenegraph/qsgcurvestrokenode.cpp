@@ -6,6 +6,11 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QSGCurveStrokeNode
+    \inmodule QtQuick
+    \internal
+*/
 QSGCurveStrokeNode::QSGCurveStrokeNode()
 {
     setFlag(OwnsGeometry, true);

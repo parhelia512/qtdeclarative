@@ -90,6 +90,11 @@ QQmlIncubationController *QQmlEngine::incubationController() const
     return d->incubationController;
 }
 
+/*!
+    \class QQmlIncubatorPrivate
+    \inmodule QtQml
+    \internal
+*/
 QQmlIncubatorPrivate::QQmlIncubatorPrivate(QQmlIncubator *q, QQmlIncubator::IncubationMode m)
     : q(q), status(QQmlIncubator::Null), mode(m), isAsynchronous(false), progress(Execute),
       result(nullptr), enginePriv(nullptr), waitingOnMe(nullptr)

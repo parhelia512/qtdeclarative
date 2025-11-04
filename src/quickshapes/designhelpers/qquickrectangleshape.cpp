@@ -6,6 +6,12 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQuickRectangleShape
+    \inmodule QtQuickShapes
+    \internal
+*/
+
 Q_STATIC_LOGGING_CATEGORY(lcCalculateIndependentRadii, "qt.quick.shapes.designhelpers.rectangleshape.calculateindependentradii")
 Q_STATIC_LOGGING_CATEGORY(lcUpdatePolish, "qt.quick.shapes.designhelpers.rectangleshape.updatepolish")
 Q_STATIC_LOGGING_CATEGORY(lcMaybeUpdateElements, "qt.quick.shapes.designhelpers.rectangleshape.maybeupdateelements")

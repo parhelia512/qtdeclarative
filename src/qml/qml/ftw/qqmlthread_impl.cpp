@@ -16,6 +16,12 @@ QT_REQUIRE_CONFIG(qml_type_loader_thread);
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QQmlThread
+    \inmodule QtQml
+    \internal
+*/
+
 class QQmlThreadPrivate : public QThread
 {
 public:

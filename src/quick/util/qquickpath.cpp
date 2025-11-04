@@ -1225,6 +1225,12 @@ QDebug operator<<(QDebug debug, const QQuickCurve *curve)
 */
 
 /*!
+    \class QQuickPathAttribute
+    \inmodule QtQuick
+    \internal
+*/
+
+/*!
     \qmlproperty string QtQuick::PathAttribute::name
     This property holds the name of the attribute to change.
 
@@ -1446,6 +1452,12 @@ void QQuickPathMove::addToPath(QPainterPath &path, const QQuickPathData &data)
     \endtable
 
     \sa Path, PathCubic, PathLine, PathArc, PathAngleArc, PathCurve, PathSvg
+*/
+
+/*!
+    \class QQuickPathQuad
+    \inmodule QtQuick
+    \internal
 */
 
 /*!

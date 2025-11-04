@@ -29,7 +29,11 @@ Q_STATIC_LOGGING_CATEGORY(lcPointerHandlerActive, "qt.quick.handler.active")
     events from any kind of pointing device (touch, mouse or graphics tablet).
 */
 
-/*! \internal
+/*!
+    \class QQuickPointerHandler
+    \inmodule QtQuick
+    \internal
+
     So far we only offer public QML API for Pointer Handlers, but we expect
     in some future version of Qt to have public C++ API as well. This will open
     up the possibility to instantiate handlers in custom items (which we should
@@ -874,6 +878,11 @@ void QQuickPointerHandler::handlePointerEventImpl(QPointerEvent *event)
     emitted when the grab is stolen by a different Pointer Handler or Item.
 */
 
+/*!
+    \class QQuickPointerHandlerPrivate
+    \inmodule QtQuick
+    \internal
+*/
 QQuickPointerHandlerPrivate::QQuickPointerHandlerPrivate()
   : grabPermissions(QQuickPointerHandler::CanTakeOverFromItems |
                       QQuickPointerHandler::CanTakeOverFromHandlersOfDifferentType |

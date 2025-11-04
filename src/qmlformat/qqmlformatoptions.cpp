@@ -116,6 +116,13 @@ void QQmlFormatOptions::applySettings(const QQmlFormatSettings &settings)
         setFunctionsSpacing(settings.value(QQmlFormatSettings::s_functionsSpacingSetting).toBool());
     }
 
+    // Needs to be set after normalize since it can set NormalizeOrder to true.
+    if (!isMarked(Settings::GroupAttributesTogether)
+        && settings.isSet(QQmlFormatSettings::s_groupAttributesTogetherSetting)) {
+        setGroupAttributesTogether(
+                settings.value(QQmlFormatSettings::s_groupAttributesTogetherSetting).toBool());
+    }
+
     if (!isMarked(Settings::SortImports)
         && settings.isSet(QQmlFormatSettings::s_sortImportsSetting)) {
         setSortImports(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool());
@@ -242,6 +249,12 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
             QStringLiteral("Ensure spaces between functions (only works with normalize option).")));
 
     parser.addOption(
+            QCommandLineOption(QStringList() << "group-attributes-together"_L1,
+                               QStringLiteral("Reorders and groups the attributes of the objects "
+                                              "according to the QML Coding Guidelines. "
+                                              "Implies --normalize.")));
+
+    parser.addOption(
             QCommandLineOption({ "S"_L1, "sort-imports"_L1 },
                                QStringLiteral("Sort imports alphabetically "
                                               "(Warning: this might change semantics if a given "
@@ -347,6 +360,11 @@ QQmlFormatOptions QQmlFormatOptions::buildCommandLineOptions(const QStringList &
     if (parser.isSet("functions-spacing"_L1)) {
         options.mark(Settings::FunctionsSpacing);
         options.setFunctionsSpacing(true);
+    }
+    // Needs to be set after normalize since it can set NormalizeOrder to true.
+    if (parser.isSet("group-attributes-together"_L1)) {
+        options.mark(Settings::GroupAttributesTogether);
+        options.setGroupAttributesTogether(true);
     }
     if (parser.isSet("sort-imports"_L1)) {
         options.mark(Settings::SortImports);

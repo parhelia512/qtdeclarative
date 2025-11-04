@@ -866,9 +866,39 @@ void QmlObject::writeOutAttributes(const DomItem &self, OutWriter &ow, const Dom
     }
 }
 
-void QmlObject::writeOutSortedEnumerations(const DomItem &component, OutWriter &ow) const
+static QStringList keepKeysOrder(const QList<std::pair<SourceLocation, DomItem>> &attribs,
+                                 const QStringList &keys)
 {
-    const auto descs = component.field(Fields::enumerations).values();
+    QStringList originalOrderedKeys;
+    for (auto attrib : attribs) {
+        QString defName = attrib.second.name();
+        if (keys.contains(defName) && !originalOrderedKeys.contains(defName)) {
+            originalOrderedKeys.append(defName);
+        }
+    }
+    return originalOrderedKeys;
+}
+
+static QList<DomItem> keepDomItemsOrder(const QList<std::pair<SourceLocation, DomItem>> &attribs,
+                                        const QStringView &field, const DomItem &refItem)
+{
+    DomItem item = refItem.field(field);
+    QStringList keys = keepKeysOrder(attribs, item.sortedKeys());
+    QList<DomItem> values = item.values();
+
+    QList<DomItem> originalValuesOrder;
+    for (auto attrib : attribs) {
+        QString defName = attrib.second.name();
+        const auto itemValue = item.key(defName);
+        if (values.contains(itemValue) && !originalValuesOrder.contains(itemValue)) {
+            originalValuesOrder.append(itemValue);
+        }
+    }
+    return originalValuesOrder;
+}
+
+void QmlObject::writeOutSortedEnumerations(const QList<DomItem> &descs, OutWriter &ow) const
+{
     for (const auto &enumDescs : descs) {
         const auto values = enumDescs.values();
         for (const auto &enumDesc : values) {
@@ -880,12 +910,13 @@ void QmlObject::writeOutSortedEnumerations(const DomItem &component, OutWriter &
 }
 
 void QmlObject::writeOutSortedPropertyDefinition(const DomItem &self, OutWriter &ow,
-                                                 QSet<QString> &mergedDefBinding) const
+                                                 QSet<QString> &mergedDefBinding,
+                                                 const QStringList &keys) const
 {
     DomItem propertyDefs = field(self, Fields::propertyDefs);
     DomItem bindings = field(self, Fields::bindings);
 
-    for (const QString &defName : propertyDefs.sortedKeys()) {
+    for (const QString &defName : keys) {
         const auto pDefs = propertyDefs.key(defName).values();
         for (const auto &pDef : pDefs) {
             const PropertyDefinition *pDefPtr = pDef.as<PropertyDefinition>();
@@ -937,10 +968,10 @@ void QmlObject::writeOutSortedPropertyDefinition(const DomItem &self, OutWriter 
     }
 }
 
-static std::pair<QList<DomItem>, QList<DomItem>> splitSignalsAndMethods(const DomItem &methods)
+static std::pair<QList<DomItem>, QList<DomItem>>
+splitSignalsAndMethods(const QList<DomItem> &fields)
 {
     QList<DomItem> signalList, methodList;
-    const auto fields = methods.values();
     for (const auto &ms : fields) {
         const auto values = ms.values();
         for (const auto &m : values) {
@@ -955,10 +986,12 @@ static std::pair<QList<DomItem>, QList<DomItem>> splitSignalsAndMethods(const Do
 }
 
 static std::tuple<QList<DomItem>, QList<DomItem>, QList<DomItem>>
-splitBindings(const DomItem &bindings, const QSet<QString> &mergedDefBinding)
+splitBindings(const DomItem &bindings, const QSet<QString> &mergedDefBinding,
+              const QStringList &keys)
 {
+
     QList<DomItem> normalBindings, signalHandlers, delayedBindings;
-    for (const auto &bName : bindings.sortedKeys()) {
+    for (const auto &bName : keys) {
         bool skipFirstNormal = mergedDefBinding.contains(bName);
         const auto values = bindings.key(bName).values();
         for (const auto &b : values) {
@@ -984,23 +1017,36 @@ splitBindings(const DomItem &bindings, const QSet<QString> &mergedDefBinding)
 void QmlObject::writeOutSortedAttributes(const DomItem &self, OutWriter &ow,
                                          const DomItem &component) const
 {
+    const QList<std::pair<SourceLocation, DomItem>> attribs = orderOfAttributes(self, component);
+
     int spacerId = 0;
     quint32 counter = ow.counter();
 
     if (component)
-        writeOutSortedEnumerations(component, ow);
+        writeOutSortedEnumerations(
+                ow.lineWriter.options().groupAttributesTogether
+                        ? keepDomItemsOrder(attribs, Fields::enumerations, component)
+                        : component.field(Fields::enumerations).values(),
+                ow);
 
     if (counter != ow.counter() || !idStr().isEmpty())
         spacerId = ow.addNewlinesAutospacerCallback(2);
 
     QSet<QString> mergedDefBinding;
-    writeOutSortedPropertyDefinition(self, ow, mergedDefBinding);
+    QStringList propertyDefsKeys = field(self, Fields::propertyDefs).sortedKeys();
+    writeOutSortedPropertyDefinition(self, ow, mergedDefBinding,
+                                     ow.lineWriter.options().groupAttributesTogether
+                                             ? keepKeysOrder(attribs, propertyDefsKeys)
+                                             : propertyDefsKeys);
 
     ow.removeTextAddCallback(spacerId);
     if (counter != ow.counter())
         spacerId = ow.addNewlinesAutospacerCallback(2);
 
-    const auto [signalList, methodList] = splitSignalsAndMethods(field(self, Fields::methods));
+    const auto [signalList, methodList] =
+            splitSignalsAndMethods(ow.lineWriter.options().groupAttributesTogether
+                                           ? keepDomItemsOrder(attribs, Fields::methods, self)
+                                           : field(self, Fields::methods).values());
     for (const auto &sig : std::as_const(signalList)) {
         ow.ensureNewline();
         sig.writeOut(ow);
@@ -1024,8 +1070,11 @@ void QmlObject::writeOutSortedAttributes(const DomItem &self, OutWriter &ow,
     ow.removeTextAddCallback(spacerId);
 
     DomItem bindings = field(self, Fields::bindings);
-    const auto [normalBindings, signalHandlers, delayedBindings] =
-            splitBindings(bindings, mergedDefBinding);
+    QStringList bindingsKeys = bindings.sortedKeys();
+    const auto [normalBindings, signalHandlers, delayedBindings] = splitBindings(
+            bindings, mergedDefBinding,
+            ow.lineWriter.options().groupAttributesTogether ? keepKeysOrder(attribs, bindingsKeys)
+                                                            : bindingsKeys);
 
     if (counter != ow.counter())
         spacerId = ow.addNewlinesAutospacerCallback(2);

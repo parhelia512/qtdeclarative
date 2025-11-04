@@ -100,6 +100,7 @@ public:
     AttributesSequence attributesSequence = AttributesSequence::Normalize;
     bool objectsSpacing = false;
     bool functionsSpacing = false;
+    bool groupAttributesTogether = false;
     bool sortImports = false;
     bool singleLineEmptyObjects = false;
     SemicolonRule semicolonRule = SemicolonRule::Always;

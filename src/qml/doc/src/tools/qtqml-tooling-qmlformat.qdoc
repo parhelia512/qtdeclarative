@@ -125,7 +125,7 @@ controlled via a  \l{Settings File}{settings file}.:
     \li \c{--objects-spacing}
     \li ObjectsSpacing
     \li disabled/false
-    \li Ensure spaces between objects (only works with normalize option).
+    \li Ensure spaces between objects (only works with \c{normalize}).
 
         In a command line invocation, the behavior can be enabled by passing the flag.
 
@@ -135,7 +135,17 @@ controlled via a  \l{Settings File}{settings file}.:
     \li \c{--functions-spacing}
     \li FunctionsSpacing
     \li disabled/false
-    \li Ensure spaces between functions (only works with normalize option).
+    \li Ensure spaces between functions (only works with \c{normalize}).
+
+        In a command line invocation, the behavior can be enabled by passing the flag.
+
+        In a settings file, the behavior can be enabled by setting the
+        relevant variable to "true".
+\row
+    \li \c{--group-attributes-together}
+    \li GroupAttributesTogether
+    \li disabled/false
+    \li Reorders and groups the attributes of the objects according to the QML Coding Guidelines. Implies \c{--normalize}.
 
         In a command line invocation, the behavior can be enabled by passing the flag.
 
@@ -145,7 +155,7 @@ controlled via a  \l{Settings File}{settings file}.:
     \li \c{--single-line-empty-objects}
     \li SingleLineEmptyObjects
     \li disabled/false
-    \li Write empty objects on a single line (only works with normalize option).
+    \li Write empty objects on a single line (only works with \c{normalize}).
 
         In a command line invocation, the behavior can be enabled by passing the flag.
 

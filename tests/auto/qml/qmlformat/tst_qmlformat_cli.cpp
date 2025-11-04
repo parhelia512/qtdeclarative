@@ -202,6 +202,11 @@ void TestQmlformatCli::testFormat_data()
             << "normalizedFunctionsSpacing.qml"
             << "normalizedFunctionsSpacing.formatted.qml" << QStringList { "-n", "--functions-spacing" } << RunOption::OnCopy;
 
+    QTest::newRow("normalize + keep attributes order")
+            << "normalizedGroupAttributesTogether.qml"
+            << "normalizedGroupAttributesTogether.formatted.qml"
+            << QStringList{ "-n", "--group-attributes-together" } << RunOption::OnCopy;
+
     QTest::newRow("indentEquals2")
             << "threeFunctionsOneLine.js"
             << "threeFunctions.formattedW2.js" << QStringList{"-w=2"} << RunOption::OnCopy;
@@ -422,6 +427,9 @@ void TestQmlformatCli::writeDefaults()
     QVERIFY(settings.isSet(QQmlFormatSettings::s_functionsSpacingSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_functionsSpacingSetting).toBool(), false);
 
+    QVERIFY(settings.isSet(QQmlFormatSettings::s_groupAttributesTogetherSetting));
+    QCOMPARE(settings.value(QQmlFormatSettings::s_groupAttributesTogetherSetting).toBool(), false);
+
     QVERIFY(settings.isSet(QQmlFormatSettings::s_sortImportsSetting));
     QCOMPARE(settings.value(QQmlFormatSettings::s_sortImportsSetting).toBool(), false);
 
@@ -507,6 +515,13 @@ void TestQmlformatCli::outputOptions()
     }
 
     {
+        QJsonObject obj = findJsonObject(QQmlFormatSettings::s_groupAttributesTogetherSetting);
+        QVERIFY(!obj.isEmpty());
+        QCOMPARE(obj["value"], false);
+        QCOMPARE(obj["hint"], QMetaType::fromType<bool>().name());
+    }
+
+    {
         QJsonObject obj = findJsonObject(QQmlFormatSettings::s_sortImportsSetting);
         QVERIFY(!obj.isEmpty());
         QCOMPARE(obj["value"], false);
@@ -537,6 +552,7 @@ void TestQmlformatCli::settingsKeysStayStable()
     QCOMPARE(QQmlFormatSettings::s_newlineSetting, "NewlineType"_L1);
     QCOMPARE(QQmlFormatSettings::s_objectsSpacingSetting, "ObjectsSpacing"_L1);
     QCOMPARE(QQmlFormatSettings::s_functionsSpacingSetting, "FunctionsSpacing"_L1);
+    QCOMPARE(QQmlFormatSettings::s_groupAttributesTogetherSetting, "GroupAttributesTogether"_L1);
     QCOMPARE(QQmlFormatSettings::s_sortImportsSetting, "SortImports"_L1);
     QCOMPARE(QQmlFormatSettings::s_semiColonRuleSetting, "SemicolonRule"_L1);
 }

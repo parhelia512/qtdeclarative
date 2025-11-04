@@ -74,6 +74,14 @@ public:
     bool functionsSpacing() const { return m_options.functionsSpacing; }
     void setFunctionsSpacing(bool spacing) { m_options.functionsSpacing = spacing; }
 
+    bool groupAttributesTogether() const { return m_options.groupAttributesTogether; }
+    void setGroupAttributesTogether(bool keep)
+    {
+        m_options.groupAttributesTogether = keep;
+        if (keep)
+            m_options.attributesSequence = AttributesSequence::Normalize;
+    }
+
     bool sortImports() const { return m_options.sortImports; }
     void setSortImports(bool sort) { m_options.sortImports = sort; }
 
@@ -153,6 +161,7 @@ public:
         NewlineType,
         ObjectsSpacing,
         FunctionsSpacing,
+        GroupAttributesTogether,
         SortImports,
         SingleLineEmptyObjects,
         SemicolonRule,

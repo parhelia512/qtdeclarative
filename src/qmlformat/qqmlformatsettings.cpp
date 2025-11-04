@@ -21,6 +21,7 @@ QQmlFormatSettings::QQmlFormatSettings(const QString &toolName) : QQmlToolingSet
               QStringList { u"unix"_s, u"windows"_s, u"macos"_s, u"native"_s });
     addOption(s_objectsSpacingSetting, false);
     addOption(s_functionsSpacingSetting, false);
+    addOption(s_groupAttributesTogetherSetting, false);
     addOption(s_sortImportsSetting, false);
     addOption(s_singleLineEmptyObjectsSetting, false);
     addOption(s_semiColonRuleSetting, u"always"_s, QStringList{ u"always"_s, u"essential"_s });

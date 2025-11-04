@@ -917,11 +917,12 @@ public:
     void writeOutAttributes(const DomItem &self, OutWriter &ow, const DomItem &component,
                             const QString &code) const;
 
-    void writeOutSortedEnumerations(const DomItem &component, OutWriter &ow) const;
+    void writeOutSortedEnumerations(const QList<DomItem> &descs, OutWriter &ow) const;
     void writeOutSortedAttributes(const DomItem &self, OutWriter &ow,
                                   const DomItem &component) const;
     void writeOutSortedPropertyDefinition(const DomItem &self, OutWriter &ow,
-                                          QSet<QString> &mergedDefBinding) const;
+                                          QSet<QString> &mergedDefBinding,
+                                          const QStringList &keys) const;
 
     void writeOutId(const DomItem &self, OutWriter &ow) const;
     void writeOut(const DomItem &self, OutWriter &ow, const QString &onTarget) const;

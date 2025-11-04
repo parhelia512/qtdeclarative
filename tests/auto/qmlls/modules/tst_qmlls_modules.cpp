@@ -789,6 +789,7 @@ void tst_qmlls_modules::documentFormatting_data()
     excludedFiles << u"tests/auto/qml/qmlformat/data/normalizedFunctionsSpacing.qml"_s;
     excludedFiles << u"tests/auto/qml/qmlformat/data/normalizedObjectsSpacing.qml"_s;
     excludedFiles << u"tests/auto/qml/qmlformat/data/sortingImports.qml"_s;
+    excludedFiles << u"tests/auto/qml/qmlformat/data/normalizedGroupAttributesTogether.qml"_s;
 
     // excluded because it crashes Dom construction
     // TODO: fix QQMLDomAstConstructor to not crash on these files, see QTBUG-116392

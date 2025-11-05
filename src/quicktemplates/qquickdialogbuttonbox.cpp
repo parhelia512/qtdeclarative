@@ -919,7 +919,7 @@ void QQuickDialogButtonBox::itemChange(QQuickItem::ItemChange change, const QQui
 #if QT_CONFIG(accessibility)
 QAccessible::Role QQuickDialogButtonBox::accessibleRole() const
 {
-    return QAccessible::PageTabList;
+    return QAccessible::Grouping;
 }
 #endif
 

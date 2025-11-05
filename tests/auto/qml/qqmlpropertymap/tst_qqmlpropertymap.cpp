@@ -45,6 +45,8 @@ private slots:
     void cachedSignals();
     void signalIndices();
     void metaTypeFromType();
+
+    void destroyAndToStringMethods();
 };
 
 class LazyPropertyMap : public QQmlPropertyMap, public QQmlParserStatus
@@ -690,6 +692,32 @@ void tst_QQmlPropertyMap::metaTypeFromType()
     // Should not cause a deprecation warning when compiling.
     const QMetaType metaType = QMetaType::fromType<QQmlPropertyMap>();
     QCOMPARE(metaType.name(), "QQmlPropertyMap");
+}
+
+class Utils : public QObject {
+    Q_OBJECT
+public:
+    explicit Utils(QObject *parent = nullptr) : QObject(parent) { }
+
+public slots:
+    QQmlPropertyMap *createObject(QObject *parent = nullptr)
+    {
+        return QQmlPropertyMap::create(parent);
+    }
+};
+
+void tst_QQmlPropertyMap::destroyAndToStringMethods()
+{
+    Utils utils;
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("Utils", &utils);
+    QQmlComponent component(&engine, testFileUrl("destroyAndToStringMethods.qml"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> o(component.create());
+    QVERIFY(!o.isNull());
+
+    const QRegularExpression objectNameRE("QQmlPropertyMap\\(0x[0-9a-f]+\\) 114514");
+    QVERIFY(objectNameRE.match(o->objectName()).hasMatch());
 }
 
 QTEST_MAIN(tst_QQmlPropertyMap)

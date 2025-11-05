@@ -389,6 +389,7 @@ void QQmlInstantiator::setModel(const QVariant &m)
 
 /*!
     \qmlproperty enumeration QtQml.Models::Instantiator::delegateModelAccess
+    \since 6.10
 
     \include delegatemodelaccess.qdocinc
 */

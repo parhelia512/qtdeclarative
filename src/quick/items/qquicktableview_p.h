@@ -78,20 +78,6 @@ class Q_QUICK_EXPORT QQuickTableView : public QQuickFlickable, public QQmlFinali
     QML_ATTACHED(QQuickTableViewAttached)
 
 public:
-    enum PositionModeFlag {
-        AlignLeft = Qt::AlignLeft,
-        AlignRight = Qt::AlignRight,
-        AlignHCenter = Qt::AlignHCenter,
-        AlignTop = Qt::AlignTop,
-        AlignBottom = Qt::AlignBottom,
-        AlignVCenter = Qt::AlignVCenter,
-        AlignCenter = AlignVCenter | AlignHCenter,
-        Visible = 0x01000,
-        Contain = 0x02000
-    };
-    Q_DECLARE_FLAGS(PositionMode, PositionModeFlag)
-    Q_FLAG(PositionMode)
-
     enum SelectionBehavior {
         SelectionDisabled,
         SelectCells,

@@ -367,7 +367,7 @@ void tst_qquickdeliveryagent::tapHandlerDoesntOverrideSubsceneGrabber() // QTBUG
 
     QQuickView window;
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::initView(window, testFileUrl("flickableTextEdit.qml")));
     QQuickItem *textEdit = window.rootObject()->findChild<QQuickItem*>("textEdit");
@@ -403,7 +403,7 @@ void tst_qquickdeliveryagent::undoDelegationWhenSubsceneFocusCleared() // QTBUG-
 {
     QQuickView window;
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::initView(window, testFileUrl("listViewDelegate.qml")));
     QQuickListView *listView = window.rootObject()->findChild<QQuickListView*>();
@@ -430,7 +430,7 @@ void tst_qquickdeliveryagent::touchCompression()
     // avoid interference from X11 window managers, so we can look at eventpoint globalPosition
     window.setFlag(Qt::FramelessWindowHint);
 #ifdef DISABLE_HOVER_IN_IRRELEVANT_TESTS
-    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverEnabled = false;
+    QQuickWindowPrivate::get(&window)->deliveryAgentPrivate()->frameSynchronousHoverInterval = -1;
 #endif
     QVERIFY(QQuickTest::showView(window, testFileUrl("pointHandler.qml")));
     QQuickDeliveryAgent *windowAgent = QQuickWindowPrivate::get(&window)->deliveryAgent;
@@ -567,8 +567,7 @@ void tst_qquickdeliveryagent::hoverEnterOnItemMove()
     // move the item so the mouse is now inside where the mouse was
     hoverItem.setX(100);
     hoverItem.setY(100);
-    deliveryAgent->flushFrameSynchronousEvents(&window);
-    QCOMPARE(hoverItem.hoverEnter, true);
+    QTRY_COMPARE(hoverItem.hoverEnter, true);
 }
 
 void tst_qquickdeliveryagent::hoverEnterOnItemMoveAfterHide()

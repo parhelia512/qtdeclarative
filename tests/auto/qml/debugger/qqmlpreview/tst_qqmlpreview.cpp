@@ -62,6 +62,7 @@ private slots:
     void qqcStyleSelection();
     void singleton();
     void handleInput();
+    void setAnimationSpeed();
 };
 
 tst_QQmlPreview::tst_QQmlPreview()
@@ -521,6 +522,31 @@ void tst_QQmlPreview::handleInput()
     m_process->stop();
     QTRY_COMPARE(m_client->state(), QQmlDebugClient::NotConnected);
     QVERIFY(m_serviceErrors.isEmpty());
+}
+
+void tst_QQmlPreview::setAnimationSpeed()
+{
+    const QString file("qtquick2.qml");
+
+    // Basic render loop because that results in more exact animation timing.
+    // With the other render loops it can take a long time until the animation timer
+    // settles when you change it.
+    QCOMPARE(startQmlProcess(file, {QLatin1String("QSG_RENDER_LOOP=basic")}), ConnectSuccess);
+
+    QVERIFY(m_client);
+    QTRY_COMPARE(m_client->state(), QQmlDebugClient::Enabled);
+    m_client->triggerLoad(testFileUrl(file));
+    QTRY_VERIFY(m_files.contains(testFile(file)));
+    checkAnimationSpeed(m_process, 10);
+
+    m_client->triggerAnimationSpeed(2);
+    checkAnimationSpeed(m_process, 5);
+
+    m_client->triggerAnimationSpeed(0.5);
+    checkAnimationSpeed(m_process, 20);
+
+    m_client->triggerAnimationSpeed(1);
+    checkAnimationSpeed(m_process, 10);
 }
 
 QTEST_MAIN(tst_QQmlPreview)

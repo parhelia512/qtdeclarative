@@ -124,5 +124,6 @@ private:
 };
 
 QString debugJsServerPath(const QString &selfPath);
+void checkAnimationSpeed(QQmlDebugProcess *process, int targetMillisperDegree);
 
 #endif // DEBUGUTIL_P_H

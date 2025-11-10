@@ -48,6 +48,7 @@ public:
     void dropCU(const QUrl &url);
     void rerun();
     void zoom(qreal newFactor);
+    void setAnimationSpeed(qreal newFactor);
 
     void clear();
 

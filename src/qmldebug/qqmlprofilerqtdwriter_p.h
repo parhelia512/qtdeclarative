@@ -33,11 +33,11 @@ public:
     explicit QQmlProfilerQtdWriter(QObject *parent = nullptr);
     ~QQmlProfilerQtdWriter();
 
-    int numLoadedEventTypes() const final;
+    qsizetype numLoadedEventTypes() const final;
+    qsizetype numLoadedEvents() const final;
     void addEventType(const QQmlProfilerEventType &type) final;
     void addEvent(const QQmlProfilerEvent &event) final;
     bool save(const QString &filename) final;
-    bool isEmpty() const final;
     void clear() final;
 
     void startTrace(qint64 time, const QList<int> &engineIds) final;

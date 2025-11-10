@@ -14,10 +14,6 @@ bool QQmlProfilerEventReceiver::save(const QString &filename)
     return false;
 }
 
-void QQmlProfilerEventReceiver::clear()
-{
-}
-
 void QQmlProfilerEventReceiver::startTrace(qint64 time, const QList<int> &engineIds)
 {
     Q_UNUSED(time);

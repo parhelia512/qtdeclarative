@@ -30,13 +30,15 @@ public:
     explicit QQmlProfilerEventReceiver(QObject *parent = nullptr) : QObject(parent) {}
     ~QQmlProfilerEventReceiver() override;
 
-    virtual int numLoadedEventTypes() const = 0;
+    virtual qsizetype numLoadedEventTypes() const = 0;
+    virtual qsizetype numLoadedEvents() const = 0;
     virtual void addEventType(const QQmlProfilerEventType &type) = 0;
     virtual void addEvent(const QQmlProfilerEvent &event) = 0;
-    virtual bool isEmpty() const = 0;
+    virtual void clear() = 0;
 
-    virtual void clear();
     virtual bool save(const QString &filename);
+
+    bool isEmpty() const { return numLoadedEvents() == 0; };
 
 public Q_SLOTS:
     virtual void startTrace(qint64 time, const QList<int> &engineIds);

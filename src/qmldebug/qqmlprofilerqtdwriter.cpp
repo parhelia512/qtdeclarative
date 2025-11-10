@@ -95,8 +95,6 @@ void QQmlProfilerQtdWriter::clear()
     d->events.clear();
     d->qmlMeasuredTime = 0;
     d->setState(QQmlProfilerQtdWriterPrivate::Empty);
-
-    QQmlProfilerEventReceiver::clear();
 }
 
 void QQmlProfilerQtdWriter::startTrace(qint64 time, const QList<int> &engineIds)
@@ -305,11 +303,6 @@ void QQmlProfilerQtdWriter::complete(qint64 maximumTime)
     d->computeQmlTime();
     d->setState(QQmlProfilerQtdWriterPrivate::Done);
     QQmlProfilerEventReceiver::complete(maximumTime);
-}
-
-bool QQmlProfilerQtdWriter::isEmpty() const
-{
-    return d_func()->isEmpty();
 }
 
 struct StreamWriter {
@@ -672,10 +665,16 @@ void QQmlProfilerQtdWriterPrivate::setState(State newState)
     return;
 }
 
-int QQmlProfilerQtdWriter::numLoadedEventTypes() const
+qsizetype QQmlProfilerQtdWriter::numLoadedEventTypes() const
 {
     return d_func()->eventTypes.size();
 }
+
+qsizetype QQmlProfilerQtdWriter::numLoadedEvents() const
+{
+    return d_func()->events.size();
+}
+
 
 QT_END_NAMESPACE
 

@@ -14,10 +14,10 @@
 class EventReceiver : public QQmlProfilerEventReceiver
 {
 public:
-    int numLoadedEventTypes() const final { return m_eventTypes.size(); }
+    qsizetype numLoadedEventTypes() const final { return m_eventTypes.size(); }
+    qsizetype numLoadedEvents() const final { return m_events.size(); }
     void addEventType(const QQmlProfilerEventType &type) final;
     void addEvent(const QQmlProfilerEvent &event) final;
-    bool isEmpty() const final { return m_events.isEmpty(); }
     void clear() final;
 
     QList<QQmlProfilerEventType> m_eventTypes;
@@ -53,7 +53,6 @@ void EventReceiver::addEvent(const QQmlProfilerEvent &event)
 void EventReceiver::clear()
 {
     m_events.clear();
-    QQmlProfilerEventReceiver::clear();
 }
 
 class tst_QQuickEventReplay : public QQmlDebugTest

@@ -40,12 +40,13 @@ public:
     QVector<QQmlProfilerEvent> jsHeapMessages;
     QVector<QQmlProfilerEvent> asynchronousMessages;
     QVector<QQmlProfilerEvent> pixmapMessages;
+    QVector<QQmlProfilerEvent> unhandledEvents;
     bool isComplete = false;
 
-    int numLoadedEventTypes() const final;
+    qsizetype numLoadedEventTypes() const final;
+    qsizetype numLoadedEvents() const final;
     void addEventType(const QQmlProfilerEventType &type) final;
     void addEvent(const QQmlProfilerEvent &event) final;
-    bool isEmpty() const final;
     void complete(qint64 maximumTime) final;
     void clear() final;
 
@@ -62,8 +63,6 @@ void QQmlProfilerTestClient::clear()
     pixmapMessages.clear();
     lastTimestamp = -1;
     isComplete = false;
-
-    QQmlProfilerEventReceiver::clear();
 }
 
 void QQmlProfilerTestClient::startTrace(qint64 timestamp, const QList<int> &engineIds)
@@ -82,9 +81,15 @@ void QQmlProfilerTestClient::endTrace(qint64 timestamp, const QList<int> &engine
                                                   engineIds.toVector()));
 }
 
-int QQmlProfilerTestClient::numLoadedEventTypes() const
+qsizetype QQmlProfilerTestClient::numLoadedEventTypes() const
 {
     return types.size();
+}
+
+qsizetype QQmlProfilerTestClient::numLoadedEvents() const
+{
+    return qmlMessages.size() + javascriptMessages.size() + jsHeapMessages.size()
+            + asynchronousMessages.size() + pixmapMessages.size() + unhandledEvents.size();
 }
 
 void QQmlProfilerTestClient::addEventType(const QQmlProfilerEventType &type)
@@ -145,7 +150,7 @@ void QQmlProfilerTestClient::addEvent(const QQmlProfilerEvent &event)
         break;
     case DebugMessage:
     case Quick3DFrame:
-        // Unhandled
+        unhandledEvents.append(event);
         break;
     case MaximumMessage:
         switch (type.rangeType()) {
@@ -168,14 +173,12 @@ void QQmlProfilerTestClient::addEvent(const QQmlProfilerEvent &event)
             break;
         }
         break;
+    default:
+        QFAIL("Unknown message type");
+        break;
     }
 
     QCOMPARE_GE(lastTimestamp, oldTimestamp);
-}
-
-bool QQmlProfilerTestClient::isEmpty() const
-{
-    return lastTimestamp == -1;
 }
 
 void QQmlProfilerTestClient::complete(qint64 maximumTime)

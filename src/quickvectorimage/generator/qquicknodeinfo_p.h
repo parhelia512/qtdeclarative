@@ -100,7 +100,7 @@ struct PathTrimInfo
 
 struct PathNodeInfo : NodeInfo
 {
-    QPainterPath painterPath;
+    QQuickAnimatedProperty path = QQuickAnimatedProperty(QVariant::fromValue(QPainterPath{}));
     Qt::FillRule fillRule = Qt::FillRule::WindingFill;
     QQuickAnimatedProperty fillColor = QQuickAnimatedProperty(QVariant::fromValue(QColor{}));
     QQuickAnimatedProperty fillOpacity = QQuickAnimatedProperty(QVariant::fromValue(qreal(1.0)));

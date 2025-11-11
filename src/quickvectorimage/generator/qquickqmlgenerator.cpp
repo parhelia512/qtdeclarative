@@ -745,11 +745,39 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
     if (!hintStr.isEmpty())
         stream() << hintStr;
 
-    QString svgPathString = painterPath ? QQuickVectorImageGenerator::Utils::toSvgString(*painterPath) : QQuickVectorImageGenerator::Utils::toSvgString(*quadPath);
-    stream() <<   "PathSvg { path: \"" << svgPathString << "\" }";
+    QQuickAnimatedProperty pathFactor(QVariant::fromValue(0));
+    QString pathId = shapePathId + "_ip"_L1;
+    if (!info.path.isAnimated()) {
+        QString svgPathString = painterPath ? QQuickVectorImageGenerator::Utils::toSvgString(*painterPath) : QQuickVectorImageGenerator::Utils::toSvgString(*quadPath);
+        stream() <<   "PathSvg { path: \"" << svgPathString << "\" }";
+    } else {
+        stream() << "PathInterpolated {";
+        m_indentLevel++;
+        stream() << "id: " << pathId;
+        stream() << "svgPaths: [";
+        m_indentLevel++;
+        QQuickAnimatedProperty::PropertyAnimation pathFactorAnim = info.path.animation(0);
+        auto &frames = pathFactorAnim.frames;
+        int pathIdx = 0;
+        for (auto it = frames.begin(); it != frames.end(); ++it) {
+            QString svg = QQuickVectorImageGenerator::Utils::toSvgString(it->value<QPainterPath>());
+            stream() << "\"" << svg << "\"";
+            if (pathIdx < frames.size() - 1)
+                stream(SameLine) << ",";
+            *it = QVariant::fromValue(pathIdx++);
+        }
+        pathFactor.addAnimation(pathFactorAnim);
+        m_indentLevel--;
+        stream() << "]";
+        m_indentLevel--;
+        stream() << "}";
+    }
 
     m_indentLevel--;
     stream() << "}";
+
+    if (pathFactor.isAnimated())
+        generatePropertyAnimation(pathFactor, pathId, "factor"_L1);
 
     if (info.trim.enabled) {
         generatePropertyAnimation(info.trim.start, shapePathId + QStringLiteral(".trim"), QStringLiteral("start"));

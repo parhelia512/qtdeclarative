@@ -47,11 +47,11 @@ bool QQuickGenerator::generate()
 
 void QQuickGenerator::optimizePaths(const PathNodeInfo &info, const QRectF &overrideBoundingRect)
 {
-    QPainterPath pathCopy = info.painterPath;
+    QPainterPath pathCopy = info.path.defaultValue().value<QPainterPath>();
     pathCopy.setFillRule(info.fillRule);
 
     const QRectF &boundingRect = overrideBoundingRect.isNull() ? pathCopy.boundingRect() : overrideBoundingRect;
-    if (m_flags.testFlag(QQuickVectorImageGenerator::GeneratorFlag::OptimizePaths)) {
+    if (m_flags.testFlag(QQuickVectorImageGenerator::GeneratorFlag::OptimizePaths) && !info.path.isAnimated()) {
         QQuadPath strokePath = QQuadPath::fromPainterPath(pathCopy);
         bool fillPathNeededClose;
         QQuadPath fillPath = strokePath.subPathsClosed(&fillPathNeededClose);

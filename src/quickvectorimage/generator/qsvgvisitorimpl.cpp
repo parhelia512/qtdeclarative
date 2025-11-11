@@ -853,7 +853,7 @@ void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
                         info.fillColor.setDefaultValue(styleResolver->currentFillColor());
                     }
 
-                    info.painterPath = p;
+                    info.path.setDefaultValue(QVariant::fromValue(p));
 
                     const QGradient *strokeGradient = styleResolver->currentStrokeGradient();
                     QPen pen;
@@ -886,7 +886,7 @@ void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
                         strokeInfo.grad = *strokeGradient;
 
                         QPainterPathStroker stroker(pen);
-                        strokeInfo.painterPath = stroker.createStroke(p);
+                        strokeInfo.path.setDefaultValue(QVariant::fromValue(stroker.createStroke(p)));
                         m_generator->generatePath(strokeInfo, boundingRect);
                     }
                 };
@@ -1590,7 +1590,7 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
 
     const QGradient *strokeGradient = styleResolver->currentStrokeGradient();
 
-    info.painterPath = path;
+    info.path.setDefaultValue(QVariant::fromValue(path));
     info.fillColor.setDefaultValue(styleResolver->currentFillColor());
     if (strokeGradient == nullptr) {
         info.strokeStyle = StrokeStyle::fromPen(styleResolver->currentStroke());
@@ -1611,7 +1611,7 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
         strokeInfo.grad = *strokeGradient;
 
         QPainterPathStroker stroker(styleResolver->currentStroke());
-        strokeInfo.painterPath = stroker.createStroke(path);
+        strokeInfo.path.setDefaultValue(QVariant::fromValue(stroker.createStroke(path)));
         m_generator->generatePath(strokeInfo);
     }
 

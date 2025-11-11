@@ -178,6 +178,9 @@ void QQuickEventReplayServiceImpl::sendNextEvent()
                     QPoint(data.inputA, data.inputB), m_currentModifiers, Qt::ScrollUpdate);
             break;
         }
+        case InputEventType::InputMouseDoubleClick:
+            // Ingore double clicks. We consider the constituent low level events instead.
+            break;
         default: {
             m_currentButtons = Qt::MouseButtons(data.inputB);
             qt_handleMouseEvent(

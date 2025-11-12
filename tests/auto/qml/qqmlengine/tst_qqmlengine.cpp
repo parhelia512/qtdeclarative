@@ -469,6 +469,20 @@ void tst_qqmlengine::clearComponentCache()
         QVERIFY(match.captured(1).toInt(&ok) > typeNumber);
         QVERIFY(ok);
     }
+
+    for (int i = 0; i < 3; ++i) {
+        const QJSValue module = engine.importModule(testFile("a1.mjs"));
+        QVERIFY(module.property("data_a1").isUndefined());
+
+        QTest::ignoreMessage(QtCriticalMsg, "In a1 - DATA_IN_A1");
+        QTest::ignoreMessage(QtCriticalMsg, "In B1 DATA_IN_A1");
+
+        module.property("process_a1").call();
+        QCOMPARE(module.property("data_a1").toString(), "DATA_IN_A1");
+
+        // Drops the value of the module, causing re-evaluation in next loop.
+        engine.clearComponentCache();
+    }
 }
 
 struct ComponentCacheFunctions : public QObject, public QQmlIncubationController

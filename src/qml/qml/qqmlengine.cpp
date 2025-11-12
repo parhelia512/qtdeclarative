@@ -626,15 +626,26 @@ void QQmlEngine::clearComponentCache()
     // QQmlGadgetPtrWrapper can have QQmlData with various references.
     qDeleteAll(std::exchange(d->cachedValueTypeInstances, {}));
 
+    QV4::ExecutionEngine *v4 = handle();
+
+    // Reset the values of JavaScript libraries and ECMAScript modules
+    // So that they get re-evaluated on next usage.
+    {
+        const auto cus = v4->compilationUnits();
+        for (const auto &cu : cus) {
+            cu->setValue(QV4::Value::emptyValue());
+            delete[] std::exchange(cu->imports, nullptr);
+        }
+    }
+
     // Contexts can hold on to CUs but live on the JS heap.
     // Use a non-incremental GC run to get rid of those.
-    QV4::MemoryManager *mm = handle()->memoryManager;
+    QV4::MemoryManager *mm = v4->memoryManager;
     auto oldLimit = mm->gcStateMachine->timeLimit;
     mm->setGCTimeLimit(-1);
     mm->runGC();
     mm->gcStateMachine->timeLimit = std::move(oldLimit);
 
-    QV4::ExecutionEngine *v4 = handle();
     v4->trimCompilationUnits();
     v4->typeLoader()->clearCache();
     QQmlMetaType::freeUnusedTypesAndCaches();

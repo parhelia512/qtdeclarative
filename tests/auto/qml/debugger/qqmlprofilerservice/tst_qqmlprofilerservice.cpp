@@ -144,6 +144,7 @@ void QQmlProfilerTestClient::addEvent(const QQmlProfilerEvent &event)
         jsHeapMessages.append(event);
         break;
     case DebugMessage:
+    case Quick3DFrame:
         // Unhandled
         break;
     case MaximumMessage:

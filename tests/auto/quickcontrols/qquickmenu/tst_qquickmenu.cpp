@@ -2217,7 +2217,7 @@ void tst_QQuickMenu::subMenuFlipsPositionWhenOutOfBounds()
     mainMenu->setPopupType(popupType);
 
     window->show();
-    QVERIFY(QTest::qWaitForWindowExposed(window));
+    QVERIFY(QTest::qWaitForWindowActive(window));
 
     mainMenu->open();
     QTRY_VERIFY(mainMenu->isOpened());

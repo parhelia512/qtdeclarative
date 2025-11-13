@@ -76,7 +76,6 @@ public:
 
 private slots:
     void initTestCase() override;
-    void cleanupTestCase();
 
     void errors_data();
     void errors();
@@ -601,12 +600,6 @@ private:
             QCOMPARE(actual, expected); \
         } \
     }
-
-void tst_qqmllanguage::cleanupTestCase()
-{
-    if (dataDirectoryUrl().scheme() != QLatin1String("qrc"))
-        QVERIFY(QFile::remove(testFile(QString::fromUtf8("I18nType\303\201\303\242\303\243\303\244\303\245.qml"))));
-}
 
 void tst_qqmllanguage::insertedSemicolon_data()
 {
@@ -2524,19 +2517,37 @@ void tst_qqmllanguage::i18n_data()
 {
     QTest::addColumn<QString>("file");
     QTest::addColumn<QString>("stringProperty");
-    QTest::newRow("i18nStrings") << "i18nStrings.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245 (5 accented 'a' letters)");
-    QTest::newRow("i18nDeclaredPropertyNames") << "i18nDeclaredPropertyNames.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 10");
-    QTest::newRow("i18nDeclaredPropertyUse") << "i18nDeclaredPropertyUse.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 15");
-    QTest::newRow("i18nScript") << "i18nScript.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 20");
-    QTest::newRow("i18nType") << "i18nType.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 30");
-    QTest::newRow("i18nNameSpace") << "i18nNameSpace.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 40");
+
+    QTest::newRow("i18n/i18nStrings") << "i18nStrings.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245 (5 accented 'a' letters)");
+    QTest::newRow("i18n/i18nDeclaredPropertyNames") << "i18nDeclaredPropertyNames.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 10");
+    QTest::newRow("i18n/i18nDeclaredPropertyUse") << "i18nDeclaredPropertyUse.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 15");
+    QTest::newRow("i18n/i18nScript") << "i18nScript.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 20");
+    QTest::newRow("i18n/i18nType") << "i18nType.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 30");
+    QTest::newRow("i18n/i18nNameSpace") << "i18nNameSpace.qml" << QString::fromUtf8("Test \303\241\303\242\303\243\303\244\303\245: 40");
 }
 
 void tst_qqmllanguage::i18n()
 {
     QFETCH(QString, file);
     QFETCH(QString, stringProperty);
-    QQmlComponent component(&engine, testFileUrl(file));
+
+    QTemporaryDir tmpDir;
+    {
+        using Flag = QDirListing::IteratorFlag;
+        for (const auto &it : QDirListing(testFile("i18n"_L1), Flag::FilesOnly | Flag::Recursive))
+            QVERIFY(QFile::copy(it.absoluteFilePath(), tmpDir.filePath(it.fileName())));
+
+        // Create locale-specific file
+        // For POSIX, this will just be data/I18nType.qml, since POSIX is 7-bit
+        // For iso8859-1 locale, this will just be data/I18nType?????.qml where ????? is 5 8-bit characters
+        // For utf-8 locale, this will be data/I18nType??????????.qml where ?????????? is 5 8-bit characters, UTF-8 encoded
+        if (dataDirectoryUrl().scheme() != QLatin1String("qrc")) {
+            const auto out = tmpDir.filePath(QString::fromUtf8("I18nType\303\201\303\242\303\243\303\244\303\245.qml"));
+            QVERIFY(QFile::copy(testFile("i18n/I18nType30.qml"_L1), out));
+        }
+    }
+
+    QQmlComponent component(&engine, tmpDir.filePath(file));
     VERIFY_ERRORS(0);
     QScopedPointer<MyTypeObject> object(qobject_cast<MyTypeObject *>(component.create()));
     QVERIFY(object != nullptr);
@@ -4047,18 +4058,6 @@ void tst_qqmllanguage::initTestCase()
 
     // Registering the TestType class in other modules should have no adverse effects
     qmlRegisterType<TestType>("org.qtproject.TestPost", 1, 0, "Test");
-
-    // Create locale-specific file
-    // For POSIX, this will just be data/I18nType.qml, since POSIX is 7-bit
-    // For iso8859-1 locale, this will just be data/I18nType?????.qml where ????? is 5 8-bit characters
-    // For utf-8 locale, this will be data/I18nType??????????.qml where ?????????? is 5 8-bit characters, UTF-8 encoded
-    if (dataDirectoryUrl().scheme() != QLatin1String("qrc")) {
-        QFile in(testFileUrl(QLatin1String("I18nType30.qml")).toLocalFile());
-        QVERIFY2(in.open(QIODevice::ReadOnly), qPrintable(QString::fromLatin1("Cannot open '%1': %2").arg(in.fileName(), in.errorString())));
-        QFile out(testFileUrl(QString::fromUtf8("I18nType\303\201\303\242\303\243\303\244\303\245.qml")).toLocalFile());
-        QVERIFY2(out.open(QIODevice::WriteOnly), qPrintable(QString::fromLatin1("Cannot open '%1': %2").arg(out.fileName(), out.errorString())));
-        out.write(in.readAll());
-    }
 
     // Register a Composite Singleton.
     qmlRegisterSingletonType(testFileUrl("singleton/RegisteredCompositeSingletonType.qml"), "org.qtproject.Test", 1, 0, "RegisteredSingleton");

@@ -708,7 +708,7 @@ void tst_qquickdeliveryagent::hoverEventGlobalPosition()
     QTest::mouseMove(&window, point);
     QCOMPARE(child.hoverEnter, true);
     QTest::mousePress(&window, Qt::LeftButton, {}, point);
-    QCOMPARE(child.globalHoverPosition, child.globalMousePosition);
+    QCOMPARE(child.globalHoverPosition.toPoint(), child.globalMousePosition.toPoint());
 }
 
 void tst_qquickdeliveryagent::layerEnabledHoverCrash() // QTBUG-139561

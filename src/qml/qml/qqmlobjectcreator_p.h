@@ -322,6 +322,7 @@ private:
         qt_ptr_swap(_qmlContext, qmlContext);
         qt_ptr_swap(_scopeObject, scopeObject);
     }
+    void registerPostHocRequiredProperties(const QV4::CompiledData::Binding *binding);
 };
 
 struct QQmlObjectCreatorRecursionWatcher

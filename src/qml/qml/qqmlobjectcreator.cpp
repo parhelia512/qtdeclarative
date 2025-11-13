@@ -1667,46 +1667,8 @@ void QQmlObjectCreator::clear()
     phase = Done;
 }
 
-bool QQmlObjectCreator::populateInstance(int index, QObject *instance, QObject *bindingTarget,
-                                         const QQmlPropertyData *valueTypeProperty,
-                                         const QV4::CompiledData::Binding *binding)
+void QQmlObjectCreator::registerPostHocRequiredProperties(const QV4::CompiledData::Binding *binding)
 {
-    Q_ASSERT(instance);
-    QQmlData *declarativeData = QQmlData::get(instance, /*create*/true);
-
-    qSwap(_qobject, instance);
-    qSwap(_valueTypeProperty, valueTypeProperty);
-    qSwap(_compiledObjectIndex, index);
-    const QV4::CompiledData::Object *obj = compilationUnit->objectAt(_compiledObjectIndex);
-    qSwap(_compiledObject, obj);
-    qSwap(_ddata, declarativeData);
-    qSwap(_bindingTarget, bindingTarget);
-
-    QV4::Scope valueScope(v4);
-    QV4::ScopedValue scopeObjectProtector(valueScope);
-
-    QQmlPropertyCache::ConstPtr cache = propertyCaches->at(_compiledObjectIndex);
-
-    QQmlVMEMetaObject *vmeMetaObject = nullptr;
-    if (propertyCaches->needsVMEMetaObject(_compiledObjectIndex)) {
-        Q_ASSERT(!cache.isNull());
-        // install on _object
-        vmeMetaObject = new QQmlVMEMetaObject(v4, _qobject, cache, compilationUnit, _compiledObjectIndex);
-        _ddata->propertyCache = cache;
-        scopeObjectProtector = _ddata->jsWrapper.value();
-    } else {
-        vmeMetaObject = QQmlVMEMetaObject::get(_qobject);
-    }
-
-    registerObjectWithContextById(_compiledObject, _qobject);
-
-    qSwap(_propertyCache, cache);
-    qSwap(_vmeMetaObject, vmeMetaObject);
-
-    _ddata->compilationUnit = compilationUnit;
-    if (_compiledObject->hasFlag(QV4::CompiledData::Object::HasDeferredBindings))
-        _ddata->deferData(_compiledObjectIndex, compilationUnit, context, m_inlineComponentName);
-
     const qsizetype oldRequiredPropertiesCount = sharedState->requiredProperties.size();
     QSet<QString> postHocRequired;
     for (auto it = _compiledObject->requiredPropertyExtraDataBegin(); it != _compiledObject->requiredPropertyExtraDataEnd(); ++it)
@@ -1784,7 +1746,7 @@ bool QQmlObjectCreator::populateInstance(int index, QObject *instance, QObject *
         sharedState->requiredProperties.insert(
                 {_qobject, propertyData},
                 RequiredPropertyInfo {
-                        name, compilationUnit->finalUrl(), _compiledObject->location, {} });
+                                      name, compilationUnit->finalUrl(), _compiledObject->location, {} });
     }
 
     if (binding && binding->isAttachedProperty()
@@ -1815,12 +1777,55 @@ bool QQmlObjectCreator::populateInstance(int index, QObject *instance, QObject *
             sharedState->requiredProperties.insert(
                     {_qobject, propertyData},
                     RequiredPropertyInfo {
-                            name, compilationUnit->finalUrl(), _compiledObject->location, {} });
+                                          name, compilationUnit->finalUrl(), _compiledObject->location, {} });
         }
     }
 
     if (!postHocRequired.isEmpty() && hadInheritedRequiredProperties)
         recordError({}, QLatin1String("Property %1 was marked as required but does not exist").arg(*postHocRequired.begin()));
+}
+
+bool QQmlObjectCreator::populateInstance(int index, QObject *instance, QObject *bindingTarget,
+                                         const QQmlPropertyData *valueTypeProperty,
+                                         const QV4::CompiledData::Binding *binding)
+{
+    Q_ASSERT(instance);
+    QQmlData *declarativeData = QQmlData::get(instance, /*create*/true);
+
+    qSwap(_qobject, instance);
+    qSwap(_valueTypeProperty, valueTypeProperty);
+    qSwap(_compiledObjectIndex, index);
+    const QV4::CompiledData::Object *obj = compilationUnit->objectAt(_compiledObjectIndex);
+    qSwap(_compiledObject, obj);
+    qSwap(_ddata, declarativeData);
+    qSwap(_bindingTarget, bindingTarget);
+
+    QV4::Scope valueScope(v4);
+    QV4::ScopedValue scopeObjectProtector(valueScope);
+
+    QQmlPropertyCache::ConstPtr cache = propertyCaches->at(_compiledObjectIndex);
+
+    QQmlVMEMetaObject *vmeMetaObject = nullptr;
+    if (propertyCaches->needsVMEMetaObject(_compiledObjectIndex)) {
+        Q_ASSERT(!cache.isNull());
+        // install on _object
+        vmeMetaObject = new QQmlVMEMetaObject(v4, _qobject, cache, compilationUnit, _compiledObjectIndex);
+        _ddata->propertyCache = cache;
+        scopeObjectProtector = _ddata->jsWrapper.value();
+    } else {
+        vmeMetaObject = QQmlVMEMetaObject::get(_qobject);
+    }
+
+    registerObjectWithContextById(_compiledObject, _qobject);
+
+    qSwap(_propertyCache, cache);
+    qSwap(_vmeMetaObject, vmeMetaObject);
+
+    _ddata->compilationUnit = compilationUnit;
+    if (_compiledObject->hasFlag(QV4::CompiledData::Object::HasDeferredBindings))
+        _ddata->deferData(_compiledObjectIndex, compilationUnit, context, m_inlineComponentName);
+
+    registerPostHocRequiredProperties(binding);
 
     if (_compiledObject->nFunctions > 0)
         setupFunctions();

@@ -407,7 +407,7 @@ void tst_HoverHandler::movingItemWithHoverHandler()
                             << QGuiApplicationPrivate::lastCursorPosition.toPoint();
 
     QTRY_COMPARE(paddleHH->isHovered(), true);
-    // TODO check the cursor shape after fixing QTBUG-53987
+    QTRY_COMPARE(window->cursor().shape(), Qt::SizeVerCursor);
 
     const auto &deliveryTargets =
             QQuickPointerHandlerPrivate::deviceDeliveryTargets(QPointingDevice::primaryPointingDevice());

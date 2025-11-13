@@ -558,12 +558,17 @@ public:
     quint32 focusReason:4;
     quint32 focusPolicy:4;
     // Bit 53
-
     // eventHandlingChildrenWithinBounds is true if all children recursively
     // are known to be within their parents' bounds.
     // eventHandlingChildrenWithinBoundsSet is true only when we've checked.
     mutable quint32 eventHandlingChildrenWithinBounds:1;
     mutable quint32 eventHandlingChildrenWithinBoundsSet:1;
+    // Bit 55
+    quint32 customOverlay:1;
+    // Bit 56
+
+    static bool customOverlayRequested;
+    void requestCustomOverlay();
 
     enum DirtyType {
         TransformOrigin         = 0x00000001,

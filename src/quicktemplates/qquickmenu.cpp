@@ -1749,7 +1749,7 @@ void QQuickMenu::setVisible(bool visible)
         // the user opens their menu on press, but not on release. For that, we close all
         // other menus that are open, assuming that we're not a sub-menu.
         if (!d->parentMenu) {
-            QQuickOverlay *overlay = QQuickOverlay::overlay(window);
+            QQuickOverlay *overlay = QQuickOverlay::overlay(window, parentItem());
             if (overlay) {
                 const QList<QQuickPopup *> allPopups = QQuickOverlayPrivate::get(overlay)->allPopups;
                 for (auto *popup : allPopups) {

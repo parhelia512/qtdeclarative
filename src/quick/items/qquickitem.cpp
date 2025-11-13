@@ -3320,6 +3320,7 @@ QQuickItemPrivate::QQuickItemPrivate()
     , focusPolicy(Qt::NoFocus)
     , eventHandlingChildrenWithinBounds(false)
     , eventHandlingChildrenWithinBoundsSet(false)
+    , customOverlay(false)
     , dirtyAttributes(0)
     , nextDirtyItem(nullptr)
     , prevDirtyItem(nullptr)
@@ -5468,6 +5469,14 @@ QQuickStateGroup *QQuickItemPrivate::_states()
     }
 
     return _stateGroup;
+}
+
+bool QQuickItemPrivate::customOverlayRequested = false;
+
+void QQuickItemPrivate::requestCustomOverlay()
+{
+    customOverlayRequested = true;
+    customOverlay = true;
 }
 
 QPointF QQuickItemPrivate::computeTransformOrigin() const

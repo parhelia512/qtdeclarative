@@ -16,8 +16,10 @@
 // We mean it.
 //
 
+#include "qqmldiffer_p.h"
 #include <QtLanguageServer/private/qlanguageserverspec_p.h>
 #include <QtQmlDom/private/qqmldomitem_p.h>
+
 #include <QtCore/qlist.h>
 #include <QtCore/qmap.h>
 
@@ -165,6 +167,7 @@ HighlightsContainer visitTokens(const QQmlJS::Dom::DomItem &item,
                                 const std::optional<HighlightsRange> &range);
 void addHighlight(HighlightsContainer &out, const QQmlJS::SourceLocation &loc, QmlHighlightKind,
                     QmlHighlightModifiers = QmlHighlightModifier::None);
+void applyDiffs(HighlightsContainer &highlights, const QList<QQmlLSUtils::Diff> &diffs);
 } // namespace Utils
 
 class HighlightingVisitor

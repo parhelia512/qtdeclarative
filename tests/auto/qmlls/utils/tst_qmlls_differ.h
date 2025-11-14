@@ -16,6 +16,8 @@ public:
 private slots:
     void computeDiff_data();
     void computeDiff();
+    void applyDiffs_data();
+    void applyDiffs();
 };
 
 #endif // TST_QMLLS_DIFFER_H

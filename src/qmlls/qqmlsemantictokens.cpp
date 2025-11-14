@@ -3,6 +3,7 @@
 // Qt-Security score:significant reason:default
 
 #include <qqmlsemantictokens_p.h>
+#include <qqmldiffer_p.h>
 
 #include <QtQmlLS/private/qqmllsutils_p.h>
 #include <QtQmlDom/private/qqmldomscriptelements_p.h>
@@ -1061,6 +1062,192 @@ QList<int> Utils::collectTokens(const QQmlJS::Dom::DomItem &item,
                                      HighlightingMode mode)
 {
     return Utils::encodeSemanticTokens(visitTokens(item, range), mode);
+}
+
+static std::pair<quint32, quint32> newlineCountAndLastLineLength(const QString &text)
+{
+    auto [row, col]  = QQmlJS::SourceLocation::rowAndColumnFrom(text, text.size());
+    return { row - 1, col - 1 }; // rows are 1-based, so subtract 1 to get the number of newlines
+}
+static void updateCursorPositionByDiff(const QString &text, QQmlJS::SourceLocation &cursor)
+{
+    auto [newLines, lastLineLength] = newlineCountAndLastLineLength(text);
+    if (newLines > 0) {
+        cursor.startLine += newLines;
+        cursor.startColumn = lastLineLength + 1; // +1 because columns are 1-based
+    } else {
+        cursor.startColumn += text.size();
+    }
+    cursor.offset += text.size();
+};
+
+//
+// Utilities for insertion handling
+//
+
+static bool tokenBeforeOffset(const QQmlJS::SourceLocation &t, quint32 offset)
+{
+    return t.end() < offset;
+}
+
+static bool tokenAfterOffset(const QQmlJS::SourceLocation &t, quint32 offset)
+{
+    return t.begin() > offset;
+}
+
+static bool insertionInsideToken(const QQmlJS::SourceLocation &token,
+                                 const QQmlJS::SourceLocation &cursor)
+{
+    return token.begin() < cursor.begin() && token.end() >= cursor.begin();
+}
+
+static bool insertionTouchesTokenLeft(const QQmlJS::SourceLocation &token,
+                                      const QQmlJS::SourceLocation &cursor)
+{
+    return token.begin() >= cursor.begin() && token.begin() <= cursor.end();
+}
+
+static void shiftTokenAfterInsert(QQmlJS::SourceLocation &t, const QQmlJS::SourceLocation &cursor,
+                                  int newlines, int lastLen, int diffLen)
+{
+    if (t.startLine == cursor.startLine) {
+        if (newlines > 0) {
+            t.startColumn = lastLen + t.startColumn - cursor.startColumn + 1;
+        } else {
+            t.startColumn += lastLen;
+        }
+    }
+    t.startLine += newlines;
+    t.offset += diffLen;
+}
+
+static void expandTokenForMiddleInsert(QQmlJS::SourceLocation &t, const QQmlLSUtils::Diff &diff,
+                                       const QQmlJS::SourceLocation &cursor)
+{
+    auto begin = diff.text.cbegin();
+    auto end = diff.text.cend();
+
+    auto ptr = std::find_if(begin, end, [](QChar c) { return c.isSpace(); });
+
+    if (ptr != end) {
+        t.length = cursor.begin() - t.begin() + std::distance(begin, ptr);
+    } else {
+        t.length += diff.text.size();
+    }
+}
+
+static void expandTokenForLeftOverlap(QQmlJS::SourceLocation &t, const QQmlLSUtils::Diff &diff,
+                                      const QQmlJS::SourceLocation &cursor, int newlines,
+                                      int lastLen)
+{
+    const int diffLen = diff.text.size();
+    t.offset = cursor.begin();
+    t.length += diffLen;
+    t.startLine = cursor.startLine;
+    t.startColumn = cursor.startColumn;
+
+    // find last space inside diff text
+    auto rbegin = diff.text.rbegin();
+    auto rend = diff.text.rend();
+    auto ptr = std::find_if(rbegin, rend, [](QChar c) { return c.isSpace(); });
+
+    if (ptr != rend) {
+        std::ptrdiff_t omitted = std::distance(ptr, rend);
+        t.offset += omitted;
+        t.length -= omitted;
+        t.startColumn += omitted;
+    }
+
+    // adjust if diff contains newlines
+    if (newlines > 0) {
+        t.startLine += newlines;
+        t.startColumn = lastLen - std::distance(ptr.base(), diff.text.end()) + 1;
+    }
+}
+
+static void updateHighlightsOnInsert(HighlightsContainer &highlights,
+                                     QQmlJS::SourceLocation &cursor, const QQmlLSUtils::Diff &diff)
+{
+    const auto [newlines, lastLen] = newlineCountAndLastLineLength(diff.text);
+    const auto diffLen = diff.text.size();
+    cursor.length = quint32(diffLen); // set length for insertion range, used in overlap checks
+
+    HighlightsContainer shifted;
+
+    for (auto item : highlights) {
+        auto &token = item.loc;
+        if (tokenBeforeOffset(token, cursor.begin())) {
+            shifted.insert(token.offset, item);
+            continue;
+        }
+
+        if (tokenAfterOffset(token, cursor.begin())) {
+            shiftTokenAfterInsert(token, cursor, newlines, lastLen, diffLen);
+            shifted.insert(token.offset, item);
+            continue;
+        }
+
+        // Overlap cases
+        if (insertionInsideToken(token, cursor)) {
+            expandTokenForMiddleInsert(token, diff, cursor);
+        } else if (insertionTouchesTokenLeft(token, cursor)) {
+            expandTokenForLeftOverlap(token, diff, cursor, newlines, lastLen);
+        }
+
+        shifted.insert(token.offset, item);
+    }
+
+    highlights.swap(shifted);
+
+    // Advance cursor for the next Diff
+    updateCursorPositionByDiff(diff.text, cursor);
+}
+
+/*
+Equal:
+- Just advance the running offset by length.
+- No changes to the map.
+
+Insert:
+- Insert new entries at the current offset.
+- case A: token before insertion offset: no highlight change
+- case B: token after insertion offset: slide all offsets forward by the length of the inserted text.
+          sub case: if the insertion is on the same line as the token, adjust the column accordingly.
+- case C: insertion overlaps token: expand the token length by the length of the inserted text
+         sub case 1: insertion is inside the token: expand length
+        sub case 2: insertion touches left of the token: adjust offset to insertion start,
+                        expand length, adjust line/column if needed.
+
+Delete:
+- TODO: implement deletion handling
+*/
+void Utils::applyDiffs(HighlightsContainer &highlights, const QList<QQmlLSUtils::Diff> &diffs)
+{
+    using namespace QQmlLSUtils;
+    if (highlights.isEmpty())
+        return;
+
+    QQmlJS::SourceLocation cursor;
+    cursor.offset = 0;
+    cursor.length = 0;
+    cursor.startLine = 1;
+    cursor.startColumn = 1;
+
+    for (const Diff &diff : diffs) {
+        switch (diff.command) {
+        case Diff::Equal:
+            // Just advance cursor
+            updateCursorPositionByDiff(diff.text, cursor);
+            break;
+        case Diff::Insert: {
+            updateHighlightsOnInsert(highlights, cursor, diff);
+            break;
+        }
+        case Diff::Delete: {
+            // TODO: implement deletion handling
+        }
+        }
+    }
 }
 
 } // namespace QmlHighlighting

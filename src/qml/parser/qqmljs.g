@@ -3053,7 +3053,7 @@ AssignmentExpression_In: LeftHandSideExpression T_EQ AssignmentExpression_In;
         if (AST::Pattern *p = sym(1).Expression->patternCast()) {
             SourceLocation errorLoc;
             QString errorMsg;
-            if (!p->convertLiteralToAssignmentPattern(pool, &errorLoc, &errorMsg)) {
+            if (!p->convertLiteralToAssignmentPattern(&errorLoc, &errorMsg)) {
                 syntaxError(errorLoc, errorMsg);
                 return false;
             }
@@ -3734,7 +3734,7 @@ IterationStatement: T_FOR T_LPAREN LeftHandSideExpression InOrOf Expression_In T
         if (AST::Pattern *p = sym(3).Expression->patternCast()) {
             SourceLocation errorLoc;
             QString errorMsg;
-            if (!p->convertLiteralToAssignmentPattern(pool, &errorLoc, &errorMsg)) {
+            if (!p->convertLiteralToAssignmentPattern(&errorLoc, &errorMsg)) {
                 syntaxError(errorLoc, errorMsg);
                 return false;
             }

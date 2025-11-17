@@ -632,4 +632,38 @@ TestCase {
 
         control.close()
     }
+
+    function test_dontGiveButtonBoxFocusWhenEmpty() {
+        let control = createTemporaryObject(dialog, testCase)
+        verify(control)
+        let openedSpy = createTemporaryObject(signalSpy, testCase, {target: control, signalName: "opened"})
+        verify(openedSpy.valid)
+
+        control.open()
+        openedSpy.wait()
+        compare(openedSpy.count, 1)
+        verify(control.visible)
+
+        compare(control.footer?.focus, false)
+        compare(control.footer?.activeFocus, false)
+    }
+
+    function test_dontGiveButtonBoxFocusWhenButtonsAreDisabled() {
+        let control = createTemporaryObject(dialogWithoutAcceptRoleOrDefaultButtonInButtonBox, testCase)
+        verify(control)
+        let openedSpy = createTemporaryObject(signalSpy, testCase, {target: control, signalName: "opened"})
+        verify(openedSpy.valid)
+
+        for (let i = 0; i < control.footer.count; i++) {
+            control.footer.itemAt(i).enabled = false;
+        }
+
+        control.open()
+        openedSpy.wait()
+        compare(openedSpy.count, 1)
+        verify(control.visible)
+
+        compare(control.footer.focus, false)
+        compare(control.footer.activeFocus, false)
+    }
 }

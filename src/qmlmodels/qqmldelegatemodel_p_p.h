@@ -134,19 +134,38 @@ public:
                           int row, int column);
     ~QQmlDelegateModelItem();
 
-    void referenceObject() { ++objectRef; }
+    void referenceSript() { ++m_scriptRef; }
+    bool releaseScript()
+    {
+        Q_ASSERT(m_scriptRef > 0);
+        return --m_scriptRef == 0;
+    }
+    void clearScriptReferences()
+    {
+        // TODO: This is quite wrong in any conceivable way.
+        m_scriptRef = 0;
+    }
+
+    void referenceObject() { ++m_objectRef; }
     bool releaseObject()
     {
-        Q_ASSERT(objectRef > 0);
-        return --objectRef == 0 && !(groups & Compositor::PersistedFlag);
+        Q_ASSERT(m_objectRef > 0);
+        return --m_objectRef == 0 && !(m_groups & Compositor::PersistedFlag);
     }
-    bool isObjectReferenced() const { return objectRef != 0 || (groups & Compositor::PersistedFlag); }
+    void clearObjectReferences()
+    {
+        // TODO: This can be OK if we regard object references as merely advisory.
+        //       We need to remove all the Q_ASSERTs about them then.
+        m_objectRef = 0;
+    }
+
+    bool isObjectReferenced() const { return m_objectRef != 0 || (m_groups & Compositor::PersistedFlag); }
     void childContextObjectDestroyed(QObject *childContextObject);
 
     bool isReferenced() const {
-        return scriptRef
-                || incubationTask
-                || ((groups & Compositor::UnresolvedFlag) && (groups & Compositor::GroupMask));
+        return m_scriptRef
+                || m_incubationTask
+                || ((m_groups & Compositor::UnresolvedFlag) && (m_groups & Compositor::GroupMask));
     }
 
     void dispose();
@@ -159,16 +178,19 @@ public:
 
     int groupIndex(Compositor::Group group);
 
-    int modelRow() const { return row; }
-    int modelColumn() const { return column; }
-    int modelIndex() const { return index; }
+    int modelRow() const { return m_row; }
+    int modelColumn() const { return m_column; }
+    int modelIndex() const { return m_index; }
+    bool hasValidModelIndex() const { return m_index >= 0; }
     virtual void setModelIndex(int idx, int newRow, int newColumn, bool alwaysEmit = false);
 
-    virtual QV4::ReturnedValue get() { return QV4::QObjectWrapper::wrap(metaType->v4Engine, this); }
+    bool usesStructuredModelData() const { return m_useStructuredModelData; }
+
+    virtual QV4::ReturnedValue get() { return QV4::QObjectWrapper::wrap(m_metaType->v4Engine, this); }
 
     virtual void setValue(const QString &role, const QVariant &value) { Q_UNUSED(role); Q_UNUSED(value); }
     virtual bool resolveIndex(const QQmlAdaptorModel &, int) { return false; }
-    virtual QQmlRefPointer<QQmlContextData> initProxy() { return contextData; }
+    virtual QQmlRefPointer<QQmlContextData> initProxy() { return m_contextData; }
 
     static QV4::ReturnedValue get_model(const QV4::FunctionObject *, const QV4::Value *thisObject, const QV4::Value *argv, int argc);
     static QV4::ReturnedValue get_groups(const QV4::FunctionObject *, const QV4::Value *thisObject, const QV4::Value *argv, int argc);
@@ -177,21 +199,13 @@ public:
     static QV4::ReturnedValue set_member(QQmlDelegateModelItem *thisItem, uint flag, const QV4::Value &arg);
     static QV4::ReturnedValue get_index(QQmlDelegateModelItem *thisItem, uint flag, const QV4::Value &arg);
 
-    QQmlRefPointer<QQmlDelegateModelItemMetaType> metaType;
-    QQmlRefPointer<QQmlContextData> contextData;
-    QPointer<QObject> object;
-    QQDMIncubationTask *incubationTask = nullptr;
-    QQmlComponent *delegate = nullptr;
-    int objectRef = 0;
-    int scriptRef = 0;
-    int groups = 0;
 
     QQmlDelegateModelAttached *attached() const
     {
-        if (!object)
+        if (!m_object)
             return nullptr;
 
-        QQmlData *ddata = QQmlData::get(object);
+        QQmlData *ddata = QQmlData::get(m_object);
         if (!ddata || !ddata->hasExtendedData())
             return nullptr;
 
@@ -200,25 +214,69 @@ public:
                         QQmlPrivate::attachedPropertiesFunc<QQmlDelegateModel>()));
     }
 
-    void disableStructuredModelData() { useStructuredModelData = false; }
+    void disableStructuredModelData() { m_useStructuredModelData = false; }
 
     QDynamicMetaObjectData *exchangeMetaObject(QDynamicMetaObjectData *metaObject)
     {
         return std::exchange(d_ptr->metaObject, metaObject);
     }
 
+    QQDMIncubationTask *incubationTask() const { return m_incubationTask; }
+    void clearIncubationTask() { m_incubationTask = nullptr; }
+    void setIncubationTask(QQDMIncubationTask *incubationTask)
+    {
+        Q_ASSERT(!m_incubationTask);
+        Q_ASSERT(incubationTask);
+        m_incubationTask = incubationTask;
+    }
+
+    int objectRef() const { return m_objectRef; }
+    int scriptRef() const { return m_scriptRef; }
+
+    QObject *object() const { return m_object; }
+    void setObject(QObject *object) {
+        Q_ASSERT(!m_object);
+        Q_ASSERT(object);
+        m_object = object;
+    }
+
+    QQmlComponent *delegate() const { return m_delegate; }
+    void setDelegate(QQmlComponent *delegate) { m_delegate = delegate; }
+
+    const QQmlRefPointer<QQmlContextData> &contextData() const { return m_contextData; }
+    void setContextData(const QQmlRefPointer<QQmlContextData> &contextData)
+    {
+        m_contextData = contextData;
+    }
+
+    int groups() const { return m_groups; }
+    void setGroups(int groups) { m_groups = groups; }
+    void addGroups(int groups) { m_groups |= groups; }
+    void removeGroups(int groups) { m_groups &= ~groups; }
+    void clearGroups() { m_groups = 0; }
+
+    const QQmlRefPointer<QQmlDelegateModelItemMetaType> &metaType() const { return m_metaType; }
+
 Q_SIGNALS:
     void modelIndexChanged();
     Q_REVISION(2, 12) void rowChanged();
     Q_REVISION(2, 12) void columnChanged();
 
-protected:
+private:
     void objectDestroyed(QObject *);
 
-    int index = -1;
-    int row = -1;
-    int column = -1;
-    bool useStructuredModelData = true;
+    QQmlRefPointer<QQmlDelegateModelItemMetaType> m_metaType;
+    QQmlRefPointer<QQmlContextData> m_contextData;
+    QPointer<QObject> m_object;
+    QQDMIncubationTask *m_incubationTask = nullptr;
+    QQmlComponent *m_delegate = nullptr;
+    int m_objectRef = 0;
+    int m_scriptRef = 0;
+    int m_groups = 0;
+    int m_index = -1;
+    int m_row = -1;
+    int m_column = -1;
+    bool m_useStructuredModelData = true;
 };
 
 namespace QV4 {

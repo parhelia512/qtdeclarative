@@ -173,12 +173,13 @@ public:
         if (!o)
             RETURN_RESULT(scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object")));
 
+        QQmlDelegateModelItem *item = o->d()->item;
         const QQmlAdaptorModel *const model
-                = static_cast<QQmlDMAbstractItemModelData *>(o->d()->item)->type()->model;
-        if (o->d()->item->modelIndex() >= 0) {
+                = static_cast<QQmlDMAbstractItemModelData *>(item)->type()->model;
+        if (item->modelIndex() >= 0) {
             if (const QAbstractItemModel *const aim = model->aim())
                 RETURN_RESULT(QV4::Encode(aim->hasChildren(
-                        aim->index(o->d()->item->modelIndex(), 0, model->rootIndex))));
+                        aim->index(item->modelIndex(), 0, model->rootIndex))));
         }
         RETURN_RESULT(QV4::Encode(false));
     }

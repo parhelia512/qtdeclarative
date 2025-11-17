@@ -1217,12 +1217,11 @@ void QQmlDelegateModelPrivate::incubatorStatusChanged(QQDMIncubationTask *incuba
     releaseIncubator(incubationTask);
 
     if (status == QQmlIncubator::Ready) {
-        cacheItem->referenceObject();
+        QQmlDelegateModelItem::ObjectReference guard(cacheItem);
         if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(cacheItem->object))
             emitCreatedPackage(incubationTask, package);
         else
             emitCreatedItem(incubationTask, cacheItem->object);
-        cacheItem->releaseObject();
     } else if (status == QQmlIncubator::Error) {
         qmlInfo(m_delegate, incubationTaskErrors + m_delegate->errors()) << "Cannot create delegate";
     }
@@ -1387,6 +1386,8 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
     if (cacheItem->object && (!cacheItem->incubationTask || isDoneIncubating(cacheItem->incubationTask->status())))
         return cacheItem->object;
 
+    // TODO: We may not be able to releaseObject() here because incubateObject() above may have
+    //       released as a side effect. This needs cleanup.
     if (cacheItem->objectRef > 0)
         cacheItem->releaseObject();
 
@@ -1589,8 +1590,7 @@ void QQmlDelegateModel::_q_itemsChanged(int index, int count, const QVector<int>
     QVector<Compositor::Insert> inserts;
     d->m_compositor.listItemsRemoved(&d->m_adaptorModel, index, count, &removes);
     const QList<QQmlDelegateModelItem *> cache = d->m_cache;
-    for (QQmlDelegateModelItem *item : cache)
-        item->referenceObject();
+    QQmlDelegateModelItem::ObjectSpanReference guard(cache);
     for (const auto& removed: removes) {
         if (!d->m_cache.isSharedWith(cache))
             break;
@@ -1600,8 +1600,6 @@ void QQmlDelegateModel::_q_itemsChanged(int index, int count, const QVector<int>
         if (item->modelIndex() != -1)
             item->setModelIndex(-1, -1, -1);
     }
-    for (QQmlDelegateModelItem *item : cache)
-        item->releaseObject();
     d->m_compositor.listItemsInserted(&d->m_adaptorModel, index, count, &inserts);
     d->itemsMoved(removes, inserts);
     d->emitChanges();
@@ -1846,30 +1844,30 @@ void QQmlDelegateModel::_q_itemsRemoved(int index, int count)
 
     d->m_count -= count;
     Q_ASSERT(d->m_count >= 0);
-    const QList<QQmlDelegateModelItem *> cache = d->m_cache;
-    //Prevents items being deleted in remove loop
-    for (QQmlDelegateModelItem *item : cache)
-        item->referenceObject();
 
-    for (int i = 0, c = cache.size();  i < c; ++i) {
-        QQmlDelegateModelItem *item = cache.at(i);
-        // layout change triggered by removal of a previous item might have
-        // already invalidated this item in d->m_cache and deleted it
-        if (!d->m_cache.isSharedWith(cache) && !d->m_cache.contains(item))
-            continue;
+    {
+        const QList<QQmlDelegateModelItem *> cache = d->m_cache;
 
-        if (item->modelIndex() >= index + count) {
-            const int newIndex = item->modelIndex() - count;
-            const int row = newIndex;
-            const int column = 0;
-            item->setModelIndex(newIndex, row, column);
-        } else if (item->modelIndex() >= index) {
-            item->setModelIndex(-1, -1, -1);
+        //Prevents items being deleted in remove loop
+        QQmlDelegateModelItem::ObjectSpanReference guard(cache);
+
+        for (int i = 0, c = cache.size();  i < c; ++i) {
+            QQmlDelegateModelItem *item = cache.at(i);
+            // layout change triggered by removal of a previous item might have
+            // already invalidated this item in d->m_cache and deleted it
+            if (!d->m_cache.isSharedWith(cache) && !d->m_cache.contains(item))
+                continue;
+
+            if (item->modelIndex() >= index + count) {
+                const int newIndex = item->modelIndex() - count;
+                const int row = newIndex;
+                const int column = 0;
+                item->setModelIndex(newIndex, row, column);
+            } else if (item->modelIndex() >= index) {
+                item->setModelIndex(-1, -1, -1);
+            }
         }
     }
-    //Release items which are referenced before the loop
-    for (QQmlDelegateModelItem *item : cache)
-        item->releaseObject();
 
     QVector<Compositor::Remove> removes;
     d->m_compositor.listItemsRemoved(&d->m_adaptorModel, index, count, &removes);
@@ -2040,23 +2038,22 @@ void QQmlDelegateModel::handleModelReset()
     if (d->m_complete) {
         d->m_count = d->adaptorModelCount();
 
-        const QList<QQmlDelegateModelItem *> cache = d->m_cache;
-        for (QQmlDelegateModelItem *item : cache)
-            item->referenceObject();
+        {
+            const QList<QQmlDelegateModelItem *> cache = d->m_cache;
+            QQmlDelegateModelItem::ObjectSpanReference guard(cache);
 
-        for (int i = 0, c = cache.size();  i < c; ++i) {
-            QQmlDelegateModelItem *item = cache.at(i);
-            // layout change triggered by changing the modelIndex might have
-            // already invalidated this item in d->m_cache and deleted it.
-            if (!d->m_cache.isSharedWith(cache) && !d->m_cache.contains(item))
-                continue;
+            for (int i = 0, c = cache.size();  i < c; ++i) {
+                QQmlDelegateModelItem *item = cache.at(i);
+                // layout change triggered by changing the modelIndex might have
+                // already invalidated this item in d->m_cache and deleted it.
+                if (!d->m_cache.isSharedWith(cache) && !d->m_cache.contains(item))
+                    continue;
 
-            if (item->modelIndex() != -1)
-                item->setModelIndex(-1, -1, -1);
+                if (item->modelIndex() != -1)
+                    item->setModelIndex(-1, -1, -1);
+            }
         }
 
-        for (QQmlDelegateModelItem *item : cache)
-            item->releaseObject();
         QVector<Compositor::Remove> removes;
         QVector<Compositor::Insert> inserts;
         if (oldCount)

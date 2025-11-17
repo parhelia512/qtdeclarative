@@ -92,6 +92,43 @@ class QQmlDelegateModelItem : public QObject
     Q_PROPERTY(int column READ modelColumn NOTIFY columnChanged REVISION(2, 12))
     Q_PROPERTY(QObject *model READ modelObject CONSTANT)
 public:
+    struct ObjectReference
+    {
+        Q_DISABLE_COPY_MOVE(ObjectReference)
+
+        ObjectReference(QQmlDelegateModelItem *item) : item(item)
+        {
+            item->referenceObject();
+        }
+
+        ~ObjectReference()
+        {
+            item->releaseObject();
+        }
+    private:
+        QQmlDelegateModelItem *item = nullptr;
+    };
+
+    struct ObjectSpanReference
+    {
+        Q_DISABLE_COPY_MOVE(ObjectSpanReference)
+
+        ObjectSpanReference(QSpan<QQmlDelegateModelItem *const> span) : items(std::move(span))
+        {
+            for (QQmlDelegateModelItem *item : items)
+                item->referenceObject();
+        }
+
+        ~ObjectSpanReference()
+        {
+            for (QQmlDelegateModelItem *item : items)
+                item->releaseObject();
+        }
+
+    private:
+        const QSpan<QQmlDelegateModelItem *const> items;
+    };
+
     QQmlDelegateModelItem(const QQmlRefPointer<QQmlDelegateModelItemMetaType> &metaType,
                           QQmlAdaptorModel::Accessors *accessor, int modelIndex,
                           int row, int column);

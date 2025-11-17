@@ -1734,19 +1734,21 @@ void QQmlObjectCreator::registerPostHocRequiredProperties(const QV4::CompiledDat
         if (!propertyData->isRequired() && postHocRequired.isEmpty())
             continue;
         QString name = propertyData->name(_qobject);
-        auto postHocIt = postHocRequired.find(name);
-        if (!propertyData->isRequired() && postHocRequired.end() == postHocIt )
-            continue;
-
-        if (postHocIt != postHocRequired.end())
+        const auto postHocIt = postHocRequired.constFind(name);
+        if (postHocIt == postHocRequired.constEnd()) {
+            if (!propertyData->isRequired())
+                continue;
+        } else {
             postHocRequired.erase(postHocIt);
+        }
 
         if (isContextObject)
             sharedState->hadTopLevelRequiredProperties = true;
         sharedState->requiredProperties.insert(
                 {_qobject, propertyData},
                 RequiredPropertyInfo {
-                                      name, compilationUnit->finalUrl(), _compiledObject->location, {} });
+                    std::move(name), compilationUnit->finalUrl(), _compiledObject->location, {}
+                });
     }
 
     if (binding && binding->isAttachedProperty()
@@ -1767,8 +1769,8 @@ void QQmlObjectCreator::registerPostHocRequiredProperties(const QV4::CompiledDat
             if (!propertyData)
                 continue;
             QString name = propertyData->name(_qobject);
-            auto postHocIt = postHocRequired.find(name);
-            if (postHocRequired.end() == postHocIt)
+            const auto postHocIt = postHocRequired.constFind(name);
+            if (postHocIt == postHocRequired.constEnd())
                 continue;
             postHocRequired.erase(postHocIt);
 
@@ -1777,7 +1779,8 @@ void QQmlObjectCreator::registerPostHocRequiredProperties(const QV4::CompiledDat
             sharedState->requiredProperties.insert(
                     {_qobject, propertyData},
                     RequiredPropertyInfo {
-                                          name, compilationUnit->finalUrl(), _compiledObject->location, {} });
+                        std::move(name), compilationUnit->finalUrl(), _compiledObject->location, {}
+                    });
         }
     }
 

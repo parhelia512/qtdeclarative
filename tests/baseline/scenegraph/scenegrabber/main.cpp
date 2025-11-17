@@ -17,6 +17,7 @@
 #include <QQmlApplicationEngine>
 #include <QtQml/qqmlcomponent.h>
 #include <QtQuickTemplates2/private/qquickapplicationwindow_p.h>
+#include <QtQuick/private/qquickscreen_p.h>
 
 #ifdef Q_OS_WIN
 #  include <fcntl.h>
@@ -280,7 +281,8 @@ int main(int argc, char *argv[])
             itemObject->setParentItem(v.appWindow()->contentItem());
             itemObject->setParent(v.appWindow());
         }
-        v.appWindow()->setScreen(preferredScreen);
+        auto *wrappedScreen = new QQuickScreenInfo(engine, preferredScreen);
+        v.appWindow()->setScreen(wrappedScreen);
         v.appWindow()->setPosition(preferredScreenRect.topLeft());
         v.appWindow()->show();
     } else {

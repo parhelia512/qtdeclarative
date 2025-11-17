@@ -3776,13 +3776,14 @@ void QQuickWindow::endExternalCommands()
  */
 
 /*!
-    \qmlproperty variant Window::screen
+    \qmlproperty Screen Window::screen
 
     The screen with which the window is associated.
 
     If specified before showing a window, will result in the window being shown
     on that screen, unless an explicit window position has been set. The value
-    must be an element from the Qt.application.screens array.
+    must be an element from the \l{Application::screens}{Application.screens}
+    array.
 
     \note To ensure that the window is associated with the desired screen when
     the underlying native window is created, make sure this property is set as
@@ -3794,7 +3795,7 @@ void QQuickWindow::endExternalCommands()
 
     \since 5.9
 
-    \sa QWindow::setScreen(), QWindow::screen(), QScreen, {QtQml::Qt::application}{Qt.application}
+    \sa QWindow::setScreen(), QWindow::screen(), QScreen, {QtQuick::Application}{Application}
  */
 
 /*!

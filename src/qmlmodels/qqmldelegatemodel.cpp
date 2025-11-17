@@ -235,10 +235,7 @@ QQmlDelegateModel::~QQmlDelegateModel()
 
     for (QQmlDelegateModelItem *cacheItem : std::as_const(d->m_cache)) {
         if (cacheItem->object()) {
-            delete cacheItem->object();
-
-            Q_ASSERT(cacheItem->object() == nullptr);
-            cacheItem->setContextData({});
+            cacheItem->destroyObject();
             cacheItem->releaseScript();
         } else if (cacheItem->incubationTask()) {
             // Both the incubationTask and the object may hold a scriptRef,
@@ -649,7 +646,7 @@ void QQmlDelegateModelPrivate::destroyCacheItem(QQmlDelegateModelItem *cacheItem
 {
     if (QObject *object = cacheItem->object()) {
         emitDestroyingItem(object);
-        cacheItem->destroyObject();
+        cacheItem->destroyObjectLater();
     }
 
     if (QQDMIncubationTask *incubationTask = cacheItem->incubationTask()) {
@@ -686,7 +683,7 @@ void QQmlDelegateModel::cancel(int index)
             cacheItem->clearIncubationTask();
 
             if (QObject *object = cacheItem->object()) {
-                cacheItem->destroyObject();
+                cacheItem->destroyObjectLater();
                 if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(object))
                     d->emitDestroyingPackage(package);
                 else
@@ -1101,9 +1098,7 @@ void QQDMIncubationTask::statusChanged(Status status)
     } else if (isDoneIncubating(status)) {
         Q_ASSERT(incubating);
         // The model was deleted from under our feet, cleanup ourselves
-        delete incubating->object();
-        Q_ASSERT(incubating->object() == nullptr);
-        incubating->setContextData({});
+        incubating->destroyObject();
         incubating->clearScriptReferences();
         incubating->deleteLater();
     }
@@ -1215,25 +1210,24 @@ void QQmlDelegateModelPrivate::incubatorStatusChanged(QQDMIncubationTask *incuba
     incubationTask->incubating = nullptr;
     releaseIncubator(incubationTask);
 
+    QObject *object = cacheItem->object();
     if (status == QQmlIncubator::Ready) {
         QQmlDelegateModelItem::ObjectReference guard(cacheItem);
-        if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(cacheItem->object()))
+        if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(object))
             emitCreatedPackage(incubationTask, package);
         else
-            emitCreatedItem(incubationTask, cacheItem->object());
+            emitCreatedItem(incubationTask, object);
     } else if (status == QQmlIncubator::Error) {
         qmlInfo(m_delegate, incubationTaskErrors + m_delegate->errors()) << "Cannot create delegate";
     }
 
     if (!cacheItem->isObjectReferenced()) {
-        if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(cacheItem->object()))
+        if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(object))
             emitDestroyingPackage(package);
         else
-            emitDestroyingItem(cacheItem->object());
-        delete cacheItem->object();
-        Q_ASSERT(cacheItem->object() == nullptr);
+            emitDestroyingItem(object);
+        cacheItem->destroyObject();
         cacheItem->releaseScript();
-        cacheItem->setContextData({});
 
         if (!cacheItem->isReferenced()) {
             removeCacheItem(cacheItem);
@@ -1761,7 +1755,7 @@ void QQmlDelegateModelPrivate::itemsRemoved(
                 if (remove.inGroup(Compositor::Persisted) && cacheItem->objectRef() == 0
                         && cacheItem->object()) {
                     QObject *object = cacheItem->object();
-                    cacheItem->destroyObject();
+                    cacheItem->destroyObjectLater();
                     if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(object))
                         emitDestroyingPackage(package);
                     else
@@ -1791,7 +1785,7 @@ void QQmlDelegateModelPrivate::itemsRemoved(
                             releaseIncubator(incubationTask);
                             cacheItem->clearIncubationTask();
                             if (QObject *object = cacheItem->object()) {
-                                cacheItem->destroyObject();
+                                cacheItem->destroyObjectLater();
                                 if (QQuickPackage *package = qmlobject_cast<QQuickPackage *>(object))
                                     emitDestroyingPackage(package);
                                 else
@@ -2576,6 +2570,12 @@ void QQmlDelegateModelItem::setModelIndex(int idx, int newRow, int newColumn, bo
 }
 
 void QQmlDelegateModelItem::destroyObject()
+{
+    delete std::exchange(m_object, nullptr);
+    m_contextData.reset();
+}
+
+void QQmlDelegateModelItem::destroyObjectLater()
 {
     Q_ASSERT(m_object);
     Q_ASSERT(m_contextData);

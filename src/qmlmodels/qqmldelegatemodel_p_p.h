@@ -173,6 +173,7 @@ public:
     QObject *modelObject() { return this; }
 
     void destroyObject();
+    void destroyObjectLater();
 
     static QQmlDelegateModelItem *dataForObject(QObject *object);
 

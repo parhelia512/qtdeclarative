@@ -36,9 +36,7 @@ void QQmlTableInstanceModel::deleteModelItemLater(QQmlDelegateModelItem *modelIt
 {
     Q_ASSERT(modelItem);
 
-    delete modelItem->object();
-    Q_ASSERT(modelItem->object() == nullptr);
-    modelItem->setContextData({});
+    modelItem->destroyObject();
     modelItem->deleteLater();
 }
 
@@ -67,11 +65,7 @@ QQmlTableInstanceModel::~QQmlTableInstanceModel()
         // in the process of e.g emitting a created signal.
         Q_ASSERT(modelItem->scriptRef() == 0);
 
-        if (QObject *object = modelItem->object()) {
-            delete object;
-            Q_ASSERT(modelItem->object() == nullptr);
-            modelItem->setContextData({});
-        }
+        modelItem->destroyObject();
     }
 
     deleteAllFinishedIncubationTasks();
@@ -207,9 +201,9 @@ void QQmlTableInstanceModel::destroyModelItem(QQmlDelegateModelItem *modelItem, 
 {
     emit destroyingItem(modelItem->object());
     if (mode == Deferred)
-        modelItem->destroyObject();
+        modelItem->destroyObjectLater();
     else
-        delete modelItem->object();
+        modelItem->destroyObject();
     delete modelItem;
 }
 
@@ -231,7 +225,8 @@ void QQmlTableInstanceModel::dispose(QObject *object)
     m_modelItems.remove(modelItem->modelIndex());
 
     emit destroyingItem(object);
-    delete object;
+    modelItem->destroyObject();
+
     delete modelItem;
 }
 
@@ -248,8 +243,7 @@ void QQmlTableInstanceModel::cancel(int index)
 
     m_modelItems.remove(index);
 
-    if (QObject *object = modelItem->object())
-        delete object;
+    modelItem->destroyObject();
 
     // modelItem->incubationTask will be deleted from the modelItems destructor
     delete modelItem;
@@ -555,7 +549,7 @@ void QQmlTableInstanceModelIncubationTask::setInitialState(QObject *object)
     emit tableInstanceModel->initItem(modelItemToIncubate->modelIndex(), object);
 
     if (!QQmlIncubatorPrivate::get(this)->requiredProperties()->empty())
-        modelItemToIncubate->destroyObject();
+        modelItemToIncubate->destroyObjectLater();
 }
 
 void QQmlTableInstanceModelIncubationTask::statusChanged(QQmlIncubator::Status status)

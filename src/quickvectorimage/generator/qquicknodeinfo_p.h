@@ -22,6 +22,7 @@
 #include <QQuickItem>
 #include <QtGui/private/qfixed_p.h>
 #include <QtCore/qmap.h>
+#include <QtQuick/qsgtexture.h>
 
 #include "qquickanimatedproperty_p.h"
 
@@ -35,6 +36,7 @@ struct NodeInfo
     QString nodeId;
     QString typeName;
     QString maskId;
+    QString filterId;
     QString transformReferenceId;
     QString customItemType;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
@@ -156,6 +158,22 @@ struct MaskNodeInfo : NodeInfo
 
     bool isMaskRectRelativeCoordinates = false;
     QRectF maskRect;
+};
+
+struct FilterNodeInfo : NodeInfo
+{
+    enum class Type {
+        None,
+        GaussianBlur
+    };
+
+    QRectF filterRect;
+    bool isFilterRectRelativeCoordinates = false;
+    bool isFilterParameterRelative = false;
+    QSGTexture::WrapMode wrapMode = QSGTexture::ClampToEdge;
+
+    Type filterType = Type::None;
+    qreal filterParameter = 0.0;
 };
 
 }

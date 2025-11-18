@@ -104,6 +104,7 @@ protected:
     void generateNode(const NodeInfo &info) override;
     void generateTextNode(const TextNodeInfo &info) override;
     void generateUseNode(const UseNodeInfo &info) override;
+    void generateFilterNode(const FilterNodeInfo &info) override;
     bool generateStructureNode(const StructureNodeInfo &info) override;
     bool generateRootNode(const StructureNodeInfo &info) override;
     bool generateMaskNode(const MaskNodeInfo &info) override;
@@ -135,7 +136,7 @@ private:
                                    const QString &targetName,
                                    const QString &propertyName,
                                    AnimationType animationType = AnimationType::Auto);
-    void generateMaskUse(const NodeInfo &info);
+    void generateShaderUse(const NodeInfo &info);
 
     QStringView indent();
     enum StreamFlags { NoFlags = 0x0, SameLine = 0x1 };

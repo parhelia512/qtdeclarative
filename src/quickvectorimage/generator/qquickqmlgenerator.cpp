@@ -106,15 +106,9 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
 
     stream() << "transformOrigin: Item.TopLeft";
 
-    if (!info.maskId.isEmpty()) {
-        stream() << "layer.enabled: true";
-        stream() << "visible: false";
-        stream() << "layer.textureSize: " << info.maskId << "_" << info.id << "_mask.textureSize";
-        stream() << "layer.sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
-    } else {
+    if (info.filterId.isEmpty() && info.maskId.isEmpty()) {
         if (!info.isDefaultOpacity)
             stream() << "opacity: " << info.opacity.defaultValue().toReal();
-
         generateItemAnimations(idString, info);
     }
 
@@ -125,15 +119,14 @@ void QQuickQmlGenerator::generateNodeEnd(const NodeInfo &info)
 {
     m_indentLevel--;
     stream() << "}";
-
-    if (!info.maskId.isEmpty())
-        generateMaskUse(info);
+    generateShaderUse(info);
 }
 
 void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const NodeInfo &info)
 {
     const bool hasTransform = info.transform.isAnimated()
                               || !info.maskId.isEmpty()
+                              || !info.filterId.isEmpty()
                               || !info.isDefaultTransform
                               || !info.transformReferenceId.isEmpty()
                               || info.motionPath.isAnimated();
@@ -148,7 +141,7 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
         if (!idString.isEmpty()) {
             stream() << "id: " << idString << "_transform_base_group";
 
-            if (!info.maskId.isEmpty())
+            if (!info.maskId.isEmpty() || !info.filterId.isEmpty())
                 stream() << "Translate { x: " << idString << ".sourceX; y: " << idString << ".sourceY }";
 
             if (info.transform.isAnimated()) {
@@ -298,55 +291,150 @@ void QQuickQmlGenerator::generateItemAnimations(const QString &idString, const N
     generatePropertyAnimation(info.visibility, idString, QStringLiteral("visible"));
 }
 
-void QQuickQmlGenerator::generateMaskUse(const NodeInfo &info)
+void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
 {
-    Q_ASSERT(!info.maskId.isEmpty());
+    const bool hasMask = !info.maskId.isEmpty();
+    const bool hasFilters = !info.filterId.isEmpty();
+    if (!hasMask && !hasFilters)
+        return;
 
-    // Shader effect source for the mask itself
-    stream() << "ShaderEffectSource {";
-    m_indentLevel++;
+    const QString effectId = hasFilters
+        ? info.filterId + QStringLiteral("_") + info.id + QStringLiteral("_effect")
+        : QString{};
 
-    const QString maskId = info.maskId + QStringLiteral("_") + info.id + QStringLiteral("_mask");
-    stream() << "id: " << maskId;
-    stream() << "sourceItem: " << info.maskId;
-    stream() << "visible: false";
+    QString animatedItemId;
+    if (hasFilters) {
+        stream() << "ShaderEffectSource {";
+        m_indentLevel++;
 
-    stream() << "ItemSpy {";
-    m_indentLevel++;
-    stream() << "id: " << maskId << "_itemspy";
-    stream() << "anchors.fill: parent";
-    m_indentLevel--;
-    stream() << "}";
-    stream() << "textureSize: " << maskId << "_itemspy.requiredTextureSize";
+        const QString seId = info.id + QStringLiteral("_se");
+        stream() << "id: " << seId;
 
-    stream() << "sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
-    stream() << "width: sourceRect.width";
-    stream() << "height: sourceRect.height";
+        stream() << "ItemSpy {";
+        m_indentLevel++;
+        stream() << "id: " << info.id << "_itemspy";
+        stream() << "anchors.fill: parent";
+        m_indentLevel--;
+        stream() << "}";
 
-    m_indentLevel--;
-    stream() << "}";
+        stream() << "hideSource: true";
+        stream() << "wrapMode: " << info.filterId << "_filterParameters.wrapMode";
+        stream() << "sourceItem: " << info.id;
+        stream() << "sourceRect: " << info.filterId
+                 << "_filterParameters.adaptToFilterRect("
+                 << info.id << ".originalBounds.x, "
+                 << info.id << ".originalBounds.y, "
+                 << info.id << ".originalBounds.width, "
+                 << info.id << ".originalBounds.height)";
+        stream() << "textureSize: " << info.id << "_itemspy.requiredTextureSize";
+        stream() << "width: sourceRect.width";
+        stream() << "height: sourceRect.height";
+        stream() << "visible: false";
 
-    stream() << "ShaderEffect {";
-    m_indentLevel++;
+        m_indentLevel--;
+        stream() << "}";
 
-    const QString maskShaderId = maskId + QStringLiteral("_se");
-    stream() << "id:" << maskShaderId;
+        stream() << "Loader {";
+        m_indentLevel++;
 
-    stream() << "property real sourceX: " << maskId << ".sourceRect.x";
-    stream() << "property real sourceY: " << maskId << ".sourceRect.y";
-    stream() << "width: " << maskId << ".sourceRect.width";
-    stream() << "height: " << maskId << ".sourceRect.height";
+        animatedItemId = effectId;
+        stream() << "id: " << effectId;
 
-    stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/genericmask.frag.qsb\"";
-    stream() << "property var source: " << info.id;
-    stream() << "property var maskSource: " << maskId;
-    stream() << "property bool isAlpha: " << (info.isMaskAlpha ? "true" : "false");
-    stream() << "property bool isInverted: " << (info.isMaskInverted ? "true" : "false");
+        stream() << "property var filterSourceItem: " << seId;
+        stream() << "sourceComponent: " << info.filterId << "_container";
+        stream() << "property real sourceX: " << seId << ".sourceRect.x";
+        stream() << "property real sourceY: " << seId << ".sourceRect.y";
+        stream() << "width: " << seId << ".sourceRect.width";
+        stream() << "height: " << seId << ".sourceRect.height";
+
+        if (hasMask) {
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+
+    if (hasMask) {
+        // Shader effect source for the mask itself
+        stream() << "ShaderEffectSource {";
+        m_indentLevel++;
+
+        const QString maskId = info.maskId + QStringLiteral("_") + info.id + QStringLiteral("_mask");
+        stream() << "id: " << maskId;
+        stream() << "sourceItem: " << info.maskId;
+        stream() << "visible: false";
+        stream() << "hideSource: true";
+
+        stream() << "ItemSpy {";
+        m_indentLevel++;
+        stream() << "id: " << maskId << "_itemspy";
+        stream() << "anchors.fill: parent";
+        m_indentLevel--;
+        stream() << "}";
+        stream() << "textureSize: " << maskId << "_itemspy.requiredTextureSize";
+
+        stream() << "sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
+        stream() << "width: sourceRect.width";
+        stream() << "height: sourceRect.height";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        // Shader effect source of the masked item
+        stream() << "ShaderEffectSource {";
+        m_indentLevel++;
+
+        const QString seId = info.id + QStringLiteral("_masked_se");
+        stream() << "id: " << seId;
+
+        stream() << "ItemSpy {";
+        m_indentLevel++;
+        stream() << "id: " << info.id << "_masked_se_itemspy";
+        stream() << "anchors.fill: parent";
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "hideSource: true";
+        if (hasFilters)
+            stream() << "sourceItem: " << effectId;
+        else
+            stream() << "sourceItem: " << info.id;
+        stream() << "textureSize: " << info.id << "_masked_se_itemspy.requiredTextureSize";
+        if (!hasFilters)
+            stream() << "sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
+        else
+            stream() << "sourceRect: Qt.rect(0, 0, " << effectId << ".width, " << effectId << ".height)";
+        stream() << "width: sourceRect.width";
+        stream() << "height: sourceRect.height";
+        stream() << "smooth: false";
+        stream() << "visible: false";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "ShaderEffect {";
+        m_indentLevel++;
+
+        const QString maskShaderId = maskId + QStringLiteral("_se");
+        animatedItemId = maskShaderId;
+
+        stream() << "id:" << maskShaderId;
+
+        stream() << "property real sourceX: " << maskId << ".sourceRect.x";
+        stream() << "property real sourceY: " << maskId << ".sourceRect.y";
+        stream() << "width: " << maskId << ".sourceRect.width";
+        stream() << "height: " << maskId << ".sourceRect.height";
+
+        stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/genericmask.frag.qsb\"";
+        stream() << "property var source: " << seId;
+        stream() << "property var maskSource: " << maskId;
+        stream() << "property bool isAlpha: " << (info.isMaskAlpha ? "true" : "false");
+        stream() << "property bool isInverted: " << (info.isMaskInverted ? "true" : "false");
+    }
 
     if (!info.isDefaultOpacity)
         stream() << "opacity: " << info.opacity.defaultValue().toReal();
 
-    generateItemAnimations(maskShaderId, info);
+    generateItemAnimations(animatedItemId, info);
 
     m_indentLevel--;
     stream() << "}";
@@ -1394,7 +1482,6 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 
         generateNodeBase(info);
 
-        stream() << "visible: false";
         stream() << "width: originalBounds.width";
         stream() << "height: originalBounds.height";
 
@@ -1431,6 +1518,79 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
     }
 
     return true;
+}
+
+void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
+{
+    stream() << "QtObject {";
+    m_indentLevel++;
+
+    stream() << "id: " << info.id << "_filterParameters";
+
+    stream() << "property int wrapMode: ";
+    if (info.wrapMode == QSGTexture::Repeat)
+        stream(SameLine) << "ShaderEffectSource.Repeat";
+    else
+        stream(SameLine) << "ShaderEffectSource.ClampToEdge";
+
+    stream() << "function adaptToFilterRect(sx, sy, sw, sh) {";
+    m_indentLevel++;
+
+    if (!info.isFilterRectRelativeCoordinates) {
+        stream() << "return Qt.rect("
+                 << info.filterRect.x() << ", "
+                 << info.filterRect.y() << ", "
+                 << info.filterRect.width() << ", "
+                 << info.filterRect.height() << ")";
+    } else {
+        stream() << "return Qt.rect("
+                 << "sx + sw * " << info.filterRect.x() << ", "
+                 << "sy + sh * " << info.filterRect.y() << ", "
+                 << "sw * " << info.filterRect.width() << ", "
+                 << "sh * " << info.filterRect.height() << ")";
+    }
+
+    m_indentLevel--;
+    stream() << "}";
+
+    m_indentLevel--;
+    stream() << "}";
+
+    stream() << "Component {";
+    m_indentLevel++;
+
+    stream() << "id: " << info.id << "_container";
+
+    switch (info.filterType) {
+    case FilterNodeInfo::Type::GaussianBlur:
+    {
+        // Approximate blur effect with fast blur
+        stream() << "MultiEffect {";
+        m_indentLevel++;
+        generateNodeBase(info);
+
+        stream() << "source: filterSourceItem";
+        stream() << "blurEnabled: true";
+
+        const qreal maxDeviation(12.0); // Decided experimentally
+        if (info.isFilterParameterRelative)
+            stream() << "blur: Math.min(1.0, " << info.filterParameter << " * filterSourceItem.width / " << maxDeviation << ")";
+        else
+            stream() << "blur: " << std::min(qreal(1.0), info.filterParameter / maxDeviation);
+        stream() << "blurMax: 64";
+
+        generateNodeEnd(info);
+        break;
+    }
+    default:
+        qCWarning(lcQuickVectorImage) << "Unhandled filter type: " << int(info.filterType);
+        // Dummy item to avoid empty component
+        stream() << "Item{}";
+        break;
+    }
+
+    m_indentLevel--;
+    stream() << "}";
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
@@ -1478,6 +1638,8 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
         stream() << "import QtQuick.VectorImage";
         stream() << "import QtQuick.VectorImage.Helpers";
         stream() << "import QtQuick.Shapes";
+        stream() << "import QtQuick.Effects";
+
         for (const auto &import : std::as_const(m_extraImports))
             stream() << "import " << import;
 

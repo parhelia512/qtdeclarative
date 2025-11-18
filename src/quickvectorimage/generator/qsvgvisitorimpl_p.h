@@ -26,6 +26,7 @@ QT_BEGIN_NAMESPACE
 
 class QTextStream;
 class QSvgTinyDocument;
+class QSvgFeFilterPrimitive;
 class QString;
 class QQuickItem;
 
@@ -62,6 +63,12 @@ protected:
     bool visitSymbolNodeStart(const QSvgSymbol *node) override;
     void visitSymbolNodeEnd(const QSvgSymbol *node) override;
 
+    bool visitFilterNodeStart(const QSvgFilterContainer *node) override;
+    void visitFilterNodeEnd(const QSvgFilterContainer *node) override;
+
+    bool visitFeFilterPrimitiveNodeStart(const QSvgFeFilterPrimitive *node) override;
+    void visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive *node) override;
+
 private:
     typedef std::pair<const QSvgAbstractAnimation *, const QSvgAbstractAnimatedProperty *> AnimationPair;
     QList<AnimationPair> collectAnimations(const QSvgNode *node, const QString &propertyName);
@@ -91,6 +98,7 @@ private:
     mutable int m_nodeIdCounter = 0;
     QHash<QString, QString> m_idForNodeId;
     QSet<QString> m_generatedNodes;
+    QList<const QSvgFeFilterPrimitive *> m_filterPrimitives;
 
     int m_useLevel = 0;
 

@@ -31,6 +31,7 @@
 #include <QtCore/qloggingcategory.h>
 
 #include <QtSvg/private/qsvgstyle_p.h>
+#include <QtSvg/private/qsvgfilter_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -184,6 +185,9 @@ inline bool isPathContainer(const QSvgStructureNode *node)
         case QSvgNode::Polygon:
         case QSvgNode::Polyline:
         {
+            if (child->hasFilter())
+                return false;
+
             if (!child->style().transform.isDefault()) {
                 //qCDebug(lcQuickVectorGraphics) << "NOT path container because local transform";
                 return false;
@@ -1125,6 +1129,76 @@ void QSvgVisitorImpl::visitMaskNodeEnd(const QSvgMask *node)
     handleBaseNodeEnd(node);
 }
 
+bool QSvgVisitorImpl::visitFilterNodeStart(const QSvgFilterContainer *node)
+{
+    Q_UNUSED(node)
+
+    if (!m_filterPrimitives.isEmpty()) {
+        qCWarning(lcQuickVectorImage) << "Filter defined inside a filter";
+        return false;
+    }
+
+    return true;
+}
+
+void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
+{
+    if (m_filterPrimitives.isEmpty())
+        return;
+
+    if (m_filterPrimitives.size() > 1)
+        qCWarning(lcQuickVectorImage) << "Chained filters currently not supported.";
+
+    handleBaseNodeSetup(node);
+
+    const QSvgFeFilterPrimitive *filterPrimitive = m_filterPrimitives.first();
+
+    FilterNodeInfo info;
+    fillCommonNodeInfo(node, info);
+
+    info.filterRect = node->rect();
+    info.isFilterRectRelativeCoordinates =
+        node->rect().unitW() == QtSvg::UnitTypes::objectBoundingBox;
+    info.isFilterParameterRelative =
+        node->primitiveUnits() == QtSvg::UnitTypes::objectBoundingBox;
+
+    switch (filterPrimitive->type()) {
+    case QSvgNode::FeGaussianblur:
+    {
+        const QSvgFeGaussianBlur *gaussianBlur =
+            static_cast<const QSvgFeGaussianBlur *>(filterPrimitive);
+
+        if (gaussianBlur->edgeMode() == QSvgFeGaussianBlur::EdgeMode::Wrap)
+            info.wrapMode = QSGTexture::Repeat;
+        info.filterType = FilterNodeInfo::Type::GaussianBlur;
+        if (!qFuzzyCompare(gaussianBlur->stdDeviationX(), gaussianBlur->stdDeviationY()))
+            qCWarning(lcQuickVectorImage) << "Separate X and Y deviations not supported for gaussian blur";
+        info.filterParameter = std::max(gaussianBlur->stdDeviationX(),
+                                        gaussianBlur->stdDeviationY());
+        m_generator->generateFilterNode(info);
+        break;
+    }
+    default:
+        // Create a dummy filter node to make sure bindings still work for unsupported filters
+        info.filterType = FilterNodeInfo::Type::None;
+        m_generator->generateFilterNode(info);
+        break;
+    }
+
+    m_filterPrimitives.clear();
+}
+
+bool QSvgVisitorImpl::visitFeFilterPrimitiveNodeStart(const QSvgFeFilterPrimitive *node)
+{
+    m_filterPrimitives.append(node);
+    return true;
+}
+
+void QSvgVisitorImpl::visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive *node)
+{
+    Q_UNUSED(node);
+}
+
 bool QSvgVisitorImpl::visitStructureNodeStart(const QSvgStructureNode *node)
 {
     constexpr bool forceSeparatePaths = false;
@@ -1220,7 +1294,7 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
     info.isVisible = node->isVisible();
     info.isDisplayed = node->displayMode() != QSvgNode::DisplayMode::NoneMode;
 
-    if (node->hasMask() || node->type() == QSvgNode::Type::Mask) {
+    if (node->hasFilter() || node->hasMask() || node->type() == QSvgNode::Type::Mask) {
         info.bounds = node->bounds();
 
         if (!xf.isIdentity()) {
@@ -1240,6 +1314,14 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
         if (info.maskId.isEmpty()) {
             info.maskId = nextNodeId();
             m_idForNodeId.insert(node->maskId(), info.maskId);
+        }
+    }
+
+    if (node->hasFilter()) {
+        info.filterId = m_idForNodeId.value(node->filterId());
+        if (info.filterId.isEmpty()) {
+            info.filterId = nextNodeId();
+            m_idForNodeId.insert(node->filterId(), info.filterId);
         }
     }
 }

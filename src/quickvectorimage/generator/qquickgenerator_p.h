@@ -41,6 +41,7 @@ struct UseNodeInfo;
 struct StructureNodeInfo;
 struct AnimateColorNodeInfo;
 struct MaskNodeInfo;
+struct FilterNodeInfo;
 }
 
 using namespace QQuickVectorImageGenerator;
@@ -63,6 +64,7 @@ public:
     virtual void generateNode(const NodeInfo &info) = 0;
     virtual void generateTextNode(const TextNodeInfo &info) = 0;
     virtual void generateUseNode(const UseNodeInfo &info) = 0;
+    virtual void generateFilterNode(const FilterNodeInfo &info) = 0;
     virtual bool generateStructureNode(const StructureNodeInfo &info) = 0;
     virtual bool generateRootNode(const StructureNodeInfo &info) = 0;
     virtual bool generateMaskNode(const MaskNodeInfo &info) = 0;

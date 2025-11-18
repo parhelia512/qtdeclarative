@@ -529,8 +529,9 @@ bool QQmlDomAstCreatorBase::visit(AST::UiPublicMember *el)
         p.isReadonly = el->isReadonly();
         p.isDefaultMember = el->isDefaultMember();
         p.isRequired = el->isRequired();
-        p.isFinal = el->isFinal();
         p.isList = el->typeModifier == QLatin1String("list");
+        p.isVirtual = el->isVirtual();
+        p.isOverride = el->isOverride();
         p.isFinal = el->isFinal();
         if (!el->typeModifier.isEmpty())
             p.typeName = el->typeModifier.toString() + QChar(u'<') + p.typeName + QChar(u'>');

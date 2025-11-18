@@ -1875,6 +1875,10 @@ void PropertyDefinition::writeOut(const DomItem &self, OutWriter &lw) const
     const auto fLoc = FileLocations::treeOf(self);
     if (isDefaultMember)
         lw.writeRegion(fLoc, DefaultKeywordRegion).ensureSpace();
+    if (isVirtual)
+        lw.writeRegion(fLoc, VirtualKeywordRegion).ensureSpace();
+    if (isOverride)
+        lw.writeRegion(fLoc, OverrideKeywordRegion).ensureSpace();
     if (isFinal)
         lw.writeRegion(fLoc, FinalKeywordRegion).ensureSpace();
     if (isRequired)

@@ -242,6 +242,7 @@ Helper method for writeRegion(FileLocationRegion region) that allows to use
 \c{writeRegion(ColonTokenRegion);} instead of having to write out the more error-prone
 \c{writeRegion(ColonTokenRegion, ":");} for tokens and keywords.
 */
+// TODO(QTBUG-138020)
 OutWriter &OutWriter::writeRegion(const FileLocations::Tree &fLoc, FileLocationRegion region)
 {
     using namespace Qt::Literals::StringLiterals;
@@ -386,6 +387,12 @@ OutWriter &OutWriter::writeRegion(const FileLocations::Tree &fLoc, FileLocationR
     case LeftBacktickTokenRegion:
     case RightBacktickTokenRegion:
         codeForRegion = u"`"_s;
+        break;
+    case VirtualKeywordRegion:
+        codeForRegion = u"virtual"_s;
+        break;
+    case OverrideKeywordRegion:
+        codeForRegion = u"override"_s;
         break;
     case FinalKeywordRegion:
         codeForRegion = u"final"_s;

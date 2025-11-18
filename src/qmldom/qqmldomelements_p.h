@@ -625,6 +625,7 @@ public:
     {
         bool cont = AttributeInfo::iterateDirectSubpaths(self, visitor);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isPointer), isPointer);
+        // virtual and override don't need to be accessed through DomItem API for now
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isFinal), isFinal);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isAlias), isAlias());
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isDefaultMember),
@@ -656,6 +657,8 @@ public:
     QString write;
     QString bindable;
     QString notify;
+    bool isVirtual = false;
+    bool isOverride = false;
     bool isFinal = false;
     bool isPointer = false;
     bool isDefaultMember = false;

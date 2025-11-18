@@ -113,7 +113,6 @@ Item {
                     id: pupilHH
                     objectName: "pupil"
                     cursorShape: Qt.CrossCursor
-                    margin: 10
                 }
             }
         }

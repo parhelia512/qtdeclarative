@@ -442,6 +442,11 @@ void tst_HoverHandler::margin() // QTBUG-85303
     QVERIFY(item);
     QQuickHoverHandler *hh = item->findChild<QQuickHoverHandler *>();
     QVERIFY(hh);
+    const auto margin = hh->margin();
+    const auto itemPriv = QQuickItemPrivate::get(hh->parentItem());
+    QCOMPARE(itemPriv->biggestPointerHandlerMargin(), margin);
+    QCOMPARE(itemPriv->eventHandlingBounds(),
+             hh->parentItem()->boundingRect().marginsAdded({margin, margin, margin, margin}));
 
     QPoint itemCenter(item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint());
     QPoint leftMargin = itemCenter - QPoint(35, 35);

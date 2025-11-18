@@ -6845,7 +6845,7 @@ qreal QQuickItemPrivate::biggestPointerHandlerMargin() const
 QRectF QQuickItemPrivate::eventHandlingBounds(qreal margin) const
 {
     const qreal biggestMargin = margin > 0 ? margin : biggestPointerHandlerMargin();
-    return QRectF(-biggestMargin, -biggestMargin, width + biggestMargin, height + biggestMargin);
+    return QRectF(-biggestMargin, -biggestMargin, width + biggestMargin * 2, height + biggestMargin * 2);
 }
 
 /*! \internal

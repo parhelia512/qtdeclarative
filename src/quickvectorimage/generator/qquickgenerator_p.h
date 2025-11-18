@@ -32,6 +32,7 @@ class QQuickItem;
 class QQuickShape;
 class QRectF;
 
+namespace QQuickVectorImageGenerator {
 struct NodeInfo;
 struct ImageNodeInfo;
 struct PathNodeInfo;
@@ -40,6 +41,9 @@ struct UseNodeInfo;
 struct StructureNodeInfo;
 struct AnimateColorNodeInfo;
 struct MaskNodeInfo;
+}
+
+using namespace QQuickVectorImageGenerator;
 
 class Q_QUICKVECTORIMAGEGENERATOR_EXPORT QQuickGenerator
 {

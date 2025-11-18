@@ -27,6 +27,8 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace QQuickVectorImageGenerator {
+
 struct NodeInfo
 {
     QString id;
@@ -150,6 +152,7 @@ struct MaskNodeInfo : NodeInfo
     QRectF maskRect;
 };
 
+}
 
 QT_END_NAMESPACE
 

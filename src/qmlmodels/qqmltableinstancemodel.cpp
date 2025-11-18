@@ -156,7 +156,7 @@ QObject *QQmlTableInstanceModel::object(int index, QQmlIncubator::IncubationMode
     // should be no object references either. And there should also not be any internal script
     // refs at this point. So we delete the model item.
     Q_ASSERT(!modelItem->isObjectReferenced());
-    Q_ASSERT(!modelItem->isReferenced());
+    Q_ASSERT(!modelItem->isScriptReferenced());
     m_modelItems.remove(modelItem->modelIndex());
     delete modelItem;
     return nullptr;
@@ -174,7 +174,7 @@ QQmlInstanceModel::ReleaseFlags QQmlTableInstanceModel::release(QObject *object,
     if (!modelItem->releaseObject())
         return QQmlDelegateModel::Referenced;
 
-    if (modelItem->isReferenced()) {
+    if (modelItem->isScriptReferenced()) {
         // We still have an internal reference to this object, which means that we are told to release an
         // object while the createdItem signal for it is still on the stack. This can happen when objects
         // are e.g delivered async, and the user flicks back and forth quicker than the loading can catch
@@ -217,7 +217,7 @@ void QQmlTableInstanceModel::dispose(QObject *object)
 
     // The item is not referenced by anyone
     Q_ASSERT(!modelItem->isObjectReferenced());
-    Q_ASSERT(!modelItem->isReferenced());
+    Q_ASSERT(!modelItem->isScriptReferenced());
     // Ensure that the object was incubated by this QQmlTableInstanceModel
     Q_ASSERT(m_modelItems.contains(modelItem->modelIndex()));
     Q_ASSERT(m_modelItems[modelItem->modelIndex()]->object() == object);
@@ -362,7 +362,7 @@ void QQmlTableInstanceModel::incubatorStatusChanged(QQmlTableInstanceModelIncuba
         qWarning() << "Error incubating delegate:" << incubationTask->errors();
     }
 
-    if (!modelItem->isReferenced() && !modelItem->isObjectReferenced()) {
+    if (!modelItem->isScriptReferenced() && !modelItem->isObjectReferenced()) {
         // We have no internal reference to the model item, and the view has no
         // reference to the incubated object. So just delete the model item.
         // Note that being here means that the object was incubated _async_
@@ -374,7 +374,7 @@ void QQmlTableInstanceModel::incubatorStatusChanged(QQmlTableInstanceModelIncuba
             emit destroyingItem(object);
         }
 
-        Q_ASSERT(!modelItem->isReferenced());
+        Q_ASSERT(!modelItem->isScriptReferenced());
         deleteModelItemLater(modelItem);
     }
 

@@ -244,7 +244,7 @@ QQmlDelegateModel::~QQmlDelegateModel()
             cacheItem->clearIncubationTask();
         }
 
-        if (!cacheItem->isReferenced())
+        if (!cacheItem->isScriptReferenced())
             delete cacheItem;
     }
 }
@@ -682,7 +682,7 @@ void QQmlDelegateModel::cancel(int index)
                     d->emitDestroyingItem(object);
             }
         }
-        if (!cacheItem->isReferenced() && !cacheItem->object()) {
+        if (!cacheItem->isScriptReferenced() && !cacheItem->object()) {
             d->m_compositor.clearFlags(
                         Compositor::Cache, it.cacheIndex(), 1, Compositor::CacheFlag);
             d->m_cache.removeAt(it.cacheIndex());
@@ -1217,7 +1217,7 @@ void QQmlDelegateModelPrivate::incubatorStatusChanged(QQDMIncubationTask *incuba
             emitDestroyingItem(object);
         cacheItem->destroyObject();
 
-        if (!cacheItem->isReferenced()) {
+        if (!cacheItem->isScriptReferenced()) {
             removeCacheItem(cacheItem);
             delete cacheItem;
         }
@@ -1369,7 +1369,7 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
     if (cacheItem->objectRef() > 0)
         cacheItem->releaseObject();
 
-    if (!cacheItem->isReferenced()) {
+    if (!cacheItem->isScriptReferenced()) {
 
         // If it had an object and no incubationTask we would have returned above.
         // If it had an incubationTask it would be referenced, no matter if it has an object.
@@ -1753,7 +1753,7 @@ void QQmlDelegateModelPrivate::itemsRemoved(
                     else
                         emitDestroyingItem(object);
                 }
-                if (!cacheItem->isReferenced()
+                if (!cacheItem->isScriptReferenced()
                         && !cacheItem->object()
                         && !remove.inGroup(Compositor::Persisted)) {
                     m_compositor.clearFlags(Compositor::Cache, cacheIndex, 1, Compositor::CacheFlag);
@@ -2537,7 +2537,7 @@ QQmlDelegateModelItem::~QQmlDelegateModelItem()
 
 void QQmlDelegateModelItem::dispose()
 {
-    if (isReferenced() || m_object)
+    if (isScriptReferenced() || m_object)
         return;
 
     if (QQmlDelegateModel *delegateModel = m_metaType->delegateModel())
@@ -3456,7 +3456,7 @@ void QQmlDelegateModelGroup::resolve(QQmlV4FunctionPtr args)
 
     Q_ASSERT(model->m_cache.size() == model->m_compositor.count(Compositor::Cache));
 
-    if (!cacheItem->isReferenced() && !cacheItem->object()) {
+    if (!cacheItem->isScriptReferenced() && !cacheItem->object()) {
         Q_ASSERT(toIt.cacheIndex() == model->m_cache.indexOf(cacheItem));
         model->m_cache.removeAt(toIt.cacheIndex());
         model->m_compositor.clearFlags(

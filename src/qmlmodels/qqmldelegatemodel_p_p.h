@@ -162,7 +162,7 @@ public:
     bool isObjectReferenced() const { return m_objectRef != 0 || (m_groups & Compositor::PersistedFlag); }
     void childContextObjectDestroyed(QObject *childContextObject);
 
-    bool isReferenced() const {
+    bool isScriptReferenced() const {
         return m_scriptRef
                 || m_incubationTask
                 || ((m_groups & Compositor::UnresolvedFlag) && (m_groups & Compositor::GroupMask));

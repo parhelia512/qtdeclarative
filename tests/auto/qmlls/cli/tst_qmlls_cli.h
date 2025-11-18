@@ -28,6 +28,7 @@ private slots:
     void warnings_data();
     void warnings();
     void inputFile();
+    void dontShutdownOnStartup();
 
 public:
     QProcess m_server;

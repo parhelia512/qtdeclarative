@@ -131,6 +131,7 @@ protected:
         while (m_isReading) {
             // block while waiting for some data
             if (!std::cin.get(m_buffer[m_bytesInBuf])) {
+                qInfo() << "Received EOF, stopping...";
                 m_hasEof = true;
                 emit eof();
                 return;

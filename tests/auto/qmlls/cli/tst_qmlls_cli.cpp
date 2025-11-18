@@ -338,4 +338,16 @@ void tst_qmlls_cli::inputFile()
     QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
 }
 
+void tst_qmlls_cli::dontShutdownOnStartup()
+{
+    m_server.setArguments({});
+    m_server.start();
+    // it shouldn't shutdown before the close() call.
+    m_server.waitForFinished(3000);
+    QCOMPARE(m_server.state(), QProcess::Running);
+    m_server.close();
+    m_server.waitForFinished();
+    QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
+}
+
 QTEST_MAIN(tst_qmlls_cli)

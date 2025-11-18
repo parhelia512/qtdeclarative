@@ -236,7 +236,7 @@ QQmlDelegateModel::~QQmlDelegateModel()
     for (QQmlDelegateModelItem *cacheItem : std::as_const(d->m_cache)) {
         cacheItem->destroyObject();
         cacheItem->removeGroups(Compositor::UnresolvedFlag);
-        cacheItem->clearObjectReferences();
+        cacheItem->clearObjectWeakReferences();
 
         if (QQDMIncubationTask *incubationTask = cacheItem->incubationTask()) {
             d->releaseIncubator(incubationTask);
@@ -621,7 +621,7 @@ QQmlDelegateModel::ReleaseFlags QQmlDelegateModelPrivate::release(QObject *objec
     if (!cacheItem)
         return QQmlDelegateModel::ReleaseFlags{};
 
-    if (!cacheItem->releaseObject())
+    if (!cacheItem->releaseObjectWeak())
         return QQmlDelegateModel::Referenced;
 
     if (reusableFlag == QQmlInstanceModel::Reusable && m_reusableItemsPool.insertItem(cacheItem)) {
@@ -1275,11 +1275,10 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
                 // has already been incubated, otherwise it wouldn't be in the pool).
                 addCacheItem(cacheItem, it);
                 reuseItem(cacheItem, index, flags);
-                cacheItem->referenceObject();
 
                 if (index == m_compositor.count(group) - 1)
                     requestMoreIfNecessary();
-                return cacheItem->object();
+                return cacheItem->referenceObjectWeak();
             }
 
             // Since we could't find an available item in the pool, we create a new one
@@ -1298,7 +1297,7 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
         // Bump the reference counts temporarily so neither the content data or the delegate object
         // are deleted if incubatorStatusChanged() is called synchronously.
         QQmlDelegateModelItem::ScriptReference scriptRef(cacheItem);
-        cacheItem->referenceObject();
+        QQmlDelegateModelItem::ObjectReference objectRef(cacheItem);
 
         if (QQDMIncubationTask *incubationTask = cacheItem->incubationTask()) {
             bool sync = (incubationMode == QQmlIncubator::Synchronous
@@ -1356,18 +1355,14 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
 
         if (index == m_compositor.count(group) - 1)
             requestMoreIfNecessary();
-    }
 
-    if (QObject *object = cacheItem->object()) {
-        QQDMIncubationTask *incubationTask = cacheItem->incubationTask();
-        if (!incubationTask || isDoneIncubating(incubationTask->status()))
-            return object;
-    }
 
-    // TODO: We may not be able to releaseObject() here because incubateObject() above may have
-    //       released as a side effect. This needs cleanup.
-    if (cacheItem->objectRef() > 0)
-        cacheItem->releaseObject();
+        if (cacheItem->object()) {
+            QQDMIncubationTask *incubationTask = cacheItem->incubationTask();
+            if (!incubationTask || isDoneIncubating(incubationTask->status()))
+                return cacheItem->referenceObjectWeak();
+        }
+    }
 
     if (!cacheItem->isScriptReferenced()) {
 
@@ -1744,7 +1739,9 @@ void QQmlDelegateModelPrivate::itemsRemoved(
         } else {
             for (; cacheIndex < remove.cacheIndex() + remove.count - removedCache; ++cacheIndex) {
                 QQmlDelegateModelItem *cacheItem = m_cache.at(cacheIndex);
-                if (remove.inGroup(Compositor::Persisted) && cacheItem->objectRef() == 0
+                if (remove.inGroup(Compositor::Persisted)
+                        && cacheItem->objectStrongRef() == 0
+                        && cacheItem->objectWeakRef() == 0
                         && cacheItem->object()) {
                     QObject *object = cacheItem->object();
                     cacheItem->destroyObjectLater();
@@ -2524,7 +2521,7 @@ QQmlDelegateModelItem::QQmlDelegateModelItem(
 QQmlDelegateModelItem::~QQmlDelegateModelItem()
 {
     Q_ASSERT(m_scriptRef == 0);
-    Q_ASSERT(m_objectRef == 0);
+    Q_ASSERT(m_objectStrongRef == 0);
     Q_ASSERT(!m_object);
 
     if (m_incubationTask) {
@@ -3351,7 +3348,7 @@ void QQmlDelegateModelGroup::create(QQmlV4FunctionPtr args)
         Compositor::iterator it = model->m_compositor.find(group, index);
         model->m_compositor.setFlags(it, 1, d->group, Compositor::PersistedFlag, &inserts);
         model->itemsInserted(inserts);
-        model->m_cache.at(it.cacheIndex())->releaseObject();
+        model->m_cache.at(it.cacheIndex())->releaseObjectWeak();
     }
 
     args->setReturnValue(QV4::QObjectWrapper::wrap(args->v4engine(), object));

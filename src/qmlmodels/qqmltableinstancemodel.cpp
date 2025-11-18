@@ -59,7 +59,8 @@ QQmlTableInstanceModel::~QQmlTableInstanceModel()
         // No item in m_modelItems should be referenced at this point. The view
         // should release all its items before it deletes this model. Only model items
         // that are still being incubated should be left for us to delete.
-        Q_ASSERT(modelItem->objectRef() == 0);
+        // We can't rely on that, though. So we only check the strong ref.
+        Q_ASSERT(modelItem->objectStrongRef() == 0);
         Q_ASSERT(modelItem->incubationTask());
         // Check that we are not being deleted while we're
         // in the process of e.g emitting a created signal.
@@ -130,12 +131,10 @@ QObject *QQmlTableInstanceModel::object(int index, QQmlIncubator::IncubationMode
     if (!modelItem)
         return nullptr;
 
-    if (QObject *object = modelItem->object()) {
-        // The model item has already been incubated. So
-        // just bump the ref-count and return it.
-        modelItem->referenceObject();
-        return object;
-    }
+    // The model item has already been incubated. So
+    // just bump the ref-count and return it.
+    if (modelItem->object())
+        return modelItem->referenceObjectWeak();
 
     // The object is not ready, and needs to be incubated
     incubateModelItem(modelItem, incubationMode);
@@ -145,11 +144,9 @@ QObject *QQmlTableInstanceModel::object(int index, QQmlIncubator::IncubationMode
     // Incubation is done, so the task should be removed
     Q_ASSERT(!modelItem->incubationTask());
 
-    if (QObject *object = modelItem->object()) {
-        // Incubation was completed sync and successful
-        modelItem->referenceObject();
-        return object;
-    }
+    // Incubation was completed sync and successful
+    if (modelItem->object())
+        return modelItem->referenceObjectWeak();
 
     // The object was incubated synchronously (otherwise we would return above). But since
     // we have no object, the incubation must have failed. And when we have no object, there
@@ -171,7 +168,7 @@ QQmlInstanceModel::ReleaseFlags QQmlTableInstanceModel::release(QObject *object,
     Q_ASSERT(m_modelItems.contains(modelItem->modelIndex()));
     Q_ASSERT(m_modelItems[modelItem->modelIndex()]->object() == object);
 
-    if (!modelItem->releaseObject())
+    if (!modelItem->releaseObjectWeak())
         return QQmlDelegateModel::Referenced;
 
     if (modelItem->isScriptReferenced()) {
@@ -213,7 +210,7 @@ void QQmlTableInstanceModel::dispose(QObject *object)
     auto modelItem = qvariant_cast<QQmlDelegateModelItem *>(object->property(kModelItemTag));
     Q_ASSERT(modelItem);
 
-    modelItem->releaseObject();
+    modelItem->releaseObjectWeak();
 
     // The item is not referenced by anyone
     Q_ASSERT(!modelItem->isObjectReferenced());

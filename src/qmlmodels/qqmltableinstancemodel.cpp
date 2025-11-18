@@ -548,10 +548,8 @@ void QQmlTableInstanceModelIncubationTask::setInitialState(QObject *object)
     modelItemToIncubate->object = object;
     emit tableInstanceModel->initItem(modelItemToIncubate->modelIndex(), object);
 
-    if (!QQmlIncubatorPrivate::get(this)->requiredProperties()->empty()) {
-        modelItemToIncubate->object = nullptr;
-        object->deleteLater();
-    }
+    if (!QQmlIncubatorPrivate::get(this)->requiredProperties()->empty())
+        modelItemToIncubate->destroyObject();
 }
 
 void QQmlTableInstanceModelIncubationTask::statusChanged(QQmlIncubator::Status status)

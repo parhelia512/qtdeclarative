@@ -568,6 +568,14 @@ bool QQmlDomAstCreatorBase::visit(AST::UiPublicMember *el)
             FileLocations::addRegion(nodeStack.last().fileLocations, DefaultKeywordRegion,
                                      el->defaultToken());
         }
+        if (p.isVirtual) {
+            FileLocations::addRegion(nodeStack.last().fileLocations, VirtualKeywordRegion,
+                                     el->virtualToken());
+        }
+        if (p.isOverride) {
+            FileLocations::addRegion(nodeStack.last().fileLocations, OverrideKeywordRegion,
+                                     el->overrideToken());
+        }
         if (p.isFinal) {
             FileLocations::addRegion(nodeStack.last().fileLocations, FinalKeywordRegion,
                                      el->finalToken());

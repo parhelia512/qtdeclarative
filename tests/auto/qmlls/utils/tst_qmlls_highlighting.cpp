@@ -402,6 +402,28 @@ void tst_qmlls_highlighting::highlights_data()
                 << HighlightToken(QQmlJS::SourceLocation(297, 5, 12, 28),
                          QmlHighlightKind::QmlProperty,
                          QmlHighlightModifier::QmlPropertyDefinition | QmlHighlightModifier::QmlFinalProperty);
+        QTest::addRow("virtual-keyword")
+                << fileItem
+                << HighlightToken(QQmlJS::SourceLocation(311, 7, 13, 9),
+                                  QmlHighlightKind::QmlKeyword, QmlHighlightModifier::None);
+        QTest::addRow("virtual-modifier")
+                << fileItem
+                << HighlightToken(
+                           // Sloc of the "name" of the property
+                           QQmlJS::SourceLocation(332, 1, 13, 30), QmlHighlightKind::QmlProperty,
+                           QmlHighlightModifier::QmlPropertyDefinition
+                                   | QmlHighlightModifier::QmlVirtualProperty);
+        QTest::addRow("override-keyword")
+                << fileItem
+                << HighlightToken(QQmlJS::SourceLocation(342, 8, 14, 9),
+                                  QmlHighlightKind::QmlKeyword, QmlHighlightModifier::None);
+        QTest::addRow("override-modifier")
+                << fileItem
+                << HighlightToken(
+                           // Sloc of the "name" of the property
+                           QQmlJS::SourceLocation(364, 1, 14, 31), QmlHighlightKind::QmlProperty,
+                           QmlHighlightModifier::QmlPropertyDefinition
+                                   | QmlHighlightModifier::QmlOverrideProperty);
     }
     {
         // methods and signals, lambda functions

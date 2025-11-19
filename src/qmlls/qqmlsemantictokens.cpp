@@ -201,6 +201,12 @@ static int fromQmlModifierKindToLspTokenType(QmlHighlightModifiers highlightModi
     if (highlightModifier.testFlag(QmlHighlightModifier::QmlDefaultProperty))
         addModifier(SemanticTokenModifiers::DefaultLibrary, &modifier);
 
+    if (highlightModifier.testFlag(QmlHighlightModifier::QmlVirtualProperty))
+        addModifier(SemanticTokenModifiers::Static, &modifier);
+
+    if (highlightModifier.testFlag(QmlHighlightModifier::QmlOverrideProperty))
+        addModifier(SemanticTokenModifiers::Static, &modifier);
+
     if (highlightModifier.testFlag(QmlHighlightModifier::QmlFinalProperty))
         addModifier(SemanticTokenModifiers::Static, &modifier);
 
@@ -455,6 +461,14 @@ void HighlightingVisitor::highlightPropertyDefinition(const DomItem &item)
     if (propertyDef->isDefaultMember) {
         modifier |= QmlHighlightModifier::QmlDefaultProperty;
         addHighlight(regions[DefaultKeywordRegion], QmlHighlightKind::QmlKeyword);
+    }
+    if (propertyDef->isVirtual) {
+        modifier |= QmlHighlightModifier::QmlVirtualProperty;
+        addHighlight(regions[VirtualKeywordRegion], QmlHighlightKind::QmlKeyword);
+    }
+    if (propertyDef->isOverride) {
+        modifier |= QmlHighlightModifier::QmlOverrideProperty;
+        addHighlight(regions[OverrideKeywordRegion], QmlHighlightKind::QmlKeyword);
     }
     if (propertyDef->isFinal) {
         modifier |= QmlHighlightModifier::QmlFinalProperty;

@@ -101,7 +101,7 @@ QV4::ReturnedValue QQmlDMAbstractItemModelData::get_property(const QV4::Function
 
     const qsizetype propertyId = static_cast<const QV4::IndexedBuiltinFunction *>(b)->d()->index;
 
-    QQmlDelegateModelItem *item = o->d()->item;
+    QQmlDelegateModelItem *item = o->d()->item();
     QQmlDMAbstractItemModelData *modelData = static_cast<QQmlDMAbstractItemModelData *>(item);
     if (item->modelIndex() == -1) {
         if (!modelData->m_cachedData.isEmpty())
@@ -124,7 +124,7 @@ QV4::ReturnedValue QQmlDMAbstractItemModelData::set_property(const QV4::Function
 
     const qsizetype propertyId = static_cast<const QV4::IndexedBuiltinFunction *>(b)->d()->index;
 
-    QQmlDelegateModelItem *item = o->d()->item;
+    QQmlDelegateModelItem *item = o->d()->item();
     if (item->modelIndex() == -1) {
         QQmlDMAbstractItemModelData *modelData = static_cast<QQmlDMAbstractItemModelData *>(item);
         if (!modelData->m_cachedData.isEmpty()) {
@@ -156,7 +156,7 @@ QV4::ReturnedValue QQmlDMAbstractItemModelData::get_modelData(
         return scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object"));
 
     return scope.engine->fromVariant(
-            static_cast<QQmlDMAbstractItemModelData *>(o->d()->item)->modelData());
+            static_cast<QQmlDMAbstractItemModelData *>(o->d()->item())->modelData());
 }
 
 QV4::ReturnedValue QQmlDMAbstractItemModelData::set_modelData(
@@ -170,7 +170,7 @@ QV4::ReturnedValue QQmlDMAbstractItemModelData::set_modelData(
     if (!argc)
         return scope.engine->throwTypeError();
 
-    static_cast<QQmlDMAbstractItemModelData *>(o->d()->item)->setModelData(
+    static_cast<QQmlDMAbstractItemModelData *>(o->d()->item())->setModelData(
                 QV4::ExecutionEngine::toVariant(argv[0], QMetaType()));
 
     return QV4::Encode::undefined();
@@ -245,7 +245,6 @@ QV4::ReturnedValue QQmlDMAbstractItemModelData::get()
     QV4::ScopedObject proto(scope, m_type->prototype.value());
     QV4::ScopedObject o(scope, proto->engine()->memoryManager->allocate<QQmlDelegateModelItemObject>(this));
     o->setPrototypeOf(proto);
-    referenceSript();
     return o.asReturnedValue();
 }
 

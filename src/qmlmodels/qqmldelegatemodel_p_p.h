@@ -129,22 +129,22 @@ public:
         const QSpan<QQmlDelegateModelItem *const> items;
     };
 
+    struct ScriptReference
+    {
+        Q_DISABLE_COPY_MOVE(ScriptReference)
+
+        ScriptReference(QQmlDelegateModelItem *item) : item(item) { item->referenceSript(); }
+        ~ScriptReference() { item->releaseScript(); }
+
+        QQmlDelegateModelItem *data() const { return item; }
+    private:
+        QQmlDelegateModelItem *item = nullptr;
+    };
+
     QQmlDelegateModelItem(const QQmlRefPointer<QQmlDelegateModelItemMetaType> &metaType,
                           QQmlAdaptorModel::Accessors *accessor, int modelIndex,
                           int row, int column);
     ~QQmlDelegateModelItem();
-
-    void referenceSript() { ++m_scriptRef; }
-    bool releaseScript()
-    {
-        Q_ASSERT(m_scriptRef > 0);
-        return --m_scriptRef == 0;
-    }
-    void clearScriptReferences()
-    {
-        // TODO: This is quite wrong in any conceivable way.
-        m_scriptRef = 0;
-    }
 
     void referenceObject() { ++m_objectRef; }
     bool releaseObject()
@@ -266,6 +266,13 @@ Q_SIGNALS:
 private:
     void objectDestroyed(QObject *);
 
+    void referenceSript() { ++m_scriptRef; }
+    bool releaseScript()
+    {
+        Q_ASSERT(m_scriptRef > 0);
+        return --m_scriptRef == 0;
+    }
+
     QQmlRefPointer<QQmlDelegateModelItemMetaType> m_metaType;
     QQmlRefPointer<QQmlContextData> m_contextData;
     QPointer<QObject> m_object;
@@ -285,7 +292,13 @@ namespace Heap {
 struct QQmlDelegateModelItemObject : Object {
     inline void init(QQmlDelegateModelItem *item);
     void destroy();
-    QQmlDelegateModelItem *item;
+
+    alignas(alignof(QQmlDelegateModelItem::ScriptReference))
+    std::byte ref[sizeof(QQmlDelegateModelItem::ScriptReference)];
+
+    QQmlDelegateModelItem *item() const {
+        return reinterpret_cast<const QQmlDelegateModelItem::ScriptReference *>(&ref)->data();
+    }
 };
 
 }
@@ -297,10 +310,10 @@ struct QQmlDelegateModelItemObject : QV4::Object
     V4_NEEDS_DESTROY
 };
 
-void QV4::Heap::QQmlDelegateModelItemObject::init(QQmlDelegateModelItem *item)
+void QV4::Heap::QQmlDelegateModelItemObject::init(QQmlDelegateModelItem *modelItem)
 {
     Object::init();
-    this->item = item;
+    new (ref) QQmlDelegateModelItem::ScriptReference(modelItem);
 }
 
 class QQmlReusableDelegateModelItemsPool

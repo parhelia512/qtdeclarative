@@ -283,7 +283,7 @@ void QQmlTableInstanceModel::incubateModelItem(QQmlDelegateModelItem *modelItem,
 {
     // Guard the model item temporarily so that it's not deleted from
     // incubatorStatusChanged(), in case the incubation is done synchronously.
-    modelItem->referenceSript();
+    QQmlDelegateModelItem::ScriptReference scriptRef(modelItem);
 
     if (QQDMIncubationTask *incubationTask = modelItem->incubationTask()) {
         // We're already incubating the model item from a previous request. If the previous call requested
@@ -336,9 +336,6 @@ void QQmlTableInstanceModel::incubateModelItem(QQmlDelegateModelItem *modelItem,
                     ctxt, QQmlContextData::get(m_qmlContext));
         }
     }
-
-    // Remove the temporary guard
-    modelItem->releaseScript();
 }
 
 void QQmlTableInstanceModel::incubatorStatusChanged(QQmlTableInstanceModelIncubationTask *incubationTask, QQmlIncubator::Status status)
@@ -359,9 +356,8 @@ void QQmlTableInstanceModel::incubatorStatusChanged(QQmlTableInstanceModelIncuba
         // Emit that the item has been created. What normally happens next is that the view
         // upon receiving the signal asks for the model item once more. And since the item is
         // now in the map, it will be returned directly.
-        modelItem->referenceSript();
-        emit createdItem(modelItem->modelIndex(), modelItem->object());
-        modelItem->releaseScript();
+        QQmlDelegateModelItem::ScriptReference scriptRef(modelItem);
+        emit createdItem(modelItem->modelIndex(), object);
     } else if (status == QQmlIncubator::Error) {
         qWarning() << "Error incubating delegate:" << incubationTask->errors();
     }
@@ -374,12 +370,11 @@ void QQmlTableInstanceModel::incubatorStatusChanged(QQmlTableInstanceModelIncuba
         m_modelItems.remove(modelItem->modelIndex());
 
         if (QObject *object = modelItem->object()) {
-            modelItem->referenceSript();
+            QQmlDelegateModelItem::ScriptReference scriptRef(modelItem);
             emit destroyingItem(object);
-            modelItem->releaseScript();
-            Q_ASSERT(!modelItem->isReferenced());
         }
 
+        Q_ASSERT(!modelItem->isReferenced());
         deleteModelItemLater(modelItem);
     }
 

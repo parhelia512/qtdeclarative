@@ -173,7 +173,7 @@ public:
         if (!o)
             RETURN_RESULT(scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object")));
 
-        QQmlDelegateModelItem *item = o->d()->item;
+        QQmlDelegateModelItem *item = o->d()->item();
         const QQmlAdaptorModel *const model
                 = static_cast<QQmlDMAbstractItemModelData *>(item)->type()->model;
         if (item->modelIndex() >= 0) {

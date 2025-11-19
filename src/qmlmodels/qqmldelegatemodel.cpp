@@ -79,7 +79,7 @@ struct DelegateModelGroupFunction : QV4::FunctionObject
             return scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object"));
 
         QV4::ScopedValue v(scope, argc ? argv[0] : Value::undefinedValue());
-        return f->d()->code(o->d()->item, f->d()->flag, v);
+        return f->d()->code(o->d()->item(), f->d()->flag, v);
     }
 };
 
@@ -234,15 +234,7 @@ QQmlDelegateModel::~QQmlDelegateModel()
     d->m_adaptorModel.setObject(nullptr);
 
     for (QQmlDelegateModelItem *cacheItem : std::as_const(d->m_cache)) {
-        if (cacheItem->object()) {
-            cacheItem->destroyObject();
-            cacheItem->releaseScript();
-        } else if (cacheItem->incubationTask()) {
-            // Both the incubationTask and the object may hold a scriptRef,
-            // but if both are present, only one scriptRef is held in total.
-            cacheItem->releaseScript();
-        }
-
+        cacheItem->destroyObject();
         cacheItem->removeGroups(Compositor::UnresolvedFlag);
         cacheItem->clearObjectReferences();
 
@@ -689,10 +681,8 @@ void QQmlDelegateModel::cancel(int index)
                 else
                     d->emitDestroyingItem(object);
             }
-
-            cacheItem->releaseScript();
         }
-        if (!cacheItem->isReferenced()) {
+        if (!cacheItem->isReferenced() && !cacheItem->object()) {
             d->m_compositor.clearFlags(
                         Compositor::Cache, it.cacheIndex(), 1, Compositor::CacheFlag);
             d->m_cache.removeAt(it.cacheIndex());
@@ -1099,7 +1089,6 @@ void QQDMIncubationTask::statusChanged(Status status)
         Q_ASSERT(incubating);
         // The model was deleted from under our feet, cleanup ourselves
         incubating->destroyObject();
-        incubating->clearScriptReferences();
         incubating->deleteLater();
     }
 }
@@ -1227,7 +1216,6 @@ void QQmlDelegateModelPrivate::incubatorStatusChanged(QQDMIncubationTask *incuba
         else
             emitDestroyingItem(object);
         cacheItem->destroyObject();
-        cacheItem->releaseScript();
 
         if (!cacheItem->isReferenced()) {
             removeCacheItem(cacheItem);
@@ -1306,71 +1294,70 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
         cacheItem->setDelegate(delegate);
     }
 
-    // Bump the reference counts temporarily so neither the content data or the delegate object
-    // are deleted if incubatorStatusChanged() is called synchronously.
-    cacheItem->referenceSript();
-    cacheItem->referenceObject();
+    {
+        // Bump the reference counts temporarily so neither the content data or the delegate object
+        // are deleted if incubatorStatusChanged() is called synchronously.
+        QQmlDelegateModelItem::ScriptReference scriptRef(cacheItem);
+        cacheItem->referenceObject();
 
-    if (QQDMIncubationTask *incubationTask = cacheItem->incubationTask()) {
-        bool sync = (incubationMode == QQmlIncubator::Synchronous || incubationMode == QQmlIncubator::AsynchronousIfNested);
-        if (sync && incubationTask->incubationMode() == QQmlIncubator::Asynchronous) {
-            // previously requested async - now needed immediately
-            incubationTask->forceCompletion();
-        }
-    } else if (!cacheItem->object()) {
-        QQmlContext *creationContext = cacheItem->delegate()->creationContext();
-
-        cacheItem->referenceSript();
-
-        QQDMIncubationTask *incubationTask = new QQDMIncubationTask(this, incubationMode);
-        cacheItem->setIncubationTask(incubationTask);
-        incubationTask->incubating = cacheItem;
-        incubationTask->clear();
-
-        for (int i = 1; i < m_groupCount; ++i)
-            incubationTask->index[i] = it.index[i];
-
-        const QQmlRefPointer<QQmlContextData> componentContext
-                = QQmlContextData::get(creationContext  ? creationContext : m_context.data());
-        QQmlComponentPrivate *cp = QQmlComponentPrivate::get(cacheItem->delegate());
-
-        if (cp->isBound()) {
-            cacheItem->setContextData(componentContext);
-
-            // Ignore return value of initProxy. We want to know the proxy when assigning required
-            // properties, but we don't want it to pollute our context. The context is bound.
-            if (m_adaptorModel.hasProxyObject())
-                cacheItem->initProxy();
-
-            cp->incubateObject(
-                    incubationTask, cacheItem->delegate(), m_context->engine(), componentContext,
-                    QQmlContextData::get(m_context));
-        } else {
-            QQmlRefPointer<QQmlContextData> ctxt
-                    = QQmlContextData::createRefCounted(componentContext);
-            ctxt->setContextObject(cacheItem);
-            cacheItem->setContextData(ctxt);
-
-            // If the model is read-only we cannot just expose the object as context
-            // We actually need a separate model object to moderate access.
-            if (m_adaptorModel.hasProxyObject()) {
-                if (m_adaptorModel.delegateModelAccess == QQmlDelegateModel::ReadOnly)
-                    cacheItem->initProxy();
-                else
-                    ctxt = cacheItem->initProxy();
+        if (QQDMIncubationTask *incubationTask = cacheItem->incubationTask()) {
+            bool sync = (incubationMode == QQmlIncubator::Synchronous
+                         || incubationMode == QQmlIncubator::AsynchronousIfNested);
+            if (sync && incubationTask->incubationMode() == QQmlIncubator::Asynchronous) {
+                // previously requested async - now needed immediately
+                incubationTask->forceCompletion();
             }
+        } else if (!cacheItem->object()) {
+            QQmlContext *creationContext = cacheItem->delegate()->creationContext();
 
-            cp->incubateObject(
-                    cacheItem->incubationTask(), cacheItem->delegate(), m_context->engine(), ctxt,
-                    QQmlContextData::get(m_context));
+            QQDMIncubationTask *incubationTask = new QQDMIncubationTask(this, incubationMode);
+            cacheItem->setIncubationTask(incubationTask);
+            incubationTask->incubating = cacheItem;
+            incubationTask->clear();
+
+            for (int i = 1; i < m_groupCount; ++i)
+                incubationTask->index[i] = it.index[i];
+
+            const QQmlRefPointer<QQmlContextData> componentContext
+                    = QQmlContextData::get(creationContext  ? creationContext : m_context.data());
+            QQmlComponentPrivate *cp = QQmlComponentPrivate::get(cacheItem->delegate());
+
+            if (cp->isBound()) {
+                cacheItem->setContextData(componentContext);
+
+                // Ignore return value of initProxy. We want to know the proxy when assigning required
+                // properties, but we don't want it to pollute our context. The context is bound.
+                if (m_adaptorModel.hasProxyObject())
+                    cacheItem->initProxy();
+
+                cp->incubateObject(
+                        incubationTask, cacheItem->delegate(), m_context->engine(),
+                        componentContext, QQmlContextData::get(m_context));
+            } else {
+                QQmlRefPointer<QQmlContextData> ctxt
+                        = QQmlContextData::createRefCounted(componentContext);
+                ctxt->setContextObject(cacheItem);
+                cacheItem->setContextData(ctxt);
+
+                // If the model is read-only we cannot just expose the object as context
+                // We actually need a separate model object to moderate access.
+                if (m_adaptorModel.hasProxyObject()) {
+                    if (m_adaptorModel.delegateModelAccess == QQmlDelegateModel::ReadOnly)
+                        cacheItem->initProxy();
+                    else
+                        ctxt = cacheItem->initProxy();
+                }
+
+                cp->incubateObject(
+                        cacheItem->incubationTask(), cacheItem->delegate(), m_context->engine(),
+                        ctxt, QQmlContextData::get(m_context));
+            }
         }
+
+        if (index == m_compositor.count(group) - 1)
+            requestMoreIfNecessary();
     }
 
-    if (index == m_compositor.count(group) - 1)
-        requestMoreIfNecessary();
-
-    // Remove the temporary reference count.
-    cacheItem->releaseScript();
     if (QObject *object = cacheItem->object()) {
         QQDMIncubationTask *incubationTask = cacheItem->incubationTask();
         if (!incubationTask || isDoneIncubating(incubationTask->status()))
@@ -1383,6 +1370,11 @@ QObject *QQmlDelegateModelPrivate::object(Compositor::Group group, int index, QQ
         cacheItem->releaseObject();
 
     if (!cacheItem->isReferenced()) {
+
+        // If it had an object and no incubationTask we would have returned above.
+        // If it had an incubationTask it would be referenced, no matter if it has an object.
+        Q_ASSERT(!cacheItem->object());
+
         removeCacheItem(cacheItem);
         delete cacheItem;
     }
@@ -1760,9 +1752,10 @@ void QQmlDelegateModelPrivate::itemsRemoved(
                         emitDestroyingPackage(package);
                     else
                         emitDestroyingItem(object);
-                    cacheItem->releaseScript();
                 }
-                if (!cacheItem->isReferenced() && !remove.inGroup(Compositor::Persisted)) {
+                if (!cacheItem->isReferenced()
+                        && !cacheItem->object()
+                        && !remove.inGroup(Compositor::Persisted)) {
                     m_compositor.clearFlags(Compositor::Cache, cacheIndex, 1, Compositor::CacheFlag);
                     m_cache.removeAt(cacheIndex);
                     delete cacheItem;
@@ -1791,7 +1784,6 @@ void QQmlDelegateModelPrivate::itemsRemoved(
                                 else
                                     emitDestroyingItem(object);
                             }
-                            cacheItem->releaseScript();
                         } else {
                             for (int i = 1; i < m_groupCount; ++i) {
                                 if (remove.inGroup(i))
@@ -2402,7 +2394,7 @@ QV4::ReturnedValue QQmlDelegateModelItem::get_model(const QV4::FunctionObject *b
     if (!o)
         return b->engine()->throwTypeError(QStringLiteral("Not a valid DelegateModel object"));
 
-    QQmlDelegateModelItem *item = o->d()->item;
+    QQmlDelegateModelItem *item = o->d()->item();
     if (!item->m_metaType->model)
         RETURN_UNDEFINED();
 
@@ -2417,7 +2409,7 @@ QV4::ReturnedValue QQmlDelegateModelItem::get_groups(const QV4::FunctionObject *
         return scope.engine->throwTypeError(QStringLiteral("Not a valid DelegateModel object"));
 
     QStringList groups;
-    QQmlDelegateModelItem *item = o->d()->item;
+    QQmlDelegateModelItem *item = o->d()->item();
     const auto &metaType = item->m_metaType;
     for (qsizetype i = 0, end = metaType->groupCount(); i < end; ++i) {
         if (item->m_groups & (1 << (i + 1)))
@@ -2437,7 +2429,7 @@ QV4::ReturnedValue QQmlDelegateModelItem::set_groups(const QV4::FunctionObject *
     if (!argc)
         THROW_TYPE_ERROR();
 
-    QQmlDelegateModelItem *item = o->d()->item;
+    QQmlDelegateModelItem *item = o->d()->item();
     QQmlDelegateModel *delegateModel = item->m_metaType->delegateModel();
     if (!delegateModel)
         RETURN_UNDEFINED();
@@ -2499,7 +2491,11 @@ DEFINE_OBJECT_VTABLE(QQmlDelegateModelItemObject);
 
 void QV4::Heap::QQmlDelegateModelItemObject::destroy()
 {
-    item->dispose();
+    // We need to first destroy the reference and then call dispose() because dispose() only
+    // does something if the item is not referenced anymore.
+    QQmlDelegateModelItem *disposable = item();
+    reinterpret_cast<QQmlDelegateModelItem::ScriptReference *>(&ref)->~ScriptReference();
+    disposable->dispose();
     Object::destroy();
 }
 
@@ -2541,8 +2537,7 @@ QQmlDelegateModelItem::~QQmlDelegateModelItem()
 
 void QQmlDelegateModelItem::dispose()
 {
-    --m_scriptRef;
-    if (isReferenced())
+    if (isReferenced() || m_object)
         return;
 
     if (QQmlDelegateModel *delegateModel = m_metaType->delegateModel())
@@ -3189,7 +3184,6 @@ QJSValue QQmlDelegateModelGroup::get(int index)
         model->m_cacheMetaType->initializePrototype();
     QV4::ExecutionEngine *v4 = model->m_cacheMetaType->v4Engine;
     QV4::Scope scope(v4);
-    cacheItem->referenceSript();
     QV4::ScopedObject o(scope, v4->memoryManager->allocate<QQmlDelegateModelItemObject>(cacheItem));
     QV4::ScopedObject p(scope, model->m_cacheMetaType->modelItemProto.value());
     o->setPrototypeOf(p);
@@ -3212,7 +3206,7 @@ bool QQmlDelegateModelGroupPrivate::parseIndex(const QV4::Value &value, int *ind
     QV4::Scoped<QQmlDelegateModelItemObject> object(scope, value);
 
     if (object) {
-        QQmlDelegateModelItem * const cacheItem = object->d()->item;
+        QQmlDelegateModelItem * const cacheItem = object->d()->item();
         if (QQmlDelegateModel *delegateModel = cacheItem->metaType()->delegateModel()) {
             *index = QQmlDelegateModelPrivate::get(delegateModel)->m_cache.indexOf(cacheItem);
             *group = Compositor::Cache;
@@ -3462,7 +3456,7 @@ void QQmlDelegateModelGroup::resolve(QQmlV4FunctionPtr args)
 
     Q_ASSERT(model->m_cache.size() == model->m_compositor.count(Compositor::Cache));
 
-    if (!cacheItem->isReferenced()) {
+    if (!cacheItem->isReferenced() && !cacheItem->object()) {
         Q_ASSERT(toIt.cacheIndex() == model->m_cache.indexOf(cacheItem));
         model->m_cache.removeAt(toIt.cacheIndex());
         model->m_compositor.clearFlags(

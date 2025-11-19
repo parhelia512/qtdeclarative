@@ -569,11 +569,11 @@ void QQuickDialog::itemChange(QQuickItem::ItemChange change, const QQuickItem::I
         return;
 
     Q_D(QQuickDialog);
-    if (d->buttonBox) {
+    if (d->buttonBox && QQuickItemPrivate::get(d->popupItem)->subFocusItem == nullptr) {
         for (int i = 0; i < d->buttonBox->count(); ++i) {
             QQuickItem *item = qobject_cast<QQuickItem *>(d->buttonBox->itemAt(i));
             if (item && item->isEnabled()) {
-                d->buttonBox->forceActiveFocus(Qt::OtherFocusReason);
+                d->buttonBox->setFocus(true, Qt::OtherFocusReason);
                 break;
             }
         }

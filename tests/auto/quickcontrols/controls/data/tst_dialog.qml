@@ -666,4 +666,40 @@ TestCase {
         compare(control.footer.focus, false)
         compare(control.footer.activeFocus, false)
     }
+
+    Component {
+        id: dialogWithDefaultButtonAndSubFocusItem
+        Dialog {
+            popupType: Popup.Item
+            contentItem: Button {
+                focus: true
+                text: "Prioritize me!"
+            }
+            footer: DialogButtonBox {
+                Button {
+                    text: "Foo"
+                }
+                Button {
+                    text: "Bar"
+                }
+            }
+        }
+    }
+
+    function test_dontGiveButtonBoxFocusWhenPopupItemHasSubFocusItem() {
+        let control = createTemporaryObject(dialogWithDefaultButtonAndSubFocusItem, testCase)
+        verify(control)
+        let openedSpy = createTemporaryObject(signalSpy, testCase, {target: control, signalName: "opened"})
+        verify(openedSpy.valid)
+
+        control.open()
+        openedSpy.wait()
+        compare(openedSpy.count, 1)
+        verify(control.visible)
+
+        compare(control.footer?.focus, false)
+        compare(control.footer?.activeFocus, false)
+        compare(control.contentItem?.focus, true)
+        compare(control.contentItem?.activeFocus, true)
+    }
 }

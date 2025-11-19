@@ -25,6 +25,10 @@ if(QT_FEATURE_quick_shadereffect AND TARGET Qt::Quick)
     add_subdirectory(wavefrontmesh)
 endif()
 
+if(QT_FEATURE_quickcontrols2_stylekit)
+    add_subdirectory(stylekit)
+endif()
+
 if(QT_FEATURE_systemsemaphore AND TARGET Qt::Quick)
     add_subdirectory(sharedimage)
 endif()

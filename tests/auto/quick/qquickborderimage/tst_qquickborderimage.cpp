@@ -132,7 +132,7 @@ void tst_qquickborderimage::imageSource()
     if (remote)
         QTRY_COMPARE(obj->status(), QQuickBorderImage::Loading);
 
-    QCOMPARE(obj->source(), remote ? source : QUrl(source));
+    QCOMPARE(obj->source(), QUrl(source));
 
     if (error.isEmpty()) {
         QTRY_COMPARE(obj->status(), QQuickBorderImage::Ready);
@@ -283,7 +283,7 @@ void tst_qquickborderimage::sciSource()
     if (remote)
         QTRY_COMPARE(obj->status(), QQuickBorderImage::Loading);
 
-    QCOMPARE(obj->source(), remote ? source : QUrl(source));
+    QCOMPARE(obj->source(), QUrl(source));
     QCOMPARE(obj->width(), 300.);
     QCOMPARE(obj->height(), 300.);
 

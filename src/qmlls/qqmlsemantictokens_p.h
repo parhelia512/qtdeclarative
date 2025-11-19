@@ -160,14 +160,13 @@ void addModifier(QLspSpecification::SemanticTokenModifiers modifier, int *baseMo
 bool rangeOverlapsWithSourceLocation(const QQmlJS::SourceLocation &loc, const HighlightsRange &r);
 QList<QLspSpecification::SemanticTokensEdit> computeDiff(const QList<int> &, const QList<int> &);
 void updateResultID(QByteArray &resultID);
-QList<int> collectTokens(const QQmlJS::Dom::DomItem &item,
-                            const std::optional<HighlightsRange> &range,
-                            HighlightingMode mode = HighlightingMode::Default);
 HighlightsContainer visitTokens(const QQmlJS::Dom::DomItem &item,
                                 const std::optional<HighlightsRange> &range);
 void addHighlight(HighlightsContainer &out, const QQmlJS::SourceLocation &loc, QmlHighlightKind,
                     QmlHighlightModifiers = QmlHighlightModifier::None);
 void applyDiffs(HighlightsContainer &highlights, const QList<QQmlLSUtils::Diff> &diffs);
+HighlightsContainer shiftHighlights(const HighlightsContainer &cachedHighlights,
+                                    const QString &lastValidCode, const QString &currentCode);
 } // namespace Utils
 
 class HighlightingVisitor

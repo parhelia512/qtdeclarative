@@ -20,6 +20,7 @@
 #include "qtextdocument_p.h"
 #include "qprocessscheduler_p.h"
 #include "qqmllshelputils_p.h"
+#include "qqmlsemantictokens_p.h"
 
 #include <QObject>
 #include <QHash>
@@ -70,7 +71,7 @@ public:
 struct RegisteredSemanticTokens
 {
     QByteArray resultId = "0";
-    QList<int> lastTokens;
+    QmlHighlighting::HighlightsContainer highlights;
 };
 
 struct ModuleSetting

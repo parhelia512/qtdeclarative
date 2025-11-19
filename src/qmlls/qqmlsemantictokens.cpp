@@ -1057,11 +1057,15 @@ HighlightsContainer Utils::visitTokens(const QQmlJS::Dom::DomItem &item,
     return highlightDomElements.highlights();
 }
 
-QList<int> Utils::collectTokens(const QQmlJS::Dom::DomItem &item,
-                                     const std::optional<HighlightsRange> &range,
-                                     HighlightingMode mode)
+HighlightsContainer Utils::shiftHighlights(const HighlightsContainer &cachedHighlights,
+                                           const QString &lastValidCode, const QString &currentCode)
 {
-    return Utils::encodeSemanticTokens(visitTokens(item, range), mode);
+    using namespace QQmlLSUtils;
+    Differ differ;
+    const QList<Diff> diffs = differ.diff(lastValidCode, currentCode);
+    HighlightsContainer shifts = cachedHighlights;
+    applyDiffs(shifts, diffs);
+    return shifts;
 }
 
 static std::pair<quint32, quint32> newlineCountAndLastLineLength(const QString &text)
@@ -1069,6 +1073,7 @@ static std::pair<quint32, quint32> newlineCountAndLastLineLength(const QString &
     auto [row, col]  = QQmlJS::SourceLocation::rowAndColumnFrom(text, text.size());
     return { row - 1, col - 1 }; // rows are 1-based, so subtract 1 to get the number of newlines
 }
+
 static void updateCursorPositionByDiff(const QString &text, QQmlJS::SourceLocation &cursor)
 {
     auto [newLines, lastLineLength] = newlineCountAndLastLineLength(text);

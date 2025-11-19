@@ -1945,8 +1945,8 @@ void tst_qmlls_modules::semanticHighlightingFull()
 {
     QFETCH(QString, filePath);
     const auto item = fileObject(testFile(filePath));
-    QmlHighlighting::HighlightsContainer highlights;
-    const auto expectedData = QmlHighlighting::Utils::collectTokens(item, std::nullopt);
+    QmlHighlighting::HighlightsContainer highlights = QmlHighlighting::Utils::visitTokens(item, std::nullopt);
+    const auto expectedData = QmlHighlighting::Utils::encodeSemanticTokens(highlights);
 
     const auto uri = openFile(filePath);
     QVERIFY(uri);
@@ -1988,13 +1988,13 @@ void tst_qmlls_modules::semanticHighlightingRange()
     QFETCH(QLspSpecification::Range, range);
 
     const auto item = fileObject(testFile(filePath));
-    QmlHighlighting::HighlightsContainer highlights;
     const auto qmlFile = item.as<QQmlJS::Dom::QmlFile>();
     const auto code = qmlFile->code();
     const int startOffset = int(QQmlLSUtils::textOffsetFrom(code, range.start.line, range.end.character));
     const int endOffset = int(QQmlLSUtils::textOffsetFrom(code, range.end.line, range.end.character));
-    const auto expectedData = QmlHighlighting::Utils::collectTokens(
+    QmlHighlighting::HighlightsContainer highlights = QmlHighlighting::Utils::visitTokens(
             item, QmlHighlighting::HighlightsRange{ startOffset, endOffset });
+    const auto expectedData = QmlHighlighting::Utils::encodeSemanticTokens(highlights);
 
     const auto uri = openFile(filePath);
     QVERIFY(uri);
@@ -2039,8 +2039,12 @@ void tst_qmlls_modules::semanticHighlightingDelta()
 
     const auto fileItem = fileObject(testFile(filePath));
     const auto deltaFileItem = fileObject(testFile(deltaFilePath));
-    auto fullDocumentSemanticTokensData = QmlHighlighting::Utils::collectTokens(fileItem, std::nullopt);
-    auto editedDocumentSemanticTokensData = QmlHighlighting::Utils::collectTokens(deltaFileItem, std::nullopt);
+    const auto fullDocumentSemanticTokens = QmlHighlighting::Utils::visitTokens(fileItem, std::nullopt);
+    const auto editedDocumentSemanticTokens = QmlHighlighting::Utils::visitTokens(deltaFileItem, std::nullopt);
+    auto fullDocumentSemanticTokensData =
+            QmlHighlighting::Utils::encodeSemanticTokens(fullDocumentSemanticTokens);
+    auto editedDocumentSemanticTokensData =
+            QmlHighlighting::Utils::encodeSemanticTokens(editedDocumentSemanticTokens);
     const auto expectedEdits = QmlHighlighting::Utils::computeDiff(
             fullDocumentSemanticTokensData, editedDocumentSemanticTokensData);
 

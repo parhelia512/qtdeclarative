@@ -2541,10 +2541,8 @@ void tst_qqmllanguage::i18n()
         // For POSIX, this will just be data/I18nType.qml, since POSIX is 7-bit
         // For iso8859-1 locale, this will just be data/I18nType?????.qml where ????? is 5 8-bit characters
         // For utf-8 locale, this will be data/I18nType??????????.qml where ?????????? is 5 8-bit characters, UTF-8 encoded
-        if (dataDirectoryUrl().scheme() != QLatin1String("qrc")) {
-            const auto out = tmpDir.filePath(QString::fromUtf8("I18nType\303\201\303\242\303\243\303\244\303\245.qml"));
-            QVERIFY(QFile::copy(testFile("i18n/I18nType30.qml"_L1), out));
-        }
+        const auto out = tmpDir.filePath(QString::fromUtf8("I18nType\303\201\303\242\303\243\303\244\303\245.qml"));
+        QVERIFY(QFile::copy(testFile("i18n/I18nType30.qml"_L1), out));
     }
 
     QQmlComponent component(&engine, tmpDir.filePath(file));

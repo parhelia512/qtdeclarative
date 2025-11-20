@@ -1651,9 +1651,13 @@ void TestQmllint::dirtyQmlSnippet()
     QFETCH(Result, result);
     QFETCH(CallQmllintOptions, options);
 
-    QString qmlCode = "import QtQuick\nItem {\n%1}"_L1.arg(code);
-
-    addLocationOffsetTo(&result, 2);
+    QString qmlCode;
+    if (code.startsWith("import"_L1)) {
+        qmlCode = code;
+    } else {
+        qmlCode = "import QtQuick\nItem {\n%1}"_L1.arg(code);
+        addLocationOffsetTo(&result, 2);
+    }
 
     const QJsonArray warnings =
             callQmllintOnSnippet(qmlCode, options, fromResultFlags(result.flags));
@@ -3938,6 +3942,17 @@ void TestQmllint::shadow_data()
                u"IC { function f() {} }"_s
             << Result{ { { "Property \"f\" already exists in base type \"IC\""_L1, 2, 15 } } }
             << defaultOptions;
+
+    {
+        CallQmllintOptions options;
+        options.importPaths.append(testFile("ImportPath"));
+        QTest::newRow("shadowPropertyFromAnotherFile")
+                << u"import ModuleInImportPath\n"
+                   u"A { property int myProperty }"_s
+                << Result{ { { "Property \"myProperty\" already exists in base type \"A\""_L1, 2,
+                               18 } } }
+                << options;
+    }
 }
 
 void TestQmllint::shadow()

@@ -161,6 +161,9 @@ inline QString getScopeName(const QQmlJSScope::ConstPtr &scope, QQmlJSScope::Sco
     if (scope->isInlineComponent() && scope->inlineComponentName().has_value())
         return scope->inlineComponentName().value();
 
+    if (scope->isFileRootComponent())
+        return QFileInfo(scope->filePath()).baseName();
+
     return scope->baseTypeName();
 }
 

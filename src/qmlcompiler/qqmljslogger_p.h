@@ -327,7 +327,7 @@ public:
     void commit();
     void rollback();
 
-    void finalizeFuction();
+    void finalizeFunction();
 
 private:
     QMap<QString, QQmlJS::LoggerCategory> m_categories;

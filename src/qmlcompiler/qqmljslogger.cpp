@@ -345,7 +345,7 @@ void QQmlJSLogger::processMessages(QSpan<const QQmlJS::DiagnosticMessage> messag
     m_output.write(QStringLiteral("---\n\n"));
 }
 
-void QQmlJSLogger::finalizeFuction()
+void QQmlJSLogger::finalizeFunction()
 {
     Q_ASSERT(!m_inTransaction);
     m_archivedMessages.append(std::exchange(m_currentFunctionMessages, {}));

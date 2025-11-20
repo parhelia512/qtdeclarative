@@ -731,7 +731,7 @@ QQmlJSAotFunction QQmlJSAotCompiler::globalCode() const
 
 std::optional<QList<QQmlJS::DiagnosticMessage>> QQmlJSAotCompiler::finalizeBindingOrFunction()
 {
-    const auto archiveMessages = qScopeGuard([this]() { m_logger->finalizeFuction(); });
+    const auto archiveMessages = qScopeGuard([this]() { m_logger->finalizeFunction(); });
 
     if (!m_logger->currentFunctionHasCompileError())
         return {};

@@ -800,21 +800,37 @@ QHash<QString, QQmlJSMetaProperty> QQmlJSScope::properties() const
     return results;
 }
 
-QQmlJSScope::AnnotatedScope QQmlJSScope::ownerOfProperty(const QQmlJSScope::ConstPtr &self,
-                                                         const QString &name)
+template <typename Predicate>
+QQmlJSScope::AnnotatedScope searchOwner(const QQmlJSScope::ConstPtr &self, Predicate &&p)
 {
     QQmlJSScope::AnnotatedScope owner;
     QQmlJSUtils::searchBaseAndExtensionTypes(
             self, [&](const QQmlJSScope::ConstPtr &scope, QQmlJSScope::ExtensionKind mode) {
                 if (mode == QQmlJSScope::ExtensionNamespace)
                     return false;
-                if (scope->hasOwnProperty(name)) {
+                if (p(scope)) {
                     owner = { scope, mode };
                     return true;
                 }
                 return false;
             });
     return owner;
+}
+
+QQmlJSScope::AnnotatedScope QQmlJSScope::ownerOfProperty(const QQmlJSScope::ConstPtr &self,
+                                                         const QString &name)
+{
+    return searchOwner(self, [&name](const QQmlJSScope::ConstPtr &scope) {
+        return scope->hasOwnProperty(name);
+    });
+}
+
+QQmlJSScope::AnnotatedScope QQmlJSScope::ownerOfMethod(const QQmlJSScope::ConstPtr &self,
+                                                       const QString &name)
+{
+    return searchOwner(self, [&name](const QQmlJSScope::ConstPtr &scope) {
+        return scope->hasOwnMethod(name);
+    });
 }
 
 void QQmlJSScope::setPropertyLocallyRequired(const QString &name, bool isRequired)

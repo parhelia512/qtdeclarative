@@ -286,6 +286,7 @@ public:
 
     struct AnnotatedScope; // defined later
     static AnnotatedScope ownerOfProperty(const QQmlJSScope::ConstPtr &self, const QString &name);
+    static AnnotatedScope ownerOfMethod(const QQmlJSScope::ConstPtr &self, const QString &name);
 
     bool isResolved() const;
     bool isFullyResolved() const;

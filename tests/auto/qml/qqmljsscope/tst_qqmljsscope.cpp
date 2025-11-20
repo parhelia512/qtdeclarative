@@ -735,10 +735,19 @@ void tst_qqmljsscope::extensions()
     QCOMPARE(childScopes[4]->attachedTypeName(), QString());
     QVERIFY(!childScopes[4]->attachedType());
 
-    auto [owner, ownerKind] = QQmlJSScope::ownerOfProperty(childScopes[4], u"count"_s);
-    QVERIFY(owner);
-    QCOMPARE(ownerKind, QQmlJSScope::ExtensionType);
-    QCOMPARE(owner, childScopes[4]->baseType()->extensionType().scope);
+    {
+        auto [owner, ownerKind] = QQmlJSScope::ownerOfProperty(childScopes[4], u"count"_s);
+        QVERIFY(owner);
+        QCOMPARE(ownerKind, QQmlJSScope::ExtensionType);
+        QCOMPARE(owner, childScopes[4]->baseType()->extensionType().scope);
+    }
+
+    {
+        auto [owner, ownerKind] = QQmlJSScope::ownerOfMethod(childScopes[4], u"myInvokable"_s);
+        QVERIFY(owner);
+        QCOMPARE(ownerKind, QQmlJSScope::ExtensionType);
+        QCOMPARE(owner, childScopes[4]->baseType()->extensionType().scope);
+    }
 }
 
 void tst_qqmljsscope::emptyBlockBinding()

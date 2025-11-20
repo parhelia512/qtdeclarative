@@ -155,6 +155,9 @@ private Q_SLOTS:
 
     void unrecognizedIniSection();
 
+    void shadow_data();
+    void shadow();
+
 #if QT_CONFIG(library)
     void hasTestPlugin();
     void testPlugin_data();
@@ -950,10 +953,10 @@ void TestQmllint::dirtyQmlCode_data()
                            QtCriticalMsg } } };
     QTest::newRow("duplicatedPropertyName")
             << QStringLiteral("duplicatedPropertyName.qml")
-            << Result{ { { "Duplicated property name \"cat\"."_L1, 5, 5 } } };
+            << Result{ { { "Duplicated property name \"cat\"."_L1, 5, 21 } } };
     QTest::newRow("duplicatedSignalName")
             << QStringLiteral("duplicatedPropertyName.qml")
-            << Result{ { { "Duplicated signal name \"clicked\"."_L1, 8, 5 } } };
+            << Result{ { { "Duplicated signal name \"clicked\"."_L1, 8, 12 } } };
     QTest::newRow("enumInvalid")
             << QStringLiteral("enumInvalid.qml")
             << Result{ { { "Member \"red\" not found on type \"QtObject\""_L1, 5, 25 },
@@ -1745,7 +1748,7 @@ void TestQmllint::cleanQmlSnippet_data()
                u"}"_s << defaultOptions;
     QTest::newRow("requiredFromBaseShadowedAndSatisfiedByBinding")
             << u"component Base: Item { property var r1; }\n"
-               u"component Foo: Base { required property var r1; }\n"
+               u"component Foo: Base { required property var r1; } // qmllint disable shadow\n"
                u"Foo { r1: 42 }"_s
             << defaultOptions;
     QTest::newRow("testSnippet") << u"property int qwer: 123"_s << defaultOptions;
@@ -3863,6 +3866,84 @@ void TestQmllint::unrecognizedIniSection()
     bool ignoreSettings = false;
     const auto output = runQmllint(qmlFilePath, shouldSucceed, {}, ignoreSettings);
     QVERIFY(output.contains("Unrecognized section \"Warning\" in %1"_L1.arg(iniFilePath)));
+}
+
+void TestQmllint::shadow_data()
+{
+    // note: use the same column as dirtyQmlSnippet_data() to reuse dirtyQmlSnippet() in shadow().
+    QTest::addColumn<QString>("code");
+    QTest::addColumn<Result>("result");
+    QTest::addColumn<CallQmllintOptions>("options");
+
+    const CallQmllintOptions defaultOptions;
+
+    QTest::newRow("shadowMethod")
+            << u"component IC: Item { function f() {} }\n"
+               u"IC { function f() {} }"_s
+            << Result{ { { "Method \"f\" already exists in base type \"IC\""_L1, 2, 15  } } }
+            << defaultOptions;
+    QTest::newRow("shadowMethod2")
+            << u"component IC: Item { function f() {} }\n"
+               u"IC { function f(a,b,c) {} }"_s
+            << Result{ { { "Method \"f\" already exists in base type \"IC\""_L1, 2, 15 } } }
+            << defaultOptions;
+    QTest::newRow("shadowMethodWithProperty")
+            << u"component IC: Item { function f() {} }\n"
+               u"IC { property int f; }"_s
+            << Result{ { { "Method \"f\" already exists in base type \"IC\""_L1, 2, 19 } } }
+            << defaultOptions;
+    QTest::newRow("shadowMethodWithSignal")
+            << u"component IC: Item { function f() {} }\n"
+               u"IC { signal f; }"_s
+            << Result{ { { "Method \"f\" already exists in base type \"IC\""_L1, 2, 13 } } }
+            << defaultOptions;
+    QTest::newRow("shadowSignal")
+            << u"component IC: Item { signal f }\n"
+               u"IC { signal f }"_s
+            << Result{ { { "Signal \"f\" already exists in base type \"IC\""_L1, 2, 13 } } }
+            << defaultOptions;
+    QTest::newRow("shadowSignal2")
+            << u"component IC: Item { signal f }\n"
+               u"IC { signal f(a:int,b:string,c:string) }"_s
+            << Result{ { { "Signal \"f\" already exists in base type \"IC\""_L1, 2, 13 } } }
+            << defaultOptions;
+    QTest::newRow("shadowSignalWithProperty")
+            << u"component IC: Item { signal f }\n"
+               u"IC { property int f; }"_s
+            << Result{ { { "Signal \"f\" already exists in base type \"IC\""_L1, 2, 19 } } }
+            << defaultOptions;
+    QTest::newRow("shadowSignalWithMethod")
+            << u"component IC: Item { signal f }\n"
+               u"IC { function f() {} }"_s
+            << Result{ { { "Signal \"f\" already exists in base type \"IC\""_L1, 2, 15 } } }
+            << defaultOptions;
+
+    QTest::newRow("shadowProperty")
+            << u"component IC: Item { property int f }\n"
+               u"IC { property int f }"_s
+            << Result{ { { "Property \"f\" already exists in base type \"IC\""_L1, 2, 19 } } }
+            << defaultOptions;
+    QTest::newRow("shadowProperty2")
+            << u"component IC: Item { property int f }\n"
+               u"IC { property string f }"_s
+            << Result{ { { "Property \"f\" already exists in base type \"IC\""_L1, 2, 22 } } }
+            << defaultOptions;
+    QTest::newRow("shadowPropertyWithSignal")
+            << u"component IC: Item { property int f }\n"
+               u"IC { signal f; }"_s
+            << Result{ { { "Property \"f\" already exists in base type \"IC\""_L1, 2, 13 } } }
+            << defaultOptions;
+    QTest::newRow("shadowPropertyWithMethod")
+            << u"component IC: Item { property int f }\n"
+               u"IC { function f() {} }"_s
+            << Result{ { { "Property \"f\" already exists in base type \"IC\""_L1, 2, 15 } } }
+            << defaultOptions;
+}
+
+void TestQmllint::shadow()
+{
+    // reuse testing logic from dirtyQmlSnippet
+    dirtyQmlSnippet();
 }
 
 QTEST_GUILESS_MAIN(TestQmllint)

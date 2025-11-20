@@ -1915,20 +1915,49 @@ void QQmlJSImportVisitor::endVisit(UiInlineComponent *component)
     m_nextIsInlineComponent = false; // might have missed an inline component if file contains invalid QML
 }
 
+static constexpr QLatin1String s_method = "method"_L1;
+static constexpr QLatin1String s_signal = "signal"_L1;
+static constexpr QLatin1String s_property = "property"_L1;
+
+static void warnForDuplicates(const QQmlJSScope::ConstPtr &scope, const QString &name,
+                              QLatin1String type, const QQmlJS::SourceLocation &location,
+                              QQmlJSLogger *logger)
+{
+    if (scope->hasOwnMethod(name) || scope->hasOwnProperty(name))
+        logger->log("Duplicated %1 name \"%2\"."_L1.arg(type, name), qmlDuplicatedName, location);
+
+    static constexpr QLatin1String warningMessage =
+            "%1 \"%2\" already exists in base type \"%3\", use a different name."_L1;
+
+    if (scope->hasMethod(name)) {
+        const auto owner = QQmlJSScope::ownerOfMethod(scope, name).scope;
+        const bool isSignal =
+                owner->methods(name).front().methodType() == QQmlJSMetaMethodType::Signal;
+        logger->log(warningMessage.arg(isSignal ? "Signal"_L1 : "Method"_L1, name,
+                                       getScopeName(owner, QQmlSA::ScopeType::QMLScope)),
+                    qmlShadow, location);
+    }
+    if (scope->hasProperty(name)) {
+        const auto owner = QQmlJSScope::ownerOfProperty(scope, name).scope;
+        logger->log(warningMessage.arg("Property"_L1, name,
+                                       getScopeName(owner, QQmlSA::ScopeType::QMLScope)),
+                    qmlShadow, location);
+    }
+}
+
 bool QQmlJSImportVisitor::visit(UiPublicMember *publicMember)
 {
     switch (publicMember->type) {
     case UiPublicMember::Signal: {
-        if (m_currentScope->ownMethods().contains(publicMember->name.toString())) {
-            m_logger->log(QStringLiteral("Duplicated signal name \"%1\".").arg(
-                publicMember->name.toString()), qmlDuplicatedName,
-                publicMember->firstSourceLocation());
-        }
+        const QString signalName = publicMember->name.toString();
+        warnForDuplicates(m_currentScope, signalName, s_signal, publicMember->identifierToken,
+                          m_logger);
+
         UiParameterList *param = publicMember->parameters;
         QQmlJSMetaMethod method;
         method.setMethodType(QQmlJSMetaMethodType::Signal);
         method.setReturnTypeName(QStringLiteral("void"));
-        method.setMethodName(publicMember->name.toString());
+        method.setMethodName(signalName);
         method.setSourceLocation(combine(publicMember->firstSourceLocation(),
                                          publicMember->lastSourceLocation()));
         while (param) {
@@ -1943,11 +1972,10 @@ bool QQmlJSImportVisitor::visit(UiPublicMember *publicMember)
         break;
     }
     case UiPublicMember::Property: {
-        if (m_currentScope->ownProperties().contains(publicMember->name.toString())) {
-            m_logger->log(QStringLiteral("Duplicated property name \"%1\".").arg(
-                publicMember->name.toString()), qmlDuplicatedName,
-                publicMember->firstSourceLocation());
-        }
+        const QString propertyName = publicMember->name.toString();
+        warnForDuplicates(m_currentScope, propertyName, s_property, publicMember->identifierToken,
+                          m_logger);
+
         QString typeName = buildName(publicMember->memberType);
         if (typeName.contains(u'.') && typeName.front().isLower()) {
             logLowerCaseImport(typeName, publicMember->typeToken, m_logger);
@@ -1991,7 +2019,7 @@ bool QQmlJSImportVisitor::visit(UiPublicMember *publicMember)
             }
         }
         QQmlJSMetaProperty prop;
-        prop.setPropertyName(publicMember->name.toString());
+        prop.setPropertyName(propertyName);
         prop.setIsList(publicMember->typeModifier == QLatin1String("list"));
         prop.setIsWritable(!publicMember->isReadonly());
         prop.setIsFinal(publicMember->isFinal());
@@ -2136,9 +2164,11 @@ void QQmlJSImportVisitor::visitFunctionExpressionHelper(QQmlJS::AST::FunctionExp
             m_pendingMethodTypeAnnotations << pending;
 
         method.setJsFunctionIndex(addFunctionOrExpression(m_currentScope, method.methodName()));
-        m_currentScope->addOwnMethod(method);
 
-        if (m_currentScope->scopeType() != QQmlSA::ScopeType::QMLScope) {
+        if (m_currentScope->scopeType() == QQmlSA::ScopeType::QMLScope) {
+            warnForDuplicates(m_currentScope, method.methodName(), s_method, fexpr->identifierToken,
+                              m_logger);
+        } else {
             // note: lambda methods have no identifier token
             const QQmlJS::SourceLocation functionLocation = fexpr->identifierToken.isValid()
                     ? fexpr->identifierToken
@@ -2148,6 +2178,8 @@ void QQmlJSImportVisitor::visitFunctionExpressionHelper(QQmlJS::AST::FunctionExp
                                      functionLocation, method.returnTypeName(),
                                      false });
         }
+        m_currentScope->addOwnMethod(method);
+
         enterEnvironment(QQmlSA::ScopeType::JSFunctionScope, name, fexpr->firstSourceLocation());
     } else {
         addFunctionOrExpression(m_currentScope, QStringLiteral("<anon>"));

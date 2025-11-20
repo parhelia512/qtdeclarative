@@ -3,8 +3,7 @@
 
 #ifndef TST_QMLDOMCODEFORMATTER_H
 #define TST_QMLDOMCODEFORMATTER_H
-#include <QtQmlDom/private/qqmldomlinewriter_p.h>
-#include <QtQmlDom/private/qqmldomindentinglinewriter_p.h>
+#include <QtQmlDom/private/qqmldomlinewriterfactory_p.h>
 #include <QtQmlDom/private/qqmldomoutwriter_p.h>
 #include <QtQmlDom/private/qqmldomitem_p.h>
 #include <QtQmlDom/private/qqmldomtop_p.h>
@@ -26,30 +25,6 @@ class TestReformatter : public QObject
     Q_OBJECT
 public:
 private:
-    // TODO Move to a dedicated LineWriter factory / LineWriter API ?
-    enum class LineWriterType { Default, Indenting };
-    std::unique_ptr<LineWriter> getLineWriter(const SinkF &innerSink,
-                                              const LineWriterOptions &lwOptions)
-    {
-        return lwOptions.maxLineLength > 0
-                ? getLineWriter(LineWriterType::Indenting, innerSink, lwOptions)
-                : getLineWriter(LineWriterType::Default, innerSink, lwOptions);
-    }
-
-    std::unique_ptr<LineWriter> getLineWriter(LineWriterType type, const SinkF &innerSink,
-                                              const LineWriterOptions &lwOptions)
-    {
-        switch (type) {
-        case LineWriterType::Indenting:
-            return std::make_unique<IndentingLineWriter>(innerSink, QLatin1String("*testStream*"),
-                                                         lwOptions);
-        default:
-            return std::make_unique<LineWriter>(innerSink, QLatin1String("*testStream*"),
-                                                lwOptions);
-        }
-        Q_UNREACHABLE_RETURN(nullptr);
-    }
-
     // "Unix" LineWriter (with '\n' line endings) is used by default,
     // under the assumption that line endings are properly tested in lineWriter() test.
     static LineWriterOptions defaultLineWriterOptions()
@@ -76,7 +51,7 @@ private:
     {
         QString resultStr;
         QTextStream res(&resultStr);
-        auto lwPtr = getLineWriter([&res](QStringView s) { res << s; }, lwOptions);
+        auto lwPtr = createLineWriter([&res](QStringView s) { res << s; }, {}, lwOptions);
         assert(lwPtr);
         OutWriter ow(*lwPtr);
 

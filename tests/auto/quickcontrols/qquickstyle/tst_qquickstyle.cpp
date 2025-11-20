@@ -21,11 +21,11 @@ public:
 
 private slots:
     void cleanup();
-    void lookup();
     void configurationFile_data();
     void configurationFile();
     void commandLineArgument();
     void environmentVariables();
+    void lookup();
 
 private:
     Q_REQUIRED_RESULT bool loadControls();
@@ -45,6 +45,8 @@ void tst_QQuickStyle::cleanup()
     qunsetenv("QT_QUICK_CONTROLS_STYLE");
     qunsetenv("QT_QUICK_CONTROLS_FALLBACK_STYLE");
     qunsetenv("QT_QUICK_CONTROLS_CONF");
+
+    QQuickStylePrivate::reset();
 }
 
 bool tst_QQuickStyle::loadControls()

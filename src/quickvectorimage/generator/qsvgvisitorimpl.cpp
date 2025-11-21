@@ -1033,12 +1033,15 @@ void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 
     handleBaseNodeSetup(node);
     UseNodeInfo info;
+    QPointF startPos = node->start();
+
     fillCommonNodeInfo(node, info);
     fillAnimationInfo(node, info);
 
+    if (!info.bounds.isNull())
+        info.bounds.translate(-startPos);
     info.stage = StructureNodeStage::Start;
 
-    QPointF startPos = node->start();
     if (!startPos.isNull()) {
         QTransform xform;
         if (!info.isDefaultTransform)
@@ -1201,12 +1204,39 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
     fillCommonNodeInfo(node, info);
 
     info.filterRect = node->rect();
-    info.isFilterRectRelativeCoordinates =
-        node->rect().unitW() == QtSvg::UnitTypes::objectBoundingBox;
-    info.isFilterParameterRelative =
-        node->primitiveUnits() == QtSvg::UnitTypes::objectBoundingBox;
+    info.filterPrimitiveRect = filterPrimitive->rect();
+    if (node->filterUnits() == QtSvg::UnitTypes::objectBoundingBox)
+        info.csFilterRect = FilterNodeInfo::CoordinateSystem::Relative;
+    if (node->primitiveUnits() == QtSvg::UnitTypes::objectBoundingBox)
+        info.csFilterParameter = FilterNodeInfo::CoordinateSystem::Relative;
+
+    // We special-case the default filter primitive rect as is done in Qt Svg.
+    // The default is to match the filter's rect and this is represented by making
+    // the types of the filter primitive's rect QtSvg::UnitTypes::unknown. Since
+    // this is not generally handled in Qt Svg, we also just special case it here.
+    if (node->primitiveUnits() == QtSvg::UnitTypes::userSpaceOnUse
+        && filterPrimitive->rect().unitW() == QtSvg::UnitTypes::unknown) {
+        info.csFilterParameter = FilterNodeInfo::CoordinateSystem::MatchFilterRect;
+    }
 
     switch (filterPrimitive->type()) {
+    case QSvgNode::FeOffset:
+    {
+        const QSvgFeOffset *offset = static_cast<const QSvgFeOffset *>(filterPrimitive);
+        info.filterType = FilterNodeInfo::Type::Offset;
+        info.filterParameter = QVariant::fromValue(QVector2D(offset->dx(), offset->dy()));
+        break;
+
+    }
+    case QSvgNode::FeColormatrix:
+    {
+        const QSvgFeColorMatrix *colorMatrix =
+            static_cast<const QSvgFeColorMatrix *>(filterPrimitive);
+        info.filterType = FilterNodeInfo::Type::ColorMatrix;
+        info.filterParameter = QVariant::fromValue(colorMatrix->matrix());
+        break;
+    }
+
     case QSvgNode::FeGaussianblur:
     {
         const QSvgFeGaussianBlur *gaussianBlur =
@@ -1219,16 +1249,25 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
             qCWarning(lcQuickVectorImage) << "Separate X and Y deviations not supported for gaussian blur";
         info.filterParameter = std::max(gaussianBlur->stdDeviationX(),
                                         gaussianBlur->stdDeviationY());
-        m_generator->generateFilterNode(info);
+        break;
+    }
+
+    case QSvgNode::FeFlood:
+    {
+        const QSvgFeFlood *flood =
+            static_cast<const QSvgFeFlood *>(filterPrimitive);
+
+        info.filterType = FilterNodeInfo::Type::Flood;
+        info.filterParameter = flood->color();
         break;
     }
     default:
         // Create a dummy filter node to make sure bindings still work for unsupported filters
         info.filterType = FilterNodeInfo::Type::None;
-        m_generator->generateFilterNode(info);
         break;
     }
 
+    m_generator->generateFilterNode(info);
     m_filterPrimitives.clear();
 }
 
@@ -1343,18 +1382,11 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
     info.isDisplayed = node->displayMode() != QSvgNode::DisplayMode::NoneMode;
 
     if (node->hasFilter() || node->hasMask() || node->type() == QSvgNode::Type::Mask) {
-        info.bounds = node->bounds();
-
-        if (!xf.isIdentity()) {
-            bool ok;
-            xf = xf.inverted(&ok);
-            if (ok) {
-                info.bounds = xf.mapRect(info.bounds);
-            } else {
-                qCWarning(lcQuickVectorImage)
-                << "Masked item with non-invertible transform currently not supported.";
-            }
-        }
+        QImage dummy(1, 1, QImage::Format_RGB32);
+        QPainter p(&dummy);
+        QSvgExtraStates states;
+        p.setPen(QPen(Qt::NoPen));
+        info.bounds = node->internalBounds(&p, states);
     }
 
     if (node->hasMask()) {

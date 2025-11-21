@@ -164,16 +164,26 @@ struct FilterNodeInfo : NodeInfo
 {
     enum class Type {
         None,
-        GaussianBlur
+        GaussianBlur,
+        ColorMatrix,
+        Offset,
+        Flood
+    };
+
+    enum class CoordinateSystem {
+        Absolute,
+        Relative,
+        MatchFilterRect // Special case
     };
 
     QRectF filterRect;
-    bool isFilterRectRelativeCoordinates = false;
-    bool isFilterParameterRelative = false;
+    CoordinateSystem csFilterRect = CoordinateSystem::Absolute;
+    CoordinateSystem csFilterParameter = CoordinateSystem::Absolute;
     QSGTexture::WrapMode wrapMode = QSGTexture::ClampToEdge;
 
     Type filterType = Type::None;
-    qreal filterParameter = 0.0;
+    QRectF filterPrimitiveRect;
+    QVariant filterParameter;
 };
 
 }

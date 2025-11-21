@@ -342,10 +342,10 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
 
         stream() << "property var filterSourceItem: " << seId;
         stream() << "sourceComponent: " << info.filterId << "_container";
-        stream() << "property real sourceX: " << seId << ".sourceRect.x";
-        stream() << "property real sourceY: " << seId << ".sourceRect.y";
-        stream() << "width: " << seId << ".sourceRect.width";
-        stream() << "height: " << seId << ".sourceRect.height";
+        stream() << "property real sourceX: " << info.id << ".originalBounds.x";
+        stream() << "property real sourceY: " << info.id << ".originalBounds.y";
+        stream() << "width: " << info.id << ".originalBounds.width";
+        stream() << "height: " << info.id << ".originalBounds.height";
 
         if (hasMask) {
             m_indentLevel--;
@@ -372,7 +372,12 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
         stream() << "}";
         stream() << "textureSize: " << maskId << "_itemspy.requiredTextureSize";
 
-        stream() << "sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
+        stream() << "sourceRect: " << info.maskId << ".maskRect("
+                 << info.id << ".originalBounds.x,"
+                 << info.id << ".originalBounds.y,"
+                 << info.id << ".originalBounds.width,"
+                 << info.id << ".originalBounds.height)";
+
         stream() << "width: sourceRect.width";
         stream() << "height: sourceRect.height";
 
@@ -399,10 +404,17 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
         else
             stream() << "sourceItem: " << info.id;
         stream() << "textureSize: " << info.id << "_masked_se_itemspy.requiredTextureSize";
-        if (!hasFilters)
-            stream() << "sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
-        else
-            stream() << "sourceRect: Qt.rect(0, 0, " << effectId << ".width, " << effectId << ".height)";
+        if (!hasFilters) {
+            stream() << "sourceRect: " << info.maskId << ".maskRect("
+                     << info.id << ".originalBounds.x,"
+                     << info.id << ".originalBounds.y,"
+                     << info.id << ".originalBounds.width,"
+                     << info.id << ".originalBounds.height)";
+        } else {
+            stream() << "sourceRect: " << info.maskId << ".maskRect(0, 0,"
+                     << info.id << ".originalBounds.width,"
+                     << info.id << ".originalBounds.height)";
+        }
         stream() << "width: sourceRect.width";
         stream() << "height: sourceRect.height";
         stream() << "smooth: false";
@@ -1490,17 +1502,17 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
         stream() << "property real maskWidth: " << info.maskRect.width();
         stream() << "property real maskHeight: " << info.maskRect.height();
 
-        stream() << "function maskRect(other) {";
+        stream() << "function maskRect(otherX, otherY, otherWidth, otherHeight) {";
         m_indentLevel++;
 
         stream() << "return ";
         if (info.isMaskRectRelativeCoordinates) {
             stream(SameLine)
                 << "Qt.rect("
-                << info.id << ".maskX * other.originalBounds.width + other.originalBounds.x,"
-                << info.id << ".maskY * other.originalBounds.height + other.originalBounds.y,"
-                << info.id << ".maskWidth * other.originalBounds.width,"
-                << info.id << ".maskHeight * other.originalBounds.height)";
+                << info.id << ".maskX * otherWidth + otherX,"
+                << info.id << ".maskY * otherHeight + otherY,"
+                << info.id << ".maskWidth * otherWidth,"
+                << info.id << ".maskHeight * otherHeight)";
         } else {
             stream(SameLine)
                 << "Qt.rect("
@@ -1533,21 +1545,22 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     else
         stream(SameLine) << "ShaderEffectSource.ClampToEdge";
 
+    stream() << "property rect filterRect: Qt.rect("
+             << info.filterRect.x() << ", "
+             << info.filterRect.y() << ", "
+             << info.filterRect.width() << ", "
+             << info.filterRect.height() << ")";
+
     stream() << "function adaptToFilterRect(sx, sy, sw, sh) {";
     m_indentLevel++;
 
-    if (!info.isFilterRectRelativeCoordinates) {
-        stream() << "return Qt.rect("
-                 << info.filterRect.x() << ", "
-                 << info.filterRect.y() << ", "
-                 << info.filterRect.width() << ", "
-                 << info.filterRect.height() << ")";
+    // If the shader requires an offset to the source rect, we apply that here
+    if (info.csFilterRect == FilterNodeInfo::CoordinateSystem::Absolute) {
+        stream() << "return Qt.rect(filterRect.x, filterRect.y, filterRect.width, filterRect.height)";
     } else {
         stream() << "return Qt.rect("
-                 << "sx + sw * " << info.filterRect.x() << ", "
-                 << "sy + sh * " << info.filterRect.y() << ", "
-                 << "sw * " << info.filterRect.width() << ", "
-                 << "sh * " << info.filterRect.height() << ")";
+                 << "sx + sw * filterRect.x, sy + sh * filterRect.y,"
+                 << "sw * filterRect.width, sh * filterRect.height)";
     }
 
     m_indentLevel--;
@@ -1561,36 +1574,161 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     stream() << "id: " << info.id << "_container";
 
+    // Container for transform and effects
+    stream() << "Item {";
+    m_indentLevel++;
+
+    stream() << "property real originalWidth: filterSourceItem.sourceItem.originalBounds.width";
+    stream() << "property real originalHeight: filterSourceItem.sourceItem.originalBounds.height";
+    stream() << "property rect filterRect: " << info.id << "_filterParameters"
+             << ".adaptToFilterRect(0, 0, originalWidth, originalHeight)";
+
+    generateNodeBase(info);
+
+    QString primitiveId = info.id + QStringLiteral("_primitive");
+    QString offsetStr = QStringLiteral("Qt.vector2d(0, 0)");
+
     switch (info.filterType) {
+    case FilterNodeInfo::Type::Flood:
+    {
+        stream() << "Rectangle {";
+        m_indentLevel++;
+
+        stream() << "id: " << primitiveId;
+
+        stream() << "width: filterSourceItem.sourceRect.width";
+        stream() << "height: filterSourceItem.sourceRect.height";
+
+        QColor floodColor = info.filterParameter.value<QColor>();
+        stream() << "color: \"" << floodColor.name(QColor::HexArgb) << "\"";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        break;
+    }
+    case FilterNodeInfo::Type::ColorMatrix:
+    {
+        stream() << "ShaderEffect {";
+        m_indentLevel++;
+
+        stream() << "id: " << primitiveId;
+
+        stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/fecolormatrix.frag.qsb\"";
+        stream() << "property var source: filterSourceItem";
+        stream() << "width: filterSourceItem.sourceRect.width";
+        stream() << "height: filterSourceItem.sourceRect.height";
+
+        QGenericMatrix<5, 5, qreal> matrix = info.filterParameter.value<QGenericMatrix<5, 5, qreal> >();
+        for (int row = 0; row < 4; ++row) { // Last row is ignored
+
+            // Qt SVG stores rows as columns, so we flip the coordinates
+            for (int col = 0; col < 5; ++col)
+                stream() << "property real m_" << row << "_" << col << ": " << matrix(col, row);
+        }
+
+        m_indentLevel--;
+        stream() << "}";
+
+        break;
+    }
+
+    case FilterNodeInfo::Type::Offset:
+    {
+        QVector2D offset = info.filterParameter.value<QVector2D>();
+        offsetStr = (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute
+                        ? QStringLiteral("Qt.vector2d(%1 / filterSourceItem.width, %2 / filterSourceItem.height)")
+                        : QStringLiteral("Qt.vector2d(%1, %2)")).arg(offset.x()).arg(offset.y());
+        primitiveId = QStringLiteral("filterSourceItem");
+
+        break;
+    }
+
     case FilterNodeInfo::Type::GaussianBlur:
     {
         // Approximate blur effect with fast blur
         stream() << "MultiEffect {";
         m_indentLevel++;
-        generateNodeBase(info);
+
+        stream() << "id: " << primitiveId;
 
         stream() << "source: filterSourceItem";
         stream() << "blurEnabled: true";
+        stream() << "width: filterSourceItem.sourceRect.width";
+        stream() << "height: filterSourceItem.sourceRect.height";
 
         const qreal maxDeviation(12.0); // Decided experimentally
-        if (info.isFilterParameterRelative)
-            stream() << "blur: Math.min(1.0, " << info.filterParameter << " * filterSourceItem.width / " << maxDeviation << ")";
+        const qreal deviation = info.filterParameter.toReal();
+        if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative)
+            stream() << "blur: Math.min(1.0, " << deviation << " * filterSourceItem.width / " << maxDeviation << ")";
         else
-            stream() << "blur: " << std::min(qreal(1.0), info.filterParameter / maxDeviation);
+            stream() << "blur: " << std::min(qreal(1.0), deviation / maxDeviation);
         stream() << "blurMax: 64";
 
-        generateNodeEnd(info);
+        m_indentLevel--;
+        stream() << "}";
+
         break;
     }
     default:
         qCWarning(lcQuickVectorImage) << "Unhandled filter type: " << int(info.filterType);
         // Dummy item to avoid empty component
-        stream() << "Item{}";
+        stream() << "Item { id: " << primitiveId << " }";
         break;
     }
 
+    // Sample correct part of primitive
+    stream() << "ShaderEffectSource {";
+    m_indentLevel++;
+
+    qreal x1, x2, y1, y2;
+    info.filterPrimitiveRect.getCoords(&x1, &y1, &x2, &y2);
+    if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute) {
+        stream() << "property real fpx1: " << x1;
+        stream() << "property real fpy1: " << y1;
+        stream() << "property real fpx2: " << x2;
+        stream() << "property real fpy2: " << y2;
+    } else if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative) {
+        // If they are relative, they are actually in the coordinate system
+        // of the original bounds of the filtered item. This means we first have to convert
+        // them to the filter's coordinate system first.
+        stream() << "property real fpx1: " << x1 << " * filterSourceItem.sourceItem.originalBounds.width";
+        stream() << "property real fpy1: " << y1 << " * filterSourceItem.sourceItem.originalBounds.height";
+        stream() << "property real fpx2: " << x2 << " * filterSourceItem.sourceItem.originalBounds.width";
+        stream() << "property real fpy2: " << y2 << " * filterSourceItem.sourceItem.originalBounds.height";
+    } else { // Just match filter rect
+        stream() << "property real fpx1: filterRect.x";
+        stream() << "property real fpy1: filterRect.y";
+        stream() << "property real fpx2: filterRect.x + filterRect.width";
+        stream() << "property real fpy2: filterRect.y + filterRect.height";
+    }
+
+    stream() << "sourceItem: " << primitiveId;
+    stream() << "hideSource: true";
+    stream() << "property vector2d offset: " << offsetStr;
+    stream() << "sourceRect: Qt.rect(fpx1 - filterRect.x - offset.x, fpy1 - filterRect.y - offset.y, width, height)";
+
+    stream() << "x: fpx1";
+    stream() << "y: fpy1";
+    stream() << "width: " << "fpx2 - fpx1 + offset.x";
+    stream() << "height: " << "fpy2 - fpy1 + offset.y";
+
+    stream() << "ItemSpy {";
+    m_indentLevel++;
+    stream() << "id: " << primitiveId << "_itemspy";
+    stream() << "anchors.fill: parent";
+
     m_indentLevel--;
     stream() << "}";
+    stream() << "textureSize: " << primitiveId << "_itemspy.requiredTextureSize";
+
+    m_indentLevel--;
+    stream() << "}";
+
+    generateNodeEnd(info);
+
+    m_indentLevel--;
+    stream() << "}"; // End of Component
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)

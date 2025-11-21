@@ -281,7 +281,7 @@ bool LinterVisitor::visit(QQmlJS::AST::UiEnumDeclaration *uied)
     for (const auto *member = uied->members; member; member = member->next) {
         QStringView key = member->member;
         if (!key.front().isUpper()) {
-            m_logger->log(u"Enum keys should start with an uppercase."_s, qmlSyntax,
+            m_logger->log(u"Enum keys should start with an uppercase."_s, qmlEnumKeyCase,
                           member->memberToken);
         }
 

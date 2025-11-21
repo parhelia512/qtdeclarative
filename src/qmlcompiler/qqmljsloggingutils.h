@@ -71,6 +71,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicateInlineComp
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicatePropertyBinding;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlDuplicatedName;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumEntryMatchesEnum;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumKeyCase;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumsAreNotTypes;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEqualityTypeCoercion;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEval;

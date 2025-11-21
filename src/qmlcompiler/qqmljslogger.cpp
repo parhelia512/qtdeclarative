@@ -87,6 +87,8 @@ warning levels.
       "Warn about duplicated property/signal names", Warning, false)                               \
     X(qmlEnumEntryMatchesEnum, "enum-entry-matches-enum", "EnumEntryMatchesEnum",                  \
       "Warn about enum entries named the same as the enum itself", Warning, false)                 \
+    X(qmlEnumKeyCase, "enum-key-case", "EnumKeyCase", "Warn about lowercase enum keys", Warning,   \
+      false)                                                                                       \
     X(qmlEval, "eval", "Eval", "Warn about uses of eval()", Warning, false)                        \
     X(qmlFunctionUsedBeforeDeclaration, "function-used-before-declaration",                        \
       "FunctionUsedBeforeDeclaration", "Warn if a function is used before declaration",            \

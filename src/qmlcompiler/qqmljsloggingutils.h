@@ -79,6 +79,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImport;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImportFileSelector;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlIncompatibleType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInheritanceCycle;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInlineComponentEnums;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlInvalidLintDirective;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlLiteralConstructor;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlMissingEnumEntry;

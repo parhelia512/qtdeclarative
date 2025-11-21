@@ -99,6 +99,8 @@ warning levels.
       "Warn about incompatible types", Warning, false)                                             \
     X(qmlInheritanceCycle, "inheritance-cycle", "InheritanceCycle",                                \
       "Warn about inheritance cycles", Warning, false)                                             \
+    X(qmlInlineComponentEnums, "inline-component-enums", "InlineComponentEnums",                   \
+      "Warn about enum declarations inside inline components", Warning, false)                     \
     X(qmlInvalidLintDirective, "invalid-lint-directive", "InvalidLintDirective",                   \
       "Warn if an invalid qmllint comment is found", Warning, false)                               \
     X(qmlLiteralConstructor, "literal-constructor", "LiteralConstructor",                          \

@@ -269,8 +269,8 @@ bool LinterVisitor::visit(QQmlJS::AST::UiEnumDeclaration *uied)
     QQmlJSImportVisitor::visit(uied);
 
     if (m_currentScope->isInlineComponent()) {
-        m_logger->log(u"Enums declared inside of inline component are ignored."_s, qmlSyntax,
-                      uied->firstSourceLocation());
+        m_logger->log(u"Enums declared inside of inline component are ignored."_s,
+                      qmlInlineComponentEnums, uied->firstSourceLocation());
     } else if (m_currentScope->componentRootStatus() == QQmlJSScope::IsComponentRoot::No
                && !m_currentScope->isFileRootComponent()) {
         m_logger->log(u"Enum declared outside the root element. It won't be accessible."_s,

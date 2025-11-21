@@ -120,7 +120,7 @@ within a QML document which never calls the factorial function.
 
 For example:
 
-\code
+\qml
 // Calculator.qml
 import QtQuick 2.0
 import "factorial.js" as FactorialCalculator // This JavaScript resource is only
@@ -134,7 +134,7 @@ Text {
     property int input: 17
     text: "The factorial of " + input + " is: " + FactorialCalculator.factorial(input)
 }
-\endcode
+\endqml
 
 As they are shared, .pragma library files cannot access QML component instance
 objects or properties directly, although QML values can be passed as function

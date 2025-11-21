@@ -35,8 +35,8 @@ LoggerCategory::LoggerCategory() : d_ptr{ new LoggerCategoryPrivate } { }
 
 LoggerCategory::LoggerCategory(
         const QString &name, const QString &settingsName, const QString &description, WarningSeverity severity,
-        bool isDefault)
-    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, severity, isDefault) }
+        EssentialCategory essential)
+    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, severity, essential) }
 {
 }
 
@@ -81,10 +81,10 @@ WarningSeverity LoggerCategory::severity() const
     return d->severity();
 }
 
-bool LoggerCategory::isDefault() const
+bool LoggerCategory::isEssential() const
 {
     Q_D(const LoggerCategory);
-    return d->isDefault();
+    return d->isEssential();
 }
 
 LoggerWarningId LoggerCategory::id() const
@@ -101,9 +101,9 @@ void LoggerCategory::setSeverity(WarningSeverity severity)
 
 LoggerCategoryPrivate::LoggerCategoryPrivate(const QString &name, const QString &settingsName,
                                              const QString &description, WarningSeverity severity,
-                                             bool isDefault)
+                                             LoggerCategory::EssentialCategory isEssential)
     : m_name(name), m_settingsName(settingsName), m_description(description), m_severity(severity)
-    , m_isDefault(isDefault)
+    , m_isEssential(isEssential)
 {
 }
 
@@ -175,7 +175,9 @@ static QString severityValueForCategory(const LoggerCategory &category,
                                      QCommandLineParser *parser)
 {
     const QString key = category.id().name().toString();
-    if (parser && parser->isSet(key))
+
+    // Essential categories have no option as their severity cannot be changed.
+    if (!category.isEssential() && parser && parser->isSet(key))
         return parser->value(key);
 
     const QStringList settingsName = settingsNamesForCategory(category);
@@ -196,11 +198,6 @@ static QString severityValueForCategory(const LoggerCategory &category,
 
 bool applySeverityToCategory(const QStringView severity, LoggerCategory &category)
 {
-    // TODO yes we want to allow downgrading errors. But not essentials
-    // you can't downgrade errors
-    if (category.severity() == QQmlJS::WarningSeverity::Error && severity != "error"_L1)
-        return false;
-
     if (severity == "disable"_L1) {
         category.setSeverity(QQmlJS::WarningSeverity::Disable);
         return true;
@@ -232,18 +229,20 @@ void updateLogSeverities(QList<LoggerCategory> &categories,
 {
     bool success = true;
     for (auto &category : categories) {
-        if (category.isDefault())
-            continue;
-
         const QString value = severityValueForCategory(category, settings, parser);
         if (value.isEmpty())
             continue;
 
+        const QString &name = category.id().name().toString();
+        if (category.isEssential()) {
+            qWarning() << "In order to ensure the proper function of qmllint, the severity of the "
+                          "essential category %1 cannot be changed."_L1.arg(name);
+            continue;
+        }
+
         if (!applySeverityToCategory(value, category)) {
-            qWarning() << "Invalid logging severity" << value << "provided for"
-                       << category.id().name().toString()
-                       << "(allowed are: disable, info, warning, error)\n."
-                          "You can't change categories that have severity \"error\" by default."; // TODO we want that to be changeable
+            qWarning() << "Invalid logging severity" << value << "provided for" << name
+                       << "(allowed are: disable, info, warning, error).";
             success = false;
         }
     }

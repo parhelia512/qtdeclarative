@@ -38,10 +38,12 @@ class Q_QMLCOMPILER_EXPORT LoggerCategory
     Q_DECLARE_PRIVATE(LoggerCategory)
 
 public:
+    enum EssentialCategory { Essential, NonEssential };
+
     LoggerCategory();
     LoggerCategory(
             const QString &name, const QString &settingsName, const QString &description,
-            WarningSeverity severity, bool isDefault = false);
+            WarningSeverity severity, EssentialCategory essential = NonEssential);
     LoggerCategory(const LoggerCategory &);
     LoggerCategory(LoggerCategory &&) noexcept;
     LoggerCategory &operator=(const LoggerCategory &);
@@ -52,7 +54,7 @@ public:
     QString settingsName() const;
     QString description() const;
     WarningSeverity severity() const;
-    bool isDefault() const;
+    bool isEssential() const;
 
     LoggerWarningId id() const;
 
@@ -68,14 +70,14 @@ public:
     LoggerCategoryPrivate() = default;
     LoggerCategoryPrivate(const QString &name, const QString &settingsName,
                           const QString &description, WarningSeverity severity,
-                          bool isDefault);
+                          LoggerCategory::EssentialCategory isEssential);
 
     LoggerWarningId id() const { return LoggerWarningId(m_name); }
 
     QString name() const { return m_name; }
     QString settingsName() const { return m_settingsName; }
     QString description() const { return m_description; }
-    bool isDefault() const { return m_isDefault; }
+    bool isEssential() const { return m_isEssential == LoggerCategory::Essential; }
 
     WarningSeverity severity() const { return m_severity; }
     void setSeverity(WarningSeverity);
@@ -102,7 +104,7 @@ private:
     QString m_settingsName;
     QString m_description;
     WarningSeverity m_severity = WarningSeverity::Info;
-    bool m_isDefault = false; // Whether or not the category can be disabled
+    bool m_isEssential = false; // qmllint or other tooling might malfunction without it. Can't be disabled.
     bool m_changed = false;
 };
 

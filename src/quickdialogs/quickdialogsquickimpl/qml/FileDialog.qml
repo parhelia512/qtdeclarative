@@ -190,6 +190,7 @@ FileDialogImpl {
                 Layout.row: 1
                 Layout.column: 0
                 Layout.leftMargin: 20
+                Accessible.labelFor: nameFiltersComboBox
             }
 
             ComboBox {

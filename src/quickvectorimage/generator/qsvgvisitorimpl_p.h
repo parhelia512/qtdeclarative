@@ -48,6 +48,7 @@ protected:
     void visitTextNode(const QSvgText *node) override;
     void visitUseNode(const QSvgUse *node) override;
     bool visitDefsNodeStart(const QSvgDefs *node) override;
+    void visitDefsNodeEnd(const QSvgDefs *node) override;
     bool visitStructureNodeStart(const QSvgStructureNode *node) override;
     void visitStructureNodeEnd(const QSvgStructureNode *node) override;
 
@@ -101,6 +102,7 @@ private:
     QList<const QSvgFeFilterPrimitive *> m_filterPrimitives;
 
     int m_useLevel = 0;
+    int m_defsLevel = 0;
 
     QString m_linkSuffix;
 };

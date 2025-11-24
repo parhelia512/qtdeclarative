@@ -308,6 +308,9 @@ bool QSvgVisitorImpl::traverse()
 
 void QSvgVisitorImpl::visitNode(const QSvgNode *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     handleBaseNodeSetup(node);
 
     NodeInfo info;
@@ -321,6 +324,9 @@ void QSvgVisitorImpl::visitNode(const QSvgNode *node)
 
 void QSvgVisitorImpl::visitImageNode(const QSvgImage *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     // TODO: this requires proper asset management.
     handleBaseNodeSetup(node);
 
@@ -338,6 +344,9 @@ void QSvgVisitorImpl::visitImageNode(const QSvgImage *node)
 
 void QSvgVisitorImpl::visitRectNode(const QSvgRect *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QRectF rect = node->rect();
     QPointF rads = node->radius();
     // This is using Qt::RelativeSize semantics: percentage of half rect size
@@ -370,6 +379,9 @@ void QSvgVisitorImpl::visitRectNode(const QSvgRect *node)
 
 void QSvgVisitorImpl::visitEllipseNode(const QSvgEllipse *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QRectF rect = node->rect();
 
     QPainterPath p;
@@ -380,11 +392,17 @@ void QSvgVisitorImpl::visitEllipseNode(const QSvgEllipse *node)
 
 void QSvgVisitorImpl::visitPathNode(const QSvgPath *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     handlePathNode(node, node->path());
 }
 
 void QSvgVisitorImpl::visitLineNode(const QSvgLine *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QPainterPath p;
     p.moveTo(node->line().p1());
     p.lineTo(node->line().p2());
@@ -393,12 +411,18 @@ void QSvgVisitorImpl::visitLineNode(const QSvgLine *node)
 
 void QSvgVisitorImpl::visitPolygonNode(const QSvgPolygon *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QPainterPath p = QQuickVectorImageGenerator::Utils::polygonToPath(node->polygon(), true);
     handlePathNode(node, p);
 }
 
 void QSvgVisitorImpl::visitPolylineNode(const QSvgPolyline *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QPainterPath p = QQuickVectorImageGenerator::Utils::polygonToPath(node->polygon(), false);
     handlePathNode(node, p);
 }
@@ -657,6 +681,9 @@ static QVariant calculateInterpolatedValue(const QSvgAbstractAnimatedProperty *p
 
 void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     handleBaseNodeSetup(node);
     const bool isTextArea = node->type() == QSvgNode::Textarea;
 
@@ -997,6 +1024,9 @@ void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
 
 void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 {
+    if (m_defsLevel > 0)
+        return;
+
     QSvgNode *link = node->link();
     if (!link)
         return;
@@ -1035,6 +1065,9 @@ void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 
 bool QSvgVisitorImpl::visitSwitchNodeStart(const QSvgSwitch *node)
 {
+    if (m_defsLevel > 0)
+        return false;
+
     QSvgNode *link = node->childToRender();
     if (!link)
         return false;
@@ -1056,7 +1089,15 @@ bool QSvgVisitorImpl::visitDefsNodeStart(const QSvgDefs *node)
 {
     Q_UNUSED(node)
 
-    return m_generator->generateDefsNode(NodeInfo{});
+    m_defsLevel++;
+    return true;
+}
+
+void QSvgVisitorImpl::visitDefsNodeEnd(const QSvgDefs *node)
+{
+    Q_UNUSED(node)
+
+    m_defsLevel--;
 }
 
 bool QSvgVisitorImpl::visitSymbolNodeStart(const QSvgSymbol *node)
@@ -1204,6 +1245,9 @@ void QSvgVisitorImpl::visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive 
 
 bool QSvgVisitorImpl::visitStructureNodeStart(const QSvgStructureNode *node)
 {
+    if (m_defsLevel > 0)
+        return false;
+
     constexpr bool forceSeparatePaths = false;
     handleBaseNodeSetup(node);
 
@@ -1239,6 +1283,7 @@ QString QSvgVisitorImpl::nextNodeId() const
 
 bool QSvgVisitorImpl::visitDocumentNodeStart(const QSvgTinyDocument *node)
 {
+    Q_ASSERT(m_defsLevel == 0);
     handleBaseNodeSetup(node);
 
     StructureNodeInfo info;

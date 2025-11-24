@@ -249,6 +249,12 @@ bool canCompareWithQUrl(
     return lhsType == typeResolver->urlType() && rhsType == typeResolver->urlType();
 }
 
+/*!
+   \internal
+
+    Utility method that searches qrc files in given folders. Do not use this when the order or
+   selection of the returned qrc files matters.
+*/
 QStringList QQmlJSUtils::resourceFilesFromBuildFolders(const QStringList &buildFolders)
 {
     QStringList result;

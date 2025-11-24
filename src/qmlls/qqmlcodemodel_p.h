@@ -78,6 +78,7 @@ struct ModuleSetting
 {
     QString sourceFolder;
     QStringList importPaths;
+    QStringList resourceFiles;
 };
 
 using ModuleSettings = QList<ModuleSetting>;
@@ -87,6 +88,7 @@ public:
     QQmllsBuildInformation();
     void loadSettingsFrom(const QStringList &buildPaths);
     QStringList importPathsFor(const QString &filePath);
+    QStringList resourceFilesFor(const QString &filePath);
     ModuleSetting settingFor(const QString &filePath);
 
 private:

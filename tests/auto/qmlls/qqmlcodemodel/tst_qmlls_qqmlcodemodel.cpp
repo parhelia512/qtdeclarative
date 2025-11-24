@@ -567,6 +567,9 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
     QTemporaryDir buildPathA;
     QVERIFY(buildPathA.isValid());
 
+    const QString resourceFileA = buildPathA.filePath("resourceA.qrc");
+    const QString resourceFileB = buildPathA.filePath("resourceB.qrc");
+
     QDir(buildPathA.path()).mkdir(".qt"_L1);
 
     {
@@ -574,10 +577,10 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
         QFile qmllsBuildIniFile(qmllsBuildIni);
         QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
         qmllsBuildIniFile.write(
-                "[General]\n[%1]\nimportPaths=\"%2%6%3\"\n[%4]\nimportPaths=\"%5%6%3\"\n"_L1
+                "[General]\n[%1]\nimportPaths=\"%2%6%3\"\nresourceFiles=\"%7\"\n[%4]\nimportPaths=\"%5%6%3\"\nresourceFiles=\"%8\""_L1
                         .arg(QString(rootA).replace("/"_L1, "<SLASH>"_L1), importPathA,
                              defaultImportPath, QString(rootB).replace("/"_L1, "<SLASH>"_L1),
-                             importPathB, QDir::listSeparator())
+                             importPathB, QDir::listSeparator(), resourceFileA, resourceFileB)
                         .toUtf8());
     }
 
@@ -587,17 +590,22 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
     QCOMPARE_NE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
     QCOMPARE_NE(manager.findCodeModelForFile(rootBUrl)->importPaths(), expectedImportPathB);
 
+    QCOMPARE(manager.resourceFilesForFileUrl(rootAUrl), {});
+    QCOMPARE(manager.resourceFilesForFileUrl(rootBUrl), {});
+
     manager.setBuildPathsForRootUrl(rootAUrl, { buildPathA.path() });
     // import path was updated using .qmlls.build.ini on existing WS
     QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
     QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPathsForUrl(rootAUrl),
              expectedImportPathA);
+    QCOMPARE(manager.resourceFilesForFileUrl(rootAUrl), { resourceFileA });
 
     manager.addRootUrls({ rootBUrl });
     // import path was set using .qmlls.build.ini on newly created WS
     QCOMPARE(manager.findCodeModelForFile(rootBUrl)->importPaths(), expectedImportPathB);
     QCOMPARE(manager.findCodeModelForFile(rootBUrl)->importPathsForUrl(rootBUrl),
              expectedImportPathB);
+    QCOMPARE(manager.resourceFilesForFileUrl(rootBUrl), { resourceFileB });
 
     manager.newOpenFile(fileAUrl, 0, readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1));
     manager.newOpenFile(fileBUrl, 0, readFile("twoWorkspaces/WorkSpaceB/UseImportPathB.qml"_L1));

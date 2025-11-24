@@ -5,6 +5,8 @@
 #include "qqmlcodemodelmanager_p.h"
 #include "qqmllsplugin_p.h"
 
+#include <QtQmlCompiler/private/qqmljsutils_p.h>
+
 #include <memory>
 
 QT_BEGIN_NAMESPACE
@@ -253,6 +255,18 @@ QStringList QQmlCodeModelManager::importPathsForUrl(const QByteArray &url)
 QStringList QQmlCodeModelManager::buildPathsForFileUrl(const QByteArray &url)
 {
     return findCodeModelForFile(url)->buildPathsForFileUrl(url);
+}
+
+QStringList QQmlCodeModelManager::resourceFilesForFileUrl(const QByteArray &url)
+{
+    if (const QStringList result =
+                m_buildInformation.resourceFilesFor(QUrl::fromEncoded(url).toLocalFile());
+        !result.isEmpty()) {
+        return result;
+    }
+
+    // fallback, for standalone qmlls on projects targeting qt < 6.11
+    return QQmlJSUtils::resourceFilesFromBuildFolders(buildPathsForFileUrl(url));
 }
 
 QByteArray QQmlCodeModelManager::shortestRootUrlForFile(const QByteArray &fileUrl) const

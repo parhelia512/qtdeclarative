@@ -800,6 +800,9 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths)
             moduleSetting.importPaths = settings.value("importPaths"_L1)
                                                 .toString()
                                                 .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+            moduleSetting.resourceFiles = settings.value("resourceFiles"_L1)
+                                                  .toString()
+                                                  .split(QDir::listSeparator(), Qt::SkipEmptyParts);
             m_moduleSettings.append(moduleSetting);
             settings.endGroup();
         }
@@ -812,6 +815,11 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths)
 QStringList QQmllsBuildInformation::importPathsFor(const QString &filePath)
 {
     return settingFor(filePath).importPaths;
+}
+
+QStringList QQmllsBuildInformation::resourceFilesFor(const QString &filePath)
+{
+    return settingFor(filePath).resourceFiles;
 }
 
 ModuleSetting QQmllsBuildInformation::settingFor(const QString &filePath)

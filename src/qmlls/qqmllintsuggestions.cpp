@@ -322,7 +322,7 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
     bool silent = true;
     const QString fileContents = doc.field(Fields::code).value().toString();
     const QStringList qmltypesFiles;
-    const QStringList resourceFiles = QQmlJSUtils::resourceFilesFromBuildFolders(imports);
+    const QStringList resourceFiles = m_codeModelManager->resourceFilesForFileUrl(url);
 
     QList<QQmlJS::LoggerCategory> categories = QQmlJSLogger::builtinCategories();
 

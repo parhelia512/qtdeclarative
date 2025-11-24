@@ -58,6 +58,7 @@ public:
     QList<QByteArray> rootUrls() const;
     void addRootUrls(const QList<QByteArray> &urls);
     QStringList buildPathsForFileUrl(const QByteArray &url);
+    QStringList resourceFilesForFileUrl(const QByteArray &url);
     void setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths);
     QStringList importPathsForUrl(const QByteArray &);
     void setImportPaths(const QStringList &paths);

@@ -1377,6 +1377,9 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
         get_target_property(source_path "${current_target}" SOURCE_DIR)
         string(REPLACE "/" "<SLASH>" source_path "${source_path}")
 
+        get_target_property(_qrc_files ${current_target} _qt_generated_qrc_files)
+        _qt_internal_list_to_ini(_qrc_files)
+
         add_custom_command(
             OUTPUT
                 ${qmlls_build_ini_file}
@@ -1384,6 +1387,8 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
                 echo "[${source_path}]" >> ${qmlls_build_ini_file}
             COMMAND ${CMAKE_COMMAND} -E
                 echo "importPaths=\"${_import_paths}\"" >> ${qmlls_build_ini_file}
+            COMMAND ${CMAKE_COMMAND} -E
+                echo "resourceFiles=\"${_qrc_files}\"" >> ${qmlls_build_ini_file}
             APPEND
         )
     endforeach()

@@ -16,6 +16,7 @@ qt_add_qml_module(with_subdir_test_module
 
     # Don't complain about mismatched target paths
     NO_LINT
+    __QT_INTERNAL_NO_GENERATE_QMLLS_BUILD_INI
 )
 
 target_link_libraries(with_subdir_test_module

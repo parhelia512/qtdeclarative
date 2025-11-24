@@ -253,6 +253,9 @@ function(qt6_add_qml_module target)
 
         # Give the resource for the qmldir a unique name; TODO: Remove once we can
         __QT_INTERNAL_DISAMBIGUATE_QMLDIR_RESOURCE
+
+        # Don't add this module to qmlls.build.ini
+        __QT_INTERNAL_NO_GENERATE_QMLLS_BUILD_INI
     )
 
     set(args_single
@@ -1092,17 +1095,23 @@ Check https://doc.qt.io/qt-6/qt-cmake-policy-qtp0001.html for policy details."
             endif()
         endif()
 
-        set_property(GLOBAL APPEND PROPERTY _qmlls_build_ini_targets "${target}")
+        if(NOT arg___QT_INTERNAL_NO_GENERATE_QMLLS_BUILD_INI)
+            set_property(GLOBAL APPEND PROPERTY _qmlls_build_ini_targets "${target}")
 
-        cmake_language(DEFER DIRECTORY "${CMAKE_BINARY_DIR}" GET_CALL qmlls_build_ini_generation_id call)
-        if("${call}" STREQUAL "")
-            cmake_language(EVAL CODE
-                "cmake_language(DEFER DIRECTORY \"${CMAKE_BINARY_DIR}\" "
-                    "ID qmlls_build_ini_generation_id "
-                    "CALL _qt_internal_write_deferred_qmlls_build_ini_file"
-                    "${QT_CMAKE_EXPORT_NAMESPACE}"
-                ")"
+            cmake_language(
+                DEFER
+                DIRECTORY "${CMAKE_BINARY_DIR}"
+                GET_CALL qmlls_build_ini_generation_id call
             )
+            if("${call}" STREQUAL "")
+                cmake_language(EVAL CODE
+                    "cmake_language(DEFER DIRECTORY \"${CMAKE_BINARY_DIR}\" "
+                        "ID qmlls_build_ini_generation_id "
+                        "CALL _qt_internal_write_deferred_qmlls_build_ini_file"
+                        "${QT_CMAKE_EXPORT_NAMESPACE}"
+                    ")"
+                )
+            endif()
         endif()
     else()
         if(QT_QML_GENERATE_QMLLS_INI)

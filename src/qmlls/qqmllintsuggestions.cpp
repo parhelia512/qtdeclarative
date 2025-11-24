@@ -313,9 +313,8 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
     diagnosticParams.version = version;
 
     qCDebug(lintLog) << "has doc, do real lint";
-    QStringList imports = m_codeModelManager->buildPathsForFileUrl(url);
+    QStringList imports = m_codeModelManager->importPathsForUrl(url);
     const QString filename = doc.canonicalFilePath();
-    imports.append(m_codeModelManager->importPathsForUrl(url));
     // add source directory as last import as fallback in case there is no qmldir in the build
     // folder this mimics qmllint behaviors
     imports.append(QFileInfo(filename).dir().absolutePath());

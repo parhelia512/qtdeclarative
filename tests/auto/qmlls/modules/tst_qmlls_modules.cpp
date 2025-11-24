@@ -29,6 +29,57 @@ using namespace QLspSpecification;
 
 static constexpr bool enable_debug_output = false;
 
+static QString qmllsBuildIniContent(const QString &qmlFileName,
+                                    const QMap<QString, QStringList> &importPathsPerWorkspace)
+{
+    QString result = "[General]\n"_L1;
+    for (const auto &[workspace, importPaths] : importPathsPerWorkspace.asKeyValueRange()) {
+        const QString groupName =
+                QDir::cleanPath(workspace.isEmpty() ? (qmlFileName + "/.."_L1) : workspace)
+                        .replace("/"_L1, "<SLASH>"_L1);
+        result += "[%1]\nimportPaths=\"%2\"\n"_L1.arg(groupName,
+                                                      importPaths.join(QDir::listSeparator()));
+    }
+    return result;
+}
+
+static void createQmllsBuildIni(const QString &buildFolder, const QString &qmlFileName,
+                                const QMap<QString, QStringList> &importPathsPerWorkspace)
+{
+    QDir dir(buildFolder);
+    QVERIFY(dir.mkdir(".qt"_L1));
+    const QString qmllsBuildIniPath = dir.absoluteFilePath(".qt/.qmlls.build.ini"_L1);
+    QFile qmllsBuildIni(qmllsBuildIniPath);
+    QVERIFY(qmllsBuildIni.open(QFile::WriteOnly));
+    qmllsBuildIni.write(qmllsBuildIniContent(qmlFileName, importPathsPerWorkspace).toUtf8());
+}
+
+static Notifications::AddBuildDirsParams
+addBuildDirsParamsFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace,
+                          const QByteArray &tempDir)
+{
+    Notifications::AddBuildDirsParams params;
+    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
+        UriToBuildDirs uriToBuildDirs;
+        uriToBuildDirs.baseUri = QUrl::fromLocalFile(workspace).toEncoded();
+        uriToBuildDirs.buildDirs.append(tempDir);
+        params.buildDirsToSet.append(uriToBuildDirs);
+    }
+
+    return params;
+}
+
+static DidChangeWorkspaceFoldersParams
+addDidChangeWorkspaceFoldersFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace)
+{
+    DidChangeWorkspaceFoldersParams params;
+    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
+        params.event.added.append(
+                { QUrl::fromLocalFile(workspace).toEncoded(), workspace.toUtf8() });
+    }
+    return params;
+}
+
 tst_qmlls_modules::tst_qmlls_modules() : QQmlDataTest(QT_QMLTEST_DATADIR)
 {
     m_qmllsPath =
@@ -365,6 +416,16 @@ void tst_qmlls_modules::function_documentations()
 void tst_qmlls_modules::buildDir()
 {
     ignoreDiagnostics();
+
+    const QMap<QString, QStringList> importPathsPerWorkspace{
+        { testFile("completions"),
+          { testFile("buildDir"_L1), QLibraryInfo::path(QLibraryInfo::QmlImportsPath) } },
+    };
+
+    m_protocol->typedRpc()->sendNotification(
+            QByteArray(Notifications::DidChangeWorkspaceFoldersMethod),
+            addDidChangeWorkspaceFoldersFromMap(importPathsPerWorkspace));
+
     const QString filePath = u"completions/fromBuildDir.qml"_s;
     const auto uri = openFile(filePath);
     QVERIFY(uri);
@@ -374,12 +435,14 @@ void tst_qmlls_modules::buildDir()
                     { u"Rectangle"_s, CompletionItemKind::Constructor },
             }),
             QStringList({ u"BuildDirType"_s, u"QtQuick"_s, u"width"_s, u"vector4d"_s })));
-    Notifications::AddBuildDirsParams bDirs;
-    UriToBuildDirs ub;
-    ub.baseUri = *uri;
-    ub.buildDirs.append(testFile("buildDir").toUtf8());
-    bDirs.buildDirsToSet.append(ub);
-    m_protocol->typedRpc()->sendNotification(QByteArray(Notifications::AddBuildDirsMethod), bDirs);
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    createQmllsBuildIni(tempDir.path(), testFile(filePath), importPathsPerWorkspace);
+
+    m_protocol->typedRpc()->sendNotification(
+            QByteArray(Notifications::AddBuildDirsMethod),
+            addBuildDirsParamsFromMap(importPathsPerWorkspace, tempDir.path().toUtf8()));
 
     DidChangeTextDocumentParams didChange;
     didChange.textDocument.uri = *uri;
@@ -1429,57 +1492,6 @@ void tst_qmlls_modules::warnings_data()
     }
 }
 
-static QString qmllsBuildIniContent(const QString &qmlFileName,
-                                    const QMap<QString, QStringList> &importPathsPerWorkspace)
-{
-    QString result = "[General]\n"_L1;
-    for (const auto &[workspace, importPaths] : importPathsPerWorkspace.asKeyValueRange()) {
-        const QString groupName =
-                QDir::cleanPath(workspace.isEmpty() ? (qmlFileName + "/.."_L1) : workspace)
-                        .replace("/"_L1, "<SLASH>"_L1);
-        result += "[%1]\nimportPaths=\"%2\"\n"_L1.arg(groupName,
-                                                      importPaths.join(QDir::listSeparator()));
-    }
-    return result;
-}
-
-static void createQmllsBuildIni(const QString &buildFolder, const QString &qmlFileName,
-                                const QMap<QString, QStringList> &importPathsPerWorkspace)
-{
-    QDir dir(buildFolder);
-    QVERIFY(dir.mkdir(".qt"_L1));
-    const QString qmllsBuildIniPath = dir.absoluteFilePath(".qt/.qmlls.build.ini"_L1);
-    QFile qmllsBuildIni(qmllsBuildIniPath);
-    QVERIFY(qmllsBuildIni.open(QFile::WriteOnly));
-    qmllsBuildIni.write(qmllsBuildIniContent(qmlFileName, importPathsPerWorkspace).toUtf8());
-}
-
-static Notifications::AddBuildDirsParams
-addBuildDirsParamsFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace,
-                          const QByteArray &tempDir)
-{
-    Notifications::AddBuildDirsParams params;
-    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
-        UriToBuildDirs uriToBuildDirs;
-        uriToBuildDirs.baseUri = QUrl::fromLocalFile(workspace).toEncoded();
-        uriToBuildDirs.buildDirs.append(tempDir);
-        params.buildDirsToSet.append(uriToBuildDirs);
-    }
-
-    return params;
-}
-
-static DidChangeWorkspaceFoldersParams
-addDidChangeWorkspaceFoldersFromMap(const QMap<QString, QStringList> &importPathsPerWorkspace)
-{
-    DidChangeWorkspaceFoldersParams params;
-    for (const auto &[workspace, _] : importPathsPerWorkspace.asKeyValueRange()) {
-        params.event.added.append(
-                { QUrl::fromLocalFile(workspace).toEncoded(), workspace.toUtf8() });
-    }
-    return params;
-}
-
 void tst_qmlls_modules::warnings()
 {
     QFETCH(QString, filePath);
@@ -1745,10 +1757,18 @@ void tst_qmlls_modules::qmldirImports()
     QFETCH(int, character);
     QFETCH(QString, expectedCompletion);
 
+    std::optional<QTemporaryDir> tempDir;
     if (addBuildDirectory == AddBuildDir) {
+        tempDir.emplace();
+        QVERIFY(tempDir->isValid());
+        createQmllsBuildIni(tempDir->path(), testFile(filePath),
+                            { { ""_L1,
+                                { testFile("buildDir"_L1),
+                                  QLibraryInfo::path(QLibraryInfo::QmlImportsPath) } } });
+
         Notifications::AddBuildDirsParams bDirs;
         UriToBuildDirs ub;
-        ub.buildDirs.append(testFile("buildDir").toUtf8());
+        ub.buildDirs.append(tempDir->path().toUtf8());
         bDirs.buildDirsToSet.append(ub);
         m_protocol->typedRpc()->sendNotification(QByteArray(Notifications::AddBuildDirsMethod), bDirs);
     }

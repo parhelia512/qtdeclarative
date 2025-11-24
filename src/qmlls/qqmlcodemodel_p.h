@@ -189,8 +189,6 @@ private:
 
     void addFileWatches(const QQmlJS::Dom::DomItem &qmlFile);
 
-    void onBuildOrImportPathChanged();
-
     enum CMakeStatus { RequiresInitialization, HasCMake, DoesNotHaveCMake };
     CMakeStatus cmakeStatus() const
     {
@@ -218,7 +216,6 @@ private:
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;
-    QQmllsBuildInformation m_buildInformation;
     QFileSystemWatcher m_cppFileWatcher;
     RegisteredSemanticTokens m_tokens;
     QString m_documentationRootPath;

@@ -590,10 +590,14 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
     manager.setBuildPathsForRootUrl(rootAUrl, { buildPathA.path() });
     // import path was updated using .qmlls.build.ini on existing WS
     QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPaths(), expectedImportPathA);
+    QCOMPARE(manager.findCodeModelForFile(rootAUrl)->importPathsForUrl(rootAUrl),
+             expectedImportPathA);
 
     manager.addRootUrls({ rootBUrl });
     // import path was set using .qmlls.build.ini on newly created WS
     QCOMPARE(manager.findCodeModelForFile(rootBUrl)->importPaths(), expectedImportPathB);
+    QCOMPARE(manager.findCodeModelForFile(rootBUrl)->importPathsForUrl(rootBUrl),
+             expectedImportPathB);
 
     manager.newOpenFile(fileAUrl, 0, readFile("twoWorkspaces/WorkSpaceA/UseImportPathA.qml"_L1));
     manager.newOpenFile(fileBUrl, 0, readFile("twoWorkspaces/WorkSpaceB/UseImportPathB.qml"_L1));

@@ -693,8 +693,8 @@ QStringList QQmlCodeModel::buildPathsForFileUrl(const QByteArray &url)
     if (!m_settings->isSet(buildDir))
         return {};
 
-    return withDependentBuildDirectories(m_settings->value(buildDir).toString().split(
-            QDir::listSeparator(), Qt::SkipEmptyParts));
+    const QString fileName = url2Path(url);
+    return withDependentBuildDirectories(m_settings->valueAsAbsolutePathList(buildDir, fileName));
 }
 
 void QQmlCodeModel::setDocumentationRootPath(const QString &path)

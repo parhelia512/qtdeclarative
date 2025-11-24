@@ -22,6 +22,7 @@ T.Switch {
     bottomPadding: switchLayout.padding.bottom
     spacing: styleReader.spacing
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.SwitchControl

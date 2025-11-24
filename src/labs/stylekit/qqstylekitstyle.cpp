@@ -32,13 +32,13 @@ QQStyleKitStyle::~QQStyleKitStyle()
         m_theme->deleteLater();
 }
 
-QQuickPalette *QQStyleKitStyle::palette()
+QQuickPalette *QQStyleKitStyle::palette() const
 {
     if (!m_palette) {
         static QQuickPalette placeholder;
         return &placeholder;
     }
-    return m_palette.get();
+    return const_cast<QQStyleKitStyle *>(this)->m_palette.get();
 }
 
 QQmlComponent *QQStyleKitStyle::light() const

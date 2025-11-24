@@ -24,6 +24,7 @@ T.CheckBox {
 
     spacing: styleReader.spacing
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.CheckBox

@@ -24,13 +24,26 @@ QT_BEGIN_NAMESPACE
 class QQStyleKitVariation : public QQStyleKitControls
 {
     Q_OBJECT
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged FINAL)
     QML_NAMED_ELEMENT(Variation)
 
 public:
     QQStyleKitVariation(QObject *parent = nullptr);
 
+    QString name() const;
+    void setName(const QString &name);
+
+Q_SIGNALS:
+    void nameChanged();
+
 private:
     Q_DISABLE_COPY(QQStyleKitVariation)
+
+    QString m_name;
+
+    static int s_variationCount;
+
+    friend class QQStyleKitPropertyResolver;
 };
 
 QT_END_NAMESPACE

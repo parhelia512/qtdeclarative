@@ -25,8 +25,6 @@ QQStyleKitReader::QQStyleKitReader(QObject *parent)
     : QQStyleKitControlProperties(QQSK::PropertyGroup::Control, parent)
     , m_dontEmitChangedSignals(false)
     , m_effectiveVariationsDirty(true)
-    , m_parentChainDirty(true)
-    , m_hierarchyHasVariations(true)
     , m_global(QQStyleKitControlProperties(QQSK::PropertyGroup::globalFlag, this))
 {
     s_allReaders.append(this);
@@ -249,37 +247,8 @@ void QQStyleKitReader::updateControl()
 
 void QQStyleKitReader::resetAll()
 {
-    /* Tell all controls (or all QQuickStyleKitReaders inside all controls
-     * and elsewhere in the app, to be precise) to re-read all style properties.
-     * Optimization: do a pass of all the controls in the Normal state
-     * first, since we assume of those there will be many. Processing them
-     * first (that is, controls of the same state) means that we can limit
-     * the number of times we need to fully sync Style.target when
-     * doing property reads from QQStyleKitPropertyResolver. */
     for (QQStyleKitReader *reader : s_allReaders) {
         reader->m_effectiveVariationsDirty = true;
-        reader->m_hierarchyHasVariations = true;
-
-        /* Don't set m_parentChainDirty, since a theme or style change shouldn't affect
-         * the parent chain of any of the controls.
-         * TODO: add a public "StyleKit.forceLayout()" function that can be
-         * called whenever the app reparents controls in a way that can affect
-         * variations. This function should set m_parentChainDirty before calling this
-         * function. Parent changes could probably also be detected automatically, but
-         * its likely much more performant to put this burden on the app developer. */
-        // m_parentChainDirty = true;
-    }
-
-    for (QQStyleKitReader *reader : s_allReaders) {
-        if (reader->controlState() != QQSK::StateFlag::Normal)
-            continue;
-        reader->clearLocalStorage();
-        reader->emitChangedForAllStyleProperties();
-    }
-
-    for (QQStyleKitReader *reader : s_allReaders) {
-        if (reader->controlState() == QQSK::StateFlag::Normal)
-            continue;
         reader->clearLocalStorage();
         reader->emitChangedForAllStyleProperties();
     }
@@ -355,12 +324,12 @@ bool QQStyleKitReader::dontEmitChangedSignals() const
     return m_dontEmitChangedSignals;
 }
 
-int QQStyleKitReader::type() const
+QQStyleKitExtendedControlType QQStyleKitReader::type() const
 {
     return m_type;
 }
 
-void QQStyleKitReader::setType(int type)
+void QQStyleKitReader::setType(QQStyleKitExtendedControlType type)
 {
     if (m_type == type)
         return;

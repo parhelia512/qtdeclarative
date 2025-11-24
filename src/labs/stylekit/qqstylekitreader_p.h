@@ -19,6 +19,7 @@
 #include <QtQml/QtQml>
 #include <QtQuick/private/qquickpalette_p.h>
 
+#include "qqstylekitglobal_p.h"
 #include "qqstylekitcontrolproperties_p.h"
 #include "qqstylekitstorage_p.h"
 
@@ -31,7 +32,7 @@ class QQStyleKitPropertyResolver;
 class QQStyleKitReader : public QQStyleKitControlProperties
 {
     Q_OBJECT
-    Q_PROPERTY(int type READ type WRITE setType NOTIFY typeChanged FINAL)
+    Q_PROPERTY(QQStyleKitExtendedControlType type READ type WRITE setType NOTIFY typeChanged FINAL)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged FINAL)
     Q_PROPERTY(bool focused READ focused WRITE setFocused NOTIFY focusedChanged FINAL)
     Q_PROPERTY(bool checked READ checked WRITE setChecked NOTIFY checkedChanged FINAL)
@@ -46,7 +47,7 @@ class QQStyleKitReader : public QQStyleKitControlProperties
 
 public:
     enum ControlType {
-        Unknown = 100000,
+        Unspecified = 100000,
         Control,
         AbstractButton,
         Button,
@@ -80,8 +81,8 @@ public:
     QQStyleKitReader(QObject *parent = nullptr);
     ~QQStyleKitReader();
 
-    int type() const;
-    void setType(int type);
+    QQStyleKitExtendedControlType type() const;
+    void setType(QQStyleKitExtendedControlType type);
 #ifdef QT_DEBUG
     ControlType typeAsControlType() const;
 #endif
@@ -151,12 +152,15 @@ private:
 private:
     Q_DISABLE_COPY(QQStyleKitReader)
 
-    int m_type = ControlType::Unknown;
+    /* The reason we have a QQStyleKitExtendedControlType in addition to
+     * QQStyleKitReader::ControlType, is that we allow the style to define controls types
+     * in the style beyond the types we offer in Qt Quick Controls. The predefined controls
+     * (QQStyleKitReader::ControlType) have types that starts at 100000 (ControlType::Unspecified),
+     * and any number before that is available for use for defining custom controls. */
+    QQStyleKitExtendedControlType m_type = ControlType::Unspecified;
 
     bool m_dontEmitChangedSignals: 1;
     bool m_effectiveVariationsDirty: 1;
-    bool m_parentChainDirty: 1;
-    bool m_hierarchyHasVariations: 1;
 
     QQuickPalette m_palette;
     mutable QQStyleKitPropertyStorage m_storage;
@@ -166,7 +170,8 @@ private:
     QQSK::Delegates m_trackedDelegates = QQSK::Delegate::NoDelegate;
 
     QPointer<QQStyleKitReader> m_parentReader;
-    QList<QQStyleKitVariation *> m_effectiveVariations;
+    QList<QPointer<QQStyleKitVariation>> m_effectiveInAppVariations;
+    QList<QPointer<QQStyleKitVariation>> m_effectiveInStyleVariations;
 
     QQStyleKitControlProperties m_global;
 

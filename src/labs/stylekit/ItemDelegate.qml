@@ -27,6 +27,7 @@ T.ItemDelegate {
     icon.height: 16
     icon.color: styleReader.text.color
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.ItemDelegate

@@ -249,6 +249,57 @@ ApplicationWindow {
             }
 
             GroupBox {
+                title: "Variations"
+                StyleKitControl.variations: ["mini"]
+                ColumnLayout {
+                    spacing: app.spacing
+                    Text {
+                        text: "These controls are affected by an Instance Variation named 'mini'"
+                    }
+                    RowLayout {
+                        spacing: app.spacing
+
+                        TextField {
+                            placeholderText: "Mini zucchini"
+                        }
+
+                        Switch {
+                            checked: true
+                        }
+
+                        Button {
+                            // This button will be affected by both an "alert" and a "mini" variation
+                            StyleKitControl.variations: ["alert"]
+                            text: "Alert!"
+                        }
+
+                        CheckBox {
+                            text: "Baninis"
+                            checked: true
+                        }
+
+                        Slider {
+                            value: 0.5
+                        }
+                    }
+                    Frame {
+                        Layout.preferredHeight: 80
+                        Layout.fillWidth: true
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "Frame also has a Type Variation that affects Button"
+                        }
+                        Button {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: app.spacing
+                            text: "Button"
+                        }
+                    }
+                }
+            }
+
+            GroupBox {
                 title: "Custom controls"
                 RowLayout {
                     spacing: app.spacing

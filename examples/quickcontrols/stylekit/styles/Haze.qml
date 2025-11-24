@@ -129,13 +129,6 @@ Style {
         }
     }
 
-    frame {
-        background {
-            border.width: 1
-            shadow.visible: true
-        }
-    }
-
     spinBox {
         padding: 4
         background {
@@ -175,6 +168,85 @@ Style {
         handle {
             leftMargin: 3
             rightMargin: 3
+        }
+    }
+
+    // You can define one or more Instance Variations that can be enabled from the
+    // application using the attached 'StyleKitControl.variations' property.
+    // Inside a variation, you list the controls that should receive alternative
+    // styling when the variation is active. Any properties defined in a variation
+    // override those set in the Style or Theme.
+    //
+    // For example, if you set "StyleKitControl.variations: ['mini']" on a GroupBox
+    // in the application, all controls inside that GroupBox will be affected.
+    // Exactly which controls are impacted depends on which ones you style inside
+    // the variation.
+    Variation {
+        name: "mini"
+
+        control {
+            padding: 2
+            background {
+                implicitHeight: 15
+            }
+            indicator {
+                implicitWidth: 15
+                implicitHeight: 15
+            }
+            handle {
+                implicitWidth: 15
+                implicitHeight: 15
+            }
+        }
+
+        textInput {
+            background.implicitWidth: 100
+        }
+
+        abstractButton.background {
+            implicitWidth: 60
+        }
+
+        switchControl {
+            background.implicitWidth: 40
+            indicator.implicitWidth: 40
+            indicator.implicitHeight: 20
+        }
+
+        slider {
+            background.implicitWidth: 100
+            indicator.implicitHeight: 8
+            indicator.implicitWidth: Style.Stretch
+        }
+    }
+
+    Variation {
+        name: "alert"
+        abstractButton.background {
+            color: "orchid"
+            border.color: "orchid"
+            shadow.color: "orchid"
+        }
+    }
+
+    // You can also define Type Variations. Unlike Instance Variations—which apply
+    // only to specific control instances—Type Variations are applied to *all*
+    // instances of a control type without requiring the application to use attached
+    // properties.
+    //
+    // In this example, we specify that all Buttons that are children of a Frame
+    // should receive alternative styling, differentiating them from other Buttons.
+    frame {
+        background {
+            border.width: 1
+            shadow.visible: true
+        }
+        variations: Variation {
+            button.background {
+                radius: 0
+                color: palette.accent
+                shadow.visible: false
+            }
         }
     }
 
@@ -557,6 +629,15 @@ Style {
 
             comboBox {
                 indicator.foreground.color: "transparent"
+            }
+
+            Variation {
+                name: "alert"
+                abstractButton.background {
+                    color: "lime"
+                    border.color: "lime"
+                    shadow.color: "lime"
+                }
             }
 
             palettes {

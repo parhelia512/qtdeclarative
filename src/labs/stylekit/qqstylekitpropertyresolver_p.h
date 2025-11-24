@@ -84,26 +84,36 @@ private:
 
     static QVariant readPropertyInRelevantControls(
         const QQStyleKitControls *controls, const PropertyPathIds &ids,
-        const int exactType, const QList<int> baseTypes);
+        const QQStyleKitExtendedControlType exactType,
+        const QList<QQStyleKitExtendedControlType> baseTypes);
 
     static QVariant readPropertyInStyle(
-        const PropertyPathIds &ids, const int exactType,
-        const QList<int> baseTypes, const QQStyleKitReader *styleReader,
+        const PropertyPathIds &ids,
+        const QQStyleKitExtendedControlType exactType,
+        const QList<QQStyleKitExtendedControlType> baseTypes,
         const QQStyleKitStyle *style);
 
     static QVariant readProperty(
         const PropertyPathIds &ids,
         QQStyleKitReader *styleReader,
-        const QQStyleKitStyle *style);
+        QQStyleKitStyle *style);
 
     static PropertyPathId pathId(
         const QQStyleKitPropertyGroup *group,
         const QQSK::Property property, PathId flag);
 
-    static const QList<int> baseTypesForType(int exactType);
+    static const QList<QQStyleKitExtendedControlType> baseTypesForType(
+        QQStyleKitExtendedControlType exactType);
 
     static void cacheReaderState(QQSK::State state);
-    static void rebuildParentChainForReader(QQStyleKitReader *styleReader);
+    static void addInstanceVariationsToReader(
+        QQStyleKitReader *styleReader,
+        const QStringList &inAppVariationNames,
+        const QVarLengthArray<const QQStyleKitControls *, 6> &stylesAndThemes);
+    static void addTypeVariationsToReader(
+        QQStyleKitReader *styleReader,
+        const QQStyleKitExtendedControlType parentType,
+        const QQStyleKitStyle *style);
     static void rebuildVariationsForReader(
         QQStyleKitReader *styleReader,
         const QQStyleKitStyle *style);

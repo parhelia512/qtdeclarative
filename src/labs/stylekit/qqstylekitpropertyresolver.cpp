@@ -95,7 +95,8 @@ PropertyPathId QQStyleKitPropertyResolver::pathId(
     return pathId;
 }
 
-const QList<int> QQStyleKitPropertyResolver::baseTypesForType(int exactType)
+const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypesForType(
+    QQStyleKitExtendedControlType exactType)
 {
     /* The base types should, by default, mirror the class hierarchy in Qt Quick Controls.
      * Exceptions:
@@ -106,22 +107,27 @@ const QList<int> QQStyleKitPropertyResolver::baseTypesForType(int exactType)
     case QQStyleKitReader::RadioButton:
     case QQStyleKitReader::CheckBox:
     case QQStyleKitReader::SwitchControl: {
-        static QList<int> t = { QQStyleKitReader::AbstractButton, QQStyleKitReader::Control };
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::AbstractButton, QQStyleKitReader::Control };
         return t; }
     case QQStyleKitReader::Menu:
     case QQStyleKitReader::Dialog: {
-        static QList<int> t = { QQStyleKitReader::Popup, QQStyleKitReader::Control };
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::Popup, QQStyleKitReader::Control };
         return t; }
     case QQStyleKitReader::Page:
     case QQStyleKitReader::Frame: {
-        static QList<int> t = { QQStyleKitReader::Pane, QQStyleKitReader::Control };
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::Pane, QQStyleKitReader::Control };
         return t; }
     case QQStyleKitReader::TextField:
     case QQStyleKitReader::TextArea: {
-        static QList<int> t = { QQStyleKitReader::TextInput, QQStyleKitReader::Control };
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::TextInput, QQStyleKitReader::Control };
         return t; }
     default: {
-        static QList<int> t = { QQStyleKitReader::Control };
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::Control };
         return t; }
     }
 
@@ -158,127 +164,147 @@ void QQStyleKitPropertyResolver::cacheReaderState(QQSK::State state)
         s_cachedStateList.append(QQSK::StateFlag::Disabled);
 }
 
-void QQStyleKitPropertyResolver::rebuildParentChainForReader(QQStyleKitReader *styleReader)
+void QQStyleKitPropertyResolver::addTypeVariationsToReader(
+    QQStyleKitReader *styleReader,
+    const QQStyleKitExtendedControlType parentType,
+    const QQStyleKitStyle *style)
 {
-    /* Build up the parent chain of readers from \a styleReader. If we encounter a
-     * reader that already has m_parentChainDirty set to false, we can return early. This
-     * means that the execution of this function will go faster and faster for each call. */
-    styleReader->m_parentChainDirty = false;
-    QQStyleKitReader *childReader = styleReader;
-    QObject *parentObj = styleReader->parent();
-    QQuickItem *parentItem = nullptr;
+    static PropertyPathIds ids;
+    if (ids.property.property() == QQSK::Property::NoProperty) {
+        /* ids is made static, since the 'variations' path will be the same for all
+         * StyleKitControls. Also, since sub types are only possible for delegates,
+         * and 'variations' is a control property, we can exclude sub types. */
+        ids.property = pathId(styleReader, QQSK::Property::Variations, PathId::ExcludeSubType);
+        ids.alternative = pathId(styleReader, QQSK::Property::NoProperty, PathId::ExcludeSubType);
+        ids.subTypeProperty = PropertyPathId();
+        ids.subTypeAlternative = PropertyPathId();
+    }
 
-    while (parentObj) {
-        // TODO: change code to look for attached prop instead of styleReader prop?
-        parentItem = qobject_cast<QQuickItem *>(parentObj);
-        if (parentItem) {
-            const QVariant readerAsVariant = parentItem->property("styleReader");
-            if (readerAsVariant.isValid()) {
-                if (auto *reader = qvariant_cast<QQStyleKitReader *>(readerAsVariant)) {
-                    /* Whether the reader has a parent reader or not (which we find out in
-                     * the next iteration), we now anyway mark it as resolved. */
-                    reader->m_parentChainDirty = false;
-                    /* Some controls use several style readers (e.g RangeSlider), which are
-                     * typically siblings of each other. So ensure we don't make a sibling
-                     * reader the parent of another sibling reader. */
-                    if (reader->parent() != childReader->parent())
-                        childReader->m_parentReader = reader;
-                    if (reader->m_parentReader)
-                        break;
+    const auto parentBaseTypes = baseTypesForType(parentType);
+    const QVariant inStyleVariationsVar = readPropertyInStyle(ids, parentType, parentBaseTypes, style);
+    if (!inStyleVariationsVar.isValid())
+        return;
 
-                    childReader = reader;
+    /* Inside each Type Variation, check if the control type that styleReader represents has
+     * been defined. If so, it means that the variation might affect it, and should therefore be
+     * added to the style readers list of effective variations. */
+    const QQStyleKitExtendedControlType styleReaderType = styleReader->type();
+    const auto styleReaderBaseType = baseTypesForType(styleReaderType);
+
+    const auto inStyleVariations = *qvariant_cast<QList<QQStyleKitVariation *> *>(inStyleVariationsVar);
+    for (auto *variation : inStyleVariations) {
+        if (!variation) {
+            // This happens if the user adds non QQStyleKitVariation elements to the QML array
+            continue;
+        }
+        /* Note: when we read the variations property from the style, it returns the varations
+         * set in the most specific storage/state/control (because of propagation). And those
+         * are the only ones that will take effect. This means that even if there are variations
+         * in the fallback style for the requested type (control) that overrides some properties,
+         * and the style/theme has variations that overrides something else, the variations in
+         * the fallback style will, in that case, not be used. The properties not set in the
+         * effective variation will instead propagate back to be read from the type in the theme
+         * or the style. This approach is easier to understand and work with, since the propagation
+         * always flow in one direction, and doesn't jump back and forth between variations, styles
+         * and themes. */
+        if (variation->getControl(styleReaderType)) {
+            styleReader->m_effectiveInStyleVariations.append(variation);
+        } else {
+            for (int type : styleReaderBaseType) {
+                if (variation->getControl(type)) {
+                    styleReader->m_effectiveInStyleVariations.append(variation);
+                    break;
                 }
             }
-            parentItem = parentItem->parentItem();
         }
-        parentObj = parentItem ? parentItem : parentObj->parent();
+    }
+}
+
+void QQStyleKitPropertyResolver::addInstanceVariationsToReader(
+    QQStyleKitReader *styleReader, const QStringList &inAppVariationNames,
+    const QVarLengthArray<const QQStyleKitControls *, 6> &stylesAndThemes)
+{
+    /* Add the variations set from the application to the list of effective variations
+     * in the styleReader. But, to speed up property look-up later on, we only add the
+     * variations that has the potential to affect the control type, or its base types,
+     * that the styleReader represents. The variations that are closest to styleReader
+     * in the hierarchy will be added first and take precendence over the ones added last. */
+    const QQStyleKitExtendedControlType styleReaderType = styleReader->type();
+    const auto styleReaderBaseTypes = baseTypesForType(styleReaderType);
+
+    for (const QString &attachedVariationName : inAppVariationNames) {
+        for (const QQStyleKitControls *styleOrTheme : stylesAndThemes) {
+            const QList<QQStyleKitVariation *> variationsInStyleOrTheme = styleOrTheme->variations();
+            for (QQStyleKitVariation *variationInStyleOrTheme : variationsInStyleOrTheme)  {
+                if (variationInStyleOrTheme->name() != attachedVariationName)
+                    continue;
+                /* Invariant: we found a variation in a Style or a Theme with a name that matches
+                 * a name in the attached variation list. Check if the found variation contains the
+                 * type, or the sub types, of the style reader. If not, it doesn't affect it and can
+                 * therefore be skipped. */
+                if (variationInStyleOrTheme->getControl(styleReaderType)) {
+                    styleReader->m_effectiveInAppVariations.append(variationInStyleOrTheme);
+                } else {
+                    for (int baseType : styleReaderBaseTypes) {
+                        if (variationInStyleOrTheme->getControl(baseType)) {
+                            styleReader->m_effectiveInAppVariations.append(variationInStyleOrTheme);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 void QQStyleKitPropertyResolver::rebuildVariationsForReader(
     QQStyleKitReader *styleReader, const QQStyleKitStyle *style)
 {
+    /* Traverse up the parent chain of \a styleReader, and for each parent, look for an
+     * instance of QQStyleKitControlAttached. And for each attached object, check if it
+     * has variations that can potentially affect the style reader. If so, add the
+     * variations to the style readers list of effective variations.
+     * A QQStyleKitControlAttached can specify both Instance Variations and Type Variations.
+     * The former should affect all descendant StyleKitReaders of the parent, while the
+     * latter should only affect descendant StyleKitReaders of a specific type. */
     Q_ASSERT(styleReader->m_effectiveVariationsDirty);
     styleReader->m_effectiveVariationsDirty = false;
+    styleReader->m_effectiveInAppVariations.clear();
+    styleReader->m_effectiveInStyleVariations.clear();
 
-    if (styleReader->m_parentChainDirty)
-        rebuildParentChainForReader(styleReader);
-
-    // We make the id's static, since they shouldn't change depending on the styleReader
-    static PropertyPathIds ids;
-    if (ids.property.property() == QQSK::Property::NoProperty) {
-        ids.property = pathId(styleReader, QQSK::Property::Variations, PathId::IncludeSubType);
-        ids.alternative = pathId(styleReader, QQSK::Property::NoProperty, PathId::IncludeSubType);
-        ids.subTypeProperty = PropertyPathId();
-        ids.subTypeAlternative = PropertyPathId();
+    const bool hasInstanceVariations = QQStyleKitControlAttached::s_variationCount > 0;
+    const bool styleHasVariations = QQStyleKitVariation::s_variationCount > 0;
+    if (!styleHasVariations) {
+        /* No variations are defined in the current style or theme. In that case
+         * it doesn't matter if the application has variations set - they
+         * will anyway not map to any variations in the style. */
+        return;
     }
 
-    /* Go through all the parent readers of \a styleReader (if any), and for each one,
-     * add the variations attached to them that has the potential to affect the
-     * type/control represented by styleReader to m_effectiveVariations. The variations
-     * that are closest to styleReader in the hierarchy will be added first and take
-     * precendence over the ones added last. */
-    styleReader->m_effectiveVariations.clear();
-    QList<int> affectedTypes = baseTypesForType(styleReader->type());
-    affectedTypes.prepend(styleReader->type());
-    QQStyleKitReader *parentReader = styleReader->m_parentReader;
-    QQStyleKitReader *lastParentWithVariations = nullptr;
-
-    while (parentReader) {
-        if (!parentReader->m_hierarchyHasVariations)
-            break;
-
-        /* Note: when we read the variations property from the style, it returns the varations
-         * set in the most specific storage/state/control (because of propagation). And those
-         * are the only ones that will take effect. This means that even if there are variations
-         * in the fallback style for the requested type (control) that overrides some properties,
-         * and the style/theme has variations that overrides something else, the variations in
-         * the fallback style will, in that case, be ignored for that type. The properties _not
-         * set_ in the effective variations will instead propagate back to be read from the
-         * type in the theme or style, like all other properties. */
-        const int parentType = parentReader->type();
-        const QList<int> baseTypes = baseTypesForType(parentType);
-        const QVariant variationVariant = readPropertyInStyle(
-            ids, parentType, baseTypes, parentReader, style);
-
-        if (variationVariant.isValid()) {
-            auto variationsInStyle = *qvariant_cast<QList<QQStyleKitVariation *> *>(variationVariant);
-            for (auto *variation : std::as_const(variationsInStyle)) {
-                if (!variation) {
-                    // Ignore unsupported elements (text, numbers, etc), added to the array from QML
-                    continue;
-                }
-
-                lastParentWithVariations = parentReader;
-
-                for (int type : affectedTypes) {
-                    if (variation->getControl(type)) {
-                        styleReader->m_effectiveVariations.append(variation);
-                        // qDebug() << "Found variation" << variation
-                        //          << "for" << styleReader->typeAsControlType()
-                        //          << "in" << parentReader->typeAsControlType();
-                        break;
-                    }
-                }
-            }
-        }
-
-        parentReader = parentReader->m_parentReader;
+    /* We need to search through all variations defined in either the style or the theme,
+     * including the ones in the fallback styles, since the variation property propagates,
+     * like all the other style properties. */
+    QVarLengthArray<const QQStyleKitControls *, 6> stylesAndThemes;
+    const QQStyleKitStyle *styleOrFallbackStyle = style;
+    while (styleOrFallbackStyle) {
+        if (const auto *theme = styleOrFallbackStyle->theme())
+            stylesAndThemes.append(theme);
+        stylesAndThemes.append(styleOrFallbackStyle);
+        styleOrFallbackStyle = styleOrFallbackStyle->fallbackStyle();
     }
 
-    if (lastParentWithVariations) {
-        /* This function will be called for all style readers / controls after a style or theme
-         * change. So as an optimization, we do an extra pass in the end where we mark all the
-         * readers we found above from the parent of lastParentWithVariations and up to the root
-         * as not having variations. This allows us to return early for all the remaining style
-         * readers that shares the same, or parts of the same, parent chain. */
-        QQStyleKitReader *parentReader = lastParentWithVariations->m_parentReader;
-        while (parentReader) {
-            if (!parentReader->m_hierarchyHasVariations)
-                break;
-            parentReader->m_hierarchyHasVariations = false;
-            parentReader = parentReader->m_parentReader;
+    QObject *parentObj = styleReader;
+    while (parentObj) {
+        QObject *attachedObject = qmlAttachedPropertiesObject<QQStyleKitControl>(parentObj, false);
+        if (attachedObject) {
+            auto *controlAtt = static_cast<QQStyleKitControlAttached *>(attachedObject);
+            if (hasInstanceVariations)
+                addInstanceVariationsToReader(styleReader, controlAtt->variations(), stylesAndThemes);
+            if (styleHasVariations)
+                addTypeVariationsToReader(styleReader, controlAtt->controlType(), style);
         }
+
+        parentObj = parentObj->parent();
     }
 }
 
@@ -412,7 +438,8 @@ QVariant QQStyleKitPropertyResolver::readPropertyInControl(
 
 QVariant QQStyleKitPropertyResolver::readPropertyInRelevantControls(
     const QQStyleKitControls *controls, const PropertyPathIds &ids,
-    const int exactType, const QList<int> baseTypes)
+    const QQStyleKitExtendedControlType exactType,
+    const QList<QQStyleKitExtendedControlType> baseTypes)
 {
     if (!controls)
         return {};
@@ -435,8 +462,10 @@ QVariant QQStyleKitPropertyResolver::readPropertyInRelevantControls(
 }
 
 QVariant QQStyleKitPropertyResolver::readPropertyInStyle(
-    const PropertyPathIds &ids, const int exactType, const QList<int> baseTypes,
-    const QQStyleKitReader *styleReader, const QQStyleKitStyle *style)
+    const PropertyPathIds &ids,
+    const QQStyleKitExtendedControlType exactType,
+    const QList<QQStyleKitExtendedControlType> baseTypes,
+    const QQStyleKitStyle *style)
 {
     QVariant value;
 
@@ -451,8 +480,8 @@ QVariant QQStyleKitPropertyResolver::readPropertyInStyle(
         if (auto *fallbackStyle = style->fallbackStyle()) {
             /* Recurse into the fallback style, and search for the property there. If not
              * found, and the fallback style has a fallback style, the recursion continues. */
-            fallbackStyle->setPalette(styleReader->palette());
-            value = readPropertyInStyle(ids, exactType, baseTypes, styleReader, fallbackStyle);
+            fallbackStyle->setPalette(style->palette());
+            value = readPropertyInStyle(ids, exactType, baseTypes, fallbackStyle);
             if (value.isValid())
                 break;
         }
@@ -469,18 +498,25 @@ QVariant QQStyleKitPropertyResolver::readPropertyInStyle(
 }
 
 QVariant QQStyleKitPropertyResolver::readProperty(
-    const PropertyPathIds &ids, QQStyleKitReader *styleReader, const QQStyleKitStyle *style)
+    const PropertyPathIds &ids, QQStyleKitReader *styleReader, QQStyleKitStyle *style)
 {
     if (styleReader->m_effectiveVariationsDirty)
         rebuildVariationsForReader(styleReader, style);
 
-    const int exactType = styleReader->type();
-    const QList<int> baseTypes = baseTypesForType(exactType);
+    /* Sync the palette of the style with the palette of the current reader. Note
+     * that this will cause palette bindings in the style to change, which will
+     * result in calls to writeStyleProperty(). */
+    style->setPalette(styleReader->palette());
+
+    const QQStyleKitExtendedControlType exactType = styleReader->type();
+    const QList<QQStyleKitExtendedControlType> baseTypes = baseTypesForType(exactType);
 
     QVariant value;
 
     while (true) {
-        for (const auto *variation : styleReader->m_effectiveVariations) {
+        for (const QPointer<QQStyleKitVariation> &variation : std::as_const(styleReader->m_effectiveInAppVariations)) {
+            if (!variation)
+                continue;
             value = readPropertyInRelevantControls(variation, ids, exactType, baseTypes);
             if (value.isValid())
                 break;
@@ -488,7 +524,17 @@ QVariant QQStyleKitPropertyResolver::readProperty(
         if (value.isValid())
             break;
 
-        value = readPropertyInStyle(ids, exactType, baseTypes, styleReader, style);
+        for (const QPointer<QQStyleKitVariation> &variation : std::as_const(styleReader->m_effectiveInStyleVariations)) {
+            if (!variation)
+                continue;
+            value = readPropertyInRelevantControls(variation, ids, exactType, baseTypes);
+            if (value.isValid())
+                break;
+        }
+        if (value.isValid())
+            break;
+
+        value = readPropertyInStyle(ids, exactType, baseTypes, style);
         break;
     }
 

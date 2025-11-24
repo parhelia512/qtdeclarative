@@ -53,7 +53,7 @@ public:
     QQStyleKitStyle(QObject *parent = nullptr);
     ~QQStyleKitStyle();
 
-    QQuickPalette *palette();
+    QQuickPalette *palette() const;
 
     QQStyleKitStyle *fallbackStyle() const;
     void setFallbackStyle(QQStyleKitStyle *fallbackStyle);

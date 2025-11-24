@@ -26,6 +26,7 @@ T.Button {
     icon.height: 24
     icon.color: styleReader.text.color
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: control.flat ? StyleKitReader.FlatButton : StyleKitReader.Button

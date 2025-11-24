@@ -21,6 +21,7 @@ T.Pane {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.Pane

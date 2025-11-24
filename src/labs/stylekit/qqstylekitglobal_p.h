@@ -20,6 +20,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using QQStyleKitExtendedControlType = uint;
+
 class QQSK: public QObject
 {
     Q_OBJECT

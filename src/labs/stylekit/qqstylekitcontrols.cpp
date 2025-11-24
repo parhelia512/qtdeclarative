@@ -3,6 +3,7 @@
 
 #include "qqstylekitcontrols_p.h"
 #include "qqstylekitcontrol_p.h"
+#include "qqstylekitvariation_p.h"
 #include "qqstylekitcustomcontrol_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -35,6 +36,17 @@ QQStyleKitControl* QQStyleKitControls::getControl(int controlType) const
     if (!m_controls.contains(controlType))
         return nullptr;
     return m_controls[controlType];
+}
+
+
+QList<QQStyleKitVariation *> QQStyleKitControls::variations() const
+{
+    QList<QQStyleKitVariation *> list;
+    for (auto *obj : children()) {
+        if (auto *variation = qobject_cast<QQStyleKitVariation *>(obj))
+            list.append(variation);
+    }
+    return list;
 }
 
 #define IMPLEMENT_ACCESSORS(NAME, TYPE) \
@@ -77,7 +89,7 @@ void QQStyleKitControls::componentComplete()
     for (auto *obj : children()) {
         if (auto *customControl = qobject_cast<QQStyleKitCustomControl *>(obj)) {
             const int type = customControl->controlType();
-            const int reserved = int(QQStyleKitReader::ControlType::Unknown);
+            const int reserved = int(QQStyleKitReader::ControlType::Unspecified);
             if (type >= reserved)
                 qmlWarning(this) << "CustomControls must use a controlType less than " << reserved;
             if (m_controls.contains(type))

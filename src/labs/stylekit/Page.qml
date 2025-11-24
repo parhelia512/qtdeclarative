@@ -24,6 +24,7 @@ T.Page {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    StyleKitControl.controlType: styleReader.type
     StyleKitReader {
         id: styleReader
         type: StyleKitReader.Page

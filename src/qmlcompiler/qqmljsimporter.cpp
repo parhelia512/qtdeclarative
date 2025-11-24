@@ -981,6 +981,9 @@ QQmlJSImporter::ImportedTypes QQmlJSImporter::importDirectory(
 
 void QQmlJSImporter::setImportPaths(const QStringList &importPaths)
 {
+    if (m_importPaths == importPaths)
+        return;
+
     m_importPaths = importPaths;
 
     // We have to get rid off all cache elements directly referencing modules, since changing

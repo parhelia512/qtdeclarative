@@ -610,8 +610,7 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
     if (isJavaScript)
         return success;
 
-    if (m_importer.importPaths() != qmlImportPaths)
-        m_importer.setImportPaths(qmlImportPaths);
+    m_importer.setImportPaths(qmlImportPaths);
 
     std::optional<QQmlJSResourceFileMapper> mapper;
     if (!resourceFiles.isEmpty())
@@ -775,9 +774,7 @@ QQmlJSLinter::LintResult QQmlJSLinter::lintModule(
 
     // We can't lint properly if a module has already been pre-cached
     m_importer.clearCache();
-
-    if (m_importer.importPaths() != qmlImportPaths)
-        m_importer.setImportPaths(qmlImportPaths);
+    m_importer.setImportPaths(qmlImportPaths);
 
     QQmlJSResourceFileMapper mapper(resourceFiles);
     if (!resourceFiles.isEmpty())

@@ -1094,26 +1094,19 @@ public:
     // referencedObject);
     DomItem subReferencesItem(const PathEls::PathComponent &c, const QList<Path> &paths) const;
     DomItem subReferenceItem(const PathEls::PathComponent &c, const Path &referencedObject) const;
-    bool dvReference(DirectVisitor visitor, const PathEls::PathComponent &c, const Path &referencedObject) const
+    bool dvReferenceField(DirectVisitor visitor, QStringView f, const Path &referencedObject) const
     {
+        PathEls::PathComponent c = PathEls::Field(f);
         return dvItem(std::move(visitor), c, [c, this, referencedObject]() {
             return this->subReferenceItem(c, referencedObject);
         });
     }
-    bool dvReferences(
-            DirectVisitor visitor, const PathEls::PathComponent &c, const QList<Path> &paths) const
+    bool dvReferencesField(DirectVisitor visitor, QStringView f, const QList<Path> &paths) const
     {
+        PathEls::PathComponent c = PathEls::Field(f);
         return dvItem(std::move(visitor), c, [c, this, paths]() {
             return this->subReferencesItem(c, paths);
         });
-    }
-    bool dvReferenceField(DirectVisitor visitor, QStringView f, const Path &referencedObject) const
-    {
-        return dvReference(std::move(visitor), PathEls::Field(f), referencedObject);
-    }
-    bool dvReferencesField(DirectVisitor visitor, QStringView f, const QList<Path> &paths) const
-    {
-        return dvReferences(std::move(visitor), PathEls::Field(f), paths);
     }
     bool dvItem(DirectVisitor visitor, const PathEls::PathComponent &c, function_ref<DomItem()> it) const
     {

@@ -1069,12 +1069,6 @@ public:
     DomItem subDataItem(const PathEls::PathComponent &c, const T &value,
                         ConstantData::Options options = ConstantData::Options::MapIsMap) const;
     template<typename T>
-    DomItem subDataItemField(QStringView f, const T &value,
-                             ConstantData::Options options = ConstantData::Options::MapIsMap) const
-    {
-        return subDataItem(PathEls::Field(f), value, options);
-    }
-    template<typename T>
     DomItem subValueItem(const PathEls::PathComponent &c, const T &value,
                          ConstantData::Options options = ConstantData::Options::MapIsMap) const;
     template<typename T>

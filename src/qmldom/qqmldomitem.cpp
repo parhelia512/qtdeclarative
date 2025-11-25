@@ -2830,8 +2830,10 @@ bool Reference::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
 
 DomItem Reference::field(const DomItem &self, QStringView name) const
 {
-    if (Fields::referredObjectPath == name)
-        return self.subDataItemField(Fields::referredObjectPath, referredObjectPath.toString());
+    if (Fields::referredObjectPath == name) {
+        return self.subDataItem(PathEls::Field(Fields::referredObjectPath),
+                                referredObjectPath.toString());
+    }
     if (Fields::get == name)
         return get(self);
     return DomItem();

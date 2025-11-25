@@ -1089,20 +1089,14 @@ public:
     bool dvReferenceField(DirectVisitor visitor, QStringView f, const Path &referencedObject) const
     {
         PathEls::PathComponent c = PathEls::Field(f);
-        return dvItem(std::move(visitor), c, [c, this, referencedObject]() {
+        return visitor(c, [c, this, referencedObject]() {
             return this->subReferenceItem(c, referencedObject);
         });
     }
     bool dvReferencesField(DirectVisitor visitor, QStringView f, const QList<Path> &paths) const
     {
         PathEls::PathComponent c = PathEls::Field(f);
-        return dvItem(std::move(visitor), c, [c, this, paths]() {
-            return this->subReferencesItem(c, paths);
-        });
-    }
-    bool dvItem(DirectVisitor visitor, const PathEls::PathComponent &c, function_ref<DomItem()> it) const
-    {
-        return visitor(c, it);
+        return visitor(c, [c, this, paths]() { return this->subReferencesItem(c, paths); });
     }
     DomItem subListItem(const List &list) const;
     DomItem subMapItem(const Map &map) const;

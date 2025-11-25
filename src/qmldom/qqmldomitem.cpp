@@ -2823,9 +2823,7 @@ bool Reference::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
     cont = cont && self.dvValueLazyField(visitor, Fields::referredObjectPath, [this]() {
         return referredObjectPath.toString();
     });
-    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::get), [this, &self]() {
-        return this->get(self);
-    });
+    cont = cont && visitor(PathEls::Field(Fields::get), [this, &self]() { return this->get(self); });
     return cont;
 }
 
@@ -3031,28 +3029,28 @@ int OwningItem::nextRevision()
 bool OwningItem::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::errors), [&self, this]() {
-        QMultiMap<Path, ErrorMessage> myErrors = localErrors();
-        return self.subMapItem(Map(
-                self.pathFromOwner().withField(Fields::errors),
-                [myErrors](const DomItem &map, const QString &key) {
-                    auto it = myErrors.find(Path::fromString(key));
-                    if (it != myErrors.end())
-                        return map.subDataItem(PathEls::Key(key), it->toCbor(),
-                                               ConstantData::Options::FirstMapIsFields);
-                    else
-                        return DomItem();
-                },
-                [myErrors](const DomItem &) {
-                    QSet<QString> res;
-                    auto it = myErrors.keyBegin();
-                    auto end = myErrors.keyEnd();
-                    while (it != end)
-                        res.insert(it++->toString());
-                    return res;
-                },
-                QLatin1String("ErrorMessages")));
-    });
+    cont = cont && visitor(PathEls::Field(Fields::errors), [&self, this]() {
+               QMultiMap<Path, ErrorMessage> myErrors = localErrors();
+               return self.subMapItem(Map(
+                       self.pathFromOwner().withField(Fields::errors),
+                       [myErrors](const DomItem &map, const QString &key) {
+                           auto it = myErrors.find(Path::fromString(key));
+                           if (it != myErrors.end())
+                               return map.subDataItem(PathEls::Key(key), it->toCbor(),
+                                                      ConstantData::Options::FirstMapIsFields);
+                           else
+                               return DomItem();
+                       },
+                       [myErrors](const DomItem &) {
+                           QSet<QString> res;
+                           auto it = myErrors.keyBegin();
+                           auto end = myErrors.keyEnd();
+                           while (it != end)
+                               res.insert(it++->toString());
+                           return res;
+                       },
+                       QLatin1String("ErrorMessages")));
+           });
     return cont;
 }
 

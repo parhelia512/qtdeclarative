@@ -52,9 +52,9 @@ bool MockObject::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     auto itO = subObjects.begin();
     auto endO = subObjects.end();
     while (itO != endO) {
-        cont = cont && self.dvItem(visitor, PathEls::Field(toField(itO.key())), [&self, &itO]() {
-            return self.copy(&(*itO));
-        });
+        cont = cont && visitor(PathEls::Field(toField(itO.key())), [&self, &itO]() {
+                   return self.copy(&(*itO));
+               });
         ++itO;
     }
     return cont;
@@ -110,9 +110,10 @@ bool MockOwner::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
         auto itO = subObjects.begin();
         auto endO = subObjects.end();
         while (itO != endO) {
-            if (!self.dvItem(visitor, PathEls::Field(toField(itO.key())),
-                             [&self, &itO]() { return self.copy(&(*itO)); }))
+            if (!visitor(PathEls::Field(toField(itO.key())),
+                         [&self, &itO]() { return self.copy(&(*itO)); })) {
                 return false;
+            }
             ++itO;
         }
     }

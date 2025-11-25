@@ -145,9 +145,9 @@ bool QmlComponent::iterateDirectSubpaths(const DomItem &self, DirectVisitor visi
         return this->subComponents(self);
     });
     if (m_nameIdentifiers) {
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
-                       return self.subScriptElementWrapperItem(m_nameIdentifiers);
-                   });
+        cont = cont && visitor(PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
+                   return self.subScriptElementWrapperItem(m_nameIdentifiers);
+               });
     }
     return cont;
 }
@@ -407,20 +407,20 @@ bool QmlObject::iterateBaseDirectSubpaths(const DomItem &self, DirectVisitor vis
     cont = cont && self.dvWrapField(visitor, Fields::methods, m_methods);
     cont = cont && self.dvWrapField(visitor, Fields::children, m_children);
     cont = cont && self.dvWrapField(visitor, Fields::annotations, m_annotations);
-    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::propertyInfos), [this, &self]() {
-        return self.subMapItem(Map(
-                pathFromOwner().withField(Fields::propertyInfos),
-                [&self](const DomItem &map, const QString &k) {
-                    auto pInfo = self.propertyInfoWithName(k);
-                    return map.wrap(PathEls::Key(k), pInfo);
-                },
-                [&self](const DomItem &) { return self.propertyInfoNames(); },
-                QLatin1String("PropertyInfo")));
-    });
+    cont = cont && visitor(PathEls::Field(Fields::propertyInfos), [this, &self]() {
+               return self.subMapItem(Map(
+                       pathFromOwner().withField(Fields::propertyInfos),
+                       [&self](const DomItem &map, const QString &k) {
+                           auto pInfo = self.propertyInfoWithName(k);
+                           return map.wrap(PathEls::Key(k), pInfo);
+                       },
+                       [&self](const DomItem &) { return self.propertyInfoNames(); },
+                       QLatin1String("PropertyInfo")));
+           });
     if (m_nameIdentifiers) {
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
-                       return self.subScriptElementWrapperItem(m_nameIdentifiers);
-                   });
+        cont = cont && visitor(PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
+                   return self.subScriptElementWrapperItem(m_nameIdentifiers);
+               });
     }
     return cont;
 }
@@ -1229,9 +1229,9 @@ bool Binding::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
     if (!m_value)
         cont = cont && visitor(PathEls::Field(Fields::value), []() { return DomItem(); });
     else
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::value), [this, &self]() {
-            return m_value->value(self);
-        });
+        cont = cont && visitor(PathEls::Field(Fields::value), [this, &self]() {
+                   return m_value->value(self);
+               });
     cont = cont && self.dvValue(visitor, PathEls::Field(Fields::bindingType), int(m_bindingType));
     cont = cont && self.dvWrapField(visitor, Fields::comments, m_comments);
     cont = cont && self.dvValueLazyField(visitor, Fields::preCode, [this]() {
@@ -1241,10 +1241,9 @@ bool Binding::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
         return this->postCode();
     });
     if (m_bindingIdentifiers) {
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::bindingIdentifiers),
-                               [this, &self]() {
-                                   return self.subScriptElementWrapperItem(m_bindingIdentifiers);
-                               });
+        cont = cont && visitor(PathEls::Field(Fields::bindingIdentifiers), [this, &self]() {
+                   return self.subScriptElementWrapperItem(m_bindingIdentifiers);
+               });
     }
     cont = cont && self.dvWrapField(visitor, Fields::annotations, m_annotations);
     return cont;
@@ -1533,14 +1532,14 @@ bool ImportScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
 {
     bool cont = true;
     cont = cont && self.dvReferencesField(visitor, Fields::importSources, m_importSourcePaths);
-    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::allSources), [this, &self]() -> DomItem {
+    cont = cont && visitor(PathEls::Field(Fields::allSources), [this, &self]() -> DomItem {
                    return self.subListItem(List::fromQList<Path>(
                            self.pathFromOwner().withField(Fields::allSources), allSources(self),
                            [](const DomItem &list, const PathEls::PathComponent &p,
                               const Path &el) { return list.subDataItem(p, el.toString()); }));
                });
     cont = cont && self.dvWrapField(visitor, Fields::qualifiedImports, m_subImports);
-    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::imported), [this, &self]() -> DomItem {
+    cont = cont && visitor(PathEls::Field(Fields::imported), [this, &self]() -> DomItem {
                    return self.subMapItem(Map(
                            self.pathFromOwner().withField(Fields::imported),
                            [this, &self](const DomItem &map, const QString &key) {
@@ -1721,9 +1720,9 @@ bool ScriptExpression::iterateDirectSubpaths(const DomItem &self, DirectVisitor 
     });
     cont = cont && self.dvValue(visitor, PathEls::Field(Fields::expressionType), int(expressionType()));
     if (m_element) {
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::scriptElement), [this, &self]() {
-            return self.subScriptElementWrapperItem(m_element);
-        });
+        cont = cont && visitor(PathEls::Field(Fields::scriptElement), [this, &self]() {
+                   return self.subScriptElementWrapperItem(m_element);
+               });
     }
     return cont;
 }
@@ -1887,13 +1886,13 @@ bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
         cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isConstructor), isConstructor);
     }
     if (returnType)
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::returnType), [this, &self]() {
-            return self.subOwnerItem(PathEls::Field(Fields::returnType), returnType);
-        });
+        cont = cont && visitor(PathEls::Field(Fields::returnType), [this, &self]() {
+                   return self.subOwnerItem(PathEls::Field(Fields::returnType), returnType);
+               });
     if (body)
-        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::body), [this, &self]() {
-            return self.subOwnerItem(PathEls::Field(Fields::body), body);
-        });
+        cont = cont && visitor(PathEls::Field(Fields::body), [this, &self]() {
+                   return self.subOwnerItem(PathEls::Field(Fields::body), body);
+               });
     return cont;
 }
 

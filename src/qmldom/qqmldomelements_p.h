@@ -634,10 +634,9 @@ public:
         cont = cont && self.dvValue(visitor, PathEls::Field(Fields::notify), notify);
         cont = cont && self.dvReferenceField(visitor, Fields::type, typePath());
         if (m_nameIdentifiers) {
-            cont = cont && self.dvItem(visitor, PathEls::Field(Fields::nameIdentifiers),
-                                   [this, &self]() {
-                                       return self.subScriptElementWrapperItem(m_nameIdentifiers);
-                                   });
+            cont = cont && visitor(PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
+                       return self.subScriptElementWrapperItem(m_nameIdentifiers);
+                   });
         }
         return cont;
     }

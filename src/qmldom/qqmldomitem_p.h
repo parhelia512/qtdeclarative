@@ -1090,10 +1090,6 @@ public:
         };
         return visitor(c, lazyWrap);
     }
-    DomItem subLocationItem(const PathEls::PathComponent &c, SourceLocation loc) const
-    {
-        return this->subDataItem(c, sourceLocationToQCborValue(loc));
-    }
     // bool dvSubReference(DirectVisitor visitor, const PathEls::PathComponent &c, Path
     // referencedObject);
     DomItem subReferencesItem(const PathEls::PathComponent &c, const QList<Path> &paths) const;
@@ -2024,7 +2020,7 @@ DomItem DomItem::wrap(const PathEls::PathComponent &c, const T &obj) const
     if constexpr (std::is_same_v<QString, BaseT> || std::is_arithmetic_v<BaseT>) {
         return this->subDataItem(c, QCborValue(obj));
     } else if constexpr (std::is_same_v<SourceLocation, BaseT>) {
-        return this->subLocationItem(c, obj);
+        return this->subDataItem(c, sourceLocationToQCborValue(obj));
     } else if constexpr (std::is_same_v<BaseT, Reference>) {
         Q_ASSERT_X(false, "DomItem::wrap",
                    "wrapping a reference object, probably an error (wrap the target path instead)");

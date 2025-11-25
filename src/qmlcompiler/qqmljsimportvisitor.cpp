@@ -1926,8 +1926,17 @@ static void warnForDuplicates(const QQmlJSScope::ConstPtr &scope, const QString 
                               QLatin1String type, const QQmlJS::SourceLocation &location,
                               QQmlJSLogger *logger)
 {
-    if (scope->hasOwnMethod(name) || scope->hasOwnProperty(name))
-        logger->log("Duplicated %1 name \"%2\"."_L1.arg(type, name), qmlDuplicatedName, location);
+    static constexpr QLatin1String duplicateMessage =
+            "Duplicated %1 name \"%2\", \"%2\" is already a %3."_L1;
+    if (const auto methods = scope->ownMethods(name); !methods.isEmpty()) {
+        logger->log(duplicateMessage.arg(type, name,
+                                         methods.front().methodType() == QQmlSA::MethodType::Signal
+                                                 ? s_signal
+                                                 : s_method),
+                    qmlDuplicatedName, location);
+    }
+    if (scope->hasOwnProperty(name))
+        logger->log(duplicateMessage.arg(type, name, s_property), qmlDuplicatedName, location);
 
     static constexpr QLatin1String warningMessage =
             "%1 \"%2\" already exists in base type \"%3\", use a different name."_L1;

@@ -953,10 +953,12 @@ void TestQmllint::dirtyQmlCode_data()
                            QtCriticalMsg } } };
     QTest::newRow("duplicatedPropertyName")
             << QStringLiteral("duplicatedPropertyName.qml")
-            << Result{ { { "Duplicated property name \"cat\"."_L1, 5, 21 } } };
+            << Result{ { { "Duplicated property name \"cat\", \"cat\" is already a property."_L1, 5,
+                           21 } } };
     QTest::newRow("duplicatedSignalName")
             << QStringLiteral("duplicatedPropertyName.qml")
-            << Result{ { { "Duplicated signal name \"clicked\"."_L1, 8, 12 } } };
+            << Result{ { { "Duplicated signal name \"clicked\", \"clicked\" is already a signal"_L1,
+                           8, 12 } } };
     QTest::newRow("enumInvalid")
             << QStringLiteral("enumInvalid.qml")
             << Result{ { { "Member \"red\" not found on type \"QtObject\""_L1, 5, 25 },

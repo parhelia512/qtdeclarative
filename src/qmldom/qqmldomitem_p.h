@@ -1081,13 +1081,14 @@ public:
         return this->dvValue<T>(std::move(visitor), PathEls::Field(f), value, options);
     }
     template<typename F>
-    bool dvValueLazy(DirectVisitor visitor, const PathEls::PathComponent &c, F valueF,
-                     ConstantData::Options options = ConstantData::Options::MapIsMap) const;
-    template<typename F>
     bool dvValueLazyField(DirectVisitor visitor, QStringView f, F valueF,
                           ConstantData::Options options = ConstantData::Options::MapIsMap) const
     {
-        return this->dvValueLazy(std::move(visitor), PathEls::Field(f), valueF, options);
+        PathEls::PathComponent c = PathEls::Field(f);
+        auto lazyWrap = [this, &c, &valueF, options]() {
+            return this->subValueItem<decltype(valueF())>(c, valueF(), options);
+        };
+        return visitor(c, lazyWrap);
     }
     DomItem subLocationItem(const PathEls::PathComponent &c, SourceLocation loc) const
     {
@@ -2012,16 +2013,6 @@ bool DomItem::dvValue(DirectVisitor visitor, const PathEls::PathComponent &c, co
 {
     auto lazyWrap = [this, &c, &value, options]() {
         return this->subValueItem<T>(c, value, options);
-    };
-    return visitor(c, lazyWrap);
-}
-
-template<typename F>
-bool DomItem::dvValueLazy(DirectVisitor visitor, const PathEls::PathComponent &c, F valueF,
-                          ConstantData::Options options) const
-{
-    auto lazyWrap = [this, &c, &valueF, options]() {
-        return this->subValueItem<decltype(valueF())>(c, valueF(), options);
     };
     return visitor(c, lazyWrap);
 }

@@ -5,7 +5,6 @@
 %parser         QQmlJSGrammar
 %decl           qqmljsparser_p.h
 %impl           qqmljsparser.cpp
-%expect         1
 
 %token T_AND "&"                T_AND_AND "&&"              T_AND_EQ "&="
 %token T_BREAK "break"          T_CASE "case"               T_CATCH "catch"

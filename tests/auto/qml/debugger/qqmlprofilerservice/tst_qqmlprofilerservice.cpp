@@ -20,8 +20,8 @@ class QQmlProfilerTestClient : public QQmlProfilerEventReceiver
     Q_OBJECT
 
 public:
-    QQmlProfilerTestClient(QQmlDebugConnection *connection)
-         : client(new QQmlProfilerClient(connection, this))
+    QQmlProfilerTestClient(QQmlDebugConnection *connection, quint64 features)
+         : client(new QQmlProfilerClient(connection, this, features))
     {
         connect(client.data(), &QQmlProfilerClient::traceStarted,
                 this, &QQmlProfilerTestClient::startTrace);
@@ -215,10 +215,11 @@ private:
         CheckType = CheckMessageType | CheckDetailType | CheckLine | CheckColumn | CheckFileEndsWith
     };
 
-    ConnectResult connectTo(bool block, const QString &file, bool recordFromStart = true,
-                          uint flushInterval = 0, bool restrictServices = true,
-                          const QString &executable
-            = QLibraryInfo::path(QLibraryInfo::BinariesPath) + "/qmlscene");
+    ConnectResult connectTo(
+            bool block, const QString &file, bool recordFromStart = true, uint flushInterval = 0,
+            bool restrictServices = true, const QString &executable
+                = QLibraryInfo::path(QLibraryInfo::BinariesPath) + "/qmlscene",
+            quint64 requestedFeatures = std::numeric_limits<quint64>::max());
     void checkProcessTerminated();
     void checkTraceReceived();
     void checkJsHeap();
@@ -246,8 +247,10 @@ private slots:
     void compile();
     void multiEngine();
     void batchOverflow();
+    void noFeatures();
 
 private:
+    quint64 m_requestedFeatures = std::numeric_limits<quint64>::max();
     bool m_recordFromStart = true;
     bool m_flushInterval = false;
 
@@ -266,8 +269,9 @@ tst_QQmlProfilerService::tst_QQmlProfilerService()
 
 QQmlDebugTest::ConnectResult tst_QQmlProfilerService::connectTo(
         bool block, const QString &file, bool recordFromStart, uint flushInterval,
-        bool restrictServices, const QString &executable)
+        bool restrictServices, const QString &executable, quint64 requestedFeatures)
 {
+    m_requestedFeatures = requestedFeatures;
     m_recordFromStart = recordFromStart;
     m_flushInterval = flushInterval;
 
@@ -482,7 +486,7 @@ bool tst_QQmlProfilerService::verify(tst_QQmlProfilerService::MessageListType ty
 
 QList<QQmlDebugClient *> tst_QQmlProfilerService::createClients()
 {
-    m_client.reset(new QQmlProfilerTestClient(m_connection));
+    m_client.reset(new QQmlProfilerTestClient(m_connection, m_requestedFeatures));
     m_client->client->setRecording(m_recordFromStart);
     m_client->client->setFlushInterval(m_flushInterval);
     QObject::connect(m_client->client.data(), &QQmlProfilerClient::complete,
@@ -830,6 +834,30 @@ void tst_QQmlProfilerService::batchOverflow()
     checkProcessTerminated();
     checkTraceReceived();
     checkJsHeap();
+}
+
+void tst_QQmlProfilerService::noFeatures()
+{
+    QCOMPARE(connectTo(true, "quit.qml", true, 0, true,
+                       QLibraryInfo::path(QLibraryInfo::BinariesPath) + "/qmlscene", 0),
+             ConnectSuccess);
+
+    checkProcessTerminated();
+
+    QVERIFY(m_process->exitStatus() != QProcess::CrashExit);
+    QTRY_VERIFY2(m_client->isComplete, "No trace received in time.");
+
+    // Only StartTrace and EndTrace received
+    QCOMPARE(m_client->numLoadedEvents(), 2);
+    QCOMPARE(m_client->asynchronousMessages.size(), 2);
+
+    // must start with "StartTrace"
+    VERIFY(MessageListAsynchronous, 0, QQmlProfilerEventType(Event, MaximumRangeType, StartTrace),
+           CheckMessageType | CheckDetailType, QVector<qint64>());
+
+    // must end with "EndTrace"
+    VERIFY(MessageListAsynchronous, 1, QQmlProfilerEventType(Event, MaximumRangeType, EndTrace),
+           CheckMessageType | CheckDetailType, QVector<qint64>());
 }
 
 QTEST_MAIN(tst_QQmlProfilerService)

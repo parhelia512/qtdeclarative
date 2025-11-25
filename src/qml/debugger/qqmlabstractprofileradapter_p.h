@@ -33,8 +33,7 @@ class Q_QML_EXPORT QQmlAbstractProfilerAdapter : public QObject, public QQmlProf
 public:
     static const int s_numMessagesPerBatch = 1000;
 
-    QQmlAbstractProfilerAdapter(QObject *parent = nullptr) :
-        QObject(parent), service(nullptr), waiting(true), featuresEnabled(0) {}
+    QQmlAbstractProfilerAdapter(QObject *parent = nullptr) : QObject(parent) {}
     ~QQmlAbstractProfilerAdapter() override
     {
         QThread *currentThread = QThread::currentThread();
@@ -57,7 +56,7 @@ public:
     void stopWaiting() { waiting = false; }
     void startWaiting() { waiting = true; }
 
-    bool isRunning() const { return featuresEnabled != 0; }
+    bool isRunning() const { return running; }
     quint64 features() const { return featuresEnabled; }
 
     void synchronize(const QElapsedTimer &t) { Q_EMIT referenceTimeKnown(t); }
@@ -73,11 +72,12 @@ Q_SIGNALS:
     void referenceTimeKnown(const QElapsedTimer &timer);
 
 protected:
-    QQmlProfilerService *service;
+    QQmlProfilerService *service = nullptr;
 
 private:
-    bool waiting;
-    quint64 featuresEnabled;
+    quint64 featuresEnabled = 0;
+    bool waiting = true;
+    bool running = false;
 };
 
 class Q_QML_EXPORT QQmlAbstractProfilerAdapterFactory : public QObject

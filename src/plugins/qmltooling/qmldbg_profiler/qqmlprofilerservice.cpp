@@ -178,10 +178,13 @@ void QQmlProfilerServiceImpl::addGlobalProfiler(QQmlAbstractProfilerAdapter *pro
     // Global profilers are started whenever any engine profiler is started and stopped when
     // all engine profilers are stopped.
     quint64 features = 0;
-    for (QQmlAbstractProfilerAdapter *engineProfiler : std::as_const(m_engineProfilers))
+    bool anyRunning = false;
+    for (QQmlAbstractProfilerAdapter *engineProfiler : std::as_const(m_engineProfilers)) {
         features |= engineProfiler->features();
+        anyRunning = anyRunning || engineProfiler->isRunning();
+    }
 
-    if (features != 0)
+    if (anyRunning)
         profiler->startProfiling(features);
 }
 

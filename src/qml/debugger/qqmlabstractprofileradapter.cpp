@@ -50,6 +50,7 @@ void QQmlAbstractProfilerAdapter::startProfiling(quint64 features)
     else
         emit profilingEnabled(features);
     featuresEnabled = features;
+    running = true;
 }
 
 /*!
@@ -65,6 +66,7 @@ void QQmlAbstractProfilerAdapter::stopProfiling() {
     else
         emit profilingDisabled();
     featuresEnabled = 0;
+    running = false;
 }
 
 /*!

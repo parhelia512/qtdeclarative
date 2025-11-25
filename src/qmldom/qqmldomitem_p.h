@@ -1090,8 +1090,6 @@ public:
         };
         return visitor(c, lazyWrap);
     }
-    // bool dvSubReference(DirectVisitor visitor, const PathEls::PathComponent &c, Path
-    // referencedObject);
     DomItem subReferencesItem(const PathEls::PathComponent &c, const QList<Path> &paths) const;
     DomItem subReferenceItem(const PathEls::PathComponent &c, const Path &referencedObject) const;
     bool dvReferenceField(DirectVisitor visitor, QStringView f, const Path &referencedObject) const

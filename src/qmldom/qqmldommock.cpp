@@ -46,7 +46,7 @@ bool MockObject::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     auto itV = subValues.begin();
     auto endV = subValues.end();
     while (itV != endV) {
-        cont = cont && self.dvValue(visitor, PathEls::Field(toField(itV.key())), *itV);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(toField(itV.key())), *itV);
         ++itV;
     }
     auto itO = subObjects.begin();
@@ -101,7 +101,7 @@ bool MockOwner::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
         auto itV = subValues.begin();
         auto endV = subValues.end();
         while (itV != endV) {
-            if (!self.dvValue(visitor, PathEls::Field(toField(itV.key())), *itV))
+            if (!self.invokeVisitorOnValue(visitor, PathEls::Field(toField(itV.key())), *itV))
                 return false;
             ++itV;
         }

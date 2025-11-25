@@ -324,7 +324,8 @@ public:
     {
         bool cont = true;
         cont = cont && self.dvWrapField(visitor, Fields::import, import);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::inheritVersion), inheritVersion);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::inheritVersion),
+                                             inheritVersion);
         return cont;
     }
 
@@ -353,8 +354,8 @@ public:
 
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
     {
-        bool cont = self.dvValue(visitor, PathEls::Field(Fields::name), name);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::values), values);
+        bool cont = self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::values), values);
         cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
         return cont;
     }
@@ -623,15 +624,17 @@ public:
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
     {
         bool cont = AttributeInfo::iterateDirectSubpaths(self, visitor);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isPointer), isPointer);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isFinal), isFinal);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isAlias), isAlias());
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isDefaultMember), isDefaultMember);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isRequired), isRequired);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::read), read);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::write), write);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::bindable), bindable);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::notify), notify);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isPointer), isPointer);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isFinal), isFinal);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isAlias), isAlias());
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isDefaultMember),
+                                             isDefaultMember);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isRequired),
+                                             isRequired);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::read), read);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::write), write);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::bindable), bindable);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::notify), notify);
         cont = cont && self.dvReferenceField(visitor, Fields::type, typePath());
         if (m_nameIdentifiers) {
             cont = cont && visitor(PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
@@ -966,13 +969,15 @@ public:
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
     {
         bool cont = true;
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::uri), uri);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::typeName), typeName);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::typeName), typeName);
         cont = cont && self.dvWrapField(visitor, Fields::version, version);
         if (typePath)
             cont = cont && self.dvReferenceField(visitor, Fields::type, typePath);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isInternal), isInternal);
-        cont = cont && self.dvValue(visitor, PathEls::Field(Fields::isSingleton), isSingleton);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isInternal),
+                                             isInternal);
+        cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isSingleton),
+                                             isSingleton);
         if (exportSourcePath)
             cont = cont && self.dvReferenceField(visitor, Fields::exportSource, exportSourcePath);
         return cont;

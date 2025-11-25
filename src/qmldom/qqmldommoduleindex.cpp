@@ -30,7 +30,7 @@ static ErrorGroups myExportErrors()
 bool ModuleScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::uri), uri);
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri);
     cont = cont && self.dvWrapField(visitor, Fields::version, version);
     cont = cont && visitor(PathEls::Field(Fields::exports), [this, &self]() {
                int minorVersion = version.minorVersion;
@@ -115,8 +115,9 @@ ModuleIndex::~ModuleIndex()
 
 bool ModuleIndex::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
-    bool cont = self.dvValue(visitor, PathEls::Field(Fields::uri), uri());
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::majorVersion), majorVersion());
+    bool cont = self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri());
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::majorVersion),
+                                         majorVersion());
     cont = cont && visitor(PathEls::Field(Fields::moduleScope), [this, &self]() {
                return self.subMapItem(Map(
                        pathFromOwner().withField(Fields::moduleScope),

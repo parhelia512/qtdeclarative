@@ -1072,8 +1072,8 @@ public:
     DomItem subValueItem(const PathEls::PathComponent &c, const T &value,
                          ConstantData::Options options = ConstantData::Options::MapIsMap) const;
     template <typename T>
-    bool dvValue(DirectVisitor visitor, const PathEls::PathComponent &c, const T &value,
-                 ConstantData::Options options = ConstantData::Options::MapIsMap) const;
+    bool invokeVisitorOnValue(DirectVisitor visitor, const PathEls::PathComponent &c, const T &value,
+                         ConstantData::Options options = ConstantData::Options::MapIsMap) const;
     template<typename F>
     bool dvValueLazyField(DirectVisitor visitor, QStringView f, F valueF,
                           ConstantData::Options options = ConstantData::Options::MapIsMap) const
@@ -1969,9 +1969,9 @@ DomItem DomItem::subDataItem(const PathEls::PathComponent &c, const T &value,
     }
 }
 
-template<typename T>
-bool DomItem::dvValue(DirectVisitor visitor, const PathEls::PathComponent &c, const T &value,
-                      ConstantData::Options options) const
+template <typename T>
+bool DomItem::invokeVisitorOnValue(DirectVisitor visitor, const PathEls::PathComponent &c,
+                                   const T &value, ConstantData::Options options) const
 {
     auto lazyWrap = [this, &c, &value, options]() {
         return this->subValueItem<T>(c, value, options);

@@ -273,7 +273,7 @@ bool ConstantData::iterateDirectSubpaths(const DomItem &self, DirectVisitor visi
                 break;
             }
             auto val = it.value();
-            if (!self.dvValue(visitor, comp, val))
+            if (!self.invokeVisitorOnValue(visitor, comp, val))
                 return false;
             ++it;
         }
@@ -284,7 +284,7 @@ bool ConstantData::iterateDirectSubpaths(const DomItem &self, DirectVisitor visi
         auto end = array.cend();
         index_type i = 0;
         while (it != end) {
-            if (!self.dvValue(visitor, PathEls::Index(i++), *it++))
+            if (!self.invokeVisitorOnValue(visitor, PathEls::Index(i++), *it++))
                 return false;
         }
         return true;

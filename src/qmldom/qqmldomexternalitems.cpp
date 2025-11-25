@@ -243,9 +243,9 @@ QCborValue pluginData(const QQmlDirParser::Plugin &pl, const QStringList &cNames
 bool QmldirFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::uri), uri().toString());
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::designerSupported),
-                            designerSupported());
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri().toString());
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::designerSupported),
+                                         designerSupported());
     cont = cont && self.dvReferencesField(visitor, Fields::qmltypesFiles, m_qmltypesFilePaths);
     cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
     cont = cont && self.dvWrapField(visitor, Fields::imports, m_imports);

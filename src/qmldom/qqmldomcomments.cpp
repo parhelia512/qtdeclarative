@@ -200,8 +200,9 @@ A comment has methods to write it out again (write) and expose it to the Dom
 bool Comment::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::rawComment), rawComment());
-    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::newlinesBefore), newlinesBefore());
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::rawComment), rawComment());
+    cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::newlinesBefore),
+                                         newlinesBefore());
     return cont;
 }
 

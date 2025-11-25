@@ -490,7 +490,7 @@ DomItem QmlFile::field(const DomItem &self, QStringView name) const
 {
     ensurePopulated();
     if (name == Fields::components)
-        return self.wrapField(Fields::components, lazyMembers().m_components);
+        return self.wrap(PathEls::Field(Fields::components), lazyMembers().m_components);
     return DomBase::field(self, name);
 }
 

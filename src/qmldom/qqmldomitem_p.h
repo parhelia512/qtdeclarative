@@ -1121,13 +1121,8 @@ public:
         else
             return DomItem(m_top, o, Path(), o.get());
     }
-    template<typename T>
+    template <typename T>
     DomItem wrap(const PathEls::PathComponent &c, const T &obj) const;
-    template<typename T>
-    DomItem wrapField(QStringView f, const T &obj) const
-    {
-        return wrap<T>(PathEls::Field(f), obj);
-    }
     template <typename T>
     bool dvWrapField(DirectVisitor visitor, QStringView f, T &obj) const
     {

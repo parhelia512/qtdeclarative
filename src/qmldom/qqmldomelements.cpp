@@ -124,9 +124,9 @@ bool Component::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
 DomItem Component::field(const DomItem &self, QStringView name) const
 {
     if (name == Fields::name)
-        return self.wrapField(Fields::name, m_name);
+        return self.wrap(PathEls::Field(Fields::name), m_name);
     if (name == Fields::objects)
-        return self.wrapField(Fields::objects, m_objects);
+        return self.wrap(PathEls::Field(Fields::objects), m_objects);
 
     return DomBase::field(self, name);
 }
@@ -456,13 +456,13 @@ DomItem QmlObject::field(const DomItem &self, QStringView name) const
         return self.subDataItem(PathEls::Field(Fields::idStr), idStr());
     }
     if (name == Fields::methods)
-        return self.wrapField(Fields::methods, m_methods);
+        return self.wrap(PathEls::Field(Fields::methods), m_methods);
     if (name == Fields::bindings)
-        return self.wrapField(Fields::bindings, m_bindings);
+        return self.wrap(PathEls::Field(Fields::bindings), m_bindings);
     if (name == Fields::comments)
         return CommentableDomElement::field(self, name);
     if (name == Fields::children)
-        return self.wrapField(Fields::children, m_children);
+        return self.wrap(PathEls::Field(Fields::children), m_children);
 
     if (name == Fields::nextScope) {
         if (nextScopePath())
@@ -476,9 +476,9 @@ DomItem QmlObject::field(const DomItem &self, QStringView name) const
         return self.subReferencesItem(PathEls::Field(Fields::prototypes), m_prototypePaths);
     }
     if (name == Fields::annotations)
-        return self.wrapField(Fields::annotations, m_annotations);
+        return self.wrap(PathEls::Field(Fields::annotations), m_annotations);
     if (name == Fields::propertyDefs)
-        return self.wrapField(Fields::propertyDefs, m_propertyDefs);
+        return self.wrap(PathEls::Field(Fields::propertyDefs), m_propertyDefs);
     if (name == Fields::propertyInfos) {
         // Need to explicitly copy self here since we might store this and call it later.
         return self.subMapItem(Map(

@@ -452,7 +452,7 @@ private slots:
             PropertyInfo mPInfo;
             mPInfo.bindings = { width };
             mPInfo.propertyDefs.append(width);
-            DomItem wrappedPInfo = obj1.wrapField(Fields::propertyInfos, mPInfo);
+            DomItem wrappedPInfo = obj1.wrap(PathEls::Field(Fields::propertyInfos), mPInfo);
             QVERIFY(wrappedPInfo);
             const SimpleObjectWrapBase *wrappedPInfoPtr =
                     static_cast<const SimpleObjectWrapBase *>(wrappedPInfo.base());

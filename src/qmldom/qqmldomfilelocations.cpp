@@ -214,8 +214,9 @@ bool Node::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
                 },
                 QLatin1String("Node")));
     });
-    cont = cont && self.dvItem(std::move(visitor), PathEls::Field(Fields::infoItem),
-                           [&self, this]() { return self.wrapField(Fields::infoItem, m_info); });
+    cont = cont && self.dvItem(std::move(visitor), PathEls::Field(Fields::infoItem), [&self, this]() {
+                   return self.wrap(PathEls::Field(Fields::infoItem), m_info);
+               });
     return cont;
 }
 

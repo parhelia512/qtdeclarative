@@ -154,7 +154,7 @@ bool DomUniverse::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
 {
     bool cont = true;
     cont = cont && DomTop::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvValueField(visitor, Fields::name, name());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::name), name());
     cont = cont && self.dvItemField(visitor, Fields::globalScopeWithName, [this, &self]() {
         return self.subMapItem(Map(
                 Path::fromField(Fields::globalScopeWithName),
@@ -573,13 +573,12 @@ Path LoadInfo::canonicalPath(const DomItem &) const
 bool LoadInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = OwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvValueField(visitor, Fields::status, int(status()));
-    cont = cont && self.dvValueField(visitor, Fields::nLoaded, nLoaded());
-    cont = cont
-            && self.dvValueField(visitor, Fields::elementCanonicalPath,
-                                 elementCanonicalPath().toString());
-    cont = cont && self.dvValueField(visitor, Fields::nNotdone, nNotDone());
-    cont = cont && self.dvValueField(visitor, Fields::nCallbacks, nCallbacks());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::status), int(status()));
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::nLoaded), nLoaded());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::elementCanonicalPath),
+                            elementCanonicalPath().toString());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::nNotdone), nNotDone());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::nCallbacks), nCallbacks());
     return cont;
 }
 
@@ -889,11 +888,10 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
     cont = cont && DomTop::iterateDirectSubpaths(self, visitor);
     DomItem univ = universe();
     cont = cont && self.dvItemField(visitor, Fields::universe, [this]() { return universe(); });
-    cont = cont && self.dvValueField(visitor, Fields::options, int(options()));
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::options), int(options()));
     cont = cont && self.dvItemField(visitor, Fields::base, [this]() { return base(); });
-    cont = cont
-            && self.dvValueLazyField(visitor, Fields::loadPaths, [this]() { return loadPaths(); });
-    cont = cont && self.dvValueField(visitor, Fields::globalScopeName, globalScopeName());
+    cont = cont && self.dvValueLazyField(visitor, Fields::loadPaths, [this]() { return loadPaths(); });
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::globalScopeName), globalScopeName());
     cont = cont && self.dvItemField(visitor, Fields::globalScopeWithName, [this, &self]() {
         return self.subMapItem(Map(
                 Path::fromField(Fields::globalScopeWithName),
@@ -1019,8 +1017,7 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
             nAllLoadedCallbacks = m_allLoadedCallback.size();
         }
     };
-    cont = cont
-            && self.dvItemField(
+    cont = cont && self.dvItemField(
                     visitor, Fields::loadsWithWork, [&ensureInfo, &self, &loadsWithWork]() {
                         ensureInfo();
                         return self.subListItem(List(
@@ -1037,8 +1034,7 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
                                 },
                                 nullptr, QLatin1String("Path")));
                     });
-    cont = cont
-            && self.dvItemField(visitor, Fields::inProgress, [&self, &ensureInfo, &inProgress]() {
+    cont = cont && self.dvItemField(visitor, Fields::inProgress, [&self, &ensureInfo, &inProgress]() {
                    ensureInfo();
                    return self.subListItem(List(
                            Path::fromField(Fields::inProgress),
@@ -1083,8 +1079,7 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
                 QLatin1String("LoadInfo")));
     });
     cont = cont && self.dvWrapField(visitor, Fields::imports, m_implicitImports);
-    cont = cont
-            && self.dvValueLazyField(visitor, Fields::nAllLoadedCallbacks,
+    cont = cont && self.dvValueLazyField(visitor, Fields::nAllLoadedCallbacks,
                                      [&nAllLoadedCallbacks, &ensureInfo]() {
                                          ensureInfo();
                                          return nAllLoadedCallbacks;
@@ -2353,9 +2348,9 @@ bool ExternalItemPairBase::iterateDirectSubpaths(const DomItem &self, DirectVisi
     if (!visitor(PathEls::Field(Fields::currentItem),
                  [this, &self]() { return currentItem(self); }))
         return false;
-    if (!self.dvValueField(visitor, Fields::validExposedAt, validExposedAt))
+    if (!self.dvValue(visitor, PathEls::Field(Fields::validExposedAt), validExposedAt))
         return false;
-    if (!self.dvValueField(visitor, Fields::currentExposedAt, currentExposedAt))
+    if (!self.dvValue(visitor, PathEls::Field(Fields::currentExposedAt), currentExposedAt))
         return false;
     return true;
 }

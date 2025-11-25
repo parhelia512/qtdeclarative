@@ -64,11 +64,9 @@ public:
         cont = cont && self.dvValueLazyField(visitor, Fields::canonicalFilePath, [this]() {
             return canonicalFilePath();
         });
-        cont = cont
-                && self.dvValueLazyField(visitor, Fields::isValid, [this]() { return isValid(); });
+        cont = cont && self.dvValueLazyField(visitor, Fields::isValid, [this]() { return isValid(); });
         if (!code().isNull())
-            cont = cont
-                    && self.dvValueLazyField(visitor, Fields::code, [this]() { return code(); });
+            cont = cont && self.dvValueLazyField(visitor, Fields::code, [this]() { return code(); });
         return cont;
     }
 

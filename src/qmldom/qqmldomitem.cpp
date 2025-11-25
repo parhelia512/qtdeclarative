@@ -2823,8 +2823,7 @@ bool Reference::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
     cont = cont && self.dvValueLazyField(visitor, Fields::referredObjectPath, [this]() {
         return referredObjectPath.toString();
     });
-    cont = cont
-            && self.dvItemField(visitor, Fields::get, [this, &self]() { return this->get(self); });
+    cont = cont && self.dvItemField(visitor, Fields::get, [this, &self]() { return this->get(self); });
     return cont;
 }
 

@@ -243,8 +243,9 @@ QCborValue pluginData(const QQmlDirParser::Plugin &pl, const QStringList &cNames
 bool QmldirFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvValueField(visitor, Fields::uri, uri().toString());
-    cont = cont && self.dvValueField(visitor, Fields::designerSupported, designerSupported());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::uri), uri().toString());
+    cont = cont && self.dvValue(visitor, PathEls::Field(Fields::designerSupported),
+                            designerSupported());
     cont = cont && self.dvReferencesField(visitor, Fields::qmltypesFiles, m_qmltypesFilePaths);
     cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
     cont = cont && self.dvWrapField(visitor, Fields::imports, m_imports);
@@ -479,8 +480,7 @@ bool QmlFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
     cont = cont && self.dvWrapField(visitor, Fields::pragmas, members.m_pragmas);
     cont = cont && self.dvWrapField(visitor, Fields::imports, members.m_imports);
     cont = cont && self.dvWrapField(visitor, Fields::importScope, members.m_importScope);
-    cont = cont
-            && self.dvWrapField(visitor, Fields::fileLocationsTree, members.m_fileLocationsTree);
+    cont = cont && self.dvWrapField(visitor, Fields::fileLocationsTree, members.m_fileLocationsTree);
     cont = cont && self.dvWrapField(visitor, Fields::comments, members.m_comments);
     cont = cont && self.dvWrapField(visitor, Fields::astComments, members.m_astComments);
     return cont;

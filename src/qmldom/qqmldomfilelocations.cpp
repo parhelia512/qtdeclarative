@@ -38,8 +38,7 @@ bool Info::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
     cont = cont && self.dvValueLazyField(visitor, Fields::fullRegion, [this]() {
         return sourceLocationToQCborValue(fullRegion);
     });
-    cont = cont
-            && self.dvItemField(std::move(visitor), Fields::regions, [this, &self]() -> DomItem {
+    cont = cont && self.dvItemField(std::move(visitor), Fields::regions, [this, &self]() -> DomItem {
         const Path pathFromOwner = self.pathFromOwner().withField(Fields::regions);
         auto map = Map::fromFileRegionMap(pathFromOwner, regions);
         return self.subMapItem(map);
@@ -197,8 +196,7 @@ bool Node::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
             return self.copy(p, self.m_ownerPath.dropTail(2), p.get());
         });
     }
-    cont = cont
-            && self.dvValueLazyField(visitor, Fields::path, [this]() { return path().toString(); });
+    cont = cont && self.dvValueLazyField(visitor, Fields::path, [this]() { return path().toString(); });
     cont = cont && self.dvItemField(visitor, Fields::subItems, [this, &self]() {
         return self.subMapItem(Map(
                 Path::fromField(Fields::subItems),

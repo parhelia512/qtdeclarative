@@ -2561,6 +2561,7 @@ void tst_qmlls_utils::completions_data()
     QTest::addColumn<int>("line");
     QTest::addColumn<int>("character");
     QTest::addColumn<ExpectedCompletions>("expected");
+    //TODO(QTBUG-142394)
     QTest::addColumn<QStringList>("notExpected");
 
     const QString file = testFile(u"Yyy.qml"_s);
@@ -2620,6 +2621,7 @@ void tst_qmlls_utils::completions_data()
     const ExpectedCompletions quickSnippetsWithQualifierInsideWithBindings =
             quickBindingSnippets(u"QQ.") += quickSnippetsWithQualifierInside;
 
+    // TODO(QTBUG-138020), TODO(QTBUG-142394)
     QTest::newRow("objEmptyLineSnippets")
             << file << 9 << 1
             << (ExpectedCompletions({
@@ -2629,11 +2631,6 @@ void tst_qmlls_utils::completions_data()
                           u"readonly property ${1:type} ${2:name}: ${0:value};"_s },
                         { u"default property type name: value;"_s, CompletionItemKind::Snippet,
                           u"default property ${1:type} ${2:name}: ${0:value};"_s },
-                        { u"default required property type name: value;"_s,
-                          CompletionItemKind::Snippet,
-                          u"default required property ${1:type} ${2:name}: ${0:value};"_s },
-                        { u"required property type name: value;"_s, CompletionItemKind::Snippet,
-                          u"required property ${1:type} ${2:name}: ${0:value};"_s },
                         { u"property type name;"_s, CompletionItemKind::Snippet,
                           u"property ${1:type} ${0:name};"_s },
                         { u"required property type name;"_s, CompletionItemKind::Snippet,
@@ -2644,15 +2641,49 @@ void tst_qmlls_utils::completions_data()
                           u"default required property ${1:type} ${0:name};"_s },
                         { u"final property type name;"_s, CompletionItemKind::Snippet,
                           u"final property ${1:type} ${0:name};"_s },
+                        { u"final property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"final property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"virtual property type name;"_s, CompletionItemKind::Snippet,
+                          u"virtual property ${1:type} ${0:name};"_s },
+                        { u"virtual property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"virtual property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"override property type name;"_s, CompletionItemKind::Snippet,
+                          u"override property ${1:type} ${0:name};"_s },
+                        { u"override property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"override property ${1:type} ${2:name}: ${0:value};"_s },
                         { u"default final property type name;"_s, CompletionItemKind::Snippet,
                           u"default final property ${1:type} ${0:name};"_s },
+                        { u"default final property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"default final property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"default virtual property type name;"_s, CompletionItemKind::Snippet,
+                          u"default virtual property ${1:type} ${0:name};"_s },
+                        { u"default virtual property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"default virtual property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"default override property type name;"_s, CompletionItemKind::Snippet,
+                          u"default override property ${1:type} ${0:name};"_s },
+                        { u"default override property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"default override property ${1:type} ${2:name}: ${0:value};"_s },
                         { u"final required property type name;"_s, CompletionItemKind::Snippet,
                           u"final required property ${1:type} ${0:name};"_s },
-                        { u"final readonly property type name;"_s, CompletionItemKind::Snippet,
-                          u"final readonly property ${1:type} ${0:name};"_s },
+                        { u"final readonly property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"final readonly property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"virtual required property type name;"_s, CompletionItemKind::Snippet,
+                          u"virtual required property ${1:type} ${0:name};"_s },
+                        { u"virtual readonly property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"virtual readonly property ${1:type} ${2:name}: ${0:value};"_s },
+                        { u"override required property type name;"_s, CompletionItemKind::Snippet,
+                          u"override required property ${1:type} ${0:name};"_s },
+                        { u"override readonly property type name: value;"_s, CompletionItemKind::Snippet,
+                          u"override readonly property ${1:type} ${2:name}: ${0:value};"_s },
                         { u"default final required property type name;"_s,
                           CompletionItemKind::Snippet,
                           u"default final required property ${1:type} ${0:name};"_s },
+                        { u"default virtual required property type name;"_s,
+                          CompletionItemKind::Snippet,
+                          u"default virtual required property ${1:type} ${0:name};"_s },
+                        { u"default override required property type name;"_s,
+                          CompletionItemKind::Snippet,
+                          u"default override required property ${1:type} ${0:name};"_s },
                         { u"signal name(arg1:type1, ...)"_s, CompletionItemKind::Snippet,
                           u"signal ${1:name}($0)"_s },
                         { u"signal name;"_s, CompletionItemKind::Snippet, u"signal ${0:name};"_s },
@@ -3189,6 +3220,9 @@ void tst_qmlls_utils::completions_data()
             << ExpectedCompletions({
                        { u"property"_s, CompletionItemKind::Keyword },
                        { u"default"_s, CompletionItemKind::Keyword },
+                       { u"virtual"_s, CompletionItemKind::Keyword },
+                       { u"final"_s, CompletionItemKind::Keyword },
+                       { u"override"_s, CompletionItemKind::Keyword },
                })
             << QStringList{
                    u"readonly"_s, u"required"_s, u"int"_s,   u"Rectangle"_s, u"foo"_s,
@@ -3200,6 +3234,9 @@ void tst_qmlls_utils::completions_data()
             << ExpectedCompletions({
                        { u"property"_s, CompletionItemKind::Keyword },
                        { u"default"_s, CompletionItemKind::Keyword },
+                       { u"virtual"_s, CompletionItemKind::Keyword },
+                       { u"final"_s, CompletionItemKind::Keyword },
+                       { u"override"_s, CompletionItemKind::Keyword },
                })
             << QStringList{
                    u"required"_s, u"readonly"_s, u"int"_s,   u"Rectangle"_s, u"foo"_s,
@@ -3212,6 +3249,9 @@ void tst_qmlls_utils::completions_data()
                        { u"property"_s, CompletionItemKind::Keyword },
                        { u"readonly"_s, CompletionItemKind::Keyword },
                        { u"required"_s, CompletionItemKind::Keyword },
+                       { u"virtual"_s, CompletionItemKind::Keyword },
+                       { u"final"_s, CompletionItemKind::Keyword },
+                       { u"override"_s, CompletionItemKind::Keyword },
                })
             << QStringList{
                    u"default"_s,  u"int"_s,      u"Rectangle"_s, u"foo"_s,
@@ -3224,6 +3264,9 @@ void tst_qmlls_utils::completions_data()
                        { u"property"_s, CompletionItemKind::Keyword },
                        { u"readonly"_s, CompletionItemKind::Keyword },
                        { u"required"_s, CompletionItemKind::Keyword },
+                       { u"virtual"_s, CompletionItemKind::Keyword },
+                       { u"final"_s, CompletionItemKind::Keyword },
+                       { u"override"_s, CompletionItemKind::Keyword },
                })
             << QStringList{
                    u"default"_s,  u"int"_s,      u"Rectangle"_s, u"foo"_s,
@@ -3237,6 +3280,27 @@ void tst_qmlls_utils::completions_data()
                    u"readonly"_s,
                    u"required"_s,
                };
+
+
+    const auto virtSpecifiersTest = [&file](QString keyword, int lineNum){
+        const auto testName = keyword + "Property";
+        QTest::newRow(qPrintable(testName))
+                << file << lineNum << 17 /*after keyword before end of property token*/
+                << ExpectedCompletions({
+                           { u"property"_s, CompletionItemKind::Keyword },
+                           { u"readonly"_s, CompletionItemKind::Keyword },
+                           { u"required"_s, CompletionItemKind::Keyword },
+                           { u"default"_s, CompletionItemKind::Keyword },
+                   })
+                << QStringList{
+                       u"virtual"_s, u"final"_s, u"override"_s,  u"int"_s,      u"Rectangle"_s, u"foo"_s,
+                       u"ValueOne"_s, u"ValueTwo"_s, u"Hello"_s,     u"MyEnum"_s,
+                   };
+
+    };
+    virtSpecifiersTest("virtual", 143);
+    virtSpecifiersTest("override", 144);
+    virtSpecifiersTest("final", 145);
 
     const QString forStatementCompletion = u"for (initializer; condition; increment) { statements... }"_s;
     const QString ifStatementCompletion = u"if (condition) statement"_s;
@@ -4484,6 +4548,7 @@ void tst_qmlls_utils::completions()
     QFETCH(int, line);
     QFETCH(int, character);
     QFETCH(ExpectedCompletions, expected);
+    //TODO(QTBUG-142394)
     QFETCH(QStringList, notExpected);
 
     auto [env, file] = createEnvironmentAndLoadFile(filePath);

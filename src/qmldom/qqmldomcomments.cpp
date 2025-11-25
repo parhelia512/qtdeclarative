@@ -244,8 +244,8 @@ startRegion/ EndRegion). Region comments keeps a mapping containing them.
 bool CommentedElement::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvWrapField(visitor, Fields::preComments, m_preComments);
-    cont = cont && self.dvWrapField(visitor, Fields::postComments, m_postComments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::preComments, m_preComments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::postComments, m_postComments);
     return cont;
 }
 
@@ -791,9 +791,9 @@ bool AstComments::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
     auto [pre, post] = collectPreAndPostComments();
 
     if (!pre.isEmpty())
-        self.dvWrapField(visitor, Fields::preComments, pre);
+        self.invokeVisitorOnField(visitor, Fields::preComments, pre);
     if (!post.isEmpty())
-        self.dvWrapField(visitor, Fields::postComments, post);
+        self.invokeVisitorOnField(visitor, Fields::postComments, post);
 
     return false;
 }

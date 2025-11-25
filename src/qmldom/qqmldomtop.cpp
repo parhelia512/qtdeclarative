@@ -1100,7 +1100,7 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
                        },
                        QLatin1String("LoadInfo")));
            });
-    cont = cont && self.dvWrapField(visitor, Fields::imports, m_implicitImports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, m_implicitImports);
     cont = cont && self.dvValueLazyField(visitor, Fields::nAllLoadedCallbacks,
                                      [&nAllLoadedCallbacks, &ensureInfo]() {
                                          ensureInfo();

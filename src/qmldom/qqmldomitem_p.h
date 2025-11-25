@@ -1118,7 +1118,7 @@ public:
     template <typename T>
     DomItem wrap(const PathEls::PathComponent &c, const T &obj) const;
     template <typename T>
-    bool dvWrapField(DirectVisitor visitor, QStringView f, T &obj) const
+    bool invokeVisitorOnField(DirectVisitor visitor, QStringView f, T &obj) const
     {
         PathEls::PathComponent c = PathEls::Field(f);
         auto lazyWrap = [this, &c, &obj]() { return this->wrap<T>(c, obj); };

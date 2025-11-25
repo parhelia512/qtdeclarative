@@ -323,7 +323,7 @@ public:
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
     {
         bool cont = true;
-        cont = cont && self.dvWrapField(visitor, Fields::import, import);
+        cont = cont && self.invokeVisitorOnField(visitor, Fields::import, import);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::inheritVersion),
                                              inheritVersion);
         return cont;
@@ -356,7 +356,7 @@ public:
     {
         bool cont = self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::values), values);
-        cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
+        cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
         return cont;
     }
 
@@ -971,7 +971,7 @@ public:
         bool cont = true;
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::typeName), typeName);
-        cont = cont && self.dvWrapField(visitor, Fields::version, version);
+        cont = cont && self.invokeVisitorOnField(visitor, Fields::version, version);
         if (typePath)
             cont = cont && self.dvReferenceField(visitor, Fields::type, typePath);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isInternal),

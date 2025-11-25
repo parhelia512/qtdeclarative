@@ -92,7 +92,7 @@ static ErrorGroups domParsingErrors()
 bool CommentableDomElement::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvWrapField(visitor, Fields::comments, m_comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, m_comments);
     return cont;
 }
 
@@ -111,8 +111,8 @@ bool Component::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
 {
     bool cont = CommentableDomElement::iterateDirectSubpaths(self, visitor);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name());
-    cont = cont && self.dvWrapField(visitor, Fields::enumerations, m_enumerations);
-    cont = cont && self.dvWrapField(visitor, Fields::objects, m_objects);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::enumerations, m_enumerations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::objects, m_objects);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isSingleton),
                                          isSingleton());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isCreatable),
@@ -144,7 +144,7 @@ Path Component::addObject(const QmlObject &object, QmlObject **oPtr)
 bool QmlComponent::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = Component::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::ids, m_ids);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::ids, m_ids);
     cont = cont && self.dvValueLazyField(visitor, Fields::subComponents, [this, &self]() {
         return this->subComponents(self);
     });
@@ -254,8 +254,8 @@ QString Version::stringValue() const
 bool Version::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvWrapField(visitor, Fields::majorVersion, majorVersion);
-    cont = cont && self.dvWrapField(visitor, Fields::minorVersion, minorVersion);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::majorVersion, majorVersion);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::minorVersion, minorVersion);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isLatest), isLatest());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isValid), isValid());
     cont = cont && self.dvValueLazyField(visitor, Fields::stringValue, [this]() {
@@ -316,12 +316,12 @@ bool Import::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) c
 {
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri.toString());
-    cont = cont && self.dvWrapField(visitor, Fields::version, version);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::version, version);
     if (!importId.isEmpty())
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::importId), importId);
     if (implicit)
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::implicit), implicit);
-    cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
     return cont;
 }
 
@@ -377,9 +377,9 @@ bool Id::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name);
     cont = cont && self.dvReferenceField(visitor, Fields::referredObject, referredObjectPath);
-    cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
-    cont = cont && self.dvWrapField(visitor, Fields::annotations, annotations);
-    cont = cont && self.dvWrapField(visitor, Fields::value, value);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::value, value);
     return cont;
 }
 
@@ -406,11 +406,11 @@ bool QmlObject::iterateBaseDirectSubpaths(const DomItem &self, DirectVisitor vis
         cont = cont && self.dvReferencesField(visitor, Fields::prototypes, m_prototypePaths);
     if (nextScopePath())
         cont = cont && self.dvReferenceField(visitor, Fields::nextScope, nextScopePath());
-    cont = cont && self.dvWrapField(visitor, Fields::propertyDefs, m_propertyDefs);
-    cont = cont && self.dvWrapField(visitor, Fields::bindings, m_bindings);
-    cont = cont && self.dvWrapField(visitor, Fields::methods, m_methods);
-    cont = cont && self.dvWrapField(visitor, Fields::children, m_children);
-    cont = cont && self.dvWrapField(visitor, Fields::annotations, m_annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::propertyDefs, m_propertyDefs);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::bindings, m_bindings);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::methods, m_methods);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::children, m_children);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, m_annotations);
     cont = cont && visitor(PathEls::Field(Fields::propertyInfos), [this, &self]() {
                return self.subMapItem(Map(
                        pathFromOwner().withField(Fields::propertyInfos),
@@ -1239,7 +1239,7 @@ bool Binding::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
                });
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::bindingType),
                                          int(m_bindingType));
-    cont = cont && self.dvWrapField(visitor, Fields::comments, m_comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, m_comments);
     cont = cont && self.dvValueLazyField(visitor, Fields::preCode, [this]() {
         return this->preCode();
     });
@@ -1251,7 +1251,7 @@ bool Binding::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
                    return self.subScriptElementWrapperItem(m_bindingIdentifiers);
                });
     }
-    cont = cont && self.dvWrapField(visitor, Fields::annotations, m_annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, m_annotations);
     return cont;
 }
 
@@ -1378,7 +1378,7 @@ void Binding::writeOutValue(const DomItem &self, OutWriter &lw) const
 bool QmltypesComponent::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = Component::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::exports, m_exports);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::metaRevisions),
                                          m_metaRevisions);
     if (!fileName().isEmpty()) {
@@ -1430,8 +1430,8 @@ bool AttributeInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor vis
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::typeName), typeName);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isReadonly), isReadonly);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isList), isList);
-    cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
-    cont = cont && self.dvWrapField(visitor, Fields::annotations, annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, annotations);
     return cont;
 }
 
@@ -1452,8 +1452,8 @@ bool EnumDecl::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor)
 {
     bool cont = CommentableDomElement::iterateDirectSubpaths(self, visitor);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name());
-    cont = cont && self.dvWrapField(visitor, Fields::values, m_values);
-    cont = cont && self.dvWrapField(visitor, Fields::annotations, m_annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::values, m_values);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, m_annotations);
     return cont;
 }
 
@@ -1550,7 +1550,7 @@ bool ImportScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
                            [](const DomItem &list, const PathEls::PathComponent &p,
                               const Path &el) { return list.subDataItem(p, el.toString()); }));
                });
-    cont = cont && self.dvWrapField(visitor, Fields::qualifiedImports, m_subImports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::qualifiedImports, m_subImports);
     cont = cont && visitor(PathEls::Field(Fields::imported), [this, &self]() -> DomItem {
                    return self.subMapItem(Map(
                            self.pathFromOwner().withField(Fields::imported),
@@ -1892,7 +1892,7 @@ void PropertyDefinition::writeOut(const DomItem &self, OutWriter &lw) const
 bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = AttributeInfo::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::parameters, parameters);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::parameters, parameters);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::methodType),
                                          int(methodType));
     if (!typeName.isEmpty())
@@ -2000,16 +2000,16 @@ bool MethodParameter::iterateDirectSubpaths(const DomItem &self, DirectVisitor v
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isPointer), isPointer);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isReadonly), isReadonly);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isList), isList);
-    cont = cont && self.dvWrapField(visitor, Fields::defaultValue, defaultValue);
-    cont = cont && self.dvWrapField(visitor, Fields::value, value);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::defaultValue, defaultValue);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::value, value);
 
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::preCode),
                                          u"function f("_s);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::postCode), u") {}"_s);
 
     if (!annotations.isEmpty())
-        cont = cont && self.dvWrapField(visitor, Fields::annotations, annotations);
-    cont = cont && self.dvWrapField(visitor, Fields::comments, comments);
+        cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, annotations);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
     return cont;
 }
 
@@ -2078,7 +2078,7 @@ bool EnumItem::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor)
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::value), value());
-    cont = cont && self.dvWrapField(visitor, Fields::comments, m_comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, m_comments);
     return cont;
 }
 

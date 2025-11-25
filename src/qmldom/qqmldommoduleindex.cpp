@@ -31,7 +31,7 @@ bool ModuleScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
 {
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri);
-    cont = cont && self.dvWrapField(visitor, Fields::version, version);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::version, version);
     cont = cont && visitor(PathEls::Field(Fields::exports), [this, &self]() {
                int minorVersion = version.minorVersion;
                return self.subMapItem(Map(

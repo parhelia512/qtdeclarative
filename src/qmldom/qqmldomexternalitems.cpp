@@ -247,8 +247,8 @@ bool QmldirFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::designerSupported),
                                          designerSupported());
     cont = cont && self.dvReferencesField(visitor, Fields::qmltypesFiles, m_qmltypesFilePaths);
-    cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
-    cont = cont && self.dvWrapField(visitor, Fields::imports, m_imports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::exports, m_exports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, m_imports);
     cont = cont && visitor(PathEls::Field(Fields::plugins), [this, &self]() {
                QStringList cNames = classNames();
                return self.subListItem(List::fromQListRef<QQmlDirParser::Plugin>(
@@ -278,7 +278,7 @@ bool QmldirFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
                        },
                        QStringLiteral(u"QList<Reference>")));
            });
-    cont = cont && self.dvWrapField(visitor, Fields::autoExports, m_autoExports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::autoExports, m_autoExports);
     return cont;
 }
 
@@ -337,7 +337,8 @@ ErrorGroups JsFile::myParsingErrors()
 bool JsFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::fileLocationsTree, m_fileLocationsTree);
+    cont = cont
+            && self.invokeVisitorOnField(visitor, Fields::fileLocationsTree, m_fileLocationsTree);
     if (m_script)
         cont = cont && visitor(PathEls::Field(Fields::expression), [this, &self]() {
                    return self.subOwnerItem(PathEls::Field(Fields::expression), m_script);
@@ -476,13 +477,14 @@ bool QmlFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
 {
     auto &members = lazyMembers();
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::components, members.m_components);
-    cont = cont && self.dvWrapField(visitor, Fields::pragmas, members.m_pragmas);
-    cont = cont && self.dvWrapField(visitor, Fields::imports, members.m_imports);
-    cont = cont && self.dvWrapField(visitor, Fields::importScope, members.m_importScope);
-    cont = cont && self.dvWrapField(visitor, Fields::fileLocationsTree, members.m_fileLocationsTree);
-    cont = cont && self.dvWrapField(visitor, Fields::comments, members.m_comments);
-    cont = cont && self.dvWrapField(visitor, Fields::astComments, members.m_astComments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::components, members.m_components);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::pragmas, members.m_pragmas);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, members.m_imports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::importScope, members.m_importScope);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::fileLocationsTree,
+                                             members.m_fileLocationsTree);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, members.m_comments);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::astComments, members.m_astComments);
     return cont;
 }
 
@@ -558,8 +560,8 @@ void QmltypesFile::ensureInModuleIndex(const DomItem &self) const
 bool QmltypesFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::components, m_components);
-    cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::components, m_components);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::exports, m_exports);
     cont = cont && visitor(PathEls::Field(Fields::uris), [this, &self]() {
                return self.subMapItem(Map::fromMapRef<QSet<int>>(
                        self.pathFromOwner().withField(Fields::uris), m_uris,
@@ -573,7 +575,7 @@ bool QmltypesFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visi
                                       int el) { return list.subDataItem(p, el); }));
                        }));
            });
-    cont = cont && self.dvWrapField(visitor, Fields::imports, m_imports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, m_imports);
     return cont;
 }
 
@@ -591,7 +593,7 @@ QmlDirectory::QmlDirectory(
 bool QmlDirectory::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont && self.dvWrapField(visitor, Fields::exports, m_exports);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::exports, m_exports);
     cont = cont && visitor(PathEls::Field(Fields::qmlFiles), [this, &self]() -> DomItem {
                    QDir baseDir(canonicalFilePath());
                    return self.subMapItem(Map(

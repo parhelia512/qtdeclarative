@@ -907,7 +907,9 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
     cont = cont && visitor(PathEls::Field(Fields::universe), [this]() { return universe(); });
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::options), int(options()));
     cont = cont && visitor(PathEls::Field(Fields::base), [this]() { return base(); });
-    cont = cont && self.dvValueLazyField(visitor, Fields::loadPaths, [this]() { return loadPaths(); });
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::loadPaths, [this]() {
+        return loadPaths();
+    });
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::globalScopeName),
                                          globalScopeName());
     cont = cont && visitor(PathEls::Field(Fields::globalScopeWithName), [this, &self]() {
@@ -1101,11 +1103,11 @@ bool DomEnvironment::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
                        QLatin1String("LoadInfo")));
            });
     cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, m_implicitImports);
-    cont = cont && self.dvValueLazyField(visitor, Fields::nAllLoadedCallbacks,
-                                     [&nAllLoadedCallbacks, &ensureInfo]() {
-                                         ensureInfo();
-                                         return nAllLoadedCallbacks;
-                                     });
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::nAllLoadedCallbacks,
+                                             [&nAllLoadedCallbacks, &ensureInfo]() {
+                                                 ensureInfo();
+                                                 return nAllLoadedCallbacks;
+                                             });
     return cont;
 }
 
@@ -2311,20 +2313,20 @@ QString ExternalItemInfoBase::canonicalFilePath(const DomItem &self) const
 
 bool ExternalItemInfoBase::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
-    if (!self.dvValueLazyField(visitor, Fields::currentRevision,
-                               [this, &self]() { return currentRevision(self); }))
+    if (!self.invokeVisitorOnLazyField(visitor, Fields::currentRevision,
+                                       [this, &self]() { return currentRevision(self); }))
         return false;
-    if (!self.dvValueLazyField(visitor, Fields::lastRevision,
-                               [this, &self]() { return lastRevision(self); }))
+    if (!self.invokeVisitorOnLazyField(visitor, Fields::lastRevision,
+                                       [this, &self]() { return lastRevision(self); }))
         return false;
-    if (!self.dvValueLazyField(visitor, Fields::lastValidRevision,
-                               [this, &self]() { return lastValidRevision(self); }))
+    if (!self.invokeVisitorOnLazyField(visitor, Fields::lastValidRevision,
+                                       [this, &self]() { return lastValidRevision(self); }))
         return false;
     if (!visitor(PathEls::Field(Fields::currentItem),
                  [&self, this]() { return currentItem(self); }))
         return false;
-    if (!self.dvValueLazyField(visitor, Fields::currentExposedAt,
-                               [this]() { return currentExposedAt(); }))
+    if (!self.invokeVisitorOnLazyField(visitor, Fields::currentExposedAt,
+                                       [this]() { return currentExposedAt(); }))
         return false;
     return true;
 }
@@ -2362,8 +2364,8 @@ Path ExternalItemPairBase::canonicalPath(const DomItem &) const
 
 bool ExternalItemPairBase::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
-    if (!self.dvValueLazyField(visitor, Fields::currentIsValid,
-                               [this]() { return currentIsValid(); }))
+    if (!self.invokeVisitorOnLazyField(visitor, Fields::currentIsValid,
+                                       [this]() { return currentIsValid(); }))
         return false;
     if (!visitor(PathEls::Field(Fields::validItem), [this, &self]() { return validItem(self); }))
         return false;

@@ -1074,9 +1074,9 @@ public:
     template <typename T>
     bool invokeVisitorOnValue(DirectVisitor visitor, const PathEls::PathComponent &c, const T &value,
                          ConstantData::Options options = ConstantData::Options::MapIsMap) const;
-    template<typename F>
-    bool dvValueLazyField(DirectVisitor visitor, QStringView f, F valueF,
-                          ConstantData::Options options = ConstantData::Options::MapIsMap) const
+    template <typename F>
+    bool invokeVisitorOnLazyField(DirectVisitor visitor, QStringView f, F valueF,
+                             ConstantData::Options options = ConstantData::Options::MapIsMap) const
     {
         PathEls::PathComponent c = PathEls::Field(f);
         auto lazyWrap = [this, &c, &valueF, options]() {

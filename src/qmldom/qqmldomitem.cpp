@@ -2820,7 +2820,7 @@ quintptr Reference::id() const
 bool Reference::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvValueLazyField(visitor, Fields::referredObjectPath, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::referredObjectPath, [this]() {
         return referredObjectPath.toString();
     });
     cont = cont && visitor(PathEls::Field(Fields::get), [this, &self]() { return this->get(self); });

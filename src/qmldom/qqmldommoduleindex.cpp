@@ -146,7 +146,7 @@ bool ModuleIndex::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
     cont = cont && visitor(PathEls::Field(Fields::sources), [this, &self]() {
                return self.subReferencesItem(PathEls::Field(Fields::sources), sources());
            });
-    cont = cont && self.dvValueLazyField(visitor, Fields::autoExports, [this, &self]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::autoExports, [this, &self]() {
         return autoExports(self);
     });
     return cont;

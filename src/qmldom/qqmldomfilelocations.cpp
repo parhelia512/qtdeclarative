@@ -35,7 +35,7 @@ Attributes:
 bool Info::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvValueLazyField(visitor, Fields::fullRegion, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::fullRegion, [this]() {
         return sourceLocationToQCborValue(fullRegion);
     });
     cont = cont && visitor(PathEls::Field(Fields::regions), [this, &self]() -> DomItem {
@@ -196,7 +196,9 @@ bool Node::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
                    return self.copy(p, self.m_ownerPath.dropTail(2), p.get());
                });
     }
-    cont = cont && self.dvValueLazyField(visitor, Fields::path, [this]() { return path().toString(); });
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::path, [this]() {
+        return path().toString();
+    });
     cont = cont && visitor(PathEls::Field(Fields::subItems), [this, &self]() {
                return self.subMapItem(Map(
                        Path::fromField(Fields::subItems),

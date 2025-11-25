@@ -145,7 +145,7 @@ bool QmlComponent::iterateDirectSubpaths(const DomItem &self, DirectVisitor visi
 {
     bool cont = Component::iterateDirectSubpaths(self, visitor);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::ids, m_ids);
-    cont = cont && self.dvValueLazyField(visitor, Fields::subComponents, [this, &self]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::subComponents, [this, &self]() {
         return this->subComponents(self);
     });
     if (m_nameIdentifiers) {
@@ -258,7 +258,7 @@ bool Version::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
     cont = cont && self.invokeVisitorOnField(visitor, Fields::minorVersion, minorVersion);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isLatest), isLatest());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isValid), isValid());
-    cont = cont && self.dvValueLazyField(visitor, Fields::stringValue, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::stringValue, [this]() {
         return this->stringValue();
     });
     return cont;
@@ -444,9 +444,8 @@ QList<QString> QmlObject::fields() const
 bool QmlObject::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = iterateBaseDirectSubpaths(self, visitor);
-    cont = cont && self.dvValueLazyField(visitor, Fields::defaultPropertyName, [this, &self]() {
-        return defaultPropertyName(self);
-    });
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::defaultPropertyName,
+                                             [this, &self]() { return defaultPropertyName(self); });
     return cont;
 }
 
@@ -1240,10 +1239,10 @@ bool Binding::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) 
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::bindingType),
                                          int(m_bindingType));
     cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, m_comments);
-    cont = cont && self.dvValueLazyField(visitor, Fields::preCode, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::preCode, [this]() {
         return this->preCode();
     });
-    cont = cont && self.dvValueLazyField(visitor, Fields::postCode, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::postCode, [this]() {
         return this->postCode();
     });
     if (m_bindingIdentifiers) {
@@ -1724,11 +1723,11 @@ bool ScriptExpression::iterateDirectSubpaths(const DomItem &self, DirectVisitor 
 {
     bool cont = OwningItem::iterateDirectSubpaths(self, visitor);
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::code), code());
-    cont = cont && self.dvValueLazyField(
+    cont = cont && self.invokeVisitorOnLazyField(
                     visitor, Fields::localOffset,
                     [this]() { return sourceLocationToQCborValue(localOffset()); },
                     ConstantData::Options::MapIsMap);
-    cont = cont && self.dvValueLazyField(visitor, Fields::astRelocatableDump, [this]() {
+    cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::astRelocatableDump, [this]() {
         return astRelocatableDump();
     });
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::expressionType),

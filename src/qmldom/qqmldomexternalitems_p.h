@@ -61,12 +61,16 @@ public:
     bool iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const override
     {
         bool cont = OwningItem::iterateDirectSubpaths(self, visitor);
-        cont = cont && self.dvValueLazyField(visitor, Fields::canonicalFilePath, [this]() {
+        cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::canonicalFilePath, [this]() {
             return canonicalFilePath();
         });
-        cont = cont && self.dvValueLazyField(visitor, Fields::isValid, [this]() { return isValid(); });
+        cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::isValid, [this]() {
+            return isValid();
+        });
         if (!code().isNull())
-            cont = cont && self.dvValueLazyField(visitor, Fields::code, [this]() { return code(); });
+            cont = cont && self.invokeVisitorOnLazyField(visitor, Fields::code, [this]() {
+                return code();
+            });
         return cont;
     }
 

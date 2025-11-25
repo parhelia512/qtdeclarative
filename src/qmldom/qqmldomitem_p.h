@@ -329,9 +329,6 @@ public:
     template<typename T>
     static Map fromFileRegionMap(
             const Path &pathFromOwner, const QMap<FileLocationRegion, T> &map);
-    template<typename T>
-    static Map fromFileRegionListMap(
-            const Path &pathFromOwner, const QMap<FileLocationRegion, QList<T>> &map);
 
 private:
     template<typename MapT>
@@ -1376,31 +1373,6 @@ Map Map::fromFileRegionMap(const Path &pathFromOwner, const QMap<FileLocationReg
             },
             [&map](const DomItem &) { return fileRegionKeysFromMap(map); },
             QString::fromLatin1(typeid(T).name()));
-    return result;
-}
-
-template<typename T>
-Map Map::fromFileRegionListMap(const Path &pathFromOwner,
-                                   const QMap<FileLocationRegion, QList<T>> &map)
-{
-    using namespace Qt::StringLiterals;
-    auto result = Map(
-            pathFromOwner,
-            [&map](const DomItem &mapItem, const QString &key) -> DomItem {
-                const QList<SourceLocation> locations = map.value(fileLocationRegionValue(key));
-                if (locations.empty())
-                    return {};
-
-                auto list = List::fromQList<SourceLocation>(
-                        mapItem.pathFromOwner(), locations,
-                        [](const DomItem &self, const PathEls::PathComponent &path,
-                           const SourceLocation &location) {
-                            return self.subLocationItem(path, location);
-                        });
-                return mapItem.subListItem(list);
-            },
-            [&map](const DomItem &) { return fileRegionKeysFromMap(map); },
-            u"QList<%1>"_s.arg(QString::fromLatin1(typeid(T).name())));
     return result;
 }
 

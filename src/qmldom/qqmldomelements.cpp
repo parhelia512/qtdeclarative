@@ -121,7 +121,7 @@ bool Component::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
                                          isComposite());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::attachedTypeName),
                                          attachedTypeName());
-    cont = cont && self.dvReferenceField(visitor, Fields::attachedType, attachedTypePath(self));
+    cont = cont && self.invokeVisitorOnReference(visitor, Fields::attachedType, attachedTypePath(self));
     return cont;
 }
 
@@ -376,7 +376,7 @@ bool Id::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name);
-    cont = cont && self.dvReferenceField(visitor, Fields::referredObject, referredObjectPath);
+    cont = cont && self.invokeVisitorOnReference(visitor, Fields::referredObject, referredObjectPath);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::comments, comments);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::annotations, annotations);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::value, value);
@@ -403,9 +403,9 @@ bool QmlObject::iterateBaseDirectSubpaths(const DomItem &self, DirectVisitor vis
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::idStr), idStr());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name());
     if (!prototypePaths().isEmpty())
-        cont = cont && self.dvReferencesField(visitor, Fields::prototypes, m_prototypePaths);
+        cont = cont && self.invokeVisitorOnReferences(visitor, Fields::prototypes, m_prototypePaths);
     if (nextScopePath())
-        cont = cont && self.dvReferenceField(visitor, Fields::nextScope, nextScopePath());
+        cont = cont && self.invokeVisitorOnReference(visitor, Fields::nextScope, nextScopePath());
     cont = cont && self.invokeVisitorOnField(visitor, Fields::propertyDefs, m_propertyDefs);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::bindings, m_bindings);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::methods, m_methods);
@@ -1543,7 +1543,7 @@ QList<Path> ImportScope::allSources(const DomItem &self) const
 bool ImportScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvReferencesField(visitor, Fields::importSources, m_importSourcePaths);
+    cont = cont && self.invokeVisitorOnReferences(visitor, Fields::importSources, m_importSourcePaths);
     cont = cont && visitor(PathEls::Field(Fields::allSources), [this, &self]() -> DomItem {
                    return self.subListItem(List::fromQList<Path>(
                            self.pathFromOwner().withField(Fields::allSources), allSources(self),
@@ -1896,7 +1896,7 @@ bool MethodInfo::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::methodType),
                                          int(methodType));
     if (!typeName.isEmpty())
-        cont = cont && self.dvReferenceField(visitor, Fields::type, typePath(self));
+        cont = cont && self.invokeVisitorOnReference(visitor, Fields::type, typePath(self));
     if (methodType == MethodType::Method) {
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isConstructor),
                                              isConstructor);
@@ -1994,7 +1994,8 @@ bool MethodParameter::iterateDirectSubpaths(const DomItem &self, DirectVisitor v
     bool cont = true;
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::name), name);
     if (!typeName.isEmpty()) {
-        cont = cont && self.dvReferenceField(visitor, Fields::type, Paths::lookupTypePath(typeName));
+        cont = cont && self.invokeVisitorOnReference(visitor, Fields::type,
+                                                 Paths::lookupTypePath(typeName));
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::typeName), typeName);
     }
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isPointer), isPointer);

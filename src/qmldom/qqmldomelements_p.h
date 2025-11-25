@@ -635,7 +635,7 @@ public:
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::write), write);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::bindable), bindable);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::notify), notify);
-        cont = cont && self.dvReferenceField(visitor, Fields::type, typePath());
+        cont = cont && self.invokeVisitorOnReference(visitor, Fields::type, typePath());
         if (m_nameIdentifiers) {
             cont = cont && visitor(PathEls::Field(Fields::nameIdentifiers), [this, &self]() {
                        return self.subScriptElementWrapperItem(m_nameIdentifiers);
@@ -973,13 +973,14 @@ public:
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::typeName), typeName);
         cont = cont && self.invokeVisitorOnField(visitor, Fields::version, version);
         if (typePath)
-            cont = cont && self.dvReferenceField(visitor, Fields::type, typePath);
+            cont = cont && self.invokeVisitorOnReference(visitor, Fields::type, typePath);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isInternal),
                                              isInternal);
         cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::isSingleton),
                                              isSingleton);
         if (exportSourcePath)
-            cont = cont && self.dvReferenceField(visitor, Fields::exportSource, exportSourcePath);
+            cont = cont && self.invokeVisitorOnReference(visitor, Fields::exportSource,
+                                                     exportSourcePath);
         return cont;
     }
 

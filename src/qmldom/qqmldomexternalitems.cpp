@@ -246,7 +246,7 @@ bool QmldirFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visito
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::uri), uri().toString());
     cont = cont && self.invokeVisitorOnValue(visitor, PathEls::Field(Fields::designerSupported),
                                          designerSupported());
-    cont = cont && self.dvReferencesField(visitor, Fields::qmltypesFiles, m_qmltypesFilePaths);
+    cont = cont && self.invokeVisitorOnReferences(visitor, Fields::qmltypesFiles, m_qmltypesFilePaths);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::exports, m_exports);
     cont = cont && self.invokeVisitorOnField(visitor, Fields::imports, m_imports);
     cont = cont && visitor(PathEls::Field(Fields::plugins), [this, &self]() {
@@ -337,8 +337,7 @@ ErrorGroups JsFile::myParsingErrors()
 bool JsFile::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = ExternalOwningItem::iterateDirectSubpaths(self, visitor);
-    cont = cont
-            && self.invokeVisitorOnField(visitor, Fields::fileLocationsTree, m_fileLocationsTree);
+    cont = cont && self.invokeVisitorOnField(visitor, Fields::fileLocationsTree, m_fileLocationsTree);
     if (m_script)
         cont = cont && visitor(PathEls::Field(Fields::expression), [this, &self]() {
                    return self.subOwnerItem(PathEls::Field(Fields::expression), m_script);

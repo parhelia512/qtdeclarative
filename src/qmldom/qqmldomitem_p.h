@@ -1116,10 +1116,6 @@ public:
     }
     DomItem subListItem(const List &list) const;
     DomItem subMapItem(const Map &map) const;
-    DomItem subObjectWrapItem(SimpleObjectWrap obj) const
-    {
-        return DomItem(m_top, m_owner, m_ownerPath, obj);
-    }
 
     DomItem subScriptElementWrapperItem(const ScriptElementVariant &obj) const
     {
@@ -2025,10 +2021,11 @@ DomItem DomItem::wrap(const PathEls::PathComponent &c, const T &obj) const
     } else if constexpr (std::is_base_of_v<ListPBase, BaseT>) {
         return this->subListItem(obj);
     } else if constexpr (std::is_same_v<BaseT, SimpleObjectWrap>) {
-        return this->subObjectWrapItem(obj);
+        return DomItem(m_top, m_owner, m_ownerPath, obj);
     } else if constexpr (IsDomObject<BaseT>::value) {
         if constexpr (domTypeIsObjWrap(BaseT::kindValue) || domTypeIsValueWrap(BaseT::kindValue)) {
-            return this->subObjectWrapItem(
+            return DomItem(
+                    m_top, m_owner, m_ownerPath,
                     SimpleObjectWrap::fromObjectRef(this->pathFromOwner().withComponent(c), obj));
         } else if constexpr (domTypeIsDomElement(BaseT::kindValue)) {
             return this->copy(&obj);

@@ -78,8 +78,9 @@ static bool wrap(const QQmlJS::Dom::DomItem &self, QQmlJS::Dom::DirectVisitor vi
     if (!value)
         return true;
 
-    const bool b =
-            self.dvItemField(visitor, field, [&self, field, &value]() -> QQmlJS::Dom::DomItem {
+    const bool b = self.dvItem(
+            visitor, QQmlJS::Dom::PathEls::Field(field),
+            [&self, field, &value]() -> QQmlJS::Dom::DomItem {
                 const QQmlJS::Dom::Path pathFromOwner{ self.pathFromOwner().withField(field) };
                 return self.subScriptElementWrapperItem(value);
             });
@@ -93,8 +94,9 @@ static bool wrap(const QQmlJS::Dom::DomItem &self, QQmlJS::Dom::DirectVisitor vi
 static bool wrap(const QQmlJS::Dom::DomItem &self, QQmlJS::Dom::DirectVisitor visitor, QStringView field,
                  const ScriptList &value)
 {
-    const bool b =
-            self.dvItemField(visitor, field, [&self, field, &value]() -> QQmlJS::Dom::DomItem {
+    const bool b = self.dvItem(
+            visitor, QQmlJS::Dom::PathEls::Field(field),
+            [&self, field, &value]() -> QQmlJS::Dom::DomItem {
                 const QQmlJS::Dom::Path pathFromOwner{ self.pathFromOwner().withField(field) };
                 return self.subListItem(value.asList(pathFromOwner));
             });

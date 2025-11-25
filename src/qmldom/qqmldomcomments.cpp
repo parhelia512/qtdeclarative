@@ -880,12 +880,14 @@ bool RegionComments::iterateDirectSubpaths(const DomItem &self, DirectVisitor vi
 {
     bool cont = true;
     if (!m_regionComments.isEmpty()) {
-        cont = cont && self.dvItemField(visitor, Fields::regionComments, [this, &self]() -> DomItem {
-                       const Path pathFromOwner =
-                               self.pathFromOwner().withField(Fields::regionComments);
-                       auto map = Map::fromFileRegionMap(pathFromOwner, m_regionComments);
-                       return self.subMapItem(map);
-                   });
+        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::regionComments),
+                               [this, &self]() -> DomItem {
+                                   const Path pathFromOwner =
+                                           self.pathFromOwner().withField(Fields::regionComments);
+                                   auto map =
+                                           Map::fromFileRegionMap(pathFromOwner, m_regionComments);
+                                   return self.subMapItem(map);
+                               });
     }
     return cont;
 }

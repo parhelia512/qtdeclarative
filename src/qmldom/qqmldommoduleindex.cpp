@@ -32,7 +32,7 @@ bool ModuleScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
     bool cont = true;
     cont = cont && self.dvValue(visitor, PathEls::Field(Fields::uri), uri);
     cont = cont && self.dvWrapField(visitor, Fields::version, version);
-    cont = cont && self.dvItemField(visitor, Fields::exports, [this, &self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::exports), [this, &self]() {
         int minorVersion = version.minorVersion;
         return self.subMapItem(Map(
                 self.pathFromOwner().withField(Fields::exports),
@@ -54,7 +54,7 @@ bool ModuleScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
                 },
                 QLatin1String("List<Exports>")));
     });
-    cont = cont && self.dvItemField(visitor, Fields::symbols, [&self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::symbols), [&self]() {
         Path basePath = Path::fromCurrent(PathCurrent::Obj).withField(Fields::exports);
         return self.subMapItem(Map(
                 self.pathFromOwner().withField(Fields::symbols),
@@ -68,7 +68,7 @@ bool ModuleScope::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
                 },
                 QLatin1String("List<References>")));
     });
-    cont = cont && self.dvItemField(visitor, Fields::autoExports, [this, &self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::autoExports), [this, &self]() {
         return containingObject(self).field(Fields::autoExports);
     });
     return cont;
@@ -118,7 +118,7 @@ bool ModuleIndex::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
 {
     bool cont = self.dvValue(visitor, PathEls::Field(Fields::uri), uri());
     cont = cont && self.dvValue(visitor, PathEls::Field(Fields::majorVersion), majorVersion());
-    cont = cont && self.dvItemField(visitor, Fields::moduleScope, [this, &self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::moduleScope), [this, &self]() {
         return self.subMapItem(Map(
                 pathFromOwner().withField(Fields::moduleScope),
                 [](const DomItem &map, const QString &minorVersionStr) {
@@ -142,7 +142,7 @@ bool ModuleIndex::iterateDirectSubpaths(const DomItem &self, DirectVisitor visit
                 },
                 QLatin1String("Map<List<Exports>>")));
     });
-    cont = cont && self.dvItemField(visitor, Fields::sources, [this, &self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::sources), [this, &self]() {
         return self.subReferencesItem(PathEls::Field(Fields::sources), sources());
     });
     cont = cont && self.dvValueLazyField(visitor, Fields::autoExports, [this, &self]() {

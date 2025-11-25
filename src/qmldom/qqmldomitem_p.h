@@ -1104,10 +1104,6 @@ public:
     {
         return visitor(c, it);
     }
-    bool dvItemField(DirectVisitor visitor, QStringView f, function_ref<DomItem()> it) const
-    {
-        return dvItem(std::move(visitor), PathEls::Field(f), it);
-    }
     DomItem subListItem(const List &list) const;
     DomItem subMapItem(const Map &map) const;
 

@@ -38,11 +38,13 @@ bool Info::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
     cont = cont && self.dvValueLazyField(visitor, Fields::fullRegion, [this]() {
         return sourceLocationToQCborValue(fullRegion);
     });
-    cont = cont && self.dvItemField(std::move(visitor), Fields::regions, [this, &self]() -> DomItem {
-        const Path pathFromOwner = self.pathFromOwner().withField(Fields::regions);
-        auto map = Map::fromFileRegionMap(pathFromOwner, regions);
-        return self.subMapItem(map);
-    });
+    cont = cont && self.dvItem(std::move(visitor), PathEls::Field(Fields::regions),
+                           [this, &self]() -> DomItem {
+                               const Path pathFromOwner =
+                                       self.pathFromOwner().withField(Fields::regions);
+                               auto map = Map::fromFileRegionMap(pathFromOwner, regions);
+                               return self.subMapItem(map);
+                           });
     return cont;
 }
 
@@ -192,12 +194,12 @@ bool Node::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
 {
     bool cont = true;
     if (const Ptr p = parent()) {
-        cont = cont && self.dvItemField(visitor, Fields::parent, [&self, &p]() {
+        cont = cont && self.dvItem(visitor, PathEls::Field(Fields::parent), [&self, &p]() {
             return self.copy(p, self.m_ownerPath.dropTail(2), p.get());
         });
     }
     cont = cont && self.dvValueLazyField(visitor, Fields::path, [this]() { return path().toString(); });
-    cont = cont && self.dvItemField(visitor, Fields::subItems, [this, &self]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::subItems), [this, &self]() {
         return self.subMapItem(Map(
                 Path::fromField(Fields::subItems),
                 [this](const DomItem &map, const QString &key) {
@@ -212,9 +214,8 @@ bool Node::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) con
                 },
                 QLatin1String("Node")));
     });
-    cont = cont && self.dvItemField(std::move(visitor), Fields::infoItem, [&self, this]() {
-        return self.wrapField(Fields::infoItem, m_info);
-    });
+    cont = cont && self.dvItem(std::move(visitor), PathEls::Field(Fields::infoItem),
+                           [&self, this]() { return self.wrapField(Fields::infoItem, m_info); });
     return cont;
 }
 

@@ -2823,7 +2823,9 @@ bool Reference::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor
     cont = cont && self.dvValueLazyField(visitor, Fields::referredObjectPath, [this]() {
         return referredObjectPath.toString();
     });
-    cont = cont && self.dvItemField(visitor, Fields::get, [this, &self]() { return this->get(self); });
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::get), [this, &self]() {
+        return this->get(self);
+    });
     return cont;
 }
 
@@ -3029,7 +3031,7 @@ int OwningItem::nextRevision()
 bool OwningItem::iterateDirectSubpaths(const DomItem &self, DirectVisitor visitor) const
 {
     bool cont = true;
-    cont = cont && self.dvItemField(visitor, Fields::errors, [&self, this]() {
+    cont = cont && self.dvItem(visitor, PathEls::Field(Fields::errors), [&self, this]() {
         QMultiMap<Path, ErrorMessage> myErrors = localErrors();
         return self.subMapItem(Map(
                 self.pathFromOwner().withField(Fields::errors),

@@ -723,7 +723,7 @@ void QQmlJSImportVisitor::setAllBindings()
         m_logger->log("Duplicate binding on property '%1'"_L1.arg(propertyName),
                       qmlDuplicatePropertyBinding, location);
         m_logger->log("Note: previous binding on '%1' here"_L1.arg(propertyName),
-                      qmlDuplicatePropertyBinding, *sourceLocationIt, true, true, {}, {},
+                      qmlDuplicatePropertyBinding, *sourceLocationIt, true, true, {},
                       location.startLine);
     }
 }
@@ -1897,7 +1897,7 @@ bool QQmlJSImportVisitor::visit(UiInlineComponent *component)
         m_logger->log("Duplicate inline component '%1'"_L1.arg(it.key()),
                       qmlDuplicateInlineComponent, component->firstSourceLocation());
         m_logger->log("Note: previous component named '%1' here"_L1.arg(it.key()),
-                      qmlDuplicateInlineComponent, it.value(), true, true, {}, {},
+                      qmlDuplicateInlineComponent, it.value(), true, true, {},
                       component->firstSourceLocation().startLine);
     } else {
         m_seenInlineComponents[component->name] = component->firstSourceLocation();

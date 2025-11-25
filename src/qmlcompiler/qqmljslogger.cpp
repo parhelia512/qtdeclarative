@@ -261,8 +261,7 @@ static bool isMsgTypeLess(QtMsgType a, QtMsgType b)
     return level[a] < level[b];
 }
 
-void QQmlJSLogger::log(
-        Message diagMsg, bool showContext, bool showFileName, const QString overrideFileName)
+void QQmlJSLogger::log(Message diagMsg, bool showContext, bool showFileName)
 {
     Q_ASSERT(m_categoryLevels.contains(diagMsg.id.toString()));
 
@@ -277,11 +276,8 @@ void QQmlJSLogger::log(
     }
 
     QString prefix;
-
-    if ((!overrideFileName.isEmpty() || !m_filePath.isEmpty()) && showFileName) {
-        prefix = (!overrideFileName.isEmpty() ? overrideFileName : m_filePath)
-                + QStringLiteral(":");
-    }
+    if (!m_filePath.isEmpty() && showFileName)
+        prefix = m_filePath + QStringLiteral(":");
 
     if (diagMsg.loc.isValid())
         prefix += QStringLiteral("%1:%2: ").arg(diagMsg.loc.startLine).arg(diagMsg.loc.startColumn);
@@ -298,7 +294,7 @@ void QQmlJSLogger::log(
             u"%1%2 [%3]"_s.arg(prefix, diagMsg.message, diagMsg.id.toString()), diagMsg.type);
 
     if (diagMsg.loc.length > 0 && !m_code.isEmpty() && showContext)
-        printContext(overrideFileName, diagMsg.loc);
+        printContext(diagMsg.loc);
 
     if (diagMsg.fixSuggestion.has_value())
         printFix(diagMsg.fixSuggestion.value());
@@ -400,17 +396,9 @@ void QQmlJSLogger::rollback()
     m_inTransaction = false;
 }
 
-void QQmlJSLogger::printContext(const QString &overrideFileName,
-                                const QQmlJS::SourceLocation &location)
+void QQmlJSLogger::printContext(const QQmlJS::SourceLocation &location)
 {
     QString code = m_code;
-
-    if (!overrideFileName.isEmpty() && overrideFileName != m_filePath) {
-        QFile file(overrideFileName);
-        const bool success = file.open(QFile::ReadOnly);
-        Q_ASSERT(success);
-        code = QString::fromUtf8(file.readAll());
-    }
 
     IssueLocationWithContext issueLocationWithContext { code, location };
     if (const QStringView beforeText = issueLocationWithContext.beforeText(); !beforeText.isEmpty())

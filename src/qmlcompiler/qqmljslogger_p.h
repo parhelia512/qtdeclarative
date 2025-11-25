@@ -207,7 +207,6 @@ public:
     void log(const QString &message, QQmlJS::LoggerWarningId id,
              const QQmlJS::SourceLocation &srcLocation, bool showContext = true,
              bool showFileName = true, const std::optional<QQmlJSFixSuggestion> &suggestion = {},
-             const QString overrideFileName = QString(),
              std::optional<quint32> customLineForDisabling = std::nullopt)
     {
         log(Message {
@@ -220,7 +219,7 @@ public:
                 suggestion,
                 Message::CompilationStatus::Normal,
                 customLineForDisabling
-            }, showContext, showFileName, overrideFileName);
+            }, showContext, showFileName);
     }
 
     void logCompileError(const QString &message, const QQmlJS::SourceLocation &srcLocation)
@@ -332,11 +331,10 @@ public:
 private:
     QMap<QString, QQmlJS::LoggerCategory> m_categories;
 
-    void printContext(const QString &overrideFileName, const QQmlJS::SourceLocation &location);
+    void printContext(const QQmlJS::SourceLocation &location);
     void printFix(const QQmlJSFixSuggestion &fix);
 
-    void log(Message diagMsg, bool showContext = false, bool showFileName = true,
-             const QString overrideFileName = QString());
+    void log(Message diagMsg, bool showContext = false, bool showFileName = true);
 
     void countMessage(const Message &message);
 

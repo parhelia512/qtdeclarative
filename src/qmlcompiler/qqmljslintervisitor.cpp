@@ -242,7 +242,7 @@ bool LinterVisitor::visit(QQmlJS::AST::UiImport *import)
         m_logger->log("Duplicate import '%1'"_L1.arg(locAndNameImport.second),
                       qmlDuplicateImport, locAndNameImport.first);
         m_logger->log("Note: previous import '%1' here"_L1.arg(locAndNameSeen.second),
-                      qmlDuplicateImport, locAndNameSeen.first, true, true, {}, {},
+                      qmlDuplicateImport, locAndNameSeen.first, true, true, {},
                       locAndName(import).first.startLine);
     }
 

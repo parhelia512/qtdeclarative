@@ -119,7 +119,7 @@ public:
         m_logger->log("Identifier '%1' is used here before its declaration."_L1.arg(name),
                       qmlVarUsedBeforeDeclaration, accessLocation);
         m_logger->log("Note: declaration of '%1' here"_L1.arg(name), qmlVarUsedBeforeDeclaration,
-                      declarationLocation, true, true, {}, {}, accessLocation.startLine);
+                      declarationLocation, true, true, {}, accessLocation.startLine);
     }
 
     void reportFunctionUsedBeforeDeclaration(const QString &name, const QString &fileName,

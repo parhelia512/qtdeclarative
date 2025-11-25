@@ -1142,12 +1142,12 @@ public:
     {
         return wrap<T>(PathEls::Field(f), obj);
     }
-    template<typename T>
-    bool dvWrap(DirectVisitor visitor, const PathEls::PathComponent &c, T &obj) const;
-    template<typename T>
+    template <typename T>
     bool dvWrapField(DirectVisitor visitor, QStringView f, T &obj) const
     {
-        return dvWrap<T>(std::move(visitor), PathEls::Field(f), obj);
+        PathEls::PathComponent c = PathEls::Field(f);
+        auto lazyWrap = [this, &c, &obj]() { return this->wrap<T>(c, obj); };
+        return visitor(c, lazyWrap);
     }
 
     DomItem() = default;
@@ -2076,13 +2076,6 @@ DomItem DomItem::wrap(const PathEls::PathComponent &c, const T &obj) const
         Q_ASSERT_X(false, "DomItem::wrap", "Do not know how to wrap type T");
         return DomItem();
     }
-}
-
-template<typename T>
-bool DomItem::dvWrap(DirectVisitor visitor, const PathEls::PathComponent &c, T &obj) const
-{
-    auto lazyWrap = [this, &c, &obj]() { return this->wrap<T>(c, obj); };
-    return visitor(c, lazyWrap);
 }
 
 template<typename T>

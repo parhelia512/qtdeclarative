@@ -90,12 +90,15 @@ static QWindow *targetWindow()
 void QQuickEventReplayServiceImpl::start()
 {
     if (!targetWindow()) {
-        qWarning() << "Cannot determine target window for event replay. "
-                      "Focus a window to use it.";
-
         // Poll on a timer since focusing the window is not the only way to
         // produce a unique target. Having exactly one window also works.
         QTimer::singleShot(16, this, &QQuickEventReplayServiceImpl::start);
+
+        QMutexLocker lock(&m_dataMutex);
+        if (!m_data.isEmpty()) {
+            qWarning() << "Cannot determine target window for event replay. "
+                          "Focus a window to use it.";
+        }
         return;
     }
 

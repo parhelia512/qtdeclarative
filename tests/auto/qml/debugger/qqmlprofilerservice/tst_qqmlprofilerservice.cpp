@@ -817,7 +817,7 @@ void tst_QQmlProfilerService::multiEngine()
     checkTraceReceived();
     checkJsHeap();
 
-    QTRY_COMPARE(m_process->state(), QProcess::NotRunning);
+    QTRY_COMPARE_WITH_TIMEOUT(m_process->state(), QProcess::NotRunning, 3000);
     QCOMPARE(m_process->exitStatus(), QProcess::NormalExit);
 
     QCOMPARE(spy.size(), 1);

@@ -188,6 +188,7 @@ Q_SIGNALS:
 
 protected:
     void componentComplete() override;
+    void itemChange(ItemChange change, const ItemChangeData &value) override;
 
 private:
     void updatePolish() override;

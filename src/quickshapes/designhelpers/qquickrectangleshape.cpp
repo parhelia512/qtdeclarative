@@ -424,10 +424,6 @@ QQuickRectangleShape::QQuickRectangleShape(QQuickItem *parent)
 {
     Q_D(QQuickRectangleShape);
 
-    setWidth(200);
-    setHeight(150);
-    setPreferredRendererType(CurveRenderer);
-
     // Create the ShapePath.
     d->shapePath = new QQuickShapePath(this);
     d->shapePath->setObjectName("rectangleShapeShapePath");
@@ -455,6 +451,10 @@ QQuickRectangleShape::QQuickRectangleShape(QQuickItem *parent)
     d->shapePath->setParent(this);
     // ... which calls QQuickItemPrivate::resources_append.
     d->extra.value().resourcesList.append(d->shapePath);
+
+    setWidth(200);
+    setHeight(150);
+    setPreferredRendererType(CurveRenderer);
 
     // QQuickShape::componentComplete sets up the connections to each path.
     // It also calls _q_shapePathChanged, which will call polish (for our updatePolish).
@@ -1084,6 +1084,14 @@ void QQuickRectangleShape::componentComplete()
     // present in order for the connections to them to be made.
     d->maybeUpdateElements();
     QQuickShape::componentComplete();
+}
+
+void QQuickRectangleShape::itemChange(ItemChange change, const ItemChangeData &value)
+{
+    Q_D(QQuickRectangleShape);
+    d->maybeUpdateElements();
+
+    QQuickItem::itemChange(change, value);
 }
 
 void QQuickRectangleShape::updatePolish()

@@ -221,6 +221,17 @@ Rectangle {
         RectangleShapeBase {
             borderMode: RectangleShape.Outside
         }
+
+        // width, height
+        RectangleShapeBase {
+            id: testRect1
+        }
+        Item {
+            Component.onCompleted: {
+                testRect1.width = 100
+                testRect1.height = 75
+            }
+        }
     }
 }
 

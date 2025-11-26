@@ -50,6 +50,10 @@ void tst_QQuickRectangleShape::changeSignals_data()
     QTest::addColumn<QMetaMethod>("changeSignal");
 
     // radius and bevel are more complex and therefore tested separately.
+    QTest::newRow("width") << QVariant::fromValue(150)
+        << QMetaMethod::fromSignal(&QQuickItem::widthChanged);
+    QTest::newRow("height") << QVariant::fromValue(100)
+        << QMetaMethod::fromSignal(&QQuickItem::heightChanged);
     QTest::newRow("drawTop") << QVariant::fromValue(false)
         << QMetaMethod::fromSignal(&QQuickRectangleShape::drawTopChanged);
     QTest::newRow("drawRight") << QVariant::fromValue(false)

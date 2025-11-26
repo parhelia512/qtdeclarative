@@ -259,6 +259,31 @@ void tst_qmlls_differ::applyDiffs_data()
             QTest::newRow("multi line delete at the middle of the first line")
                     << code << modifiedCode << codeTokens << modifiedCodeTokens;
         }
+        {
+            // fuzzy test: multicursor simulation
+            const QString code = QStringLiteral("e e d d\nd e\ne\ne\nd d");
+            HighlightsContainer codeTokens;
+            codeTokens.insert(0, makeToken(0, 1, 1, 1)); // e
+            codeTokens.insert(2, makeToken(2, 1, 1, 3)); // e
+            codeTokens.insert(4, makeToken(4, 1, 1, 5)); // d
+            codeTokens.insert(6, makeToken(6, 1, 1, 7)); // d
+            codeTokens.insert(8, makeToken(8, 1, 2, 1)); // d
+            codeTokens.insert(10, makeToken(10, 1, 2, 3)); // e
+            codeTokens.insert(12, makeToken(12, 1, 3, 1)); // e
+            codeTokens.insert(14, makeToken(14, 1, 4, 1)); // e
+            codeTokens.insert(16, makeToken(16, 1, 5, 1)); // d
+            codeTokens.insert(18, makeToken(18, 1, 5, 3)); // d
+            const QString modifiedCode = QStringLiteral("e e i e\ne\ne");
+            HighlightsContainer modifiedCodeTokens;
+            modifiedCodeTokens.insert(0, makeToken(0, 1, 1, 1)); // e
+            modifiedCodeTokens.insert(2, makeToken(2, 1, 1, 3)); // e
+            // 'i' is a replacement of 'd' at offset 4, so the token is removed
+            modifiedCodeTokens.insert(6, makeToken(6, 1, 1, 7)); // e
+            modifiedCodeTokens.insert(8, makeToken(8, 1, 2, 1)); // e
+            modifiedCodeTokens.insert(10, makeToken(10, 1, 3, 1)); // e
+            QTest::newRow("multicursor-edit")
+                    << code << modifiedCode << codeTokens << modifiedCodeTokens;
+        }
     }
 }
 

@@ -39,7 +39,7 @@ Q_GLOBAL_STATIC_WITH_ARGS(QFactoryLoader, vectorImagePluginLoader,
 
     It currently supports the \c SVG file format. In addition, Lottie support can be enabled by
     setting the \l{assumeTrustedSource} property to true and including the plugin from the
-    \l{Qt Lottie Animation} module. This plugin is currently considered tech preview.
+    \l{Qt Lottie Animation} module.
 
     Qt supports multiple options for displaying SVG files. For an overview and comparison of
     the different ones, see the documentation of the \l{svgtoqml} tool.
@@ -121,7 +121,7 @@ void QQuickVectorImagePrivate::loadFile()
 
     It currently supports the \c SVG file format. In addition, Lottie support can be enabled by
     setting the \l{assumeTrustedSource} property to true and including the plugin from the
-    \l{Qt Lottie Animation} module. This plugin is currently considered tech preview.
+    \l{Qt Lottie Animation} module.
 
     \note This complements the approach of loading the vector image file through an \l Image
     element: \l Image creates a raster version of the image at the requested size. VectorImage
@@ -146,7 +146,7 @@ QQuickVectorImage::QQuickVectorImage(QQuickItem *parent)
 
     VectorImage currently supports the \c SVG file format. In addition, Lottie support can be
     enabled by setting the \l{assumeTrustedSource} property to true and including the plugin from
-    the \l{Qt Lottie Animation} module. This plugin is currently considered tech preview.
+    the \l{Qt Lottie Animation} module.
 */
 QUrl QQuickVectorImage::source() const
 {
@@ -305,8 +305,7 @@ void QQuickVectorImage::setPreferredRendererType(RendererType newPreferredRender
     \l{QtSvg::Option}{AssumeTrustedSource option}.
 
     When this is set to true, VectorImage will also try to load the image using the Lottie format
-    plugin if this is available. This plugin is currently considered tech preview. See
-    \l{Qt Lottie Animation} for additional information.
+    plugin if this is available. See \l{Qt Lottie Animation} for additional information.
 
     By default this property is \c false.
 

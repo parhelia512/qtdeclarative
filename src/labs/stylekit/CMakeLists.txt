@@ -23,7 +23,6 @@ qt_internal_add_qml_module(QtQuickStyleKit
         qqstylekitfont_p.h qqstylekitfont.cpp
         qqstylekitpropertyresolver_p.h qqstylekitpropertyresolver.cpp
         qqstylekitreader_p.h qqstylekitreader.cpp
-        qqstylekitstorage_p.h qqstylekitstorage.cpp
         qqstylekitstyle_p.h qqstylekitstyle.cpp
         qqstylekittheme_p.h qqstylekittheme.cpp
         qqstylekitstyleandthemebase_p.h qqstylekitstyleandthemebase.cpp

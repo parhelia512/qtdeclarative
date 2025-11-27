@@ -19,7 +19,6 @@
 #include <QtQml/QtQml>
 
 #include "qqstylekitglobal_p.h"
-#include "qqstylekitstorage_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -34,7 +33,7 @@ class QQStyleKitPropertyResolver
     Q_GADGET
 
 public:
-    enum class PathId {
+    enum class PathId { // REMOVE THIS AS WELL
         ExcludeSubType,
         IncludeSubType
     };
@@ -97,10 +96,6 @@ private:
         const PropertyPathIds &ids,
         QQStyleKitReader *styleReader,
         QQStyleKitStyle *style);
-
-    static PropertyPathId pathId(
-        const QQStyleKitPropertyGroup *group,
-        const QQSK::Property property, PathId flag);
 
     static const QList<QQStyleKitExtendedControlType> baseTypesForType(
         QQStyleKitExtendedControlType exactType);

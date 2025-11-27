@@ -37,7 +37,7 @@ QQStyleKitControlState::controlAndState()
      * states determines the state of the control that the properties
      * inside this QQStyleKitControlState should apply for. */
     QQStyleKitControl *control = nullptr;
-    QQSK::State nestedState = QQSK::StateFlag::NoState;
+    QQSK::State nestedState = QQSK::StateFlag::Unspecified;
     const QQStyleKitControlState *obj = this;
 
     if (metaObject()->inherits(&QQStyleKitControl::staticMetaObject))
@@ -77,7 +77,7 @@ QQStyleKitControlState::controlAndState()
         nestedState.setFlag(QQSK::StateFlag::Highlighted, false);
     }
 
-    if (nestedState == QQSK::StateFlag::NoState)
+    if (nestedState == QQSK::StateFlag::Unspecified)
         nestedState = QQSK::StateFlag::Normal;
 
     Q_ASSERT(control);

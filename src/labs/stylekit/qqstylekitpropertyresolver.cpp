@@ -16,84 +16,8 @@ QT_BEGIN_NAMESPACE
 
 bool QQStyleKitPropertyResolver::s_styleWarningsIssued = false;
 bool QQStyleKitPropertyResolver::s_isReadingProperty = false;
-QQSK::State QQStyleKitPropertyResolver::s_cachedState = QQSK::StateFlag::NoState;
+QQSK::State QQStyleKitPropertyResolver::s_cachedState = QQSK::StateFlag::Unspecified;
 QVarLengthArray<QQSK::StateFlag, 10> QQStyleKitPropertyResolver::s_cachedStateList;
-
-PropertyPathId QQStyleKitPropertyResolver::pathId(
-    const QQStyleKitPropertyGroup *group, const QQSK::Property property, PathId flag)
-{
-    /* Follow the parent chain of the property up to the QQStyleKitControlProperties
-     * group it's inside. This group path, together with the enum value of the property,
-     * will form its unique PropertyPathId.
-     * E.g the property 'color' will get a different path ID when it's a part of
-     * 'background.color' compared to 'background.border.color'.
-     * This path ID will later be used together with different state combinations to
-     * form different PropertyStorageId's. A storage ID is used as the key into QMaps
-     * that stores property values for each state in each QQStyleKitControl. */
-    if (property == QQSK::Property::NoProperty)
-        return PropertyPathId();
-
-    const int propertyCount = int(QQSK::Property::COUNT);
-    const int groupCount = int(QQSK::PropertyGroup::COUNT);
-
-    /* Deliberatly use extra wide types for calculations, in order
-     * to do rough overflow checks in the end. */
-    quint64 id = qint64(property);
-    quint64 idSpaceForPreviousLevel = propertyCount;
-
-    const QQStyleKitPropertyGroup *groupParent = group;
-
-    if (flag == PathId::ExcludeSubType && groupParent->isDelegateSubType())
-        groupParent = static_cast<QQStyleKitPropertyGroup *>(groupParent->parent());
-
-    if (groupParent->isPathFlag()) {
-        /* property 'global' is not a real group, it's just a hint to the property
-         * resolver that it should read style properties directly from the style, igoring
-         * any ongoing transition inside the reader. So just skip it. */
-        groupParent = static_cast<QQStyleKitPropertyGroup *>(groupParent->parent());
-    }
-
-    while (!groupParent->isControlProperties()) {
-        // Add 1 to the group number since group 0 (with start ID == 0) is
-        // reserved for properties that are not nested in a group (e.g control.implicitWidth).
-        const int groupNumber = int(groupParent->group()) + 1;
-        const quint64 idSpaceForCurrentGroup = groupNumber * idSpaceForPreviousLevel;
-
-        id += idSpaceForCurrentGroup;
-
-        /* Every time we move up one group level, all the possible property paths
-         * in the previous level can theoretically occur inside each group on this
-         * level. So we need to multiply this space with group count. */
-        idSpaceForPreviousLevel *= groupCount;
-
-        groupParent = static_cast<QQStyleKitPropertyGroup *>(groupParent->parent());
-        if (flag == PathId::ExcludeSubType && groupParent->isDelegateSubType()) {
-            groupParent = static_cast<QQStyleKitPropertyGroup *>(groupParent->parent());
-            Q_ASSERT(groupParent);
-        }
-        Q_ASSERT(groupParent);
-        if (groupParent->isPathFlag()) {
-            groupParent = static_cast<QQStyleKitPropertyGroup *>(groupParent->parent());
-            Q_ASSERT(groupParent);
-        }
-    }
-
-    const PropertyPathId pathId(property, id, idSpaceForPreviousLevel);
-
-#ifdef QT_DEBUG
-    // Check that the id calculation didn't overflow
-    Q_ASSERT_X(pathId.pathId() == id,
-               __FUNCTION__, QQStyleKitDebug::propertyPath(group, property).toUtf8().constData());
-
-    /* Also check in advance that the path ID can be used in combination with
-     * any possible state combination later on to form a storage ID. */
-    const QQSK::StateFlag maxNestedState = QQSK::StateFlag::MAX_STATE;
-    Q_ASSERT_X(id < pathId.storageId(maxNestedState),
-               __FUNCTION__, QQStyleKitDebug::propertyPath(group, property).toUtf8().constData());
-#endif
-
-    return pathId;
-}
 
 const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypesForType(
     QQStyleKitExtendedControlType exactType)
@@ -139,6 +63,7 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
 
 void QQStyleKitPropertyResolver::cacheReaderState(QQSK::State state)
 {
+    Q_ASSERT(state != QQSK::StateFlag::Unspecified);
     if (state == s_cachedState)
         return;
 
@@ -174,10 +99,10 @@ void QQStyleKitPropertyResolver::addTypeVariationsToReader(
     static PropertyPathIds ids;
     if (ids.property.property() == QQSK::Property::NoProperty) {
         /* ids is made static, since the 'variations' path will be the same for all
-         * StyleKitControls. Also, since sub types are only possible for delegates,
-         * and 'variations' is a control property, we can exclude sub types. */
-        ids.property = pathId(styleReader, QQSK::Property::Variations, PathId::ExcludeSubType);
-        ids.alternative = pathId(styleReader, QQSK::Property::NoProperty, PathId::ExcludeSubType);
+         * StyleKitControls. Also, since subtypes are only possible for delegates,
+         * and 'variations' is a control property, we can exclude subtypes. */
+        ids.property = styleReader->propertyPathId(QQSK::Property::Variations, PropertyPathId::Flag::ExcludeSubtype);
+        ids.alternative = styleReader->propertyPathId(QQSK::Property::NoProperty, PropertyPathId::Flag::ExcludeSubtype);
         ids.subTypeProperty = PropertyPathId();
         ids.subTypeAlternative = PropertyPathId();
     }
@@ -242,7 +167,7 @@ void QQStyleKitPropertyResolver::addInstanceVariationsToReader(
                     continue;
                 /* Invariant: we found a variation in a Style or a Theme with a name that matches
                  * a name in the attached variation list. Check if the found variation contains the
-                 * type, or the sub types, of the style reader. If not, it doesn't affect it and can
+                 * type, or the subtypes, of the style reader. If not, it doesn't affect it and can
                  * therefore be skipped. */
                 if (variationInStyleOrTheme->getControl(styleReaderType)) {
                     styleReader->m_effectiveInAppVariations.append(variationInStyleOrTheme);
@@ -384,7 +309,7 @@ QVariant QQStyleKitPropertyResolver::readPropertyInControlForStates(
         }
 
         // Check the current combination
-        QQSK::State storageState = QQSK::StateFlag::NoState;
+        QQSK::State storageState = QQSK::StateFlag::Unspecified;
         for (int j = 0; j <= recursionLevel; ++j)
             storageState.setFlag(s_cachedStateList[stateListIndices[j]]);
         const QVariant value = readPropertyInStorageForState(main, alternative, control, storageState);
@@ -401,12 +326,12 @@ QVariant QQStyleKitPropertyResolver::readPropertyInControl(
     /* Find the most specific state combination (based on the state of the reader) that
      * has a value set for the property in the contol. In case several state combinations
      * could be found, the order of the states in the stateList decides the priority.
-     * If we're reading a property in a sub type, try all state combinations in the sub
-     * type first, before trying all the state combinations in the super type. */
+     * If we're reading a property in a subtype, try all state combinations in the subtype
+     * first, before trying all the state combinations in the super type. */
     QVarLengthArray<int, 10> stateListIndices(s_cachedStateList.length());
 
     if (ids.subTypeProperty.property() != QQSK::Property::NoProperty) {
-        if (s_cachedState != QQSK::StateFlag::NoState) {
+        if (s_cachedState != QQSK::StateFlag::Normal) {
             QVariant value = readPropertyInControlForStates(
                 ids.subTypeProperty, ids.subTypeAlternative, control, stateListIndices, 0, 0);
             if (value.isValid())
@@ -421,7 +346,7 @@ QVariant QQStyleKitPropertyResolver::readPropertyInControl(
         }
     }
 
-    if (s_cachedState != QQSK::StateFlag::NoState) {
+    if (s_cachedState != QQSK::StateFlag::Normal) {
         const QVariant value = readPropertyInControlForStates(
             ids.property, ids.alternative, control, stateListIndices, 0, 0);
         if (value.isValid())
@@ -553,7 +478,8 @@ QVariant QQStyleKitPropertyResolver::readStyleProperty(
     const QQSK::Property property,
     const QQSK::Property alternative)
 {
-    auto [controlProperties, subType, pathFlags] = group->inspectGroupPath();
+    const QQStyleKitControlProperties *controlProperties = group->controlProperties();
+    const QQSK::PropertyPathFlags pathFlags = group->pathFlags();
     const QQSK::Subclass subclass = controlProperties->subclass();
 
     if (subclass == QQSK::Subclass::QQStyleKitState) {
@@ -566,7 +492,7 @@ QVariant QQStyleKitPropertyResolver::readStyleProperty(
          * static (as in non-propagating) bindings between the properties in a Style,
          * we fall back to simply return the value specified in the accessed control. */
         const auto [control, nestedState] = controlProperties->asQQStyleKitState()->controlAndState();
-        const PropertyPathId propertyPathId = pathId(group, property, PathId::IncludeSubType);
+        const PropertyPathId propertyPathId = group->propertyPathId(property, PropertyPathId::Flag::IncludeSubtype);
         const PropertyStorageId key = propertyPathId.storageId(nestedState);
         return control->readStyleProperty(key);
     }
@@ -600,24 +526,26 @@ QVariant QQStyleKitPropertyResolver::readStyleProperty(
         QScopedValueRollback rollback(s_isReadingProperty, true);
 
         PropertyPathIds ids;
-        ids.property = pathId(group, property, PathId::ExcludeSubType);
-        ids.alternative = pathId(group, alternative, PathId::ExcludeSubType);
+        ids.property = group->propertyPathId(property, PropertyPathId::Flag::ExcludeSubtype);
+        ids.alternative = group->propertyPathId(alternative, PropertyPathId::Flag::ExcludeSubtype);
+        const bool insideSubType = pathFlags &
+            (QQSK::PropertyPathFlag::DelegateSubtype1 | QQSK::PropertyPathFlag::DelegateSubtype2);
 
-        if (subType != QQSK::PropertyGroup::NoGroup) {
-            ids.subTypeProperty = pathId(group, property, PathId::IncludeSubType);
-            ids.subTypeAlternative = pathId(group, alternative, PathId::IncludeSubType);
+        if (insideSubType) {
+            ids.subTypeProperty = group->propertyPathId(property, PropertyPathId::Flag::IncludeSubtype);
+            ids.subTypeAlternative = group->propertyPathId(alternative, PropertyPathId::Flag::IncludeSubtype);
         } else {
             ids.subTypeProperty = PropertyPathId();
             ids.subTypeAlternative = PropertyPathId();
         }
 
-        if (!pathFlags.testFlag(QQSK::PathFlag::StyleDirect)) {
+        if (!pathFlags.testFlag(QQSK::PropertyPathFlag::Global)) {
             /* A style reader can have a storage that contains local property overrides (that is,
              * interpolated values from an ongoing transition). When searching for a property, we
              * therefore need to check this storage first. The exception is if the property was read
              * inside the 'global' group, which means that we should read the values directly
              * from the style. */
-            if (subType != QQSK::PropertyGroup::NoGroup) {
+            if (insideSubType) {
                 const QVariant value = readPropertyInStorageForState(
                     ids.subTypeProperty, ids.subTypeAlternative, styleReader, QQSK::StateFlag::Normal);
                 if (value.isValid())
@@ -647,13 +575,12 @@ bool QQStyleKitPropertyResolver::writeStyleProperty(
     // While readStyleProperty() takes propagation into account, writeStyleProperty() doesn't.
     // Instead it writes \a value directly to the storage that the group belongs to.
     Q_ASSERT(group);
-    auto [controlProperties, subType, pathFlags] = group->inspectGroupPath();
+    const QQStyleKitControlProperties *controlProperties = group->controlProperties();
+    const QQSK::PropertyPathFlags pathFlags = group->pathFlags();
     const QQSK::Subclass subclass = controlProperties->subclass();
-    const PropertyPathId propertyPathId = pathId(group, property, PathId::IncludeSubType);
-    // The subType is only used when reading a property using propagation
-    Q_UNUSED(subType);
+    const PropertyPathId propertyPathId = group->propertyPathId(property, PropertyPathId::Flag::IncludeSubtype);
 
-    if (pathFlags.testFlag(QQSK::PathFlag::StyleDirect)) {
+    if (pathFlags.testFlag(QQSK::PropertyPathFlag::Global)) {
         qmlWarning(controlProperties) << "Properties inside 'global' are read-only!";
         return false;
     }
@@ -694,12 +621,12 @@ bool QQStyleKitPropertyResolver::hasLocalStyleProperty(
     const QQSK::Property property)
 {
     Q_ASSERT(group);
-    auto [controlProperties, subType, pathFlags] = group->inspectGroupPath();
+    const QQStyleKitControlProperties *controlProperties = group->controlProperties();
+    const QQSK::PropertyPathFlags pathFlags = group->pathFlags();
+    const PropertyPathId propertyPathId = group->propertyPathId(property, PropertyPathId::Flag::IncludeSubtype);
     const QQSK::Subclass subclass = controlProperties->subclass();
-    const PropertyPathId propertyPathId = pathId(group, property, PathId::IncludeSubType);
-    Q_UNUSED(subType);
 
-    if (pathFlags.testFlag(QQSK::PathFlag::StyleDirect))
+    if (pathFlags.testFlag(QQSK::PropertyPathFlag::Global))
         return false;
 
     if (subclass == QQSK::Subclass::QQStyleKitReader) {

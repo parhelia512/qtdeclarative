@@ -18,8 +18,8 @@
 
 #include <QtQuick/qquickitem.h>
 
+#include "qqstylekitglobal_p.h"
 #include "qqstylekitcontrolproperties_p.h"
-#include "qqstylekitstorage_p.h"
 
 QT_BEGIN_NAMESPACE
 

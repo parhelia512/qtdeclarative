@@ -22,7 +22,6 @@
 #include "qqstylekitglobal_p.h"
 #include "qqstylekitcontrolproperties_p.h"
 #include "qqstylekitfont_p.h"
-#include "qqstylekitstorage_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -176,7 +175,7 @@ private:
     QFont m_font;
     mutable QQStyleKitPropertyStorage m_storage;
     AlternateState m_alternateState = AlternateState::Alternate1;
-    QQSK::State m_state = QQSK::StateFlag::NoState;
+    QQSK::State m_state = QQSK::StateFlag::Unspecified;
     QQuickStateGroup *m_stateGroup = nullptr;
     QQSK::Delegates m_trackedDelegates = QQSK::Delegate::NoDelegate;
 

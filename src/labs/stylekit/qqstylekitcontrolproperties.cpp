@@ -11,10 +11,72 @@ QT_BEGIN_NAMESPACE
 
 // ************* QQStyleKitPropertyGroup ****************
 
-QQStyleKitPropertyGroup::QQStyleKitPropertyGroup(QQSK::PropertyGroup group, QObject *parent)
+QQStyleKitPropertyGroup::QQStyleKitPropertyGroup(QQSK::PropertyGroup, QObject *parent)
     : QObject(parent)
-    , m_group(group)
 {
+}
+
+PropertyPathId QQStyleKitPropertyGroup::propertyPathId(QQSK::Property property, PropertyPathId::Flag flag) const
+{
+    if (flag == PropertyPathId::Flag::IncludeSubtype) {
+        if (m_pathFlags.testFlag(QQSK::PropertyPathFlag::DelegateSubtype1))
+            return PropertyPathId(property, m_groupSpace.start, QQSK::PropertyGroup::DelegateSubtype1);
+        else if (m_pathFlags.testFlag(QQSK::PropertyPathFlag::DelegateSubtype2))
+            return PropertyPathId(property, m_groupSpace.start, QQSK::PropertyGroup::DelegateSubtype2);
+    }
+    return PropertyPathId(property, m_groupSpace.start, QQSK::PropertyGroup::DelegateSubtype0);
+}
+
+QQStyleKitControlProperties *QQStyleKitPropertyGroup::controlProperties() const
+{
+    if (isControlProperties()) {
+        Q_ASSERT(qobject_cast<const QQStyleKitControlProperties *>(this));
+        auto *self = const_cast<QQStyleKitPropertyGroup *>(this);
+        return static_cast<QQStyleKitControlProperties *>(self);
+    }
+    Q_ASSERT(qobject_cast<const QQStyleKitControlProperties *>(parent()));
+    return static_cast<QQStyleKitControlProperties *>(parent());
+}
+
+template<typename T>
+T *QQStyleKitPropertyGroup::lazyCreateGroup(T * const &ptr, QQSK::PropertyGroup group) const
+{
+    T *nestedGroup = QQSK::lazyCreate(ptr, controlProperties(), group);
+
+    // Nested groups inherit path flags from their parents
+    nestedGroup->m_pathFlags = m_pathFlags;
+
+    if (group == QQSK::PropertyGroup::DelegateSubtype1) {
+        /* Subtypes, like states, are not part of a property's path ID—they belong to the
+         * storage ID instead. They are therefore prefixed later, during lookup, when
+         * propagation determines which value to read.
+         * For now, we simply record which subtype this group (and any nested groups) is
+         * associated with. The subtype will then be taken into account later when reading
+         * properties from the group. Setting aside space for the sub types was already
+         * taken care of during the construction of the root QQStyleKitControlProperties. */
+        nestedGroup->m_pathFlags.setFlag(QQSK::PropertyPathFlag::DelegateSubtype1);
+        nestedGroup->m_groupSpace = m_groupSpace;
+    } else if (group == QQSK::PropertyGroup::DelegateSubtype2) {
+        nestedGroup->m_pathFlags.setFlag(QQSK::PropertyPathFlag::DelegateSubtype2);
+        nestedGroup->m_groupSpace = m_groupSpace;
+    } else {
+        /* Calculate the available property ID space for the nested group. This is done by
+         * dividing the available space inside _this_ group on the number of potential groups
+         * that _this_ group can potentially contain. */
+        constexpr PropertyPathId_t groupCount = PropertyPathId_t(QQSK::PropertyGroup::PATH_ID_GROUP_COUNT);
+        const PropertyPathId_t nestedGroupIndex = PropertyPathId_t(group);
+        const PropertyPathId_t nestedGroupSize = m_groupSpace.size / groupCount;
+        nestedGroup->m_groupSpace.size = nestedGroupSize;
+        nestedGroup->m_groupSpace.start = m_groupSpace.start + (nestedGroupIndex * nestedGroupSize);
+        /* Ensure that we haven’t exhausted the available PropertyPathId space. There must be
+         * enough room remaining to assign IDs for all properties defined in QQSK::Property.
+         * If this assertion triggers, consider switching to a wider PropertyPathId_t type or
+         * optimizing how the space is allocated. For example, certain nested paths (such as
+         * control.handle.indicator) can never occur, yet we currently reserve INNER_GROUP_COUNT
+         * for every nesting level, which is wasteful. */
+        Q_ASSERT(nestedGroupSize >= PropertyPathId_t(QQSK::Property::COUNT));
+    }
+    return nestedGroup;
 }
 
 /* This macro will check if the caller has the same group path as \a GROUP_PATH.
@@ -57,8 +119,7 @@ void QQStyleKitPropertyGroup::handleStylePropertiesChanged(CHANGED_SIGNALS... ch
                   "SUBCLASS must inherit QQStyleKitPropertyGroup");
 
     auto *group = static_cast<SUBCLASS *>(this);
-    const QQStyleKitControlProperties *root = controlProperties();
-    const QQSK::Subclass objectWrittenTo = root->subclass();
+    const QQSK::Subclass objectWrittenTo = controlProperties()->subclass();
 
     if (objectWrittenTo == QQSK::Subclass::QQStyleKitState) {
         ((group->*changedSignals)(), ...);
@@ -78,53 +139,6 @@ void QQStyleKitPropertyGroup::handleStylePropertiesChanged(CHANGED_SIGNALS... ch
     }
 
     Q_UNREACHABLE();
-}
-
-const QQStyleKitControlProperties *QQStyleKitPropertyGroup::controlProperties() const
-{
-    const QQStyleKitPropertyGroup *group = this;
-    while (!group->isControlProperties()) {
-        group = static_cast<QQStyleKitPropertyGroup *>(group->parent());
-        Q_ASSERT(group);
-    }
-    return group->asControlProperties();
-}
-
-std::tuple<
-    const QQStyleKitControlProperties *,
-    const QQSK::PropertyGroup,
-    const QQSK::PathFlags>
-QQStyleKitPropertyGroup::inspectGroupPath() const
-{
-    /* The path of a property can sometimes contain groups that are hints to the property
-     * resolver. E.g in the path 'QQStyleKitReader.global.handle.first.padding', 'global'
-     * hints that the property should be read directly from the style, circumventing the local
-     * cache that stores interpolated transition values. 'first' hints that the group is inside
-     * a sub type, which will affect how the style reader handles propagation. */
-    QQSK::PathFlags pathFlags = QQSK::PathFlag::NoFlag;
-    QQSK::PropertyGroup subType = QQSK::PropertyGroup::NoGroup;
-
-    const QQStyleKitPropertyGroup *group = this;
-    while (!group->isControlProperties()) {
-        if (group->m_group == QQSK::PropertyGroup::DelegateSubType1)
-            subType = QQSK::PropertyGroup::DelegateSubType1;
-        else if (group->m_group == QQSK::PropertyGroup::DelegateSubType2)
-            subType = QQSK::PropertyGroup::DelegateSubType2;
-        else if (group->m_group == QQSK::PropertyGroup::globalFlag)
-            pathFlags |= QQSK::PathFlag::StyleDirect;
-
-        group = group->parentGroup();
-        Q_ASSERT(group);
-    }
-
-    const auto *controlProperties = group->asControlProperties();
-    return std::make_tuple(controlProperties, subType, pathFlags);
-}
-
-const QQStyleKitControlProperties *QQStyleKitPropertyGroup::asControlProperties() const
-{
-    Q_ASSERT(isControlProperties());
-    return static_cast<const QQStyleKitControlProperties *>(this);
 }
 
 void QQStyleKitPropertyGroup::emitChangedForAllStylePropertiesRecursive()
@@ -162,14 +176,12 @@ void QQStyleKitPropertyGroup::emitChangedForAllStylePropertiesRecursive()
 
 bool QQStyleKitPropertyGroup::shouldEmitLocally()
 {
-    const QQStyleKitControlProperties *root = controlProperties();
-    return !root->asQQStyleKitReader()->dontEmitChangedSignals();
+    return !controlProperties()->asQQStyleKitReader()->dontEmitChangedSignals();
 }
 
 bool QQStyleKitPropertyGroup::shouldEmitGlobally()
 {
-    const QQStyleKitControlProperties *root = controlProperties();
-    QQStyleKitStyle *parentStyle = root->style();
+    QQStyleKitStyle *parentStyle = controlProperties()->style();
     if (!parentStyle)
         return false;
 
@@ -188,7 +200,7 @@ bool QQStyleKitPropertyGroup::shouldEmitGlobally()
 
 // ************* QQStyleKitImageProperties ****************
 
-QQStyleKitImageProperties::QQStyleKitImageProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitImageProperties::QQStyleKitImageProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
 }
@@ -239,7 +251,7 @@ void QQStyleKitImageProperties::setFillMode(QQuickImage::FillMode fillMode)
 
 // ************* QQStyleKitBorderProperties ****************
 
-QQStyleKitBorderProperties::QQStyleKitBorderProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitBorderProperties::QQStyleKitBorderProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
 }
@@ -279,7 +291,7 @@ void QQStyleKitBorderProperties::setColor(const QColor &color)
 
 // ************* QQStyleKitShadowProperties ****************
 
-QQStyleKitShadowProperties::QQStyleKitShadowProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitShadowProperties::QQStyleKitShadowProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
 }
@@ -385,7 +397,7 @@ void QQStyleKitShadowProperties::setDelegate(QQmlComponent *delegate)
 
 // ************* QQStyleKitDelegateProperties ****************
 
-QQStyleKitDelegateProperties::QQStyleKitDelegateProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitDelegateProperties::QQStyleKitDelegateProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
 }
@@ -681,25 +693,25 @@ QQStyleKitImageProperties *QQStyleKitDelegateProperties::image() const
 
 // ************* QQStyleKitHandleProperties ****************
 
-QQStyleKitHandleProperties::QQStyleKitHandleProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitHandleProperties::QQStyleKitHandleProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitDelegateProperties(group, parent)
 {
 }
 
 QQStyleKitDelegateProperties *QQStyleKitHandleProperties::first() const
 {
-    return lazyCreateGroup(m_first, QQSK::PropertyGroup::DelegateSubType1);
+    return lazyCreateGroup(m_first, QQSK::PropertyGroup::DelegateSubtype1);
 }
 
 QQStyleKitDelegateProperties *QQStyleKitHandleProperties::second() const
 {
-    return lazyCreateGroup(m_second, QQSK::PropertyGroup::DelegateSubType2);
+    return lazyCreateGroup(m_second, QQSK::PropertyGroup::DelegateSubtype2);
 }
 
 // ************* QQStyleKitIndicatorProperties ****************
 
 QQStyleKitIndicatorProperties::QQStyleKitIndicatorProperties(
-    QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+    QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitDelegateProperties(group, parent)
 {
 }
@@ -721,7 +733,7 @@ QQStyleKitDelegateProperties *QQStyleKitIndicatorProperties::foreground() const
 // ************* QQStyleKitIndicatorWithSubTypes ****************
 
 QQStyleKitIndicatorWithSubTypes::QQStyleKitIndicatorWithSubTypes(
-    QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+    QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitDelegateProperties(group, parent)
 {
 }
@@ -741,16 +753,16 @@ QQStyleKitDelegateProperties *QQStyleKitIndicatorWithSubTypes::foreground() cons
 
 QQStyleKitIndicatorProperties *QQStyleKitIndicatorWithSubTypes::up() const
 {
-    return lazyCreateGroup(m_up, QQSK::PropertyGroup::DelegateSubType1);
+    return lazyCreateGroup(m_up, QQSK::PropertyGroup::DelegateSubtype1);
 }
 
 QQStyleKitIndicatorProperties *QQStyleKitIndicatorWithSubTypes::down() const
 {
-    return lazyCreateGroup(m_down, QQSK::PropertyGroup::DelegateSubType2);
+    return lazyCreateGroup(m_down, QQSK::PropertyGroup::DelegateSubtype2);
 }
 
 // ************* QQStyleKitTextProperties ****************
-QQStyleKitTextProperties::QQStyleKitTextProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent)
+QQStyleKitTextProperties::QQStyleKitTextProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
 }
@@ -822,6 +834,24 @@ void QQStyleKitTextProperties::setPointSize(qreal pointSize)
 QQStyleKitControlProperties::QQStyleKitControlProperties(QQSK::PropertyGroup group, QObject *parent)
     : QQStyleKitPropertyGroup(group, parent)
 {
+    /* Calculate the free space storage ID space that can accommodate all unique style
+     * properties that may be applied to a control. Since we'll prepend different states
+     * and subtypes during the property propagation lookup phase later, we need to reserve
+     * ID space for them both already now. More docs about the property space is written in
+     * the implementation of PropertyPathId. */
+    m_groupSpace.size = nestedGroupsStartSize;
+    m_groupSpace.start = 0;
+
+    if (group == QQSK::PropertyGroup::GlobalFlag) {
+        /* A property path may include pseudo-groups that offers a convenient API for
+         * reading properties with specific options applied. The 'global' group is one such
+         * pseudo-group. When it is prefixed to a property path, it indicates that the property
+         * should be read directly from the style, bypassing any active transitions that might
+         * otherwise affect its value.
+         * Note: The global group should be ignored when computing a PropertyPathId_t, as it
+         * only affect _where_ the property should be read from, not its ID. */
+        m_pathFlags.setFlag(QQSK::PropertyPathFlag::Global);
+    }
 }
 
 QQStyleKitStyle *QQStyleKitControlProperties::style() const

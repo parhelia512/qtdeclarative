@@ -20,8 +20,6 @@
 
 QT_BEGIN_NAMESPACE
 
-using QQStyleKitExtendedControlType = uint;
-
 class QQSK: public QObject
 {
     Q_OBJECT
@@ -45,22 +43,42 @@ public:
     Q_FLAG(Delegate)
 
     enum class PropertyGroup {
-        NoGroup,
         Control,
         Background,
-        Border,
-        DelegateSubType1,
-        DelegateSubType2,
-        Handle,
         Foreground,
+        Border,
+        Handle,
         Image,
         Indicator,
         Shadow,
-        globalFlag,
         Text,
-        COUNT
+        PATH_ID_GROUP_COUNT,
+
+        /* Sub types, like states, are a part of a propertys storage ID, not its Path ID.
+         * They appear in the group path, but are handled differently. */
+        DelegateSubtype0,
+        DelegateSubtype1,
+        DelegateSubtype2,
+
+        /* Read options are not a part of either the Path ID nor the Storage ID. They
+         * just offer a convenient API for providing read options when reading a property.
+         * The Global flag is used to signal that a property should be read directly from
+         * the global style, circumventing the local StyleKitReader cache. */
+        GlobalFlag,
+
+        Unspecified
     };
     Q_ENUM(PropertyGroup)
+
+    enum class PropertyPathFlag : quint8 {
+        NoFlags             = 0x0,
+        DelegateSubtype0    = 0x1,
+        DelegateSubtype1    = 0x2,
+        DelegateSubtype2    = 0x4,
+        Global              = 0x8
+    };
+    Q_DECLARE_FLAGS(PropertyPathFlags, PropertyPathFlag)
+    Q_FLAG(PropertyPathFlag)
 
     enum class Property {
         NoProperty,
@@ -110,7 +128,7 @@ public:
     Q_ENUM(Property)
 
     enum class StateFlag {
-        NoState     = 0x000,
+        Unspecified = 0x000,
         Normal      = 0x001,
         Pressed     = 0x002,
         Hovered     = 0x004,
@@ -130,13 +148,6 @@ public:
     };
     Q_ENUM(Subclass)
 
-    enum class PathFlag {
-        NoFlag        = 0x00,
-        StyleDirect   = 0x01
-    };
-    Q_DECLARE_FLAGS(PathFlags, PathFlag)
-    Q_FLAG(PathFlag)
-
 public:
     template <typename T, typename Owner, typename... Args>
     static inline T *lazyCreate(T *const &ptr, const Owner *self, Args&&... args)
@@ -152,7 +163,49 @@ public:
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QQSK::State)
 Q_DECLARE_OPERATORS_FOR_FLAGS(QQSK::Delegates)
-Q_DECLARE_OPERATORS_FOR_FLAGS(QQSK::PathFlags)
+Q_DECLARE_OPERATORS_FOR_FLAGS(QQSK::PropertyPathFlags)
+
+using PropertyPathId_t = quint32;
+using PropertyStorageId = quint32;
+using QQStyleKitExtendedControlType = quint32;
+using QQStyleKitPropertyStorage = QMap<PropertyStorageId, QVariant>;
+
+constexpr PropertyPathId_t maxPropertyStorageSpaceSize = std::numeric_limits<PropertyPathId_t>::max();
+constexpr PropertyPathId_t maxStateCombinationCount = PropertyPathId_t(QQSK::StateFlag::MAX_STATE);
+constexpr PropertyPathId_t stateStorageSpaceSize = maxPropertyStorageSpaceSize / maxStateCombinationCount;
+constexpr PropertyPathId_t subtypeCount = PropertyPathId_t(QQSK::PropertyPathFlag::DelegateSubtype2) - PropertyPathId_t(QQSK::PropertyPathFlag::DelegateSubtype0) + 1;
+constexpr PropertyPathId_t nestedGroupsStartSize = maxPropertyStorageSpaceSize / (maxStateCombinationCount * subtypeCount);
+constexpr PropertyPathId_t subtypeStorageSpaceSize = maxPropertyStorageSpaceSize / (subtypeCount * maxStateCombinationCount);
+
+struct QQStyleKitPropertyGroupSpace {
+    PropertyPathId_t size = 0;
+    PropertyPathId_t start = 0;
+};
+
+class PropertyPathId {
+    Q_GADGET
+
+public:
+    enum class Flag {
+        ExcludeSubtype,
+        IncludeSubtype
+    };
+    Q_ENUM(Flag)
+
+    PropertyPathId(
+        const QQSK::Property property = QQSK::Property::NoProperty,
+        const PropertyPathId_t groupStart = PropertyPathId_t(0),
+        QQSK::PropertyGroup subtype = QQSK::PropertyGroup::DelegateSubtype0);
+
+    PropertyPathId subTypePrepended(QQSK::PropertyGroup subtype) const;
+
+    QQSK::Property property() const { return m_property; }
+    PropertyStorageId storageId(QQSK::State state) const;
+
+private:
+    QQSK::Property m_property;
+    PropertyPathId_t m_groupStart;
+};
 
 QT_END_NAMESPACE
 

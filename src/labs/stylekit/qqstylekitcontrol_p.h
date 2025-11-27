@@ -17,8 +17,8 @@
 //
 
 #include <QtQml/QtQml>
+#include "qqstylekitglobal_p.h"
 #include "qqstylekitcontrolstate_p.h"
-#include "qqstylekitstorage_p.h"
 #include "qqstylekitreader_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -49,7 +49,7 @@ private:
 
     QList<QQStyleKitVariation *> m_variations;
     mutable QQStyleKitPropertyStorage m_storage;
-    QQSK::State m_writtenStates = QQSK::StateFlag::NoState;
+    QQSK::State m_writtenStates = QQSK::StateFlag::Unspecified;
 
     friend class QQStyleKitPropertyResolver;
     friend class QQStyleKitControls;

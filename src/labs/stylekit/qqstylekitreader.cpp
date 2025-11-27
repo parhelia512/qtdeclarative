@@ -41,7 +41,7 @@ QQStyleKitReader::QQStyleKitReader(QObject *parent)
     : QQStyleKitControlProperties(QQSK::PropertyGroup::Control, parent)
     , m_dontEmitChangedSignals(false)
     , m_effectiveVariationsDirty(true)
-    , m_global(QQStyleKitControlProperties(QQSK::PropertyGroup::globalFlag, this))
+    , m_global(QQStyleKitControlProperties(QQSK::PropertyGroup::GlobalFlag, this))
 {
     s_allReaders.append(this);
 }
@@ -334,7 +334,7 @@ QQSK::State QQStyleKitReader::controlState() const
                           QQSK::StateFlag::Hovered);
     }
 
-    if (effectiveState == QQSK::StateFlag::NoState)
+    if (effectiveState == QQSK::StateFlag::Unspecified)
         effectiveState.setFlag(QQSK::StateFlag::Normal);
 
     return effectiveState;

@@ -44,14 +44,7 @@ class QQStyleKitPropertyGroup: public QObject
 public:
     QQStyleKitPropertyGroup(QQSK::PropertyGroup group, QObject *parent);
 
-    inline bool isControlProperties() const { return m_group == QQSK::PropertyGroup::Control; }
-    inline bool isPathFlag() const { return m_group == QQSK::PropertyGroup::globalFlag; }
-    inline bool isDelegateSubType() const {
-        return m_group == QQSK::PropertyGroup::DelegateSubType1 ||
-               m_group == QQSK::PropertyGroup::DelegateSubType2;
-    }
-
-    inline QQSK::PropertyGroup group() const { return m_group; }
+    PropertyPathId propertyPathId(QQSK::Property property, PropertyPathId::Flag flag) const;
 
     template<typename T>
     inline T styleProperty(
@@ -75,6 +68,11 @@ public:
         return QQStyleKitPropertyResolver::writeStyleProperty(this, property, QVariant::fromValue(value));
     }
 
+    inline bool isDefined(QQSK::Property property) const
+    {
+        return QQStyleKitPropertyResolver::readStyleProperty(this, property).isValid();
+    }
+
     template<typename SUBCLASS>
     inline void handleStylePropertyChanged(void (SUBCLASS::*changedSignal)());
 
@@ -82,38 +80,27 @@ public:
     inline void handleStylePropertiesChanged(CHANGED_SIGNALS... changedSignals);
 
     template <typename T>
-    inline T *lazyCreateGroup(T *const &ptr, QQSK::PropertyGroup group) const
+    T *lazyCreateGroup(T *const &ptr, QQSK::PropertyGroup group) const;
+
+    inline bool isControlProperties() const
     {
-        return QQSK::lazyCreate(ptr, this, group);
+        /* Only QQStyleKitControlProperties (as opposed to the nested delegates) have properties
+         * with an ID at the bottom of the available space. The exception is the global flag, which
+         * inherits the groupSpace from the control. */
+        return m_groupSpace.start == 0 && m_pathFlags != QQSK::PropertyPathFlag::Global;
     }
 
+    QQStyleKitControlProperties *controlProperties() const;
+    inline QQSK::PropertyPathFlags pathFlags() const { return m_pathFlags; }
     void emitChangedForAllStylePropertiesRecursive();
 
-    const QQStyleKitControlProperties *controlProperties() const;
-
-    std::tuple<
-        const QQStyleKitControlProperties *,
-        const QQSK::PropertyGroup,
-        const QQSK::PathFlags> inspectGroupPath() const;
-
-    inline QQStyleKitPropertyGroup *parentGroup() const {
-        Q_ASSERT(!parent() || qobject_cast<QQStyleKitPropertyGroup *>(parent()));
-        return static_cast<QQStyleKitPropertyGroup *>(parent());
-    }
-
-    const QQStyleKitControlProperties *asControlProperties() const;
-
-    inline bool isDefined(QQSK::Property property) const
-    {
-        return QQStyleKitPropertyResolver::readStyleProperty(this, property).isValid();
-    }
+protected:
+    QQStyleKitPropertyGroupSpace m_groupSpace;
+    QQSK::PropertyPathFlags m_pathFlags = QQSK::PropertyPathFlag::NoFlags;
 
 private:
     bool shouldEmitLocally();
     bool shouldEmitGlobally();
-
-private:
-    QQSK::PropertyGroup m_group;
 };
 
 // ************* QQStyleKitImageProperties ****************
@@ -128,7 +115,7 @@ class QQStyleKitImageProperties : public QQStyleKitPropertyGroup
     QML_NAMED_ELEMENT(StyleKitImageProperties)
 
 public:
-    QQStyleKitImageProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitImageProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -159,7 +146,7 @@ class QQStyleKitBorderProperties : public QQStyleKitPropertyGroup
     QML_NAMED_ELEMENT(StyleKitBorderProperties)
 
 public:
-    QQStyleKitBorderProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitBorderProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -192,7 +179,7 @@ class QQStyleKitShadowProperties : public QQStyleKitPropertyGroup
     QML_NAMED_ELEMENT(StyleKitShadowProperties)
 
 public:
-    QQStyleKitShadowProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitShadowProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -267,7 +254,7 @@ class QQStyleKitDelegateProperties : public QQStyleKitPropertyGroup
     QML_NAMED_ELEMENT(StyleKitDelegateProperties)
 
 public:
-    QQStyleKitDelegateProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitDelegateProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -392,7 +379,7 @@ class QQStyleKitHandleProperties : public QQStyleKitDelegateProperties
     QML_NAMED_ELEMENT(StyleKitHandleProperties)
 
 public:
-    QQStyleKitHandleProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitHandleProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
     QQStyleKitDelegateProperties *first() const;
     QQStyleKitDelegateProperties *second() const;
 
@@ -418,7 +405,7 @@ class QQStyleKitIndicatorProperties : public QQStyleKitDelegateProperties
     QML_NAMED_ELEMENT(StyleKitIndicatorProperties)
 
 public:
-    QQStyleKitIndicatorProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitIndicatorProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -447,7 +434,7 @@ class QQStyleKitIndicatorWithSubTypes : public QQStyleKitDelegateProperties
     QML_NAMED_ELEMENT(StyleKitIndicatorPropertiesWithSubTypes)
 
 public:
-    QQStyleKitIndicatorWithSubTypes(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitIndicatorWithSubTypes(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;
@@ -485,7 +472,7 @@ class QQStyleKitTextProperties : public QQStyleKitPropertyGroup
     QML_NAMED_ELEMENT(StyleKitTextProperties)
 
 public:
-    QQStyleKitTextProperties(QQSK::PropertyGroup group, QQStyleKitPropertyGroup *parent = nullptr);
+    QQStyleKitTextProperties(QQSK::PropertyGroup group, QQStyleKitControlProperties *parent = nullptr);
 
     template <typename... CHANGED_SIGNALS>
     void emitGlobally(CHANGED_SIGNALS... changedSignals) const;

@@ -12,7 +12,7 @@
 QT_BEGIN_NAMESPACE
 
 QQStyleKitTheme::QQStyleKitTheme(QObject *parent)
-    : QQStyleKitControls(parent)
+    : QQStyleKitStyleAndThemeBase(parent)
 {
 }
 

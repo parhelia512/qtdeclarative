@@ -45,7 +45,7 @@ T.Button {
 
         icon: control.icon
         text: control.text
-        font: control.font
+        font: styleReader.font // FIXME: should be inherited from control
         color: styleReader.text.color
         alignment: styleReader.text.alignment
     }

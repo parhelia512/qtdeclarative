@@ -18,7 +18,7 @@
 
 #include <QtQml/QtQml>
 
-#include "qqstylekitcontrols_p.h"
+#include "qqstylekitstyleandthemebase_p.h"
 #include "qqstylekitpalette_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -26,10 +26,11 @@ QT_BEGIN_NAMESPACE
 class QQStyleKitControls;
 class QQStyleKitPropertyResolver;
 
-class QQStyleKitTheme : public QQStyleKitControls
+class QQStyleKitTheme : public QQStyleKitStyleAndThemeBase
 {
     Q_OBJECT
 
+    // TODO: Move to QQStyleKitStyleAndThemeBase
     Q_PROPERTY(QQStyleKitPalette *palettes READ palettes NOTIFY palettesChanged FINAL)
 
     QML_NAMED_ELEMENT(Theme)

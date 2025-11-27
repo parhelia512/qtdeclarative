@@ -243,6 +243,8 @@ void QQStyleKitReader::updateControl()
     default:
         Q_UNREACHABLE();
     }
+
+    setFont(style->fontForReader(this));
 }
 
 void QQStyleKitReader::resetAll()
@@ -251,7 +253,17 @@ void QQStyleKitReader::resetAll()
         reader->m_effectiveVariationsDirty = true;
         reader->clearLocalStorage();
         reader->emitChangedForAllStyleProperties();
+        reader->updateFontFromTheme();
     }
+}
+
+void QQStyleKitReader::updateFontFromTheme()
+{
+    const QQStyleKitStyle *style = QQStyleKitStyle::current();
+    if (!style || !style->loaded())
+        return;
+
+    setFont(style->fontForReader(this));
 }
 
 void QQStyleKitReader::populateLocalStorage()
@@ -483,6 +495,20 @@ void QQStyleKitReader::setPalette(QQuickPalette *palette)
 
     clearLocalStorage();
     emitChangedForAllStyleProperties();
+}
+
+QFont QQStyleKitReader::font() const
+{
+    return m_font;
+}
+
+void QQStyleKitReader::setFont(const QFont &font)
+{
+    if (m_font == font)
+        return;
+
+    m_font = font;
+    emit fontChanged();
 }
 
 QQStyleKitControlProperties *QQStyleKitReader::global() const

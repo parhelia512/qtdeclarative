@@ -46,7 +46,7 @@ T.ItemDelegate {
         display: control.display
         icon: control.icon
         text: control.text
-        font: control.font
+        font: styleReader.font
         color: styleReader.text.color
         alignment: styleReader.text.alignment
     }

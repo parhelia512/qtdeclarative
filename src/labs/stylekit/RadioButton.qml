@@ -75,7 +75,7 @@ T.RadioButton {
 
     contentItem: CheckLabel {
         text: control.text
-        font: control.font
+        font: styleReader.font
         color: styleReader.text.color
         horizontalAlignment: styleReader.text.alignment & Qt.AlignHorizontal_Mask
         verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask

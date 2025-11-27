@@ -88,7 +88,8 @@ T.ComboBox {
         height: indicatorItem.height
     }
 
-    contentItem: T.TextField {
+    contentItem: TextInput {
+        font: styleReader.font
         text: control.editable ? control.editText : control.displayText
         enabled: control.editable
         autoScroll: control.editable

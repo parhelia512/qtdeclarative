@@ -26,7 +26,7 @@ qt_internal_add_qml_module(QtQuickStyleKit
         qqstylekitstorage_p.h qqstylekitstorage.cpp
         qqstylekitstyle_p.h qqstylekitstyle.cpp
         qqstylekittheme_p.h qqstylekittheme.cpp
-        qqstylekitthemeproperties_p.h qqstylekitthemeproperties.cpp
+        qqstylekitstyleandthemebase_p.h qqstylekitstyleandthemebase.cpp
         qqstylekitcustomtheme_p.h qqstylekitcustomtheme.cpp
         qqstylekitvariation_p.h qqstylekitvariation.cpp
     DEFINES

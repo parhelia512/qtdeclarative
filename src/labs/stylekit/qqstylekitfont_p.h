@@ -17,6 +17,7 @@
 //
 
 #include <QtQml/QtQml>
+#include <QtQuickTemplates2/private/qquicktheme_p.h>
 #include <QtGui/qfont.h>
 
 QT_BEGIN_NAMESPACE
@@ -26,7 +27,7 @@ class QQStyleKitFont : public QObject
     Q_OBJECT
     Q_PROPERTY(QFont systemFont READ systemFont WRITE setSystemFont NOTIFY systemFontChanged FINAL)
     Q_PROPERTY(QFont buttonFont READ buttonFont WRITE setButtonFont NOTIFY buttonFontChanged FINAL)
-    Q_PROPERTY(QFont checkboxFont READ checkboxFont WRITE setCheckboxFont NOTIFY checkboxFontChanged FINAL)
+    Q_PROPERTY(QFont checkBoxFont READ checkBoxFont WRITE setCheckBoxFont NOTIFY checkBoxFontChanged FINAL)
     Q_PROPERTY(QFont comboBoxFont READ comboBoxFont WRITE setComboBoxFont NOTIFY comboBoxFontChanged FINAL)
     Q_PROPERTY(QFont groupBoxFont READ groupBoxFont WRITE setGroupBoxFont NOTIFY groupBoxFontChanged FINAL)
     Q_PROPERTY(QFont itemViewFont READ itemViewFont WRITE setItemViewFont NOTIFY itemViewFontChanged FINAL)
@@ -54,8 +55,8 @@ public:
     QFont buttonFont() const;
     void setButtonFont(const QFont &font);
 
-    QFont checkboxFont() const;
-    void setCheckboxFont(const QFont &font);
+    QFont checkBoxFont() const;
+    void setCheckBoxFont(const QFont &font);
 
     QFont comboBoxFont() const;
     void setComboBoxFont(const QFont &font);
@@ -105,10 +106,15 @@ public:
     QFont tumblerFont() const;
     void setTumblerFont(const QFont &font);
 
+    QQStyleKitFont *fallbackFont() const;
+    void setFallbackFont(QQStyleKitFont *fallback);
+
+    QFont fontForScope(QQuickTheme::Scope scope) const;
+
 signals:
     void systemFontChanged();
     void buttonFontChanged();
-    void checkboxFontChanged();
+    void checkBoxFontChanged();
     void comboBoxFontChanged();
     void groupBoxFontChanged();
     void itemViewFontChanged();
@@ -125,29 +131,26 @@ signals:
     void toolBarFontChanged();
     void toolTipFontChanged();
     void tumblerFontChanged();
+    void fallbackFontChanged();
 
 private:
     Q_DISABLE_COPY(QQStyleKitFont)
 
-    mutable std::unique_ptr<QFont> m_systemFont;
-    mutable std::unique_ptr<QFont> m_buttonFont;
-    mutable std::unique_ptr<QFont> m_checkboxFont;
-    mutable std::unique_ptr<QFont> m_comboBoxFont;
-    mutable std::unique_ptr<QFont> m_groupBoxFont;
-    mutable std::unique_ptr<QFont> m_itemViewFont;
-    mutable std::unique_ptr<QFont> m_labelFont;
-    mutable std::unique_ptr<QFont> m_listViewFont;
-    mutable std::unique_ptr<QFont> m_menuFont;
-    mutable std::unique_ptr<QFont> m_menuBarFont;
-    mutable std::unique_ptr<QFont> m_radioButtonFont;
-    mutable std::unique_ptr<QFont> m_spinBoxFont;
-    mutable std::unique_ptr<QFont> m_switchControlFont;
-    mutable std::unique_ptr<QFont> m_tabBarFont;
-    mutable std::unique_ptr<QFont> m_textAreaFont;
-    mutable std::unique_ptr<QFont> m_textFieldFont;
-    mutable std::unique_ptr<QFont> m_toolBarFont;
-    mutable std::unique_ptr<QFont> m_toolTipFont;
-    mutable std::unique_ptr<QFont> m_tumblerFont;
+    void ensureEffectiveUpToDate() const;
+    void markEffectiveDirty() { m_effectiveDirty = true; }
+
+    void setFontForScope(QQuickTheme::Scope scope, const QFont &font, void (QQStyleKitFont::*signal)());
+
+    bool isSet(QQuickTheme::Scope scope) const { return (m_setMask & (1u << int(scope))) != 0; }
+    void markSet(QQuickTheme::Scope scope) { m_setMask |= (1u << int(scope)); }
+
+    static const int NScopes = QQuickTheme::Tumbler + 1;
+    QFont m_local[NScopes];
+    mutable QFont m_effective[NScopes];
+    quint32 m_setMask = 0;
+    mutable bool m_effectiveDirty = true;
+
+    QQStyleKitFont *m_fallback = nullptr;
 };
 
 QT_END_NAMESPACE

@@ -21,7 +21,7 @@ static const QString kLight = "Light"_L1;
 static const QString kDark = "Dark"_L1;
 
 QQStyleKitStyle::QQStyleKitStyle(QObject *parent)
-    : QQStyleKitControls(parent)
+    : QQStyleKitStyleAndThemeBase(parent)
     , m_themeName(kSystem)
 {
 }
@@ -62,6 +62,12 @@ void QQStyleKitStyle::setFallbackStyle(QQStyleKitStyle *fallbackStyle)
 
     m_fallbackStyle = fallbackStyle;
     emit fallbackStyleChanged();
+
+    if (fonts())
+        fonts()->setFallbackFont(m_fallbackStyle ? m_fallbackStyle->fonts() : nullptr);
+
+    if (m_theme && m_theme->fonts())
+        m_theme->fonts()->setFallbackFont(fonts());
 }
 
 void QQStyleKitStyle::setLight(QQmlComponent *lightTheme)
@@ -234,8 +240,14 @@ void QQStyleKitStyle::recreateTheme()
         m_theme->setParent(this);
     }
 
+    if (m_theme && m_theme->fonts())
+        m_theme->fonts()->setFallbackFont(fonts());
     if (this == current()) {
         m_theme->updateQuickTheme();
+        if (m_theme->fonts())
+            m_theme->fonts()->setFallbackFont(fonts());
+        if (fonts())
+            fonts()->setFallbackFont(m_fallbackStyle ? m_fallbackStyle->fonts() : nullptr);
         QQStyleKitReader::resetAll();
     }
 
@@ -245,6 +257,38 @@ void QQStyleKitStyle::recreateTheme()
 QQStyleKitStyle* QQStyleKitStyle::current()
 {
     return QQStyleKit::qmlAttachedProperties()->style();
+}
+
+QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
+{
+    switch (reader->type()) {
+        case QQStyleKitReader::ControlType::Control:
+            return m_theme->fonts()->systemFont();
+        case QQStyleKitReader::ControlType::AbstractButton:
+        case QQStyleKitReader::ControlType::Button:
+        case QQStyleKitReader::ControlType::FlatButton: {
+            return m_theme->fonts()->buttonFont();
+        }
+        case QQStyleKitReader::ControlType::CheckBox:
+            return m_theme->fonts()->checkBoxFont();
+        case QQStyleKitReader::ControlType::ComboBox:
+            return m_theme->fonts()->comboBoxFont();
+        case QQStyleKitReader::ControlType::RadioButton:
+            return m_theme->fonts()->radioButtonFont();
+        case QQStyleKitReader::ControlType::SpinBox:
+            return m_theme->fonts()->spinBoxFont();
+        case QQStyleKitReader::ControlType::SwitchControl:
+            return m_theme->fonts()->switchControlFont();
+        case QQStyleKitReader::ControlType::TextInput:
+        case QQStyleKitReader::ControlType::TextField:
+            return m_theme->fonts()->textFieldFont();
+        case QQStyleKitReader::ControlType::TextArea:
+            return m_theme->fonts()->textAreaFont();
+        case QQStyleKitReader::ControlType::ItemDelegate:
+            return m_theme->fonts()->itemViewFont();
+        default:
+            return m_theme->fonts()->systemFont();
+    }
 }
 
 bool QQStyleKitStyle::loaded() const

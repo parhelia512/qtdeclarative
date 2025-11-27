@@ -10,222 +10,185 @@ QQStyleKitFont::QQStyleKitFont(QObject *parent)
 {
 }
 
-#define STYLEKIT_FONT_GETTER(propertyName) \
-    QFont QQStyleKitFont::propertyName() const \
-    {                                         \
-        if (!m_##propertyName) {              \
-            m_##propertyName.reset(new QFont()); \
-        }                                     \
-        return *m_##propertyName;             \
+#define DEFINE_FONT_GETTER(scopeName, scopeEnum) \
+    QFont QQStyleKitFont::scopeName##Font() const \
+    { \
+        return fontForScope(QQuickTheme::scopeEnum); \
     }
 
-STYLEKIT_FONT_GETTER(systemFont)
-STYLEKIT_FONT_GETTER(buttonFont)
-STYLEKIT_FONT_GETTER(checkboxFont)
-STYLEKIT_FONT_GETTER(comboBoxFont)
-STYLEKIT_FONT_GETTER(groupBoxFont)
-STYLEKIT_FONT_GETTER(itemViewFont)
-STYLEKIT_FONT_GETTER(labelFont)
-STYLEKIT_FONT_GETTER(listViewFont)
-STYLEKIT_FONT_GETTER(menuFont)
-STYLEKIT_FONT_GETTER(menuBarFont)
-STYLEKIT_FONT_GETTER(radioButtonFont)
-STYLEKIT_FONT_GETTER(spinBoxFont)
-STYLEKIT_FONT_GETTER(switchControlFont)
-STYLEKIT_FONT_GETTER(tabBarFont)
-STYLEKIT_FONT_GETTER(textAreaFont)
-STYLEKIT_FONT_GETTER(textFieldFont)
-STYLEKIT_FONT_GETTER(toolBarFont)
-STYLEKIT_FONT_GETTER(toolTipFont)
-STYLEKIT_FONT_GETTER(tumblerFont)
+DEFINE_FONT_GETTER(system, System)
+DEFINE_FONT_GETTER(button, Button)
+DEFINE_FONT_GETTER(checkBox, CheckBox)
+DEFINE_FONT_GETTER(comboBox, ComboBox)
+DEFINE_FONT_GETTER(groupBox, GroupBox)
+DEFINE_FONT_GETTER(itemView, ItemView)
+DEFINE_FONT_GETTER(label, Label)
+DEFINE_FONT_GETTER(listView, ListView)
+DEFINE_FONT_GETTER(menu, Menu)
+DEFINE_FONT_GETTER(menuBar, MenuBar)
+DEFINE_FONT_GETTER(radioButton, RadioButton)
+DEFINE_FONT_GETTER(spinBox, SpinBox)
+DEFINE_FONT_GETTER(switchControl, Switch)
+DEFINE_FONT_GETTER(tabBar, TabBar)
+DEFINE_FONT_GETTER(textArea, TextArea)
+DEFINE_FONT_GETTER(textField, TextField)
+DEFINE_FONT_GETTER(toolBar, ToolBar)
+DEFINE_FONT_GETTER(toolTip, ToolTip)
+DEFINE_FONT_GETTER(tumbler, Tumbler)
 
-void QQStyleKitFont::setSystemFont(const QFont &font)
+#define DEFINE_FONT_SETTER(scopeName, scopeEnum, signal) \
+    void QQStyleKitFont::set##scopeName##Font(const QFont &font) \
+    { \
+        setFontForScope(QQuickTheme::scopeEnum, font, &QQStyleKitFont::signal); \
+    }
+
+DEFINE_FONT_SETTER(System, System, systemFontChanged)
+DEFINE_FONT_SETTER(Button, Button, buttonFontChanged)
+DEFINE_FONT_SETTER(CheckBox, CheckBox, checkBoxFontChanged)
+DEFINE_FONT_SETTER(ComboBox, ComboBox, comboBoxFontChanged)
+DEFINE_FONT_SETTER(GroupBox, GroupBox, groupBoxFontChanged)
+DEFINE_FONT_SETTER(ItemView, ItemView, itemViewFontChanged)
+DEFINE_FONT_SETTER(Label, Label, labelFontChanged)
+DEFINE_FONT_SETTER(ListView, ListView, listViewFontChanged)
+DEFINE_FONT_SETTER(Menu, Menu, menuFontChanged)
+DEFINE_FONT_SETTER(MenuBar, MenuBar, menuBarFontChanged)
+DEFINE_FONT_SETTER(RadioButton, RadioButton, radioButtonFontChanged)
+DEFINE_FONT_SETTER(SpinBox, SpinBox, spinBoxFontChanged)
+DEFINE_FONT_SETTER(SwitchControl, Switch, switchControlFontChanged)
+DEFINE_FONT_SETTER(TabBar, TabBar, tabBarFontChanged)
+DEFINE_FONT_SETTER(TextArea, TextArea, textAreaFontChanged)
+DEFINE_FONT_SETTER(TextField, TextField, textFieldFontChanged)
+DEFINE_FONT_SETTER(ToolBar, ToolBar, toolBarFontChanged)
+DEFINE_FONT_SETTER(ToolTip, ToolTip, toolTipFontChanged)
+DEFINE_FONT_SETTER(Tumbler, Tumbler, tumblerFontChanged)
+
+void QQStyleKitFont::setFontForScope(QQuickTheme::Scope scope, const QFont &font, void (QQStyleKitFont::*signal)())
 {
-    if (!m_systemFont)
-        m_systemFont.reset(new QFont(font));
-    else
-        *m_systemFont = font;
-    emit systemFontChanged();
+    const int index = int(scope);
+    if (isSet(scope) && m_local[index] == font)
+        return;
+
+    QFont local = font;
+    // TODO: Figure out resolve mask to set here
+
+    m_local[index] = font;
+    markSet(scope);
+
+    m_effectiveDirty = true;
+
+    emit (this->*signal)();
 }
 
-void QQStyleKitFont::setButtonFont(const QFont &font)
+// The fallback font is used to resolve unset fonts
+// The theme fonts fallback to the style fonts and
+// style fonts fallback to the fallback style fonts
+QQStyleKitFont *QQStyleKitFont::fallbackFont() const
 {
-    if (!m_buttonFont) {
-        m_buttonFont.reset(new QFont(font));
-    } else {
-        *m_buttonFont = font;
-    }
-    emit buttonFontChanged();
+    return m_fallback;
 }
 
-void QQStyleKitFont::setCheckboxFont(const QFont &font)
+void QQStyleKitFont::setFallbackFont(QQStyleKitFont *fallback)
 {
-    if (!m_checkboxFont) {
-        m_checkboxFont.reset(new QFont(font));
-    } else {
-        *m_checkboxFont = font;
+    if (m_fallback == fallback)
+        return;
+
+    if (m_fallback)
+        disconnect(m_fallback, nullptr, this, nullptr);
+
+    m_fallback = fallback;
+
+    markEffectiveDirty();
+    ensureEffectiveUpToDate();
+
+    if (m_fallback) {
+        auto makeHandler = [this](void (QQStyleKitFont::*signal)()) {
+            return [this, signal] {
+                markEffectiveDirty();
+                emit (this->*signal)();
+            };
+        };
+        connect(m_fallback, &QQStyleKitFont::systemFontChanged, this,
+            makeHandler(&QQStyleKitFont::systemFontChanged));
+        connect(m_fallback, &QQStyleKitFont::buttonFontChanged, this,
+                makeHandler(&QQStyleKitFont::buttonFontChanged));
+        connect(m_fallback, &QQStyleKitFont::checkBoxFontChanged, this,
+                makeHandler(&QQStyleKitFont::checkBoxFontChanged));
+        connect(m_fallback, &QQStyleKitFont::comboBoxFontChanged, this,
+                makeHandler(&QQStyleKitFont::comboBoxFontChanged));
+        connect(m_fallback, &QQStyleKitFont::groupBoxFontChanged, this,
+                makeHandler(&QQStyleKitFont::groupBoxFontChanged));
+        connect(m_fallback, &QQStyleKitFont::itemViewFontChanged, this,
+                makeHandler(&QQStyleKitFont::itemViewFontChanged));
+        connect(m_fallback, &QQStyleKitFont::labelFontChanged, this,
+                makeHandler(&QQStyleKitFont::labelFontChanged));
+        connect(m_fallback, &QQStyleKitFont::listViewFontChanged, this,
+                makeHandler(&QQStyleKitFont::listViewFontChanged));
+        connect(m_fallback, &QQStyleKitFont::menuFontChanged, this,
+                makeHandler(&QQStyleKitFont::menuFontChanged));
+        connect(m_fallback, &QQStyleKitFont::menuBarFontChanged, this,
+                makeHandler(&QQStyleKitFont::menuBarFontChanged));
+        connect(m_fallback, &QQStyleKitFont::radioButtonFontChanged, this,
+                makeHandler(&QQStyleKitFont::radioButtonFontChanged));
+        connect(m_fallback, &QQStyleKitFont::spinBoxFontChanged, this,
+                makeHandler(&QQStyleKitFont::spinBoxFontChanged));
+        connect(m_fallback, &QQStyleKitFont::switchControlFontChanged, this,
+                makeHandler(&QQStyleKitFont::switchControlFontChanged));
+        connect(m_fallback, &QQStyleKitFont::tabBarFontChanged, this,
+                makeHandler(&QQStyleKitFont::tabBarFontChanged));
+        connect(m_fallback, &QQStyleKitFont::textAreaFontChanged, this,
+                makeHandler(&QQStyleKitFont::textAreaFontChanged));
+        connect(m_fallback, &QQStyleKitFont::textFieldFontChanged, this,
+                makeHandler(&QQStyleKitFont::textFieldFontChanged));
+        connect(m_fallback, &QQStyleKitFont::toolBarFontChanged, this,
+                makeHandler(&QQStyleKitFont::toolBarFontChanged));
+        connect(m_fallback, &QQStyleKitFont::toolTipFontChanged, this,
+                makeHandler(&QQStyleKitFont::toolTipFontChanged));
+        connect(m_fallback, &QQStyleKitFont::tumblerFontChanged, this,
+                makeHandler(&QQStyleKitFont::tumblerFontChanged));
     }
-    emit checkboxFontChanged();
+    emit fallbackFontChanged();
 }
 
-void QQStyleKitFont::setComboBoxFont(const QFont &font)
+QFont QQStyleKitFont::fontForScope(QQuickTheme::Scope scope) const
 {
-    if (!m_comboBoxFont) {
-        m_comboBoxFont.reset(new QFont(font));
-    } else {
-        *m_comboBoxFont = font;
-    }
-    emit comboBoxFontChanged();
+    ensureEffectiveUpToDate();
+    return m_effective[int(scope)];
 }
 
-void QQStyleKitFont::setGroupBoxFont(const QFont &font)
+void QQStyleKitFont::ensureEffectiveUpToDate() const
 {
-    if (!m_groupBoxFont) {
-        m_groupBoxFont.reset(new QFont(font));
-    } else {
-        *m_groupBoxFont = font;
-    }
-    emit groupBoxFontChanged();
-}
+    if (!m_effectiveDirty)
+        return;
 
-void QQStyleKitFont::setItemViewFont(const QFont &font)
-{
-    if (!m_itemViewFont) {
-        m_itemViewFont.reset(new QFont(font));
-    } else {
-        *m_itemViewFont = font;
-    }
-    emit itemViewFontChanged();
-}
+    const int sysIdx = int(QQuickTheme::System);
 
-void QQStyleKitFont::setLabelFont(const QFont &font)
-{
-    if (!m_labelFont) {
-        m_labelFont.reset(new QFont(font));
-    } else {
-        *m_labelFont = font;
-    }
-    emit labelFontChanged();
-}
+    {
+        const QFont localSys = isSet(QQuickTheme::System) ? m_local[sysIdx] : QFont();
+        const QFont fbSys = m_fallback ? m_fallback->fontForScope(QQuickTheme::System) : QFont();
+        // TODO: Resolve mask?
+        m_effective[sysIdx] = localSys.resolve(fbSys);
 
-void QQStyleKitFont::setListViewFont(const QFont &font)
-{
-    if (!m_listViewFont) {
-        m_listViewFont.reset(new QFont(font));
-    } else {
-        *m_listViewFont = font;
     }
-    emit listViewFontChanged();
-}
 
-void QQStyleKitFont::setMenuFont(const QFont &font)
-{
-    if (!m_menuFont) {
-        m_menuFont.reset(new QFont(font));
-    } else {
-        *m_menuFont = font;
-    }
-    emit menuFontChanged();
-}
+    const QFont systemEff = m_effective[sysIdx];
+    const QFont fallbackSystem = m_fallback ? m_fallback->fontForScope(QQuickTheme::System) : QFont();
 
-void QQStyleKitFont::setMenuBarFont(const QFont &font)
-{
-    if (!m_menuBarFont) {
-        m_menuBarFont.reset(new QFont(font));
-    } else {
-        *m_menuBarFont = font;
-    }
-    emit menuBarFontChanged();
-}
+    // Scopes: localScope > localSystem > fallbackScope > fallbackSystem
+    for (int i = 0; i < NScopes; ++i) {
+        if (i == sysIdx)
+            continue;
 
-void QQStyleKitFont::setRadioButtonFont(const QFont &font)
-{
-    if (!m_radioButtonFont) {
-        m_radioButtonFont.reset(new QFont(font));
-    } else {
-        *m_radioButtonFont = font;
-    }
-    emit radioButtonFontChanged();
-}
+        const QQuickTheme::Scope scope = static_cast<QQuickTheme::Scope>(i);
+        const QFont localRole = isSet(scope) ? m_local[i] : QFont();
+        const QFont fallbackRole = m_fallback ? m_fallback->fontForScope(scope) : QFont();
 
-void QQStyleKitFont::setSpinBoxFont(const QFont &font)
-{
-    if (!m_spinBoxFont) {
-        m_spinBoxFont.reset(new QFont(font));
-    } else {
-        *m_spinBoxFont = font;
+        QFont fallbackLayer = fallbackRole.resolve(fallbackSystem);
+        QFont base = systemEff.resolve(fallbackLayer);
+        // TODO: Resolve mask?
+        m_effective[i] = localRole.resolve(base);
     }
-    emit spinBoxFontChanged();
-}
 
-void QQStyleKitFont::setSwitchControlFont(const QFont &font)
-{
-    if (!m_switchControlFont) {
-        m_switchControlFont.reset(new QFont(font));
-    } else {
-        *m_switchControlFont = font;
-    }
-    emit switchControlFontChanged();
-}
-
-void QQStyleKitFont::setTabBarFont(const QFont &font)
-{
-    if (!m_tabBarFont) {
-        m_tabBarFont.reset(new QFont(font));
-    } else {
-        *m_tabBarFont = font;
-    }
-    emit tabBarFontChanged();
-}
-
-void QQStyleKitFont::setTextAreaFont(const QFont &font)
-{
-    if (!m_textAreaFont) {
-        m_textAreaFont.reset(new QFont(font));
-    } else {
-        *m_textAreaFont = font;
-    }
-    emit textAreaFontChanged();
-}
-
-void QQStyleKitFont::setTextFieldFont(const QFont &font)
-{
-    if (!m_textFieldFont) {
-        m_textFieldFont.reset(new QFont(font));
-    } else {
-        *m_textFieldFont = font;
-    }
-    emit textFieldFontChanged();
-}
-
-void QQStyleKitFont::setToolBarFont(const QFont &font)
-{
-    if (!m_toolBarFont) {
-        m_toolBarFont.reset(new QFont(font));
-    } else {
-        *m_toolBarFont = font;
-    }
-    emit toolBarFontChanged();
-}
-
-void QQStyleKitFont::setToolTipFont(const QFont &font)
-{
-    if (!m_toolTipFont) {
-        m_toolTipFont.reset(new QFont(font));
-    } else {
-        *m_toolTipFont = font;
-    }
-    emit toolTipFontChanged();
-}
-
-void QQStyleKitFont::setTumblerFont(const QFont &font)
-{
-    if (!m_tumblerFont) {
-        m_tumblerFont.reset(new QFont(font));
-    } else {
-        *m_tumblerFont = font;
-    }
-    emit tumblerFontChanged();
+    m_effectiveDirty = false;
 }
 
 QT_END_NAMESPACE

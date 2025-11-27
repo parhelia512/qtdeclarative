@@ -103,7 +103,7 @@ T.SpinBox {
         z: 2
         text: control.displayText
 
-        font: control.font
+        font: styleReader.font
         selectionColor: control.palette.highlight
         selectedTextColor: control.palette.highlightedText
         color: styleReader.text.color

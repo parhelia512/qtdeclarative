@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#ifndef QQSTYLEKITTHEMEPROPERTIES_P_H
-#define QQSTYLEKITTHEMEPROPERTIES_P_H
+#ifndef QQSTYLEKITTSTYLEANDTHEMEBASE_P_H
+#define QQSTYLEKITTSTYLEANDTHEMEBASE_P_H
 
 //
 //  W A R N I N G
@@ -22,7 +22,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QQStyleKitThemeProperties : public QQStyleKitControls
+class QQStyleKitStyleAndThemeBase : public QQStyleKitControls
 {
     Q_OBJECT
     Q_PROPERTY(QQStyleKitFont *fonts READ fonts NOTIFY fontsChanged FINAL)
@@ -31,7 +31,7 @@ class QQStyleKitThemeProperties : public QQStyleKitControls
     QML_NAMED_ELEMENT(ThemeProperties)
 
 public:
-    QQStyleKitThemeProperties(QObject *parent = nullptr);
+    QQStyleKitStyleAndThemeBase(QObject *parent = nullptr);
 
     QQStyleKitFont *fonts();
 
@@ -39,11 +39,11 @@ signals:
     void fontsChanged();
 
 private:
-    Q_DISABLE_COPY(QQStyleKitThemeProperties)
+    Q_DISABLE_COPY(QQStyleKitStyleAndThemeBase)
 
     QQStyleKitFont m_fonts;
 };
 
 QT_END_NAMESPACE
 
-#endif // QQSTYLEKITTHEMEPROPERTIES_P_H
+#endif // QQSTYLEKITTSTYLEANDTHEMEBASE_P_H

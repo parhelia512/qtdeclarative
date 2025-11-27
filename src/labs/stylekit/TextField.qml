@@ -22,6 +22,14 @@ T.TextField {
     rightPadding: styleReader.rightPadding
     bottomPadding: styleReader.bottomPadding
 
+    // FIXME: Should work when assigned to control.font directly
+    font.family: styleReader.font.family
+    font.pointSize: styleReader.font.pointSize
+    font.weight: styleReader.font.weight
+    font.italic: styleReader.font.italic
+    font.underline: styleReader.font.underline
+    font.bold: styleReader.font.bold
+
     color: styleReader.text.color
     verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask
     horizontalAlignment: styleReader.text.alignment & Qt.AlignHorizontal_Mask

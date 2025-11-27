@@ -7,6 +7,16 @@ import Qt.labs.StyleKit
 Style {
     id: style
 
+    fonts {
+        systemFont {
+            family: "Courier New"
+            pointSize: 12
+        }
+        textFieldFont {
+            bold: true
+        }
+    }
+
     control {
         // 'control' is the fallback for all the controls. Any properties that are not
         // overridden by a specific control underneath will be read from here instead.

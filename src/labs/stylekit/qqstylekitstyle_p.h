@@ -20,6 +20,7 @@
 #include "qqstylekitcontrols_p.h"
 #include "qqstylekitcustomtheme_p.h"
 #include "qqstylekitdebug_p.h"
+#include "qqstylekitstyleandthemebase_p.h"
 
 #include <QtQml/QtQml>
 #include <QtQuickTemplates2/private/qquickdeferredpointer_p_p.h>
@@ -29,7 +30,7 @@ QT_BEGIN_NAMESPACE
 class QQStyleKitTheme;
 class QQStyleKitPropertyResolver;
 
-class QQStyleKitStyle : public QQStyleKitControls
+class QQStyleKitStyle : public QQStyleKitStyleAndThemeBase
 {
     Q_OBJECT
     Q_PROPERTY(QQuickPalette *palette READ palette NOTIFY paletteChanged FINAL)
@@ -75,6 +76,8 @@ public:
     bool loaded() const;
 
     static QQStyleKitStyle *current();
+
+    QFont fontForReader(QQStyleKitReader *reader) const;
 
     // For now, used by qqcontrolstowidgetstyle
     Q_INVOKABLE QList<QObject *> customThemesAsList();

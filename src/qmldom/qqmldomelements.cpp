@@ -870,7 +870,7 @@ static QStringList keepKeysOrder(const QList<std::pair<SourceLocation, DomItem>>
                                  const QStringList &keys)
 {
     QStringList originalOrderedKeys;
-    for (auto attrib : attribs) {
+    for (const auto &attrib : attribs) {
         QString defName = attrib.second.name();
         if (keys.contains(defName) && !originalOrderedKeys.contains(defName)) {
             originalOrderedKeys.append(defName);
@@ -887,7 +887,7 @@ static QList<DomItem> keepDomItemsOrder(const QList<std::pair<SourceLocation, Do
     QList<DomItem> values = item.values();
 
     QList<DomItem> originalValuesOrder;
-    for (auto attrib : attribs) {
+    for (const auto &attrib : attribs) {
         QString defName = attrib.second.name();
         const auto itemValue = item.key(defName);
         if (values.contains(itemValue) && !originalValuesOrder.contains(itemValue)) {

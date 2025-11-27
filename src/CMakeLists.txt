@@ -61,9 +61,7 @@ if(TARGET Qt::Gui AND TARGET Qt::qsb AND QT_FEATURE_qml_animation)
     add_subdirectory(quicktemplates)
     add_subdirectory(quickcontrolsimpl)
     add_subdirectory(quickcontrols)
-    if(QT_FEATURE_quicktemplates2_container)
-        add_subdirectory(quickdialogs)
-    endif()
+
     if (QT_FEATURE_quickcontrols2_macos OR QT_FEATURE_quickcontrols2_windows)
         add_subdirectory(quicknativestyle)
     endif()
@@ -78,6 +76,10 @@ else()
 endif()
 
 add_subdirectory(labs)
+
+if(TARGET Qt::QuickTemplates2 AND QT_FEATURE_quicktemplates2_container)
+    add_subdirectory(quickdialogs)
+endif()
 
 # special case begin
 # These need to be included here since they have dependencies on the modules

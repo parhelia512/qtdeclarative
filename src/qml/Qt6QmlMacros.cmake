@@ -4389,12 +4389,16 @@ function(_qt_internal_collect_target_qml_import_paths out_var target)
             string(REGEX REPLACE "(.*)/${target_path}" "\\1" base_dir "${output_dir}")
             list(APPEND qml_import_paths "${base_dir}")
         else()
-            message(WARNING
-                "The ${target} target is a QML module with target path ${target_path}. "
-                "It uses an OUTPUT_DIRECTORY of ${output_dir}, which should end in the "
-                "same target path, but doesn't. Tooling such as qmllint may not work "
-                "correctly."
-            )
+            get_target_property(has_warned ${target} QT_QML_IMPORT_PATH_HAS_WARNED_ALREADY)
+            if(NOT "${has_warned}")
+                message(WARNING
+                    "The ${target} target is a QML module with target path ${target_path}. "
+                    "It uses an OUTPUT_DIRECTORY of ${output_dir}, which should end in the "
+                    "same target path, but doesn't. Tooling such as qmllint may not work "
+                    "correctly."
+                )
+                set_target_properties(${target} PROPERTIES QT_QML_IMPORT_PATH_HAS_WARNED_ALREADY ON)
+            endif()
         endif()
     endif()
 

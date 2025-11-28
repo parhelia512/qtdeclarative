@@ -73,6 +73,8 @@ public:
     HelpManager *helpManagerForUrl(const QByteArray &);
 
     void tryEnableCMakeCalls();
+    void setCMakeJobs(int jobs);
+    int defaultCMakeJobs() const { return fallbackCodeModel()->cmakeJobs(); }
 
     void setVerbose(bool verbose);
     QStringList defaultImportPaths() const { return fallbackCodeModel()->importPaths(); }

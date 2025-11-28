@@ -318,16 +318,37 @@ QStringList QQmlCodeModel::buildPathsForOpenedFiles()
     return result;
 }
 
+static int cmakeJobsFromSettings(QQmlToolingSharedSettings *settings, const QString &rootPath,
+                                 int defaultValue)
+{
+    if (!settings)
+        return defaultValue;
+    const auto result = settings->search(rootPath);
+    if (!result.isValid())
+        return defaultValue;
+
+    bool ok = false;
+    const QString valueString = settings->value("CMakeJobs"_L1).toString();
+    if (valueString == QQmlCodeModel::s_maxCMakeJobs)
+        return QThread::idealThreadCount();
+
+    const int cmakeJobs = settings->value("CMakeJobs"_L1).toInt(&ok);
+    if (!ok || cmakeJobs < 1)
+        return defaultValue;
+    return cmakeJobs;
+}
+
 void QQmlCodeModel::callCMakeBuild(QProcessScheduler *scheduler)
 {
     const QStringList buildPaths = buildPathsForOpenedFiles();
+    const int cmakeJobs = cmakeJobsFromSettings(m_settings, url2Path(m_rootUrl), m_cmakeJobs);
 
     QList<QProcessScheduler::Command> commands;
     for (const auto &path : buildPaths) {
         if (!QFileInfo::exists(path + u"/.cmake"_s))
             continue;
 
-        const auto [program, arguments] = QQmlLSUtils::cmakeBuildCommand(path);
+        auto [program, arguments] = QQmlLSUtils::cmakeBuildCommand(path, cmakeJobs);
         commands.append({ std::move(program), std::move(arguments) });
     }
     if (commands.isEmpty())

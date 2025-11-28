@@ -178,6 +178,38 @@ void tst_qmlls_cli::warnings_data()
             << UnexpectedMessages{ u"Using import directories passed from environment variable \"QML_IMPORT_PATH\": \"%1\"."_s
                                            .arg(dir2) }
             << ExpectedDiagnostics{} << UnexpectedDiagnostics{ importWarningQtQuick };
+
+    QTest::addRow("cmake-jobs-commandline")
+            << QStringList{ "-j"_L1, "8"_L1 } << Environment{ { "QMLLS_CMAKE_JOBS"_L1, "42"_L1 } }
+            << fileImportingQtQuick
+            << ExpectedMessages{ "Using 8 jobs for CMake, set via --cmake-jobs."_L1 }
+            << UnexpectedMessages{ "QMLLS_CMAKE_JOBS environment variable"_L1 }
+            << ExpectedDiagnostics{} << UnexpectedDiagnostics{};
+    QTest::addRow("cmake-jobs-commandline-bad")
+            << QStringList{ "-j"_L1, "8.5"_L1 } << Environment{} << fileImportingQtQuick
+            << ExpectedMessages{ "Value \"8.5\" passed to --cmake-jobs is not a number greater than 0 and not \"max\", using default value of 1 instead."_L1 }
+            << UnexpectedMessages{} << ExpectedDiagnostics{}
+            << UnexpectedDiagnostics{ importWarningQtQuick };
+    QTest::addRow("cmake-jobs-environment")
+            << QStringList{} << Environment{ { "QMLLS_CMAKE_JOBS"_L1, "42"_L1 } }
+            << fileImportingQtQuick
+            << ExpectedMessages{ "Using 42 jobs for CMake, set via QMLLS_CMAKE_JOBS environment variable."_L1 }
+            << UnexpectedMessages{} << ExpectedDiagnostics{} << UnexpectedDiagnostics{};
+    QTest::addRow("cmake-jobs-environment-bad")
+            << QStringList{} << Environment{ { "QMLLS_CMAKE_JOBS"_L1, "8.5"_L1 } }
+            << fileImportingQtQuick
+            << ExpectedMessages{ "Value \"8.5\" passed to QMLLS_CMAKE_JOBS is not a number greater than 0 and not \"max\", using default value of 1 instead."_L1 }
+            << UnexpectedMessages{} << ExpectedDiagnostics{}
+            << UnexpectedDiagnostics{ importWarningQtQuick };
+    QTest::addRow("cmake-jobs-default")
+            << QStringList{} << Environment{} << fileImportingQtQuick
+            << ExpectedMessages{ "Using 1 job for CMake" } << UnexpectedMessages{}
+            << ExpectedDiagnostics{} << UnexpectedDiagnostics{};
+    QTest::addRow("cmake-jobs-max")
+            << QStringList{ "-j"_L1, "max"_L1 } << Environment{} << fileImportingQtQuick
+            << ExpectedMessages{ "Using max (%1) jobs for CMake"_L1.arg(
+                       QString::number(QThread::idealThreadCount())) }
+            << UnexpectedMessages{} << ExpectedDiagnostics{} << UnexpectedDiagnostics{};
 }
 
 auto tst_qmlls_cli::startServerRAII()

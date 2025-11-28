@@ -104,6 +104,9 @@ public:
     enum class UrlLookup { Caching, ForceLookup };
     enum class State { Running, Stopping };
 
+    static constexpr QLatin1String s_maxCMakeJobs = "max"_L1;
+    static constexpr int s_defaultCMakeJobs = 1;
+
     explicit QQmlCodeModel(const QByteArray &rootUrl = {}, QObject *parent = nullptr,
                            QQmlToolingSharedSettings *settings = nullptr);
     ~QQmlCodeModel();
@@ -159,6 +162,8 @@ public:
         QMutexLocker guard(&m_mutex);
         return m_verbose;
     }
+    void setCMakeJobs(int jobs) { m_cmakeJobs = jobs; }
+    int cmakeJobs() const { return m_cmakeJobs; }
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
@@ -220,6 +225,7 @@ private:
     QSet<QString> m_ignoreForWatching;
     int m_nUpdateInProgress = 0;
     CMakeStatus m_cmakeStatus = RequiresInitialization;
+    int m_cmakeJobs = 1;
     bool m_verbose = false;
 };
 

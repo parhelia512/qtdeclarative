@@ -221,6 +221,59 @@ static QStringList collectImportPaths(const QCommandLineParser &parser,
     return importPaths;
 }
 
+static int cmakeJobs(const QCommandLineParser &parser, const QCommandLineOption &cmakeJobsOption)
+{
+    auto parseAndWarn = [](const QString &valueString, const QString &infoMessage,
+                           const QString &warningMessage) {
+        bool ok = false;
+        if (valueString == QQmlCodeModel::s_maxCMakeJobs) {
+            const int value = QThread::idealThreadCount();
+            qInfo().noquote() << infoMessage.arg("max (%1)"_L1.arg(QString::number(value)));
+            return value;
+        }
+
+        const int value = valueString.toInt(&ok);
+        if (!ok || value < 1) {
+            qInfo().noquote() << warningMessage.arg(valueString);
+            return QQmlCodeModel::s_defaultCMakeJobs;
+        }
+        qInfo().noquote() << infoMessage.arg(QString::number(value));
+        return value;
+    };
+
+    if (parser.isSet(cmakeJobsOption)) {
+        return parseAndWarn(
+                parser.value(cmakeJobsOption), "Using %1 jobs for CMake, set via --cmake-jobs."_L1,
+                "Value \"%1\" passed to --cmake-jobs is not a number greater than 0 and not "
+                "\"max\", using default value of 1 instead."_L1);
+    }
+
+    if (!qEnvironmentVariableIsSet("QMLLS_CMAKE_JOBS")) {
+        qInfo() << "Using 1 job for CMake, you can increase that value with the QMLLS_CMAKE_JOBS "
+                   "environment variable or the --cmake-jobs option.";
+        return QQmlCodeModel::s_defaultCMakeJobs;
+    }
+    return parseAndWarn(
+            qEnvironmentVariable("QMLLS_CMAKE_JOBS"),
+            "Using %1 jobs for CMake, set via QMLLS_CMAKE_JOBS environment variable."_L1,
+            "Value \"%1\" passed to QMLLS_CMAKE_JOBS is not a number greater than 0 and not "
+            "\"max\", using default value of 1 instead."_L1);
+}
+
+static bool prepareCMakeFeature(const QCommandLineParser &parser,
+                                const QCommandLineOption &noCMakeCallsOption)
+{
+    if (qmlGetConfigOption<bool, qmlConvertBoolConfigOption>("QMLLS_NO_CMAKE_CALLS")) {
+        qWarning() << "Disabling CMake calls via QMLLS_NO_CMAKE_CALLS environment variable.";
+        return false;
+    }
+    if (parser.isSet(noCMakeCallsOption)) {
+        qWarning() << "Disabling CMake calls via command line switch.";
+        return false;
+    }
+    return true;
+}
+
 // To debug:
 //
 // * simple logging can be redirected to a file
@@ -318,6 +371,12 @@ int qmllsMain(int argv, char *argc[])
             "Disables automatic CMake rebuilds and C++ file watching."_L1);
     parser.addOption(noCMakeCallsOption);
     settings.addOption("no-cmake-calls"_L1, "false"_L1);
+
+    QCommandLineOption cmakeJobsOption(QStringList() << "cmake-jobs"_L1 << "j"_L1,
+                                       "Number of CMake jobs for automatic CMake rebuilds. "_L1,
+                                       "jobs"_L1, "1"_L1);
+    parser.addOption(cmakeJobsOption);
+    settings.addOption("CMakeJobs"_L1, "1"_L1);
 
     QCommandLineOption docDir({ { "d"_L1, "p"_L1, "doc-dir"_L1 },
                                 "Documentation path to use for the documentation hints feature"_L1,
@@ -422,19 +481,11 @@ int qmllsMain(int argv, char *argc[])
     qmlServer.codeModelManager()->setImportPaths(
             collectImportPaths(parser, qmlImportPathOption, environmentOption, qmlImportNoDefault));
 
-    const bool disableCMakeCallsViaEnvironment =
-            qmlGetConfigOption<bool, qmlConvertBoolConfigOption>("QMLLS_NO_CMAKE_CALLS");
-
-    if (disableCMakeCallsViaEnvironment || parser.isSet(noCMakeCallsOption)) {
-        if (disableCMakeCallsViaEnvironment) {
-            qWarning() << "Disabling CMake calls via QMLLS_NO_CMAKE_CALLS environment variable.";
-        } else {
-            qWarning() << "Disabling CMake calls via command line switch.";
-        }
-
-        qmlServer.codeModelManager()->disableCMakeCalls();
-    } else {
+    if (prepareCMakeFeature(parser, noCMakeCallsOption)) {
+        qmlServer.codeModelManager()->setCMakeJobs(cmakeJobs(parser, cmakeJobsOption));
         qmlServer.codeModelManager()->tryEnableCMakeCalls();
+    } else {
+        qmlServer.codeModelManager()->disableCMakeCalls();
     }
 
     auto r = parser.isSet(inputFile) && parser.value(inputFile) != "-"_L1

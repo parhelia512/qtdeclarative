@@ -125,6 +125,7 @@ void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy mana
 
     // the non-fallback codemodel inherits the default values from the fallback codemodel
     if (!url.isEmpty()) {
+        ws.codeModel->setCMakeJobs(defaultCMakeJobs());
         ws.codeModel->setDocumentationRootPath(defaultDocumentationRootPath());
         ws.codeModel->setBuildPaths(defaultBuildPaths());
         ws.codeModel->setImportPaths(
@@ -291,6 +292,12 @@ void QQmlCodeModelManager::setVerbose(bool verbose)
     m_verbose = verbose;
     for (const auto &ws : m_workspaces)
         ws.codeModel->setVerbose(verbose);
+}
+
+void QQmlCodeModelManager::setCMakeJobs(int jobs)
+{
+    for (const auto &ws : m_workspaces)
+        ws.codeModel->setCMakeJobs(jobs);
 }
 
 void QQmlCodeModelManager::setBuildPathsForRootUrl(const QByteArray &url, const QStringList &paths)

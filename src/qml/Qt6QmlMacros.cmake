@@ -1332,6 +1332,28 @@ function(_qt_internal_list_to_ini list_var)
     set(${list_var} "${result}" PARENT_SCOPE)
 endfunction()
 
+function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targets)
+    set(content_to_append "")
+    foreach(current_target IN LISTS qmlls_build_ini_targets)
+        # prepare import paths
+        _qt_internal_collect_qml_import_paths(_import_paths ${current_target})
+
+        # Note that standalone builds will have the installation path twice in _import_paths:
+        # _qt_internal_list_to_ini takes care of removing these duplicates.
+        _qt_internal_list_to_ini(_import_paths)
+
+        # prepare source paths: replace / with <SLASH> as .ini files do not support / in group names
+        get_target_property(source_path "${current_target}" SOURCE_DIR)
+        string(REPLACE "/" "<SLASH>" source_path "${source_path}")
+
+        get_target_property(_qrc_files ${current_target} _qt_generated_qrc_files)
+        _qt_internal_list_to_ini(_qrc_files)
+
+        set(content_to_append "${content_to_append}[${source_path}]\nimportPaths=\"${_import_paths}\"\nresourceFiles=\"${_qrc_files}\"\n")
+    endforeach()
+    set(${out_var} "${content_to_append}" PARENT_SCOPE)
+endfunction()
+
 function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namespace)
     # _qt_internal_write_deferred_qmlls_build_ini_file is deferred to be called in the root
     # CMAKE_BINARY_DIR. If find_package(Qt6) is not called in the root of the project (like in the
@@ -1365,33 +1387,15 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
         )
     endif()
 
-    foreach(current_target IN LISTS _qmlls_build_ini_targets)
-        # prepare import paths
-        _qt_internal_collect_qml_import_paths(_import_paths ${current_target})
-
-        # Note that standalone builds will have the installation path twice in _import_paths: _qt_internal_list_to_ini
-        # takes care of removing these duplicates.
-        _qt_internal_list_to_ini(_import_paths)
-
-        # prepare source paths: replace / with <SLASH> as .ini files do not support / in group names
-        get_target_property(source_path "${current_target}" SOURCE_DIR)
-        string(REPLACE "/" "<SLASH>" source_path "${source_path}")
-
-        get_target_property(_qrc_files ${current_target} _qt_generated_qrc_files)
-        _qt_internal_list_to_ini(_qrc_files)
-
-        add_custom_command(
-            OUTPUT
-                ${qmlls_build_ini_file}
-            COMMAND ${CMAKE_COMMAND} -E
-                echo "[${source_path}]" >> ${qmlls_build_ini_file}
-            COMMAND ${CMAKE_COMMAND} -E
-                echo "importPaths=\"${_import_paths}\"" >> ${qmlls_build_ini_file}
-            COMMAND ${CMAKE_COMMAND} -E
-                echo "resourceFiles=\"${_qrc_files}\"" >> ${qmlls_build_ini_file}
-            APPEND
-        )
-    endforeach()
+    _qt_internal_collect_qmlls_build_ini_part(content_to_append "${_qmlls_build_ini_targets}")
+    file(CONFIGURE OUTPUT "${qmlls_build_ini_file}.part" CONTENT "${content_to_append}")
+    add_custom_command(
+        OUTPUT
+            "${qmlls_build_ini_file}"
+        COMMAND ${CMAKE_COMMAND}
+            -E cat "${qmlls_build_ini_file}.part" >> "${qmlls_build_ini_file}"
+        APPEND
+    )
 
     add_custom_target(generate_qmlls_build_ini_file
         DEPENDS ${qmlls_build_ini_file}

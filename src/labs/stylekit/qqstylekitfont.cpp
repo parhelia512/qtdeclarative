@@ -11,7 +11,7 @@ QQStyleKitFont::QQStyleKitFont(QObject *parent)
 }
 
 #define DEFINE_FONT_GETTER(scopeName, scopeEnum) \
-    QFont QQStyleKitFont::scopeName##Font() const \
+    QFont QQStyleKitFont::scopeName() const \
     { \
         return fontForScope(QQuickTheme::scopeEnum); \
     }
@@ -37,30 +37,30 @@ DEFINE_FONT_GETTER(toolTip, ToolTip)
 DEFINE_FONT_GETTER(tumbler, Tumbler)
 
 #define DEFINE_FONT_SETTER(scopeName, scopeEnum, signal) \
-    void QQStyleKitFont::set##scopeName##Font(const QFont &font) \
+    void QQStyleKitFont::set##scopeName(const QFont &font) \
     { \
         setFontForScope(QQuickTheme::scopeEnum, font, &QQStyleKitFont::signal); \
     }
 
-DEFINE_FONT_SETTER(System, System, systemFontChanged)
-DEFINE_FONT_SETTER(Button, Button, buttonFontChanged)
-DEFINE_FONT_SETTER(CheckBox, CheckBox, checkBoxFontChanged)
-DEFINE_FONT_SETTER(ComboBox, ComboBox, comboBoxFontChanged)
-DEFINE_FONT_SETTER(GroupBox, GroupBox, groupBoxFontChanged)
-DEFINE_FONT_SETTER(ItemView, ItemView, itemViewFontChanged)
-DEFINE_FONT_SETTER(Label, Label, labelFontChanged)
-DEFINE_FONT_SETTER(ListView, ListView, listViewFontChanged)
-DEFINE_FONT_SETTER(Menu, Menu, menuFontChanged)
-DEFINE_FONT_SETTER(MenuBar, MenuBar, menuBarFontChanged)
-DEFINE_FONT_SETTER(RadioButton, RadioButton, radioButtonFontChanged)
-DEFINE_FONT_SETTER(SpinBox, SpinBox, spinBoxFontChanged)
-DEFINE_FONT_SETTER(SwitchControl, Switch, switchControlFontChanged)
-DEFINE_FONT_SETTER(TabBar, TabBar, tabBarFontChanged)
-DEFINE_FONT_SETTER(TextArea, TextArea, textAreaFontChanged)
-DEFINE_FONT_SETTER(TextField, TextField, textFieldFontChanged)
-DEFINE_FONT_SETTER(ToolBar, ToolBar, toolBarFontChanged)
-DEFINE_FONT_SETTER(ToolTip, ToolTip, toolTipFontChanged)
-DEFINE_FONT_SETTER(Tumbler, Tumbler, tumblerFontChanged)
+DEFINE_FONT_SETTER(System, System, systemChanged)
+DEFINE_FONT_SETTER(Button, Button, buttonChanged)
+DEFINE_FONT_SETTER(CheckBox, CheckBox, checkBoxChanged)
+DEFINE_FONT_SETTER(ComboBox, ComboBox, comboBoxChanged)
+DEFINE_FONT_SETTER(GroupBox, GroupBox, groupBoxChanged)
+DEFINE_FONT_SETTER(ItemView, ItemView, itemViewChanged)
+DEFINE_FONT_SETTER(Label, Label, labelChanged)
+DEFINE_FONT_SETTER(ListView, ListView, listViewChanged)
+DEFINE_FONT_SETTER(Menu, Menu, menuChanged)
+DEFINE_FONT_SETTER(MenuBar, MenuBar, menuBarChanged)
+DEFINE_FONT_SETTER(RadioButton, RadioButton, radioButtonChanged)
+DEFINE_FONT_SETTER(SpinBox, SpinBox, spinBoxChanged)
+DEFINE_FONT_SETTER(SwitchControl, Switch, switchControlChanged)
+DEFINE_FONT_SETTER(TabBar, TabBar, tabBarChanged)
+DEFINE_FONT_SETTER(TextArea, TextArea, textAreaChanged)
+DEFINE_FONT_SETTER(TextField, TextField, textFieldChanged)
+DEFINE_FONT_SETTER(ToolBar, ToolBar, toolBarChanged)
+DEFINE_FONT_SETTER(ToolTip, ToolTip, toolTipChanged)
+DEFINE_FONT_SETTER(Tumbler, Tumbler, tumblerChanged)
 
 void QQStyleKitFont::setFontForScope(QQuickTheme::Scope scope, const QFont &font, void (QQStyleKitFont::*signal)())
 {
@@ -107,44 +107,44 @@ void QQStyleKitFont::setFallbackFont(QQStyleKitFont *fallback)
                 emit (this->*signal)();
             };
         };
-        connect(m_fallback, &QQStyleKitFont::systemFontChanged, this,
-            makeHandler(&QQStyleKitFont::systemFontChanged));
-        connect(m_fallback, &QQStyleKitFont::buttonFontChanged, this,
-                makeHandler(&QQStyleKitFont::buttonFontChanged));
-        connect(m_fallback, &QQStyleKitFont::checkBoxFontChanged, this,
-                makeHandler(&QQStyleKitFont::checkBoxFontChanged));
-        connect(m_fallback, &QQStyleKitFont::comboBoxFontChanged, this,
-                makeHandler(&QQStyleKitFont::comboBoxFontChanged));
-        connect(m_fallback, &QQStyleKitFont::groupBoxFontChanged, this,
-                makeHandler(&QQStyleKitFont::groupBoxFontChanged));
-        connect(m_fallback, &QQStyleKitFont::itemViewFontChanged, this,
-                makeHandler(&QQStyleKitFont::itemViewFontChanged));
-        connect(m_fallback, &QQStyleKitFont::labelFontChanged, this,
-                makeHandler(&QQStyleKitFont::labelFontChanged));
-        connect(m_fallback, &QQStyleKitFont::listViewFontChanged, this,
-                makeHandler(&QQStyleKitFont::listViewFontChanged));
-        connect(m_fallback, &QQStyleKitFont::menuFontChanged, this,
-                makeHandler(&QQStyleKitFont::menuFontChanged));
-        connect(m_fallback, &QQStyleKitFont::menuBarFontChanged, this,
-                makeHandler(&QQStyleKitFont::menuBarFontChanged));
-        connect(m_fallback, &QQStyleKitFont::radioButtonFontChanged, this,
-                makeHandler(&QQStyleKitFont::radioButtonFontChanged));
-        connect(m_fallback, &QQStyleKitFont::spinBoxFontChanged, this,
-                makeHandler(&QQStyleKitFont::spinBoxFontChanged));
-        connect(m_fallback, &QQStyleKitFont::switchControlFontChanged, this,
-                makeHandler(&QQStyleKitFont::switchControlFontChanged));
-        connect(m_fallback, &QQStyleKitFont::tabBarFontChanged, this,
-                makeHandler(&QQStyleKitFont::tabBarFontChanged));
-        connect(m_fallback, &QQStyleKitFont::textAreaFontChanged, this,
-                makeHandler(&QQStyleKitFont::textAreaFontChanged));
-        connect(m_fallback, &QQStyleKitFont::textFieldFontChanged, this,
-                makeHandler(&QQStyleKitFont::textFieldFontChanged));
-        connect(m_fallback, &QQStyleKitFont::toolBarFontChanged, this,
-                makeHandler(&QQStyleKitFont::toolBarFontChanged));
-        connect(m_fallback, &QQStyleKitFont::toolTipFontChanged, this,
-                makeHandler(&QQStyleKitFont::toolTipFontChanged));
-        connect(m_fallback, &QQStyleKitFont::tumblerFontChanged, this,
-                makeHandler(&QQStyleKitFont::tumblerFontChanged));
+        connect(m_fallback, &QQStyleKitFont::systemChanged, this,
+            makeHandler(&QQStyleKitFont::systemChanged));
+        connect(m_fallback, &QQStyleKitFont::buttonChanged, this,
+            makeHandler(&QQStyleKitFont::buttonChanged));
+        connect(m_fallback, &QQStyleKitFont::checkBoxChanged, this,
+            makeHandler(&QQStyleKitFont::checkBoxChanged));
+        connect(m_fallback, &QQStyleKitFont::comboBoxChanged, this,
+            makeHandler(&QQStyleKitFont::comboBoxChanged));
+        connect(m_fallback, &QQStyleKitFont::groupBoxChanged, this,
+            makeHandler(&QQStyleKitFont::groupBoxChanged));
+        connect(m_fallback, &QQStyleKitFont::itemViewChanged, this,
+            makeHandler(&QQStyleKitFont::itemViewChanged));
+        connect(m_fallback, &QQStyleKitFont::labelChanged, this,
+            makeHandler(&QQStyleKitFont::labelChanged));
+        connect(m_fallback, &QQStyleKitFont::listViewChanged, this,
+            makeHandler(&QQStyleKitFont::listViewChanged));
+        connect(m_fallback, &QQStyleKitFont::menuChanged, this,
+            makeHandler(&QQStyleKitFont::menuChanged));
+        connect(m_fallback, &QQStyleKitFont::menuBarChanged, this,
+            makeHandler(&QQStyleKitFont::menuBarChanged));
+        connect(m_fallback, &QQStyleKitFont::radioButtonChanged, this,
+            makeHandler(&QQStyleKitFont::radioButtonChanged));
+        connect(m_fallback, &QQStyleKitFont::spinBoxChanged, this,
+            makeHandler(&QQStyleKitFont::spinBoxChanged));
+        connect(m_fallback, &QQStyleKitFont::switchControlChanged, this,
+            makeHandler(&QQStyleKitFont::switchControlChanged));
+        connect(m_fallback, &QQStyleKitFont::tabBarChanged, this,
+            makeHandler(&QQStyleKitFont::tabBarChanged));
+        connect(m_fallback, &QQStyleKitFont::textAreaChanged, this,
+            makeHandler(&QQStyleKitFont::textAreaChanged));
+        connect(m_fallback, &QQStyleKitFont::textFieldChanged, this,
+            makeHandler(&QQStyleKitFont::textFieldChanged));
+        connect(m_fallback, &QQStyleKitFont::toolBarChanged, this,
+            makeHandler(&QQStyleKitFont::toolBarChanged));
+        connect(m_fallback, &QQStyleKitFont::toolTipChanged, this,
+            makeHandler(&QQStyleKitFont::toolTipChanged));
+        connect(m_fallback, &QQStyleKitFont::tumblerChanged, this,
+            makeHandler(&QQStyleKitFont::tumblerChanged));
     }
     emit fallbackFontChanged();
 }

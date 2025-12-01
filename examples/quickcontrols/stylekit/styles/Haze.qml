@@ -8,11 +8,11 @@ Style {
     id: style
 
     fonts {
-        systemFont {
+        system {
             family: "Courier New"
             pointSize: 12
         }
-        textFieldFont {
+        textField {
             bold: true
         }
     }

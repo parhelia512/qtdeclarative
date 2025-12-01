@@ -263,34 +263,34 @@ QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
 {
     switch (reader->type()) {
         case QQStyleKitReader::ControlType::Control:
-            return m_theme->fonts()->systemFont();
+            return m_theme->fonts()->system();
         case QQStyleKitReader::ControlType::AbstractButton:
         case QQStyleKitReader::ControlType::Button:
         case QQStyleKitReader::ControlType::FlatButton: {
-            return m_theme->fonts()->buttonFont();
+            return m_theme->fonts()->button();
         }
         case QQStyleKitReader::ControlType::CheckBox:
-            return m_theme->fonts()->checkBoxFont();
+            return m_theme->fonts()->checkBox();
         case QQStyleKitReader::ControlType::ComboBox:
-            return m_theme->fonts()->comboBoxFont();
+            return m_theme->fonts()->comboBox();
         case QQStyleKitReader::ControlType::RadioButton:
-            return m_theme->fonts()->radioButtonFont();
+            return m_theme->fonts()->radioButton();
         case QQStyleKitReader::ControlType::SpinBox:
-            return m_theme->fonts()->spinBoxFont();
+            return m_theme->fonts()->spinBox();
         case QQStyleKitReader::ControlType::SwitchControl:
-            return m_theme->fonts()->switchControlFont();
+            return m_theme->fonts()->switchControl();
         case QQStyleKitReader::ControlType::TextInput:
         case QQStyleKitReader::ControlType::TextField:
-            return m_theme->fonts()->textFieldFont();
+            return m_theme->fonts()->textField();
         case QQStyleKitReader::ControlType::TextArea:
-            return m_theme->fonts()->textAreaFont();
+            return m_theme->fonts()->textArea();
         case QQStyleKitReader::ControlType::ToolBar:
         case QQStyleKitReader::ControlType::ToolButton:
-            return m_theme->fonts()->toolBarFont();
+            return m_theme->fonts()->toolBar();
         case QQStyleKitReader::ControlType::ItemDelegate:
-            return m_theme->fonts()->itemViewFont();
+            return m_theme->fonts()->itemView();
         default:
-            return m_theme->fonts()->systemFont();
+            return m_theme->fonts()->system();
     }
 }
 

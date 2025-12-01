@@ -188,6 +188,9 @@ inline bool isPathContainer(const QSvgStructureNode *node)
             if (child->hasFilter())
                 return false;
 
+            if (!child->style().opacity.isDefault())
+                return false;
+
             if (!child->style().transform.isDefault()) {
                 //qCDebug(lcQuickVectorGraphics) << "NOT path container because local transform";
                 return false;

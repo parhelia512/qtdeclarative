@@ -104,9 +104,6 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
         stream() << "implicitHeight: originalBounds.height";
     }
 
-    if (!info.isDefaultOpacity)
-        stream() << "opacity: " << info.opacity.defaultValue().toReal();
-
     stream() << "transformOrigin: Item.TopLeft";
 
     if (!info.maskId.isEmpty()) {
@@ -115,6 +112,9 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
         stream() << "layer.textureSize: " << info.maskId << "_" << info.id << "_mask.textureSize";
         stream() << "layer.sourceRect: " << info.maskId << ".maskRect(" << info.id << ")";
     } else {
+        if (!info.isDefaultOpacity)
+            stream() << "opacity: " << info.opacity.defaultValue().toReal();
+
         generateItemAnimations(idString, info);
     }
 
@@ -342,6 +342,9 @@ void QQuickQmlGenerator::generateMaskUse(const NodeInfo &info)
     stream() << "property var maskSource: " << maskId;
     stream() << "property bool isAlpha: " << (info.isMaskAlpha ? "true" : "false");
     stream() << "property bool isInverted: " << (info.isMaskInverted ? "true" : "false");
+
+    if (!info.isDefaultOpacity)
+        stream() << "opacity: " << info.opacity.defaultValue().toReal();
 
     generateItemAnimations(maskShaderId, info);
 

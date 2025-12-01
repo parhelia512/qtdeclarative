@@ -102,6 +102,9 @@ public:
         Width,
         Blur,
         Alignment,
+        Bold,
+        Italic,
+        PointSize,
         COUNT
     };
     Q_ENUM(Property)

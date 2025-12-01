@@ -784,6 +784,39 @@ void QQStyleKitTextProperties::setAlignment(Qt::Alignment alignment)
         handleStylePropertyChanged(&QQStyleKitTextProperties::alignmentChanged);
 }
 
+bool QQStyleKitTextProperties::bold() const
+{
+    return styleProperty<bool>(QQSK::Property::Bold, false);
+}
+
+void QQStyleKitTextProperties::setBold(bool bold)
+{
+    if (setStyleProperty(QQSK::Property::Bold, bold))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::boldChanged);
+}
+
+bool QQStyleKitTextProperties::italic() const
+{
+    return styleProperty<bool>(QQSK::Property::Italic, false);
+}
+
+void QQStyleKitTextProperties::setItalic(bool italic)
+{
+    if (setStyleProperty(QQSK::Property::Italic, italic))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::italicChanged);
+}
+
+qreal QQStyleKitTextProperties::pointSize() const
+{
+    return styleProperty<qreal>(QQSK::Property::PointSize);
+}
+
+void QQStyleKitTextProperties::setPointSize(qreal pointSize)
+{
+    if (setStyleProperty(QQSK::Property::PointSize, pointSize))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::pointSizeChanged);
+}
+
 // ************* QQStyleKitControlProperties ****************
 
 QQStyleKitControlProperties::QQStyleKitControlProperties(QQSK::PropertyGroup group, QObject *parent)

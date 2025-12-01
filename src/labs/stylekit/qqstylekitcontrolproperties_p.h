@@ -103,6 +103,11 @@ public:
 
     const QQStyleKitControlProperties *asControlProperties() const;
 
+    inline bool isDefined(QQSK::Property property) const
+    {
+        return QQStyleKitPropertyResolver::readStyleProperty(this, property).isValid();
+    }
+
 private:
     bool shouldEmitLocally();
     bool shouldEmitGlobally();
@@ -472,6 +477,10 @@ class QQStyleKitTextProperties : public QQStyleKitPropertyGroup
     Q_OBJECT
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged FINAL)
     Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged FINAL)
+    Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged FINAL)
+    Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged FINAL)
+    Q_PROPERTY(qreal pointSize READ pointSize WRITE setPointSize NOTIFY pointSizeChanged FINAL)
+
     QML_UNCREATABLE("This component can only be instantiated by StyleKit")
     QML_NAMED_ELEMENT(StyleKitTextProperties)
 
@@ -487,9 +496,21 @@ public:
     Qt::Alignment alignment() const;
     void setAlignment(Qt::Alignment alignment);
 
+    bool bold() const;
+    void setBold(bool bold);
+
+    bool italic() const;
+    void setItalic(bool italic);
+
+    qreal pointSize() const;
+    void setPointSize(qreal pointSize);
+
 signals:
     void colorChanged();
     void alignmentChanged();
+    void boldChanged();
+    void italicChanged();
+    void pointSizeChanged();
 };
 
 /************* QQStyleKitControlProperties ****************

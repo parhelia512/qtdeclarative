@@ -18,6 +18,22 @@ using namespace Qt::StringLiterals;
 static const QString kAlternate1 = "A1"_L1;
 static const QString kAlternate2 = "A2"_L1;
 
+static QFont resolvedFontWithOverrides(const QQStyleKitReader *reader, const QFont &baseFont)
+{
+    Q_ASSERT(reader);
+    QFont font = baseFont;
+    const QQStyleKitTextProperties *textProps = reader->global()->text();
+    if (!textProps)
+        return font;
+    if (textProps->isDefined(QQSK::Property::Bold))
+        font.setBold(textProps->styleProperty<bool>(QQSK::Property::Bold));
+    if (textProps->isDefined(QQSK::Property::Italic))
+        font.setItalic(textProps->styleProperty<bool>(QQSK::Property::Italic));
+    if (textProps->isDefined(QQSK::Property::PointSize))
+        font.setPointSizeF(textProps->styleProperty<qreal>(QQSK::Property::PointSize));
+    return font;
+}
+
 QList<QQStyleKitReader *> QQStyleKitReader::s_allReaders;
 QMap<QString, QQmlComponent *> QQStyleKitReader::s_propertyChangesComponents;
 
@@ -81,6 +97,9 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
         bottomPadding: global.bottomPadding
         text.color: global.text.color
         text.alignment: global.text.alignment
+        text.bold: global.text.bold
+        text.italic: global.text.italic
+        text.pointSize: global.text.pointSize
     }
     )");
 
@@ -244,7 +263,7 @@ void QQStyleKitReader::updateControl()
         Q_UNREACHABLE();
     }
 
-    setFont(style->fontForReader(this));
+    setFont(resolvedFontWithOverrides(this, style->fontForReader(this)));
 }
 
 void QQStyleKitReader::resetAll()
@@ -263,7 +282,7 @@ void QQStyleKitReader::updateFontFromTheme()
     if (!style || !style->loaded())
         return;
 
-    setFont(style->fontForReader(this));
+    setFont(resolvedFontWithOverrides(this, style->fontForReader(this)));
 }
 
 void QQStyleKitReader::populateLocalStorage()

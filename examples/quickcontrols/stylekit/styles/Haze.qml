@@ -562,6 +562,7 @@ Style {
             itemDelegate {
                 background.border.width: 0
                 hovered.background.border.width: 2
+                hovered.text.bold: true
             }
 
             palettes {

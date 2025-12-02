@@ -22,13 +22,24 @@ QVarLengthArray<QQSK::StateFlag, 10> QQStyleKitPropertyResolver::s_cachedStateLi
 const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypesForType(
     QQStyleKitExtendedControlType exactType)
 {
-    /* The base types should, by default, mirror the class hierarchy in Qt Quick Controls.
-     * Exceptions:
-     * ItemDelegate - is normally used as an menu item in a combo, or item in a ListView. It
-     * is in any case styled quite differently than a button. */
+    /* By default, the base types should mirror the class hierarchy in Qt Quick Controls.
+     * However, to make it possible to style a base type without having to "undo" it again
+     * in a sub type, we choose to diverge in som cases:
+     *
+     * ItemDelegate — Normally used as a menu item in a ComboBox or as an item in a ListView.
+     *     Although it behaves similarly to a button, it is typically styled very differently
+     *     (e.g., without borders, drop shadows, gradients, etc.). For that reason, it falls
+     *     back to Control rather than AbstractButton.
+     *
+     * TabBar — In Qt Quick Controls, ToolBar inherits Pane, while TabBar inherits Container.
+     *     Since it is desirable for a TabBar to share styling characteristics (such as
+     *     background color) with ToolBar and Pane, we let it fall back to Pane instead of
+     *     Control.
+     */
     switch (exactType) {
     case QQStyleKitReader::Button:
     case QQStyleKitReader::ToolButton:
+    case QQStyleKitReader::TabButton:
     case QQStyleKitReader::RadioButton:
     case QQStyleKitReader::CheckBox:
     case QQStyleKitReader::SwitchControl: {
@@ -42,6 +53,7 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
         return t; }
     case QQStyleKitReader::Page:
     case QQStyleKitReader::Frame:
+    case QQStyleKitReader::TabBar:
     case QQStyleKitReader::ToolBar: {
         static QList<QQStyleKitExtendedControlType> t =
             { QQStyleKitReader::Pane, QQStyleKitReader::Control };

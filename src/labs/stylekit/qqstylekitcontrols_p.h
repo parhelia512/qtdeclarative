@@ -39,6 +39,8 @@ class QQStyleKitControls : public QObject, public QQmlParserStatus
     Q_PROPERTY(QQStyleKitControl *flatButton READ flatButton WRITE set_flatButton NOTIFY flatButtonChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *slider READ slider WRITE set_slider NOTIFY sliderChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *spinBox READ spinBox WRITE set_spinBox NOTIFY spinBoxChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *tabBar READ tabBar WRITE set_tabBar NOTIFY tabBarChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *tabButton READ tabButton WRITE set_tabButton NOTIFY tabButtonChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *textField READ textField WRITE set_textField NOTIFY textFieldChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *textInput READ textInput WRITE set_textInput NOTIFY textInputChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *toolBar READ toolBar WRITE set_toolBar NOTIFY toolBarChanged FINAL)
@@ -74,6 +76,8 @@ public:
     IMPLEMENT_ACCESSORS(flatButton)
     IMPLEMENT_ACCESSORS(slider)
     IMPLEMENT_ACCESSORS(spinBox)
+    IMPLEMENT_ACCESSORS(tabBar)
+    IMPLEMENT_ACCESSORS(tabButton)
     IMPLEMENT_ACCESSORS(textField)
     IMPLEMENT_ACCESSORS(textInput)
     IMPLEMENT_ACCESSORS(toolBar)
@@ -108,6 +112,8 @@ signals:
     void flatButtonChanged();
     void sliderChanged();
     void spinBoxChanged();
+    void tabBarChanged();
+    void tabButtonChanged();
     void textFieldChanged();
     void textInputChanged();
     void toolBarChanged();

@@ -59,6 +59,8 @@ public:
         SpinBox,
         SwitchControl,
         SearchField,
+        TabBar,
+        TabButton,
         TextArea,
         TextField,
         TextInput,

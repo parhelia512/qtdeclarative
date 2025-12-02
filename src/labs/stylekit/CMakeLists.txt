@@ -46,6 +46,8 @@ qt_internal_add_qml_module(QtQuickStyleKit
         SpinBox.qml
         Switch.qml
         TextField.qml
+        TabBar.qml
+        TabButton.qml
         ToolBar.qml
         ToolButton.qml
         Page.qml

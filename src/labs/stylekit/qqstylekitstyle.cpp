@@ -281,6 +281,9 @@ QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
             return m_theme->fonts()->spinBox();
         case QQStyleKitReader::ControlType::SwitchControl:
             return m_theme->fonts()->switchControl();
+        case QQStyleKitReader::ControlType::TabBar:
+        case QQStyleKitReader::ControlType::TabButton:
+            return m_theme->fonts()->tabBar();
         case QQStyleKitReader::ControlType::TextInput:
         case QQStyleKitReader::ControlType::TextField:
             return m_theme->fonts()->textField();

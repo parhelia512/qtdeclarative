@@ -198,6 +198,11 @@ BaseStyle {
         }
     }
 
+    progressBar {
+        background.visible: false
+        indicator.implicitWidth: 150
+    }
+
     slider {
         background {
             visible: false

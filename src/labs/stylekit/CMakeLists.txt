@@ -37,6 +37,7 @@ qt_internal_add_qml_module(QtQuickStyleKit
         ComboBox.qml
         Frame.qml
         ItemDelegate.qml
+        ProgressBar.qml
         RadioButton.qml
         RangeSlider.qml
         Slider.qml

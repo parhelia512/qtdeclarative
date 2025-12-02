@@ -55,6 +55,7 @@ public:
         CheckBox,
         ComboBox,
         FlatButton,
+        ProgressBar,
         Slider,
         SpinBox,
         SwitchControl,

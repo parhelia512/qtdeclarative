@@ -82,7 +82,7 @@ Item {
         id: indicator
         parentControl: root.parentControl
         indicatorProperties: root.indicatorProperties
-        vertical: parentControl.vertical
+        vertical: root.vertical
         z: 1
         x: !vertical ? indicatorItem.x : parentControl.leftPadding + (parentControl.availableWidth - height) / 2
         y: !vertical ? indicatorItem.y : parentControl.topPadding + width

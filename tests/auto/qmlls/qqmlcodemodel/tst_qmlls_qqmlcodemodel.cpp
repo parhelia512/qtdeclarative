@@ -202,6 +202,7 @@ void tst_qmlls_qqmlcodemodel::openFiles()
     QFETCH(bool, cmakeEnabled);
 
     QmlLsp::QQmlCodeModel model;
+    model.setImportPaths(QLibraryInfo::paths(QLibraryInfo::QmlImportsPath));
 
     // disabling CMake should not make the test fail!
     if (!cmakeEnabled)
@@ -256,8 +257,12 @@ void tst_qmlls_qqmlcodemodel::importPathViaSettings()
     QFile settingsTemplate(testFile(u"importPathFromSettings/.qmlls.ini.template"_s));
     QVERIFY(settingsTemplate.open(QFile::ReadOnly | QFile::Text));
     const QString data = QString::fromUtf8(settingsTemplate.readAll())
-                                 .arg(QDir::cleanPath(testFile(u"."_s)), QDir::listSeparator(),
-                                      testFile(u"SomeFolder"_s));
+                                 .arg(QStringList{
+                                         QDir::cleanPath(testFile(u"."_s)),
+                                         testFile(u"SomeFolder"_s),
+                                         QLibraryInfo::path(QLibraryInfo::QmlImportsPath),
+                                 }
+                                              .join(QDir::listSeparator()));
 
     QFile settingsFile(testFile(u"importPathFromSettings/.qmlls.ini"_s));
     auto guard = qScopeGuard([&settingsFile]() { settingsFile.remove(); });
@@ -397,6 +402,7 @@ void tst_qmlls_qqmlcodemodel::defaultWorkspace()
     const QByteArray unrelatedRoot = testFileUrl("twoWorkspaces/WorkSpaceA"_L1).toEncoded();
 
     TestCodeModelManager manager;
+    manager.setImportPaths(QLibraryInfo::paths(QLibraryInfo::QmlImportsPath));
     manager.addRootUrls({ unrelatedRoot });
     manager.newOpenFile(fileAUrl, 0, readFile(u"FileA.qml"_s));
     QTRY_VERIFY_WITH_TIMEOUT(manager.snapshotByUrl(fileAUrl).validDoc, 3000);
@@ -513,14 +519,15 @@ void tst_qmlls_qqmlcodemodel::newWorkspace()
 
     // set properties before the WS is created (qmlls reads those values via commandline or
     // environment variable, so they should be valid for all code models)
-    manager.setImportPaths({ buildPathA });
+    const QStringList importPaths{ buildPathA, QLibraryInfo::path(QLibraryInfo::QmlImportsPath) };
+    manager.setImportPaths(importPaths);
     manager.setDocumentationRootPath(docPathA);
 
     manager.addRootUrls({ rootA });
 
     // make sure that the new WS contains the properties set before its existence
     auto *codeModel = manager.findCodeModelForFile(rootA);
-    QCOMPARE(codeModel->importPaths(), { buildPathA });
+    QCOMPARE(codeModel->importPaths(), importPaths);
     QCOMPARE(codeModel->documentationRootPath(), { docPathA });
 }
 

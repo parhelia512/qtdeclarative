@@ -860,6 +860,7 @@ public:
 
     void clearReferenceCache();
     void setLoadPaths(const QStringList &v);
+    void setResourceFiles(const QStringList &v);
 
     // Helper structure reflecting the change in the map once loading / fetching is completed
     // formerItem - DomItem representing value (ExternalItemInfo) existing in the map before the
@@ -1125,6 +1126,7 @@ private:
     {
         SemanticAnalysis(const QStringList &loadPaths);
         void updateLoadPaths(const QStringList &loadPaths);
+        void setResourceFiles(const QStringList &qrcFiles);
 
         std::shared_ptr<QQmlJSResourceFileMapper> m_mapper;
         std::shared_ptr<QQmlJSImporter> m_importer;

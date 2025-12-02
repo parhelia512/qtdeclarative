@@ -86,12 +86,10 @@ void tst_qmlls_qqmlcodemodel::buildPathsForFileUrl()
             QUrl::fromLocalFile(temporaryDirectory.filePath(u"file.qml"_s)).toEncoded();
 
     QStringList result = model.buildPathsForFileUrl(nonExistentUrl);
-    QCOMPARE(result.size(), 1);
-    QCOMPARE(result.front(), expectedPath);
+    QCOMPARE_EQ(result, QStringList{ expectedPath });
 
     result = model.findCodeModelForFile(nonExistentUrl)->buildPathsForOpenedFiles();
-    QCOMPARE(result.size(), 1);
-    QCOMPARE(result.front(), expectedPath);
+    QCOMPARE_EQ(result, QStringList{ expectedPath });
 }
 
 void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames_data()
@@ -148,6 +146,65 @@ void tst_qmlls_qqmlcodemodel::findFilePathsFromFileNames()
 }
 
 using namespace QQmlJS::Dom;
+
+void tst_qmlls_qqmlcodemodel::resourceFiles()
+{
+    QmlLsp::QQmlCodeModelManager manager;
+    const QByteArray rootUrl = testFileUrl("somePath"_L1).toEncoded();
+
+    QTemporaryDir buildDir;
+    QVERIFY(buildDir.isValid());
+    QDir(buildDir.path()).mkdir(".qt"_L1);
+    {
+        const QString qmllsBuildIni = buildDir.filePath(".qt/.qmlls.build.ini"_L1);
+        QFile qmllsBuildIniFile(qmllsBuildIni);
+        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
+        qmllsBuildIniFile.write("[General]\n[%1]\nresourceFiles=\"%7\"\n"_L1
+                                        .arg(testFile("somePath").replace("/"_L1, "<SLASH>"_L1),
+                                             testFile("FolderWithResources/Good.qrc"))
+                                        .toUtf8());
+    }
+
+    manager.addRootUrls({ rootUrl });
+
+    QCOMPARE_EQ(manager.defaultResourceFiles(), QStringList{});
+    manager.setBuildPathsForRootUrl(rootUrl, { buildDir.path() });
+
+    QCOMPARE_EQ(manager.defaultResourceFiles(), QStringList{});
+    QCOMPARE_EQ(manager.resourceFilesForFileUrl(rootUrl),
+                QStringList{ testFile("FolderWithResources/Good.qrc"_L1) });
+
+    manager.setBuildPathsForRootUrl({}, { testFile("FolderWithResources") });
+    QStringList defaultResourceFiles = manager.defaultResourceFiles();
+    std::sort(defaultResourceFiles.begin(), defaultResourceFiles.end());
+    const QStringList expectedDefaultResourceFiles{
+        testFile("FolderWithResources/Bad.qrc"_L1),
+        testFile("FolderWithResources/Good.qrc"_L1),
+    };
+    QCOMPARE_EQ(defaultResourceFiles, expectedDefaultResourceFiles);
+    QCOMPARE_EQ(manager.resourceFilesForFileUrl(rootUrl),
+                QStringList{ testFile("FolderWithResources/Good.qrc"_L1) });
+}
+
+void tst_qmlls_qqmlcodemodel::resourceFilesFallback()
+{
+    QmlLsp::QQmlCodeModelManager manager;
+    const QByteArray rootUrl = testFileUrl("somePath").toEncoded();
+    manager.addRootUrls({ rootUrl });
+
+    QCOMPARE_EQ(manager.defaultResourceFiles(), QStringList{});
+    manager.setBuildPathsForRootUrl(rootUrl, { testFile("FolderWithResources") });
+
+    QCOMPARE_EQ(manager.defaultResourceFiles(), QStringList{});
+
+    const QStringList expectedDefaultResourceFiles{
+        testFile("FolderWithResources/Bad.qrc"),
+        testFile("FolderWithResources/Good.qrc"),
+    };
+    QStringList defaultResourceFiles = manager.resourceFilesForFileUrl(rootUrl);
+    std::sort(defaultResourceFiles.begin(), defaultResourceFiles.end());
+    QCOMPARE_EQ(defaultResourceFiles, expectedDefaultResourceFiles);
+}
 
 void tst_qmlls_qqmlcodemodel::fileNamesToWatch()
 {

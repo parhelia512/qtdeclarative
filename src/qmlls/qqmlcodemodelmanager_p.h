@@ -78,6 +78,7 @@ public:
     int defaultCMakeJobs() const { return fallbackCodeModel()->cmakeJobs(); }
 
     void setVerbose(bool verbose);
+    QStringList defaultResourceFiles() const { return fallbackCodeModel()->resourceFiles(); }
     QStringList defaultImportPaths() const { return fallbackCodeModel()->importPaths(); }
     QStringList defaultBuildPaths() const { return fallbackCodeModel()->buildPaths(); }
     QString defaultDocumentationRootPath() const
@@ -86,6 +87,9 @@ public:
     }
 private slots:
     void onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus);
+
+private:
+    void setBuildPathsOn(const QQmlWorkspace *ws, const QStringList &buildFolder);
 
 protected:
     using Workspaces = std::vector<QQmlWorkspace>;
@@ -97,6 +101,10 @@ protected:
     WorkspaceIterator findWorkspaceForFile(const QByteArray &url);
     WorkspaceIterator workspaceFromBuildFolder(const QString &fileName,
                                                const QStringList &buildFolders);
+    WorkspaceIterator fallbackWorkspace() const { return m_workspaces.begin(); }
+    WorkspaceIterator beginNonFallbackWorkspace() const { return ++m_workspaces.begin(); }
+    WorkspaceIterator endNonFallbackWorkspace() const { return m_workspaces.end(); }
+
     enum ManagedBy { ManagedByClient, ManagedByServer };
     using WorkspaceMutableIterator = Workspaces::iterator;
     WorkspaceMutableIterator findWorkspace(const QByteArray &url);

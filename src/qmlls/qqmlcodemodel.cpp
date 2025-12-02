@@ -573,6 +573,7 @@ void QQmlCodeModel::newDocForOpenFile(const QByteArray &url, int version, const 
     Path p;
     auto newCurrentPtr = newCurrent.ownerAs<DomEnvironment>();
     newCurrentPtr->setLoadPaths(importPathsForUrl(url));
+    newCurrentPtr->setResourceFiles(m_resourceFiles);
     newCurrentPtr->loadFile(FileToLoad::fromMemory(newCurrentPtr, fPath, docText),
                             [&p, this](Path, const DomItem &, const DomItem &newValue) {
                                 const DomItem file = newValue.fileObject();
@@ -644,6 +645,23 @@ void QQmlCodeModel::setImportPaths(const QStringList &importPaths)
         env->setLoadPaths(importPaths);
     if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
         env->setLoadPaths(importPaths);
+}
+
+QStringList QQmlCodeModel::resourceFiles() const
+{
+    QMutexLocker guard(&m_mutex);
+    return m_resourceFiles;
+}
+
+void QQmlCodeModel::setResourceFiles(const QStringList &resourceFiles)
+{
+    QMutexLocker guard(&m_mutex);
+    m_resourceFiles = resourceFiles;
+
+    if (const auto &env = m_currentEnv.ownerAs<DomEnvironment>())
+        env->setResourceFiles(resourceFiles);
+    if (const auto &env = m_validEnv.ownerAs<DomEnvironment>())
+        env->setResourceFiles(resourceFiles);
 }
 
 QStringList QQmlCodeModel::importPaths() const

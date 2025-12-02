@@ -131,6 +131,8 @@ public:
     QStringList importPathsForUrl(const QByteArray &);
     QStringList importPaths() const;
     void setImportPaths(const QStringList &paths);
+    QStringList resourceFiles() const;
+    void setResourceFiles(const QStringList &resourceFiles);
     QQmlToolingSharedSettings *settings() const { return m_settings; }
     QStringList findFilePathsFromFileNames(const QStringList &fileNames,
                                            const QSet<QString> &alreadyWatchedFiles);
@@ -215,6 +217,7 @@ private:
     QHash<QByteArray, UpdatePolicy> m_openDocumentsToUpdate;
     QStringList m_buildPaths;
     QStringList m_importPaths;
+    QStringList m_resourceFiles;
     QHash<QByteArray, QString> m_url2path;
     QHash<QString, QByteArray> m_path2url;
     QHash<QByteArray, OpenDocument> m_openDocuments;

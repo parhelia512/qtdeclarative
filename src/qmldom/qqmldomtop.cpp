@@ -1886,7 +1886,7 @@ DomEnvironment::SemanticAnalysis::SemanticAnalysis(const QStringList &loadPaths)
 /*!
 \internal
 
-Sets the new load paths in the importer and recreate the mapper.
+Sets the new load paths in the importer.
 
 This affects all copies of SemanticAnalysis that use the same QQmlJSImporter and QQmlJSMapper
 pointers.
@@ -1897,7 +1897,11 @@ void DomEnvironment::SemanticAnalysis::updateLoadPaths(const QStringList &loadPa
         return;
 
     m_importer->setImportPaths(loadPaths);
-    *m_mapper = QQmlJSResourceFileMapper(QQmlJSUtils::resourceFilesFromBuildFolders(loadPaths));
+}
+
+void DomEnvironment::SemanticAnalysis::setResourceFiles(const QStringList &qrcFiles)
+{
+    *m_mapper = QQmlJSResourceFileMapper(qrcFiles);
 }
 
 std::shared_ptr<DomEnvironment> DomEnvironment::create(const QStringList &loadPaths,
@@ -2206,6 +2210,15 @@ void DomEnvironment::setLoadPaths(const QStringList &v)
     if (m_semanticAnalysis)
         m_semanticAnalysis->updateLoadPaths(v);
 }
+
+void DomEnvironment::setResourceFiles(const QStringList &v)
+{
+    QMutexLocker l(mutex());
+
+    if (m_semanticAnalysis)
+        m_semanticAnalysis->setResourceFiles(v);
+}
+
 
 QStringList DomEnvironment::loadPaths() const
 {

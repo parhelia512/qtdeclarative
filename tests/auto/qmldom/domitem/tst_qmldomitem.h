@@ -4617,7 +4617,7 @@ private slots:
         }
     }
 
-    void environmentSetLoadPaths()
+    void environmentSetResourceFiles()
     {
         auto envPtr = DomEnvironment::create(
                 QStringList{},
@@ -4627,7 +4627,7 @@ private slots:
 
         auto semanticAnalysis = envPtr->semanticAnalysis();
         QVERIFY(semanticAnalysis.m_mapper->isEmpty());
-        envPtr->setLoadPaths(QStringList { baseDir + u"/buildFolderWithQrc"_s });
+        envPtr->setResourceFiles({ baseDir + u"/buildFolderWithQrc/.qt/rcc/someQrc.qrc"_s });
         QVERIFY(!semanticAnalysis.m_mapper->isEmpty());
         QVERIFY(semanticAnalysis.m_mapper->isFile(u"/qt/qml/MyModule/qml/HelloWorld.qml"_s));
     }

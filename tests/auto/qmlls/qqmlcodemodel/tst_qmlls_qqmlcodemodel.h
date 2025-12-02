@@ -29,6 +29,8 @@ private slots:
     void buildPathsForFileUrl_data();
     void buildPathsForFileUrl();
     void fileNamesToWatch();
+    void resourceFiles();
+    void resourceFilesFallback();
     void findFilePathsFromFileNames_data();
     void findFilePathsFromFileNames();
     void openFiles_data();

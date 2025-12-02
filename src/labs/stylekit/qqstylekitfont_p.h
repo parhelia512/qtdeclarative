@@ -148,7 +148,7 @@ private:
     QFont m_local[NScopes];
     mutable QFont m_effective[NScopes];
     quint32 m_setMask = 0;
-    mutable bool m_effectiveDirty = true;
+    mutable bool m_effectiveDirty = false;
 
     QQStyleKitFont *m_fallback = nullptr;
 };

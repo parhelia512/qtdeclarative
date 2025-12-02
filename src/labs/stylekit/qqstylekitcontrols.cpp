@@ -83,6 +83,7 @@ IMPLEMENT_ACCESSORS(popup, QQStyleKitReader::ControlType::Popup)
 IMPLEMENT_ACCESSORS(pane, QQStyleKitReader::ControlType::Pane)
 IMPLEMENT_ACCESSORS(page, QQStyleKitReader::ControlType::Page)
 IMPLEMENT_ACCESSORS(frame, QQStyleKitReader::ControlType::Frame)
+IMPLEMENT_ACCESSORS(label, QQStyleKitReader::ControlType::Label)
 
 #undef IMPLEMENT_ACCESSORS
 

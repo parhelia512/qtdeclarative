@@ -12,9 +12,8 @@ Style {
             family: "Courier New"
             pointSize: 12
         }
-        textField {
-            bold: true
-        }
+        textField.bold: true
+        label.bold: true
     }
 
     control {

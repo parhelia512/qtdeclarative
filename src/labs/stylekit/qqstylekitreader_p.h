@@ -71,7 +71,8 @@ public:
         Dialog,
         Pane,
         Page,
-        Frame
+        Frame,
+        Label
     };
     Q_ENUM(ControlType)
 

@@ -226,4 +226,9 @@ BaseStyle {
     toolBar {
         background.implicitHeight: 40
     }
+
+    label {
+        background.visible: false
+        text.color: style.palette.windowText
+    }
 }

@@ -51,6 +51,7 @@ qt_internal_add_qml_module(QtQuickStyleKit
         Page.qml
         Pane.qml
         Popup.qml
+        Label.qml
     LIBRARIES
         Qt6::GuiPrivate
         Qt6::Quick

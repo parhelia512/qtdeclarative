@@ -284,6 +284,9 @@ QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
             return m_theme->fonts()->textFieldFont();
         case QQStyleKitReader::ControlType::TextArea:
             return m_theme->fonts()->textAreaFont();
+        case QQStyleKitReader::ControlType::ToolBar:
+        case QQStyleKitReader::ControlType::ToolButton:
+            return m_theme->fonts()->toolBarFont();
         case QQStyleKitReader::ControlType::ItemDelegate:
             return m_theme->fonts()->itemViewFont();
         default:

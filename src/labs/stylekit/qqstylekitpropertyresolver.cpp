@@ -104,6 +104,7 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
      * is in any case styled quite differently than a button. */
     switch (exactType) {
     case QQStyleKitReader::Button:
+    case QQStyleKitReader::ToolButton:
     case QQStyleKitReader::RadioButton:
     case QQStyleKitReader::CheckBox:
     case QQStyleKitReader::SwitchControl: {
@@ -116,7 +117,8 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
             { QQStyleKitReader::Popup, QQStyleKitReader::Control };
         return t; }
     case QQStyleKitReader::Page:
-    case QQStyleKitReader::Frame: {
+    case QQStyleKitReader::Frame:
+    case QQStyleKitReader::ToolBar: {
         static QList<QQStyleKitExtendedControlType> t =
             { QQStyleKitReader::Pane, QQStyleKitReader::Control };
         return t; }

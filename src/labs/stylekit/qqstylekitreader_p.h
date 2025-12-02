@@ -63,6 +63,8 @@ public:
         TextArea,
         TextField,
         TextInput,
+        ToolBar,
+        ToolButton,
         RadioButton,
         ItemDelegate,
         Popup,

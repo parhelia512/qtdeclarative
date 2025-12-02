@@ -223,4 +223,7 @@ BaseStyle {
         checked.indicator.foreground.color: style.palette.accent
     }
 
+    toolBar {
+        background.implicitHeight: 40
+    }
 }

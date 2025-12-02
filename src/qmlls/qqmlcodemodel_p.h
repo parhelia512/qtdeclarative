@@ -117,8 +117,6 @@ public:
     void removeDirectory(const QByteArray &);
     // void updateDocument(const OpenDocument &doc);
     void newOpenFile(const QByteArray &url, int version, const QString &docText);
-    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText,
-                           UpdatePolicy policy);
     void closeOpenFile(const QByteArray &url);
     QByteArray rootUrl() const;
     QStringList buildPaths();
@@ -165,13 +163,19 @@ public:
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
     void documentationRootPathChanged(const QString &path);
+    void openUpdateThreadFinished();
 
 private:
     void addDirectory(const QString &path, int leftDepth);
+
+    // only to be called from the openUpdateThread
+    void newDocForOpenFile(const QByteArray &url, int version, const QString &docText,
+                           UpdatePolicy policy);
     bool openUpdateSome();
+    void openUpdate(const QByteArray &, UpdatePolicy policy);
+
     void openUpdateStart();
     void openUpdateEnd();
-    void openUpdate(const QByteArray &, UpdatePolicy policy);
     void openNeedUpdate();
     QString url2Path(const QByteArray &url, UrlLookup options = UrlLookup::Caching);
 
@@ -202,6 +206,7 @@ private:
     QQmlToolingSharedSettings *m_settings; // note: access without m_mutex. has thread-safe API
     HelpManager m_helpManager; // note: access without m_mutex, has thread-safe API
 
+    QThread* m_openUpdateThread = nullptr; // needed for asserts
     QHash<QByteArray, UpdatePolicy> m_openDocumentsToUpdate;
     QStringList m_buildPaths;
     QStringList m_importPaths;

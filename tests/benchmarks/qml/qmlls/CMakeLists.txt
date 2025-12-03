@@ -1,6 +1,12 @@
 # Copyright (C) 2025 The Qt Company Ltd.
 # SPDX-License-Identifier: BSD-3-Clause
 
+find_package(Qt COMPONENTS OPTIONAL Qt::QmlLSPrivate)
+
+if (NOT Qt6QmlLS_FOUND AND NOT TARGET Qt::QmlLS)
+    return()
+endif()
+
 qt_internal_add_benchmark(tst_highlightConstruction
     SOURCES
         tst_highlightConstruction.cpp

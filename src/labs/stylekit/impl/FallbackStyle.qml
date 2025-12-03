@@ -203,6 +203,31 @@ BaseStyle {
         indicator.implicitWidth: 150
     }
 
+    scrollBar {
+        padding: 4
+        background.implicitHeight: 10
+        indicator.implicitHeight: 10
+        indicator.foreground.color: palette.mid
+        pressed.indicator.foreground.color: palette.dark
+        vertical {
+            background.implicitWidth: 10
+            indicator.implicitWidth: 10
+        }
+    }
+
+    scrollIndicator {
+        padding: 1
+        background.visible: false
+        background.implicitHeight: 10
+        indicator.implicitHeight: 10
+        indicator.foreground.color: palette.mid
+        pressed.indicator.foreground.color: palette.dark
+        vertical {
+            background.implicitWidth: 10
+            indicator.implicitWidth: 10
+        }
+    }
+
     slider {
         background {
             visible: false

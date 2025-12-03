@@ -40,6 +40,9 @@ qt_internal_add_qml_module(QtQuickStyleKit
         ProgressBar.qml
         RadioButton.qml
         RangeSlider.qml
+        ScrollBar.qml
+        ScrollIndicator.qml
+        ScrollView.qml
         Slider.qml
         Style.qml
         StyleKitAnimation.qml

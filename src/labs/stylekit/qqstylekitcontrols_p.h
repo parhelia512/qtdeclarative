@@ -38,6 +38,9 @@ class QQStyleKitControls : public QObject, public QQmlParserStatus
     Q_PROPERTY(QQStyleKitControl *comboBox READ comboBox WRITE set_comboBox NOTIFY comboBoxChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *flatButton READ flatButton WRITE set_flatButton NOTIFY flatButtonChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *progressBar READ progressBar WRITE set_progressBar NOTIFY progressBarChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *scrollBar READ scrollBar WRITE set_scrollBar NOTIFY scrollBarChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *scrollIndicator READ scrollIndicator WRITE set_scrollIndicator NOTIFY scrollIndicatorChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *scrollView READ scrollView WRITE set_scrollView NOTIFY scrollViewChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *slider READ slider WRITE set_slider NOTIFY sliderChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *spinBox READ spinBox WRITE set_spinBox NOTIFY spinBoxChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *tabBar READ tabBar WRITE set_tabBar NOTIFY tabBarChanged FINAL)
@@ -76,6 +79,9 @@ public:
     IMPLEMENT_ACCESSORS(comboBox)
     IMPLEMENT_ACCESSORS(flatButton)
     IMPLEMENT_ACCESSORS(progressBar)
+    IMPLEMENT_ACCESSORS(scrollBar)
+    IMPLEMENT_ACCESSORS(scrollIndicator)
+    IMPLEMENT_ACCESSORS(scrollView)
     IMPLEMENT_ACCESSORS(slider)
     IMPLEMENT_ACCESSORS(spinBox)
     IMPLEMENT_ACCESSORS(tabBar)
@@ -113,6 +119,9 @@ signals:
     void comboBoxChanged();
     void flatButtonChanged();
     void progressBarChanged();
+    void scrollBarChanged();
+    void scrollIndicatorChanged();
+    void scrollViewChanged();
     void sliderChanged();
     void spinBoxChanged();
     void tabBarChanged();

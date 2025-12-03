@@ -188,6 +188,10 @@ Style {
         padding: 10
     }
 
+    scrollBar {
+        padding: 2
+    }
+
     // You can define one or more Instance Variations that can be enabled from the
     // application using the attached 'StyleKitControl.variations' property.
     // Inside a variation, you list the controls that should receive alternative
@@ -444,6 +448,11 @@ Style {
             background.color: "white"
         }
 
+        scrollBar {
+            background.color: "#8e848a"
+            indicator.foreground.color: "white"
+        }
+
         CustomControl {
             controlType: fancyButton
             background {
@@ -570,6 +579,17 @@ Style {
                 background.border.width: 0
                 hovered.background.border.width: 2
                 hovered.text.bold: true
+            }
+
+            scrollBar {
+                background.implicitWidth: 15
+                background.implicitHeight: 15
+                indicator.implicitWidth: 15
+                indicator.implicitHeight: 15
+                background.color: "#8e848a"
+                background.border.width: 1
+                indicator.border.width: 1
+                indicator.foreground.color: "white"
             }
 
             palettes {

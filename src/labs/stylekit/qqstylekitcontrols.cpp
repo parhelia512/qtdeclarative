@@ -85,6 +85,7 @@ IMPLEMENT_ACCESSORS(page, QQStyleKitReader::ControlType::Page)
 IMPLEMENT_ACCESSORS(frame, QQStyleKitReader::ControlType::Frame)
 IMPLEMENT_ACCESSORS(label, QQStyleKitReader::ControlType::Label)
 IMPLEMENT_ACCESSORS(groupBox, QQStyleKitReader::ControlType::GroupBox)
+IMPLEMENT_ACCESSORS(textArea, QQStyleKitReader::ControlType::TextArea)
 
 #undef IMPLEMENT_ACCESSORS
 

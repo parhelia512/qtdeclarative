@@ -117,15 +117,21 @@
 
 --%left T_PLUS T_MINUS
 
--- non-associative keywords
+-- non-associative keywords and precedence rules
+-- Since qlalr mimics bison's rules, see relevant links for details
+-- https://www.gnu.org/software/bison/manual/html_node/Using-Precedence.html
+-- https://www.gnu.org/software/bison/manual/html_node/Precedence-Only.html
+-- Each new PrecHeader (nonassoc, left, right) increases precedence of the operator (token), see lalr.g
+%nonassoc SHIFT_THERE
 %nonassoc T_ABSTRACT T_AS T_COLON T_COMPONENT T_FROM T_GET T_IDENTIFIER T_IMPLEMENTS
-%nonassoc T_INTERFACE T_NATIVE T_OF T_ON T_PACKAGE T_PRIVATE T_PROPERTY T_PROTECTED T_PUBLIC
-%nonassoc T_SET T_SIGNAL T_STATIC T_SYNCHRONIZED T_THROWS T_TRANSIENT T_VOLATILE
-%nonassoc T_VIRTUAL T_OVERRIDE T_FINAL T_READONLY T_REQUIRED T_DEFAULT
+          T_INTERFACE T_NATIVE T_OF T_ON T_PACKAGE T_PRIVATE T_PROPERTY T_PROTECTED T_PUBLIC
+          T_SET T_SIGNAL T_STATIC T_SYNCHRONIZED T_THROWS T_TRANSIENT T_VOLATILE
+          T_VIRTUAL T_OVERRIDE T_FINAL T_READONLY T_REQUIRED T_DEFAULT
+%nonassoc T_THEN
+%nonassoc T_ELSE
 
+-- REDUCE_HERE has highest precedence over tokens
 %nonassoc REDUCE_HERE
-%right T_THEN T_ELSE
-%right T_WITHOUTAS
 
 %start TopLevel
 
@@ -4793,9 +4799,9 @@ ImportsList: ImportsList T_COMMA ImportSpecifier;
 ./
 
 -- When enconutering an IdentifierReference it can resolve to both ImportedBinding and IdentifierName
--- Using %right and %prec, we tell qlalr that it should not reduce immediately, but rather shift
+-- Using %prec, we tell qlalr that it should not reduce immediately, but rather shift
 -- so that we have a chance of actually parsing the correct rule if there is an "as" identifier
-ImportSpecifier: ImportedBinding %prec T_WITHOUTAS;
+ImportSpecifier: ImportedBinding %prec SHIFT_THERE;
 /.
     case $rule_number: {
         auto importSpecifier = new (pool) AST::ImportSpecifier(stringRef(1));

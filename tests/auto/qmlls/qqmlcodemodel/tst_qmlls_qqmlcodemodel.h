@@ -55,6 +55,9 @@ private slots:
     void qprocessScheduler_data();
     void qprocessScheduler();
     void qprocessSchedulerProcess();
+    void qprocessSchedulerSlowProcess();
+    void qprocessSchedulerCancel_data();
+    void qprocessSchedulerCancel();
     void multipleQProcessScheduler_data();
     void multipleQProcessScheduler();
     void reloadQmllsBuildIniAfterBuild();

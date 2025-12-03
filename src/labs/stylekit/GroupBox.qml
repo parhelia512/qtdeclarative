@@ -39,10 +39,11 @@ T.GroupBox {
     }
 
     label: Text {
-        // leftPadding: styleReader.text.leftPadding
-        // rightPadding: styleReader.text.rightPadding
-        // bottomPadding: styleReader.text.bottomPadding
-        // topPadding: styleReader.text.topPadding
+        padding: styleReader.text.padding
+        leftPadding: styleReader.text.leftPadding
+        rightPadding: styleReader.text.rightPadding
+        bottomPadding: styleReader.text.bottomPadding
+        topPadding: styleReader.text.topPadding
         width: control.width
         verticalAlignment: styleReader.text.alignment
         horizontalAlignment: styleReader.text.alignment

@@ -467,6 +467,11 @@ class QQStyleKitTextProperties : public QQStyleKitPropertyGroup
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged FINAL)
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged FINAL)
     Q_PROPERTY(qreal pointSize READ pointSize WRITE setPointSize NOTIFY pointSizeChanged FINAL)
+    Q_PROPERTY(qreal padding READ padding WRITE setPadding NOTIFY paddingChanged FINAL)
+    Q_PROPERTY(qreal leftPadding READ leftPadding WRITE setLeftPadding NOTIFY leftPaddingChanged FINAL)
+    Q_PROPERTY(qreal rightPadding READ rightPadding WRITE setRightPadding NOTIFY rightPaddingChanged FINAL)
+    Q_PROPERTY(qreal topPadding READ topPadding WRITE setTopPadding NOTIFY topPaddingChanged FINAL)
+    Q_PROPERTY(qreal bottomPadding READ bottomPadding WRITE setBottomPadding NOTIFY bottomPaddingChanged FINAL)
 
     QML_UNCREATABLE("This component can only be instantiated by StyleKit")
     QML_NAMED_ELEMENT(StyleKitTextProperties)
@@ -492,12 +497,32 @@ public:
     qreal pointSize() const;
     void setPointSize(qreal pointSize);
 
+    qreal padding() const;
+    void setPadding(qreal padding);
+
+    qreal leftPadding() const;
+    void setLeftPadding(qreal leftPadding);
+
+    qreal rightPadding() const;
+    void setRightPadding(qreal rightPadding);
+
+    qreal topPadding() const;
+    void setTopPadding(qreal topPadding);
+
+    qreal bottomPadding() const;
+    void setBottomPadding(qreal bottomPadding);
+
 signals:
     void colorChanged();
     void alignmentChanged();
     void boldChanged();
     void italicChanged();
     void pointSizeChanged();
+    void paddingChanged();
+    void leftPaddingChanged();
+    void rightPaddingChanged();
+    void topPaddingChanged();
+    void bottomPaddingChanged();
 };
 
 /************* QQStyleKitControlProperties ****************

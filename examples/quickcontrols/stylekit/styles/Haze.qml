@@ -181,10 +181,11 @@ Style {
     }
 
     groupBox {
-        spacing: 20
-        background.topMargin: 20
+        background.topMargin: 30
         background.implicitHeight: 30
         text.bold: true
+        spacing: 5
+        padding: 10
     }
 
     // You can define one or more Instance Variations that can be enabled from the

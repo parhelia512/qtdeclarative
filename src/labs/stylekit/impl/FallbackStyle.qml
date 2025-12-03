@@ -92,7 +92,7 @@ BaseStyle {
     }
 
     groupBox {
-        spacing: 20
+        text.padding: 12
         padding: 12
         background.implicitHeight: 20
     }

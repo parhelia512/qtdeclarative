@@ -42,12 +42,15 @@ T.Button {
         spacing: control.spacing
         mirrored: control.mirrored
         display: control.display
-
         icon: control.icon
         text: control.text
         font: styleReader.font // FIXME: should be inherited from control
         color: styleReader.text.color
         alignment: styleReader.text.alignment
+        topPadding: styleReader.text.topPadding
+        bottomPadding: styleReader.text.bottomPadding
+        leftPadding: styleReader.text.leftPadding
+        rightPadding: styleReader.text.rightPadding
     }
 
     background: BackgroundDelegate {

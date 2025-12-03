@@ -89,6 +89,11 @@ T.Switch {
         color: styleReader.text.color
         horizontalAlignment: styleReader.text.alignment & Qt.AlignHorizontal_Mask
         verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask
+        padding: styleReader.text.padding
+        topPadding: styleReader.text.topPadding
+        bottomPadding: styleReader.text.bottomPadding
+        leftPadding: styleReader.text.leftPadding
+        rightPadding: styleReader.text.rightPadding
     }
 
     background: BackgroundDelegate {

@@ -100,6 +100,11 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
         text.bold: global.text.bold
         text.italic: global.text.italic
         text.pointSize: global.text.pointSize
+        text.padding: global.text.padding
+        text.leftPadding: global.text.leftPadding
+        text.rightPadding: global.text.rightPadding
+        text.topPadding: global.text.topPadding
+        text.bottomPadding: global.text.bottomPadding
     }
     )");
 

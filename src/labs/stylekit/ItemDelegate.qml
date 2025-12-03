@@ -49,6 +49,10 @@ T.ItemDelegate {
         font: styleReader.font
         color: styleReader.text.color
         alignment: styleReader.text.alignment
+        topPadding: styleReader.text.topPadding
+        bottomPadding: styleReader.text.bottomPadding
+        leftPadding: styleReader.text.leftPadding
+        rightPadding: styleReader.text.rightPadding
     }
 
     background: BackgroundDelegate {

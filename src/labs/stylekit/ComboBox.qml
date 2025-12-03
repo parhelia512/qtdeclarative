@@ -97,13 +97,16 @@ T.ComboBox {
         inputMethodHints: control.inputMethodHints
         validator: control.validator
         selectByMouse: control.selectTextByMouse
-
+        selectionColor: control.palette.highlight
+        selectedTextColor: control.palette.highlightedText
         color: styleReader.text.color
         verticalAlignment: styleReader.text.alignment & Qt.AlignVertical_Mask
         horizontalAlignment: styleReader.text.alignment & Qt.AlignHorizontal_Mask
-
-        selectionColor: control.palette.highlight
-        selectedTextColor: control.palette.highlightedText
+        padding: styleReader.text.padding
+        topPadding: styleReader.text.topPadding
+        bottomPadding: styleReader.text.bottomPadding
+        leftPadding: styleReader.text.leftPadding
+        rightPadding: styleReader.text.rightPadding
     }
 
     background: BackgroundDelegate {

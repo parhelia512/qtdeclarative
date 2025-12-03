@@ -829,6 +829,66 @@ void QQStyleKitTextProperties::setPointSize(qreal pointSize)
         handleStylePropertyChanged(&QQStyleKitTextProperties::pointSizeChanged);
 }
 
+qreal QQStyleKitTextProperties::padding() const
+{
+    return styleProperty<qreal>(QQSK::Property::Padding);
+}
+
+void QQStyleKitTextProperties::setPadding(qreal padding)
+{
+    if (setStyleProperty(QQSK::Property::Padding, padding))
+        handleStylePropertiesChanged<QQStyleKitTextProperties>(
+            &QQStyleKitTextProperties::paddingChanged,
+            &QQStyleKitTextProperties::leftPaddingChanged,
+            &QQStyleKitTextProperties::rightPaddingChanged,
+            &QQStyleKitTextProperties::topPaddingChanged,
+            &QQStyleKitTextProperties::bottomPaddingChanged);
+}
+
+qreal QQStyleKitTextProperties::leftPadding() const
+{
+    return styleProperty<qreal>(QQSK::Property::LeftPadding, QQSK::Property::Padding);
+}
+
+void QQStyleKitTextProperties::setLeftPadding(qreal padding)
+{
+    if (setStyleProperty(QQSK::Property::LeftPadding, padding))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::leftPaddingChanged);
+}
+
+qreal QQStyleKitTextProperties::rightPadding() const
+{
+    return styleProperty<qreal>(QQSK::Property::RightPadding, QQSK::Property::Padding);
+}
+
+void QQStyleKitTextProperties::setRightPadding(qreal padding)
+{
+    if (setStyleProperty(QQSK::Property::RightPadding, padding))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::rightPaddingChanged);
+}
+
+qreal QQStyleKitTextProperties::topPadding() const
+{
+    return styleProperty<qreal>(QQSK::Property::TopPadding, QQSK::Property::Padding);
+}
+
+void QQStyleKitTextProperties::setTopPadding(qreal padding)
+{
+    if (setStyleProperty(QQSK::Property::TopPadding, padding))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::topPaddingChanged);
+}
+
+qreal QQStyleKitTextProperties::bottomPadding() const
+{
+    return styleProperty<qreal>(QQSK::Property::BottomPadding, QQSK::Property::Padding);
+}
+
+void QQStyleKitTextProperties::setBottomPadding(qreal padding)
+{
+    if (setStyleProperty(QQSK::Property::BottomPadding, padding))
+        handleStylePropertyChanged(&QQStyleKitTextProperties::bottomPaddingChanged);
+}
+
 // ************* QQStyleKitControlProperties ****************
 
 QQStyleKitControlProperties::QQStyleKitControlProperties(QQSK::PropertyGroup group, QObject *parent)

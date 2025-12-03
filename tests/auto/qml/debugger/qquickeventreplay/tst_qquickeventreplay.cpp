@@ -19,6 +19,7 @@ public:
     void addEventType(const QQmlProfilerEventType &type) final;
     void addEvent(const QQmlProfilerEvent &event) final;
     void clear() final;
+    void clearAll();
 
     QList<QQmlProfilerEventType> m_eventTypes;
     QList<QQmlProfilerEvent> m_events;
@@ -53,6 +54,12 @@ void EventReceiver::addEvent(const QQmlProfilerEvent &event)
 void EventReceiver::clear()
 {
     m_events.clear();
+}
+
+void EventReceiver::clearAll()
+{
+    m_events.clear();
+    m_eventTypes.clear();
 }
 
 class tst_QQuickEventReplay : public QQmlDebugTest
@@ -91,6 +98,7 @@ QQmlDebugTest::ConnectResult tst_QQuickEventReplay::startQmlProcess(
 
 QList<QQmlDebugClient *> tst_QQuickEventReplay::createClients()
 {
+    m_receiver.clearAll();
     m_replayClient = new QQuickEventReplayClient(m_connection);
     m_profilerClient = new QQmlProfilerClient(m_connection, &m_receiver, 1 << ProfileInputEvents);
     m_profilerClient->setRecording(true);
@@ -102,7 +110,7 @@ void tst_QQuickEventReplay::receiveEvent()
     startQmlProcess("record.qml");
     QTRY_VERIFY(m_process->output().contains("clicked"));
     m_profilerClient->setRecording(false);
-    QTRY_VERIFY(!m_receiver.isEmpty());
+    QTRY_COMPARE(m_receiver.numLoadedEvents(), 5);
 
     // Reset the timestamps so that we can compare them
     for (auto &event : m_receiver.m_events)

@@ -1585,21 +1585,130 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     generateNodeBase(info);
 
-    QString primitiveId = info.id + QStringLiteral("_primitive");
-    QString offsetStr = QStringLiteral("Qt.vector2d(0, 0)");
+    for (qsizetype i = 0; i < info.steps.size(); ++i)
+        generateFilterStep(info, i);
 
-    switch (info.filterType) {
+    generateNodeEnd(info);
+
+    m_indentLevel--;
+    stream() << "}"; // End of Component
+}
+
+void QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
+                                            qsizetype stepIndex)
+{
+    const FilterNodeInfo::FilterStep &step = info.steps.at(stepIndex);
+    const QString primitiveId = info.id + QStringLiteral("_primitive") + QString::number(stepIndex);
+
+
+    QString inputId = step.input1 != FilterNodeInfo::FilterInput::SourceColor
+        ? step.namedInput1
+        : QStringLiteral("filterSourceItem");
+
+    bool isComposite = false;
+    switch (step.filterType) {
+    case FilterNodeInfo::Type::CompositeOver:
+    case FilterNodeInfo::Type::CompositeOut:
+    case FilterNodeInfo::Type::CompositeIn:
+    case FilterNodeInfo::Type::CompositeXor:
+    case FilterNodeInfo::Type::CompositeAtop:
+    case FilterNodeInfo::Type::CompositeArithmetic:
+    case FilterNodeInfo::Type::CompositeLighter:
+        isComposite = true;
+        Q_FALLTHROUGH();
+
+    case FilterNodeInfo::Type::BlendNormal:
+    case FilterNodeInfo::Type::BlendMultiply:
+    case FilterNodeInfo::Type::BlendScreen:
+    case FilterNodeInfo::Type::BlendDarken:
+    case FilterNodeInfo::Type::BlendLighten:
+    {
+        stream() << "ShaderEffect {";
+        m_indentLevel++;
+
+        QString input2Id = step.input2 != FilterNodeInfo::FilterInput::SourceColor
+              ? step.namedInput2
+              : QStringLiteral("filterSourceItem");
+
+        stream() << "id: " << primitiveId;
+        stream() << "visible: false";
+
+        QString shader;
+        switch (step.filterType) {
+        case FilterNodeInfo::Type::CompositeOver:
+            shader = QStringLiteral("fecompositeover");
+            break;
+        case FilterNodeInfo::Type::CompositeOut:
+            shader = QStringLiteral("fecompositeout");
+            break;
+        case FilterNodeInfo::Type::CompositeIn:
+            shader = QStringLiteral("fecompositein");
+            break;
+        case FilterNodeInfo::Type::CompositeXor:
+            shader = QStringLiteral("fecompositexor");
+            break;
+        case FilterNodeInfo::Type::CompositeAtop:
+            shader = QStringLiteral("fecompositeatop");
+            break;
+        case FilterNodeInfo::Type::CompositeArithmetic:
+            shader = QStringLiteral("fecompositearithmetic");
+            break;
+        case FilterNodeInfo::Type::CompositeLighter:
+            shader = QStringLiteral("fecompositelighter");
+            break;
+        case FilterNodeInfo::Type::BlendNormal:
+            shader = QStringLiteral("feblendnormal");
+            break;
+        case FilterNodeInfo::Type::BlendMultiply:
+            shader = QStringLiteral("feblendmultiply");
+            break;
+        case FilterNodeInfo::Type::BlendScreen:
+            shader = QStringLiteral("feblendscreen");
+            break;
+        case FilterNodeInfo::Type::BlendDarken:
+            shader = QStringLiteral("feblenddarken");
+            break;
+        case FilterNodeInfo::Type::BlendLighten:
+            shader = QStringLiteral("feblendlighten");
+            break;
+        default:
+            Q_UNREACHABLE();
+        }
+
+        stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/"
+                 << shader << ".frag.qsb\"";
+        stream() << "property var source: " << inputId;
+        stream() << "property var source2: " << input2Id;
+        stream() << "width: source.width";
+        stream() << "height: source.height";
+
+        if (isComposite) {
+            QVector4D k = step.filterParameter.value<QVector4D>();
+            stream() << "property var k: Qt.vector4d("
+                     << k.x() << ", "
+                     << k.y() << ", "
+                     << k.z() << ", "
+                     << k.w() << ")";
+        }
+
+        m_indentLevel--;
+        stream() << "}";
+
+        break;
+
+    }
     case FilterNodeInfo::Type::Flood:
     {
         stream() << "Rectangle {";
         m_indentLevel++;
 
         stream() << "id: " << primitiveId;
+        stream() << "visible: false";
 
-        stream() << "width: filterSourceItem.sourceRect.width";
-        stream() << "height: filterSourceItem.sourceRect.height";
+        stream() << "width: " << inputId << ".width";
+        stream() << "height: " << inputId << ".height";
 
-        QColor floodColor = info.filterParameter.value<QColor>();
+        QColor floodColor = step.filterParameter.value<QColor>();
         stream() << "color: \"" << floodColor.name(QColor::HexArgb) << "\"";
 
         m_indentLevel--;
@@ -1613,13 +1722,14 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
         m_indentLevel++;
 
         stream() << "id: " << primitiveId;
+        stream() << "visible: false";
 
         stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/fecolormatrix.frag.qsb\"";
-        stream() << "property var source: filterSourceItem";
-        stream() << "width: filterSourceItem.sourceRect.width";
-        stream() << "height: filterSourceItem.sourceRect.height";
+        stream() << "property var source: " << inputId;
+        stream() << "width: source.width";
+        stream() << "height: source.height";
 
-        QGenericMatrix<5, 5, qreal> matrix = info.filterParameter.value<QGenericMatrix<5, 5, qreal> >();
+        QGenericMatrix<5, 5, qreal> matrix = step.filterParameter.value<QGenericMatrix<5, 5, qreal> >();
         for (int row = 0; row < 4; ++row) { // Last row is ignored
 
             // Qt SVG stores rows as columns, so we flip the coordinates
@@ -1635,11 +1745,36 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     case FilterNodeInfo::Type::Offset:
     {
-        QVector2D offset = info.filterParameter.value<QVector2D>();
-        offsetStr = (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute
-                        ? QStringLiteral("Qt.vector2d(%1 / filterSourceItem.width, %2 / filterSourceItem.height)")
-                        : QStringLiteral("Qt.vector2d(%1, %2)")).arg(offset.x()).arg(offset.y());
-        primitiveId = QStringLiteral("filterSourceItem");
+        stream() << "ShaderEffectSource {";
+        m_indentLevel++;
+
+        stream() << "id: " << primitiveId;
+        stream() << "visible: false";
+        stream() << "sourceItem: " << inputId;
+        stream() << "width: sourceItem.width + offset.x";
+        stream() << "height: sourceItem.height + offset.y";
+
+        QVector2D offset = step.filterParameter.value<QVector2D>();
+        stream() << "property vector2d offset: Qt.vector2d(";
+        if (step.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute)
+            stream(SameLine) << offset.x() << " / width, " << offset.y() << " / height)";
+        else
+            stream(SameLine) << offset.x() << ", " << offset.y() << ")";
+
+        stream() << "sourceRect: Qt.rect(-offset.x, -offset.y, width, height)";
+
+        stream() << "ItemSpy {";
+        m_indentLevel++;
+        stream() << "id: " << primitiveId << "_offset_itemspy";
+        stream() << "anchors.fill: parent";
+
+        m_indentLevel--;
+        stream() << "}";
+        stream() << "textureSize: " << primitiveId << "_offset_itemspy.requiredTextureSize";
+
+
+        m_indentLevel--;
+        stream() << "}";
 
         break;
     }
@@ -1651,15 +1786,16 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
         m_indentLevel++;
 
         stream() << "id: " << primitiveId;
+        stream() << "visible: false";
 
-        stream() << "source: filterSourceItem";
+        stream() << "source: " << inputId;
         stream() << "blurEnabled: true";
-        stream() << "width: filterSourceItem.sourceRect.width";
-        stream() << "height: filterSourceItem.sourceRect.height";
+        stream() << "width: source.width";
+        stream() << "height: source.height";
 
         const qreal maxDeviation(12.0); // Decided experimentally
-        const qreal deviation = info.filterParameter.toReal();
-        if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative)
+        const qreal deviation = step.filterParameter.toReal();
+        if (step.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative)
             stream() << "blur: Math.min(1.0, " << deviation << " * filterSourceItem.width / " << maxDeviation << ")";
         else
             stream() << "blur: " << std::min(qreal(1.0), deviation / maxDeviation);
@@ -1671,7 +1807,7 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
         break;
     }
     default:
-        qCWarning(lcQuickVectorImage) << "Unhandled filter type: " << int(info.filterType);
+        qCWarning(lcQuickVectorImage) << "Unhandled filter type: " << int(step.filterType);
         // Dummy item to avoid empty component
         stream() << "Item { id: " << primitiveId << " }";
         break;
@@ -1681,14 +1817,18 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     stream() << "ShaderEffectSource {";
     m_indentLevel++;
 
+    stream() << "id: " << step.outputName;
+    if (stepIndex < info.steps.size() - 1)
+        stream() << "visible: false";
+
     qreal x1, x2, y1, y2;
-    info.filterPrimitiveRect.getCoords(&x1, &y1, &x2, &y2);
-    if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute) {
+    step.filterPrimitiveRect.getCoords(&x1, &y1, &x2, &y2);
+    if (step.csFilterParameter == FilterNodeInfo::CoordinateSystem::Absolute) {
         stream() << "property real fpx1: " << x1;
         stream() << "property real fpy1: " << y1;
         stream() << "property real fpx2: " << x2;
         stream() << "property real fpy2: " << y2;
-    } else if (info.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative) {
+    } else if (step.csFilterParameter == FilterNodeInfo::CoordinateSystem::Relative) {
         // If they are relative, they are actually in the coordinate system
         // of the original bounds of the filtered item. This means we first have to convert
         // them to the filter's coordinate system first.
@@ -1704,14 +1844,12 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     }
 
     stream() << "sourceItem: " << primitiveId;
-    stream() << "hideSource: true";
-    stream() << "property vector2d offset: " << offsetStr;
-    stream() << "sourceRect: Qt.rect(fpx1 - filterRect.x - offset.x, fpy1 - filterRect.y - offset.y, width, height)";
+    stream() << "sourceRect: Qt.rect(fpx1 - filterRect.x, fpy1 - filterRect.y, width, height)";
 
     stream() << "x: fpx1";
     stream() << "y: fpy1";
-    stream() << "width: " << "fpx2 - fpx1 + offset.x";
-    stream() << "height: " << "fpy2 - fpy1 + offset.y";
+    stream() << "width: " << "fpx2 - fpx1";
+    stream() << "height: " << "fpy2 - fpy1";
 
     stream() << "ItemSpy {";
     m_indentLevel++;
@@ -1724,11 +1862,6 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     m_indentLevel--;
     stream() << "}";
-
-    generateNodeEnd(info);
-
-    m_indentLevel--;
-    stream() << "}"; // End of Component
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)

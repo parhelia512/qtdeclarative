@@ -1193,22 +1193,91 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
     if (m_filterPrimitives.isEmpty())
         return;
 
-    if (m_filterPrimitives.size() > 1)
-        qCWarning(lcQuickVectorImage) << "Chained filters currently not supported.";
-
     handleBaseNodeSetup(node);
-
-    const QSvgFeFilterPrimitive *filterPrimitive = m_filterPrimitives.first();
 
     FilterNodeInfo info;
     fillCommonNodeInfo(node, info);
 
     info.filterRect = node->rect();
-    info.filterPrimitiveRect = filterPrimitive->rect();
     if (node->filterUnits() == QtSvg::UnitTypes::objectBoundingBox)
         info.csFilterRect = FilterNodeInfo::CoordinateSystem::Relative;
+
+    bool generatedAlpha = false;
+    for (const QSvgFeFilterPrimitive *filterPrimitive : std::as_const(m_filterPrimitives)) {
+        if (filterPrimitive->requiresSourceAlpha() && !generatedAlpha) {
+            FilterNodeInfo::FilterStep alphaStep;
+            alphaStep.filterType = FilterNodeInfo::Type::ColorMatrix;
+            alphaStep.csFilterParameter = FilterNodeInfo::CoordinateSystem::MatchFilterRect;
+
+            // Isolate alpha
+            qreal values[] = { 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 1.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0 };
+            QGenericMatrix<5, 5, qreal> matrix(values);
+            alphaStep.filterParameter = QVariant::fromValue(matrix);
+            alphaStep.outputName = info.id + QStringLiteral("_source_alpha");
+            generatedAlpha = true;
+
+            info.steps.append(alphaStep);
+        }
+
+        fillFilterPrimitiveInfo(node, filterPrimitive, info);
+    }
+
+    m_generator->generateFilterNode(info);
+    m_filterPrimitives.clear();
+}
+
+void QSvgVisitorImpl::fillFilterPrimitiveInfo(const QSvgFilterContainer *node,
+                                              const QSvgFeFilterPrimitive *filterPrimitive,
+                                              FilterNodeInfo &info)
+{
+    FilterNodeInfo::FilterStep step;
+    step.filterPrimitiveRect = filterPrimitive->rect();
+
+    step.outputName = info.id + QStringLiteral("_")
+        + (filterPrimitive->result().isEmpty()
+        ? QStringLiteral("output_") + QString::number(info.steps.size())
+        : filterPrimitive->result());
+
+    auto findInput = [&info, &filterPrimitive](const QString &input, QString *outName) {
+        const QString alphaSource = info.id + QStringLiteral("_source_alpha");
+        if (input == QStringLiteral("SourceGraphic")) {
+            return FilterNodeInfo::FilterInput::SourceColor;
+        } else if (input == QStringLiteral("SourceAlpha")) {
+            *outName = alphaSource;
+            return FilterNodeInfo::FilterInput::SourceAlpha;
+        } else if (info.steps.isEmpty()) {
+            return FilterNodeInfo::FilterInput::SourceColor;
+        }
+
+        if (!input.isEmpty()) {
+            *outName = info.id + QStringLiteral("_") + input;
+        } else {
+            bool insideMergeNode = filterPrimitive->type() == QSvgNode::FeMergenode;
+            for (int i = info.steps.size() - 1; i >= 0; --i) {
+                const auto &prevStep = info.steps.at(i);
+                if (insideMergeNode && prevStep.filterType == FilterNodeInfo::Type::Merge) {
+                    insideMergeNode = false;
+                    continue;
+                }
+
+                if (!prevStep.outputName.isEmpty() && prevStep.outputName != alphaSource) {
+                    *outName = prevStep.outputName;
+                    break;
+                }
+            }
+        }
+
+        return FilterNodeInfo::FilterInput::Name;
+    };
+
+    step.input1 = findInput(filterPrimitive->input(), &step.namedInput1);
+
     if (node->primitiveUnits() == QtSvg::UnitTypes::objectBoundingBox)
-        info.csFilterParameter = FilterNodeInfo::CoordinateSystem::Relative;
+        step.csFilterParameter = FilterNodeInfo::CoordinateSystem::Relative;
 
     // We special-case the default filter primitive rect as is done in Qt Svg.
     // The default is to match the filter's rect and this is represented by making
@@ -1216,15 +1285,70 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
     // this is not generally handled in Qt Svg, we also just special case it here.
     if (node->primitiveUnits() == QtSvg::UnitTypes::userSpaceOnUse
         && filterPrimitive->rect().unitW() == QtSvg::UnitTypes::unknown) {
-        info.csFilterParameter = FilterNodeInfo::CoordinateSystem::MatchFilterRect;
+        step.csFilterParameter = FilterNodeInfo::CoordinateSystem::MatchFilterRect;
     }
 
     switch (filterPrimitive->type()) {
+    case QSvgNode::FeBlend:
+    {
+        const QSvgFeBlend *blend = static_cast<const QSvgFeBlend *>(filterPrimitive);
+        switch (blend->mode()) {
+        case QSvgFeBlend::Mode::Normal:
+            step.filterType = FilterNodeInfo::Type::BlendNormal;
+            break;
+        case QSvgFeBlend::Mode::Multiply:
+            step.filterType = FilterNodeInfo::Type::BlendMultiply;
+            break;
+        case QSvgFeBlend::Mode::Screen:
+            step.filterType = FilterNodeInfo::Type::BlendScreen;
+            break;
+        case QSvgFeBlend::Mode::Darken:
+            step.filterType = FilterNodeInfo::Type::BlendDarken;
+            break;
+        case QSvgFeBlend::Mode::Lighten:
+            step.filterType = FilterNodeInfo::Type::BlendLighten;
+            break;
+        }
+
+        step.input2 = findInput(blend->input2(), &step.namedInput2);
+        break;
+    }
+    case QSvgNode::FeComposite:
+    {
+        const QSvgFeComposite *composite =  static_cast<const QSvgFeComposite *>(filterPrimitive);
+        switch (composite->compositionOperator()) {
+        case QSvgFeComposite::Operator::Over:
+            step.filterType = FilterNodeInfo::Type::CompositeOver;
+            break;
+        case QSvgFeComposite::Operator::In:
+            step.filterType = FilterNodeInfo::Type::CompositeIn;
+            break;
+        case QSvgFeComposite::Operator::Out:
+            step.filterType = FilterNodeInfo::Type::CompositeOut;
+            break;
+        case QSvgFeComposite::Operator::Atop:
+            step.filterType = FilterNodeInfo::Type::CompositeAtop;
+            break;
+        case QSvgFeComposite::Operator::Xor:
+            step.filterType = FilterNodeInfo::Type::CompositeXor;
+            break;
+        case QSvgFeComposite::Operator::Lighter:
+            step.filterType = FilterNodeInfo::Type::CompositeLighter;
+            break;
+        case QSvgFeComposite::Operator::Arithmetic:
+            step.filterType = FilterNodeInfo::Type::CompositeArithmetic;
+            break;
+        };
+
+        step.input2 = findInput(composite->input2(), &step.namedInput2);
+        step.filterParameter = composite->k();
+        break;
+    }
     case QSvgNode::FeOffset:
     {
         const QSvgFeOffset *offset = static_cast<const QSvgFeOffset *>(filterPrimitive);
-        info.filterType = FilterNodeInfo::Type::Offset;
-        info.filterParameter = QVariant::fromValue(QVector2D(offset->dx(), offset->dy()));
+        step.filterType = FilterNodeInfo::Type::Offset;
+        step.filterParameter = QVariant::fromValue(QVector2D(offset->dx(), offset->dy()));
         break;
 
     }
@@ -1232,8 +1356,8 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
     {
         const QSvgFeColorMatrix *colorMatrix =
             static_cast<const QSvgFeColorMatrix *>(filterPrimitive);
-        info.filterType = FilterNodeInfo::Type::ColorMatrix;
-        info.filterParameter = QVariant::fromValue(colorMatrix->matrix());
+        step.filterType = FilterNodeInfo::Type::ColorMatrix;
+        step.filterParameter = QVariant::fromValue(colorMatrix->matrix());
         break;
     }
 
@@ -1244,10 +1368,10 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
 
         if (gaussianBlur->edgeMode() == QSvgFeGaussianBlur::EdgeMode::Wrap)
             info.wrapMode = QSGTexture::Repeat;
-        info.filterType = FilterNodeInfo::Type::GaussianBlur;
+        step.filterType = FilterNodeInfo::Type::GaussianBlur;
         if (!qFuzzyCompare(gaussianBlur->stdDeviationX(), gaussianBlur->stdDeviationY()))
             qCWarning(lcQuickVectorImage) << "Separate X and Y deviations not supported for gaussian blur";
-        info.filterParameter = std::max(gaussianBlur->stdDeviationX(),
+        step.filterParameter = std::max(gaussianBlur->stdDeviationX(),
                                         gaussianBlur->stdDeviationY());
         break;
     }
@@ -1257,18 +1381,17 @@ void QSvgVisitorImpl::visitFilterNodeEnd(const QSvgFilterContainer *node)
         const QSvgFeFlood *flood =
             static_cast<const QSvgFeFlood *>(filterPrimitive);
 
-        info.filterType = FilterNodeInfo::Type::Flood;
-        info.filterParameter = flood->color();
+        step.filterType = FilterNodeInfo::Type::Flood;
+        step.filterParameter = flood->color();
         break;
     }
     default:
         // Create a dummy filter node to make sure bindings still work for unsupported filters
-        info.filterType = FilterNodeInfo::Type::None;
+        step.filterType = FilterNodeInfo::Type::None;
         break;
     }
 
-    m_generator->generateFilterNode(info);
-    m_filterPrimitives.clear();
+    info.steps.append(step);
 }
 
 bool QSvgVisitorImpl::visitFeFilterPrimitiveNodeStart(const QSvgFeFilterPrimitive *node)

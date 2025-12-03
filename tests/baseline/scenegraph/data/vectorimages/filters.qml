@@ -3,8 +3,8 @@ import QtQuick.VectorImage
 
 Rectangle {
     id: topLevelItem
-    width: 800
-    height: 900
+    width: 900
+    height: 700
 
     ListModel {
         id: files
@@ -13,18 +13,21 @@ Rectangle {
         ListElement { src: "../shared/svg/extended_features/fecolormatrix.svg" }
         ListElement { src: "../shared/svg/extended_features/fecolormatrixSimple.svg" }
         ListElement { src: "../shared/svg/extended_features/feoffset.svg" }
+        ListElement { src: "../shared/svg/extended_features/feComposite.svg" }
+        ListElement { src: "../shared/svg/extended_features/feBlend.svg" }
     }
 
     Grid {
-        columns: 2
+        columns: 4
         anchors.fill: parent
+        spacing: 20
         Repeater {
             model: files
             VectorImage {
                 source: src
                 preferredRendererType: VectorImage.CurveRenderer
                 height: 440
-                width: 390
+                width: 220
                 fillMode: VectorImage.PreserveAspectFit
             }
         }

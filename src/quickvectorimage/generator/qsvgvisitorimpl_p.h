@@ -83,6 +83,9 @@ private:
     void fillColorAnimationInfo(const QSvgNode *node, PathNodeInfo &info);
     void fillTransformAnimationInfo(const QSvgNode *node, NodeInfo &info);
     void fillMotionPathAnimationInfo(const QSvgNode *node, NodeInfo &info);
+    void fillFilterPrimitiveInfo(const QSvgFilterContainer *node,
+                                 const QSvgFeFilterPrimitive *filterPrimitive,
+                                 FilterNodeInfo &info);
     void handleBaseNodeSetup(const QSvgNode *node);
     void handleBaseNode(const QSvgNode *node);
     void handleBaseNodeEnd(const QSvgNode *node);

@@ -167,7 +167,19 @@ struct FilterNodeInfo : NodeInfo
         GaussianBlur,
         ColorMatrix,
         Offset,
-        Flood
+        Flood,
+        CompositeOver,
+        CompositeIn,
+        CompositeOut,
+        CompositeAtop,
+        CompositeXor,
+        CompositeLighter,
+        CompositeArithmetic,
+        BlendNormal,
+        BlendMultiply,
+        BlendScreen,
+        BlendDarken,
+        BlendLighten
     };
 
     enum class CoordinateSystem {
@@ -176,14 +188,32 @@ struct FilterNodeInfo : NodeInfo
         MatchFilterRect // Special case
     };
 
+    enum class FilterInput {
+        None,
+        SourceAlpha,
+        SourceColor,
+        Name
+    };
+
     QRectF filterRect;
     CoordinateSystem csFilterRect = CoordinateSystem::Absolute;
-    CoordinateSystem csFilterParameter = CoordinateSystem::Absolute;
     QSGTexture::WrapMode wrapMode = QSGTexture::ClampToEdge;
 
-    Type filterType = Type::None;
-    QRectF filterPrimitiveRect;
-    QVariant filterParameter;
+    struct FilterStep {
+        Type filterType = Type::None;
+        QRectF filterPrimitiveRect;
+        QVariant filterParameter;
+        CoordinateSystem csFilterParameter = CoordinateSystem::Absolute;
+
+        QString outputName;
+
+        FilterInput input1 = FilterInput::SourceColor;
+        FilterInput input2 = FilterInput::None; // Only used by some effects
+
+        QString namedInput1;
+        QString namedInput2;
+    };
+    QList<FilterStep> steps;
 };
 
 }

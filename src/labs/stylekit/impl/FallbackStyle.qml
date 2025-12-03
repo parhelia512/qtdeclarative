@@ -91,6 +91,12 @@ BaseStyle {
         background.color: style.palette.base
     }
 
+    groupBox {
+        spacing: 20
+        padding: 12
+        background.implicitHeight: 20
+    }
+
     flatButton {
         background.visible: false
         hovered.background.visible: true

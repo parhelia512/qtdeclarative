@@ -46,6 +46,11 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
         static QList<QQStyleKitExtendedControlType> t =
             { QQStyleKitReader::Pane, QQStyleKitReader::Control };
         return t; }
+    case QQStyleKitReader::GroupBox: {
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::Frame, QQStyleKitReader::Pane, QQStyleKitReader::Control };
+        return t;
+    }
     case QQStyleKitReader::TextField:
     case QQStyleKitReader::TextArea: {
         static QList<QQStyleKitExtendedControlType> t =

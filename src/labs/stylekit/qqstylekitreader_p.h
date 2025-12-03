@@ -72,7 +72,8 @@ public:
         Pane,
         Page,
         Frame,
-        Label
+        Label,
+        GroupBox
     };
     Q_ENUM(ControlType)
 

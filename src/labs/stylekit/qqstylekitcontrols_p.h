@@ -51,6 +51,7 @@ class QQStyleKitControls : public QObject, public QQmlParserStatus
     Q_PROPERTY(QQStyleKitControl *page READ page WRITE set_page NOTIFY pageChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *frame READ frame WRITE set_frame NOTIFY frameChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *label READ label WRITE set_label NOTIFY labelChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *groupBox READ groupBox WRITE set_groupBox NOTIFY groupBoxChanged FINAL)
     QML_UNCREATABLE("This component is abstract, and cannot be instantiated")
     QML_NAMED_ELEMENT(StyleKitControls)
 
@@ -84,6 +85,7 @@ public:
     IMPLEMENT_ACCESSORS(page)
     IMPLEMENT_ACCESSORS(frame)
     IMPLEMENT_ACCESSORS(label)
+    IMPLEMENT_ACCESSORS(groupBox)
 
 #undef IMPLEMENT_ACCESSORS
 
@@ -116,6 +118,7 @@ signals:
     void pageChanged();
     void frameChanged();
     void labelChanged();
+    void groupBoxChanged();
 
 protected:
     void classBegin() override {}

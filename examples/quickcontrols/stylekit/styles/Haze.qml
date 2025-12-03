@@ -180,6 +180,13 @@ Style {
         }
     }
 
+    groupBox {
+        spacing: 20
+        background.topMargin: 20
+        background.implicitHeight: 30
+        text.bold: true
+    }
+
     // You can define one or more Instance Variations that can be enabled from the
     // application using the attached 'StyleKitControl.variations' property.
     // Inside a variation, you list the controls that should receive alternative

@@ -273,6 +273,8 @@ QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
             return m_theme->fonts()->checkBox();
         case QQStyleKitReader::ControlType::ComboBox:
             return m_theme->fonts()->comboBox();
+        case QQStyleKitReader::ControlType::GroupBox:
+            return m_theme->fonts()->groupBox();
         case QQStyleKitReader::ControlType::RadioButton:
             return m_theme->fonts()->radioButton();
         case QQStyleKitReader::ControlType::SpinBox:

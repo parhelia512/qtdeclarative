@@ -31,6 +31,7 @@
 #include "qqmlrenamesymbolsupport_p.h"
 #include "qqmlhover_p.h"
 #include "qqmlhighlightsupport_p.h"
+#include "qqmlprogresssupport_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -87,6 +88,7 @@ private:
 
     // ==== modules that are not triggered by the user ====
     QQmlDocumentSymbolSupport m_documentSymbolSupport;
+    QQmlProgressSupport m_progressSupport;
 
     // ==== Linting should happen at the end as it potentially can take a longer time ====
     QmlLintSuggestions m_lint;

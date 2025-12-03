@@ -45,6 +45,8 @@ qt_internal_add_module(QmlLSPrivate
         documentsymbolutils_p.h
         documentsymbolutils.cpp
 
+        qqmlprogresssupport_p.h qqmlprogresssupport.cpp
+
     PUBLIC_LIBRARIES
         Qt::LanguageServerPrivate
         Qt::CorePrivate

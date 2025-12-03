@@ -57,6 +57,11 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
     appendWorkspace(defaultCodeModel, ManagedByServer);
     connect(&m_processScheduler, &QProcessScheduler::done, this,
             &QQmlCodeModelManager::onBuildFinished);
+
+    connect(&m_processScheduler, &QProcessScheduler::done, this,
+            &QQmlCodeModelManager::backgroundBuildFinished);
+    connect(&m_processScheduler, &QProcessScheduler::started, this,
+            &QQmlCodeModelManager::backgroundBuildStarted);
 }
 
 void QQmlCodeModelManager::onBuildFinished(const QByteArray &url)

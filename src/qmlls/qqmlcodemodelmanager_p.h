@@ -128,6 +128,9 @@ protected:
 
 Q_SIGNALS:
     void updatedSnapshot(const QByteArray &url, UpdatePolicy policy);
+
+    void backgroundBuildStarted(const QByteArray &rootUri);
+    void backgroundBuildFinished(const QByteArray &rootUri);
 };
 
 } // namespace QmlLsp

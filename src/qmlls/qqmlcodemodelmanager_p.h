@@ -85,6 +85,7 @@ public:
     {
         return fallbackCodeModel()->documentationRootPath();
     }
+    void cancelBackgroundBuild(const QByteArray &uri);
 public slots:
     void onCMakeProberFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onBuildFinished(const QByteArray &rootUrl);
@@ -131,6 +132,7 @@ Q_SIGNALS:
 
     void backgroundBuildStarted(const QByteArray &rootUri);
     void backgroundBuildFinished(const QByteArray &rootUri);
+    void backgroundBuildCancelled(const QByteArray &rootUri);
 };
 
 } // namespace QmlLsp

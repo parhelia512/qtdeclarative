@@ -62,6 +62,8 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
             &QQmlCodeModelManager::backgroundBuildFinished);
     connect(&m_processScheduler, &QProcessScheduler::started, this,
             &QQmlCodeModelManager::backgroundBuildStarted);
+    connect(&m_processScheduler, &QProcessScheduler::cancelled, this,
+            &QQmlCodeModelManager::backgroundBuildCancelled);
 }
 
 void QQmlCodeModelManager::onBuildFinished(const QByteArray &url)
@@ -213,6 +215,11 @@ void QQmlCodeModelManager::disableCMakeCalls()
     m_cmakeStatus = DoesNotHaveCMake;
     for (const auto &ws : m_workspaces)
         ws.codeModel->disableCMakeCalls();
+}
+
+void QQmlCodeModelManager::cancelBackgroundBuild(const QByteArray &uri)
+{
+    m_processScheduler.cancel(uri);
 }
 
 OpenDocumentSnapshot QQmlCodeModelManager::snapshotByUrl(const QByteArray &url)

@@ -17,6 +17,8 @@ public:
 private slots:
     void backgroundBuild_data();
     void backgroundBuild();
+
+    void cancelBackgroundBuild();
 };
 
 QT_END_NAMESPACE

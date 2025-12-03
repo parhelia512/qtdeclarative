@@ -49,6 +49,8 @@ private:
 private slots:
     void onBackgroundBuildStarted(const QByteArray &uri);
     void onBackgroundBuildDone(const QByteArray &uri);
+    void onBackgroundBuildCancelRequested(
+            const QLspSpecification::Notifications::WorkDoneProgressCancelParamsType &p);
     void clientInitialized(QLanguageServer *server);
 };
 

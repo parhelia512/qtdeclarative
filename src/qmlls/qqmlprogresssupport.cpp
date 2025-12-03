@@ -39,6 +39,10 @@ void QQmlProgressSupport::clientInitialized(QLanguageServer *server)
                      this, &QQmlProgressSupport::onBackgroundBuildStarted);
     QObject::connect(m_codeModelManager, &QmlLsp::QQmlCodeModelManager::backgroundBuildFinished,
                      this, &QQmlProgressSupport::onBackgroundBuildDone);
+
+    QObject::connect(server->notifySignals(),
+                     &QLspNotifySignals::receivedWorkDoneProgressCancelNotification, this,
+                     &QQmlProgressSupport::onBackgroundBuildCancelRequested);
 }
 
 int QQmlProgressSupport::createUniqueToken(const QByteArray &uri)
@@ -57,6 +61,7 @@ void QQmlProgressSupport::onBackgroundBuildStarted(const QByteArray &uri)
         QLspSpecification::ProgressParams beginParams{ token };
         QLspSpecification::WorkDoneProgressBegin workDoneProgressBegin{};
         workDoneProgressBegin.title = "Qmlls running background build";
+        workDoneProgressBegin.cancellable = true;
         workDoneProgressBegin.message =
                 "Building \"" + QUrl::fromEncoded(uri).toLocalFile().toUtf8() + "\"";
         workDoneProgressBegin.cancellable = true;
@@ -79,6 +84,24 @@ void QQmlProgressSupport::onBackgroundBuildDone(const QByteArray &uri)
     workDoneProgressEnd.message = "Build terminated";
     const QLspSpecification::ProgressParams endParams{ it->token, workDoneProgressEnd };
     m_protocol->notifyProgress(endParams);
+    m_tokens.erase(it);
+}
+
+void QQmlProgressSupport::onBackgroundBuildCancelRequested(
+        const QLspSpecification::Notifications::WorkDoneProgressCancelParamsType &p)
+{
+    const auto token = std::get_if<int>(&p.token);
+    if (!token)
+        return;
+
+    const auto it = std::find_if(
+            m_tokens.begin(), m_tokens.end(),
+            [token](const UriWithToken &uriWithToken) { return uriWithToken.token == *token; });
+
+    if (it == m_tokens.end())
+        return;
+
+    m_codeModelManager->cancelBackgroundBuild(it->uri);
     m_tokens.erase(it);
 }
 

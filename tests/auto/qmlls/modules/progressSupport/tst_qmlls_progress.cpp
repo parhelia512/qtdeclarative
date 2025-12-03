@@ -5,6 +5,7 @@
 
 #include <QtLanguageServer/private/qlanguageserverspectypes_p.h>
 #include <QtQmlLS/private/qqmllanguageserver_p.h>
+#include <QtTest/qsignalspy.h>
 #include <QtTest/qtest.h>
 
 using namespace QmlLsp;
@@ -41,6 +42,7 @@ void tst_qmlls_progress::backgroundBuild_data()
                 WorkDoneProgressBegin paramValueToCheck =
                         std::get<WorkDoneProgressBegin>(paramsToCheck.value);
                 QCOMPARE(paramValueToCheck.message, "Building \"\"");
+                QCOMPARE(paramValueToCheck.cancellable, true);
                 *ok = true;
             }
         });
@@ -95,6 +97,48 @@ void tst_qmlls_progress::backgroundBuild()
     server->codeModelManager()->backgroundBuildFinished("");
 
     QTRY_VERIFY_WITH_TIMEOUT(ok, 3000);
+}
+
+void tst_qmlls_progress::cancelBackgroundBuild()
+{
+    std::unique_ptr<QLanguageServerProtocol> client;
+    std::unique_ptr<QQmlLanguageServer> server;
+
+    client = std::make_unique<QLanguageServerProtocol>(
+            [&server](const QByteArray &data) { server->server()->receiveData(data, true); });
+    server = std::make_unique<QQmlLanguageServer>(
+            [&client](const QByteArray &data) { client->receiveData(data); });
+
+    bool initializedOk = false;
+    InitializeParams initializeParams;
+    initializeParams.capabilities.window.emplace().insert("workDoneProgress", true);
+    client->requestInitialize(initializeParams,
+                              [&initializedOk](const InitializeResult &) { initializedOk = true; });
+    QTRY_VERIFY_WITH_TIMEOUT(initializedOk, 3000);
+    client->notifyInitialized({});
+
+    client->registerWorkDoneProgressCreateRequestHandler(
+            [](const QByteArray &, const Requests::WorkDoneProgressCreateParamsType &,
+               LSPResponse<Responses::WorkDoneProgressCreateResultType> &&response) {
+                response.sendResponse();
+            });
+    client->registerProgressNotificationHandler(
+            [](const QByteArray &, const ProgressParams &paramsToCheck) {
+                QCOMPARE(std::get<int>(paramsToCheck.token), 0);
+            });
+
+    QSignalSpy spy(server->codeModelManager(), &QQmlCodeModelManager::backgroundBuildCancelled);
+
+    // simulate build trigger
+    server->codeModelManager()->backgroundBuildStarted("");
+
+    QCOMPARE(spy.count(), 0);
+
+    WorkDoneProgressCancelParams p;
+    p.token = 0;
+    client->notifyWorkDoneProgressCancel(p);
+
+    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 3000);
 }
 
 QTEST_MAIN(tst_qmlls_progress)

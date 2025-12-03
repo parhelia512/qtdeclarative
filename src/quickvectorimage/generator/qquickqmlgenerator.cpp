@@ -1701,10 +1701,10 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
         }
 
         for (const auto [coords, id] : m_easings.asKeyValueRange()) {
-            stream() << "property easingCurve " << id << ": { type: Easing.BezierSpline; bezierCurve: [ ";
+            stream() << "readonly property easingCurve " << id << ": ({ type: Easing.BezierSpline, bezierCurve: [ ";
             for (auto coord : coords)
                 stream(SameLine) << coord << ", ";
-            stream(SameLine) << "1, 1 ] }";
+            stream(SameLine) << "1, 1 ] })";
         }
 
         generateNodeEnd(info);

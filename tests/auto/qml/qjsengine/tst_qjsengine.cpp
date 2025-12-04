@@ -767,6 +767,8 @@ void tst_QJSEngine::toScriptValuenotroundtripped()
 
 void tst_QJSEngine::newVariant()
 {
+    QT_WARNING_PUSH
+    QT_WARNING_DISABLE_DEPRECATED
     QJSEngine eng;
     {
         QJSValue opaque = eng.toScriptValue(QVariant(QPoint(1, 2)));
@@ -778,6 +780,7 @@ void tst_QJSEngine::newVariant()
         QCOMPARE(opaque.prototype().isVariant(), false);
         QVERIFY(opaque.property("valueOf").callWithInstance(opaque).equals(opaque));
     }
+    QT_WARNING_POP
 }
 
 void tst_QJSEngine::newVariant_valueOfToString()

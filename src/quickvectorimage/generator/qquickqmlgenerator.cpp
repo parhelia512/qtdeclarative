@@ -1585,8 +1585,8 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     generateNodeBase(info);
 
-    for (qsizetype i = 0; i < info.steps.size(); ++i)
-        generateFilterStep(info, i);
+    for (qsizetype i = 0; i < info.steps.size();)
+        i = generateFilterStep(info, i);
 
     generateNodeEnd(info);
 
@@ -1594,12 +1594,13 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     stream() << "}"; // End of Component
 }
 
-void QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
-                                            qsizetype stepIndex)
+qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
+                                                 qsizetype stepIndex)
 {
     const FilterNodeInfo::FilterStep &step = info.steps.at(stepIndex);
     const QString primitiveId = info.id + QStringLiteral("_primitive") + QString::number(stepIndex);
 
+    stepIndex++;
 
     QString inputId = step.input1 != FilterNodeInfo::FilterInput::SourceColor
         ? step.namedInput1
@@ -1607,6 +1608,58 @@ void QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
 
     bool isComposite = false;
     switch (step.filterType) {
+    case FilterNodeInfo::Type::Merge:
+    {
+        const int maxNodeCount = 8;
+
+        // Find all nodes for this merge
+        QList<QPair<FilterNodeInfo::FilterInput, QString> > inputs;
+        for (; stepIndex < info.steps.size(); ++stepIndex) {
+            const FilterNodeInfo::FilterStep &nodeStep = info.steps.at(stepIndex);
+            if (nodeStep.filterType != FilterNodeInfo::Type::MergeNode)
+                break;
+
+            inputs.append(qMakePair(nodeStep.input1, nodeStep.namedInput1));
+        }
+
+        if (inputs.size() > maxNodeCount) {
+            qCWarning(lcQuickVectorImage) << "Maximum of" << maxNodeCount
+                                          << "nodes exceeded in merge effect.";
+        }
+
+        if (inputs.isEmpty()) {
+            qCWarning(lcQuickVectorImage) << "Merge effect requires at least one node.";
+            break;
+        }
+
+        stream() << "ShaderEffect {";
+        m_indentLevel++;
+
+        stream() << "id: " << primitiveId;
+        stream() << "visible: false";
+
+        stream() << "fragmentShader: \"qrc:/qt-project.org/quickvectorimage/helpers/shaders_ng/femerge.frag.qsb\"";
+        stream() << "width: source1.width";
+        stream() << "height: source1.height";
+        stream() << "property int sourceCount: " << std::min(qsizetype(8), inputs.size());
+
+        for (int i = 0; i < maxNodeCount; ++i) {
+            auto input = i < inputs.size()
+                ? inputs.at(i)
+                : qMakePair(FilterNodeInfo::FilterInput::None, QStringLiteral("null"));
+
+            QString inputId = input.first != FilterNodeInfo::FilterInput::SourceColor
+                                  ? input.second
+                                  : QStringLiteral("filterSourceItem");
+
+            stream() << "property var source" << (i + 1) << ": " << inputId;
+        }
+
+        m_indentLevel--;
+        stream() << "}";
+
+        break;
+    }
     case FilterNodeInfo::Type::CompositeOver:
     case FilterNodeInfo::Type::CompositeOut:
     case FilterNodeInfo::Type::CompositeIn:
@@ -1818,7 +1871,7 @@ void QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
     m_indentLevel++;
 
     stream() << "id: " << step.outputName;
-    if (stepIndex < info.steps.size() - 1)
+    if (stepIndex < info.steps.size())
         stream() << "visible: false";
 
     qreal x1, x2, y1, y2;
@@ -1862,6 +1915,8 @@ void QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
 
     m_indentLevel--;
     stream() << "}";
+
+    return stepIndex;
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)

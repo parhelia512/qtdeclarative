@@ -137,7 +137,7 @@ private:
                                    const QString &propertyName,
                                    AnimationType animationType = AnimationType::Auto);
     void generateShaderUse(const NodeInfo &info);
-    void generateFilterStep(const FilterNodeInfo &info, qsizetype stepIndex);
+    qsizetype generateFilterStep(const FilterNodeInfo &info, qsizetype stepIndex);
 
     QStringView indent();
     enum StreamFlags { NoFlags = 0x0, SameLine = 0x1 };

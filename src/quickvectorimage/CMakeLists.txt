@@ -67,6 +67,7 @@ qt_internal_add_shaders(QuickVectorImageHelpers "vectorimage_shaders"
     FILES
         "helpers/shaders_ng/genericmask.frag"
         "helpers/shaders_ng/fecolormatrix.frag"
+        "helpers/shaders_ng/femerge.frag"
 )
 
 qt_internal_add_shaders(QuickVectorImageHelpers "vectorimage_shaders_comp_over"

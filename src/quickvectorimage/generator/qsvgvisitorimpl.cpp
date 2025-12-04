@@ -1289,6 +1289,12 @@ void QSvgVisitorImpl::fillFilterPrimitiveInfo(const QSvgFilterContainer *node,
     }
 
     switch (filterPrimitive->type()) {
+    case QSvgNode::FeMerge:
+        step.filterType = FilterNodeInfo::Type::Merge;
+        break;
+    case QSvgNode::FeMergenode:
+        step.filterType = FilterNodeInfo::Type::MergeNode;
+        break;
     case QSvgNode::FeBlend:
     {
         const QSvgFeBlend *blend = static_cast<const QSvgFeBlend *>(filterPrimitive);

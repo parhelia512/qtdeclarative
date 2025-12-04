@@ -3,7 +3,7 @@ import QtQuick.VectorImage
 
 Rectangle {
     id: topLevelItem
-    width: 900
+    width: 1000
     height: 700
 
     ListModel {
@@ -15,6 +15,7 @@ Rectangle {
         ListElement { src: "../shared/svg/extended_features/feoffset.svg" }
         ListElement { src: "../shared/svg/extended_features/feComposite.svg" }
         ListElement { src: "../shared/svg/extended_features/feBlend.svg" }
+        ListElement { src: "../shared/svg/extended_features/femergenode.svg" }
     }
 
     Grid {

@@ -179,7 +179,9 @@ struct FilterNodeInfo : NodeInfo
         BlendMultiply,
         BlendScreen,
         BlendDarken,
-        BlendLighten
+        BlendLighten,
+        Merge,
+        MergeNode
     };
 
     enum class CoordinateSystem {

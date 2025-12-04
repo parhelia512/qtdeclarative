@@ -1906,7 +1906,7 @@ QString QQmlJSCodeGenerator::initAndCall(
     QString argumentPreparation;
     for (int i = 0; i < argc; ++i) {
         if (isRegisterAffectedBySideEffects(argv + i))
-            reject(u"calling method with argument affected by side effects"_s);
+            REJECT<QString>(u"calling method with argument affected by side effects"_s);
         const QQmlJSRegisterContent content = registerType(argv + i);
         const QQmlJSRegisterContent read = m_state.readRegister(argv + i);
         if (read.contains(content.containedType())) {

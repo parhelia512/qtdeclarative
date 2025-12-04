@@ -11,87 +11,66 @@ QQStyleKitControlState::QQStyleKitControlState(QObject *parent)
 {
 }
 
-#define IMPLEMENT_ACCESSORS(STATE) \
-QQStyleKitControlState *QQStyleKitControlState::STATE() const \
-{ \
-    if (!m_ ## STATE) { \
-        auto *self = const_cast<QQStyleKitControlState *>(this); \
-        self->m_ ## STATE = new QQStyleKitControlState(self); \
-    } \
-    return m_ ## STATE; \
+QQStyleKitControl *QQStyleKitControlState::control() const
+{
+    if (m_nestedState == QQSK::StateFlag::Normal) {
+        Q_ASSERT(qobject_cast<const QQStyleKitControl *>(this));
+        auto *self = const_cast<QQStyleKitControlState *>(this);
+        return static_cast<QQStyleKitControl *>(self);
+    }
+    Q_ASSERT(qobject_cast<const QQStyleKitControl *>(parent()));
+    return static_cast<QQStyleKitControl *>(parent());
 }
 
-IMPLEMENT_ACCESSORS(pressed);
-IMPLEMENT_ACCESSORS(hovered);
-IMPLEMENT_ACCESSORS(highlighted);
-IMPLEMENT_ACCESSORS(focused);
-IMPLEMENT_ACCESSORS(checked);
-IMPLEMENT_ACCESSORS(vertical);
-IMPLEMENT_ACCESSORS(disabled);
-
-std::tuple<QQStyleKitControl *, QQSK::State>
-QQStyleKitControlState::controlAndState()
+QQStyleKitControlState *QQStyleKitControlState::lazyCreateState(QQSK::StateFlag state) const
 {
-    /* Follow the parent path back to the QQStyleKitControl, and
-     * track which nested states we're in along the way. The path of
-     * states determines the state of the control that the properties
-     * inside this QQStyleKitControlState should apply for. */
-    QQStyleKitControl *control = nullptr;
-    QQSK::State nestedState = QQSK::StateFlag::Unspecified;
-    const QQStyleKitControlState *obj = this;
+    if (m_nestedStateObjects.contains(state))
+        return m_nestedStateObjects.value(state);
 
-    if (metaObject()->inherits(&QQStyleKitControl::staticMetaObject))
-        control = asQQStyleKitControl();
+    QQStyleKitControlState *stateObj = new QQStyleKitControlState(control());
+    stateObj->m_nestedState = m_nestedState;
+    stateObj->m_nestedState.setFlag(state);
+    stateObj->m_nestedState.setFlag(QQSK::StateFlag::Normal, false);
 
-    while (true) {
-        QQStyleKitControlState *parentState = qobject_cast<QQStyleKitControlState *>(obj->parent());
-        if (!parentState)
-            break;
+    auto *self = const_cast<QQStyleKitControlState *>(this);
+    self->m_nestedStateObjects.insert(state, stateObj);
 
-        if (obj == parentState->pressed())
-            nestedState.setFlag(QQSK::StateFlag::Pressed);
-        else if (obj == parentState->hovered())
-            nestedState.setFlag(QQSK::StateFlag::Hovered);
-        else if (obj == parentState->focused())
-            nestedState.setFlag(QQSK::StateFlag::Focused);
-        else if (obj == parentState->highlighted())
-            nestedState.setFlag(QQSK::StateFlag::Highlighted);
-        else if (obj == parentState->checked())
-            nestedState.setFlag(QQSK::StateFlag::Checked);
-        else if (obj == parentState->vertical())
-            nestedState.setFlag(QQSK::StateFlag::Vertical);
-        else if (obj == parentState->disabled())
-            nestedState.setFlag(QQSK::StateFlag::Disabled);
-        else
-            Q_UNREACHABLE();
-
-        obj = parentState;
-        if (obj->metaObject()->inherits(&QQStyleKitControl::staticMetaObject))
-            control = obj->asQQStyleKitControl();
-    }
-
-    if (nestedState.testFlag(QQSK::StateFlag::Disabled)) {
-        nestedState.setFlag(QQSK::StateFlag::Pressed, false);
-        nestedState.setFlag(QQSK::StateFlag::Hovered, false);
-        nestedState.setFlag(QQSK::StateFlag::Focused, false);
-        nestedState.setFlag(QQSK::StateFlag::Highlighted, false);
-    }
-
-    if (nestedState == QQSK::StateFlag::Unspecified)
-        nestedState = QQSK::StateFlag::Normal;
-
-    Q_ASSERT(control);
-    Q_ASSERT(qlonglong(nestedState) <= qlonglong(QQSK::StateFlag::MAX_STATE));
-
-    return std::make_tuple(control, nestedState);
+    return stateObj;
 }
 
-QQStyleKitControlState *QQStyleKitControlState::parentState() const
+QQStyleKitControlState *QQStyleKitControlState::pressed() const
 {
-    Q_ASSERT(subclass() == QQSK::Subclass::QQStyleKitState);
-    QObject *p = parent();
-    Q_ASSERT(p && qobject_cast<QQStyleKitControlState *>(p));
-    return static_cast<QQStyleKitControlState *>(p);
+    return lazyCreateState(QQSK::StateFlag::Pressed);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::hovered() const
+{
+    return lazyCreateState(QQSK::StateFlag::Hovered);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::highlighted() const
+{
+    return lazyCreateState(QQSK::StateFlag::Highlighted);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::focused() const
+{
+    return lazyCreateState(QQSK::StateFlag::Focused);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::checked() const
+{
+    return lazyCreateState(QQSK::StateFlag::Checked);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::vertical() const
+{
+    return lazyCreateState(QQSK::StateFlag::Vertical);
+}
+
+QQStyleKitControlState *QQStyleKitControlState::disabled() const
+{
+    return lazyCreateState(QQSK::StateFlag::Disabled);
 }
 
 QT_END_NAMESPACE

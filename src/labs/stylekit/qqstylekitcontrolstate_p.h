@@ -47,8 +47,8 @@ public:
     QQStyleKitControlState *highlighted() const;
     QQStyleKitControlState *vertical() const;
 
-    QQStyleKitControlState *parentState() const;
-    std::tuple<QQStyleKitControl *, QQSK::State> controlAndState();
+    QQStyleKitControl *control() const;
+    inline QQSK::State nestedState() const { return m_nestedState; }
 
 signals:
     void pressedChanged();
@@ -61,14 +61,11 @@ signals:
 
 private:
     Q_DISABLE_COPY(QQStyleKitControlState)
+    QQStyleKitControlState *lazyCreateState(QQSK::StateFlag state) const;
 
-    mutable QPointer<QQStyleKitControlState> m_pressed;
-    mutable QPointer<QQStyleKitControlState> m_hovered;
-    mutable QPointer<QQStyleKitControlState> m_focused;
-    mutable QPointer<QQStyleKitControlState> m_checked;
-    mutable QPointer<QQStyleKitControlState> m_disabled;
-    mutable QPointer<QQStyleKitControlState> m_highlighted;
-    mutable QPointer<QQStyleKitControlState> m_vertical;
+private:
+    QMap<QQSK::StateFlag, QQStyleKitControlState *> m_nestedStateObjects;
+    QQSK::State m_nestedState = QQSK::StateFlag::Normal;
 };
 
 QT_END_NAMESPACE

@@ -245,13 +245,16 @@ QVariant QQStyleKitPropertyResolver::readPropertyInStorageForState(
     const PropertyPathId main, const PropertyPathId alternative,
     const T *storageProvider, QQSK::State state)
 {
-    /* If the propertyId or altPropertyId is set in the control storage, we've found the best
-     * match, and can return the value back to the application. The reason we need an altPropertyId,
-     * is because some properties can be set more that one way. For example 'topLeftRadius' can be
-     * set using either 'topLeftRadius' (main) or 'radius' (alternative). The first found in the
-     * propagation chain wins. This means that when resolving 'topLeftRadius' for a button, if
-     * 'radius' is set in 'button', and 'topLeftRadius' is set in abstractButton, 'radius' will
-     * override 'topLeftRadius', and win. */
+    /* If either the main property or its alternative is set in the storage,
+     * we’ve found the best match and can return the value to the application.
+     * The reason we support an alternative property is that some properties can be
+     * specified in more than one way. For example, 'topLeftRadius' can be set either
+     * directly ('topLeftRadius', the main property) or indirectly via 'radius'
+     * (the alternative). Whichever one is encountered first in the propagation chain
+     * takes precedence.
+     * This means that when resolving 'topLeftRadius' for a Button, if 'radius' is set
+     * on the Button and 'topLeftRadius' is set on AbstractButton, then 'radius' will
+     * override 'topLeftRadius' and be used as the final value. */
     Q_ASSERT(qlonglong(state) <= qlonglong(QQSK::StateFlag::MAX_STATE));
 
     const PropertyStorageId propertyKey = main.storageId(state);
@@ -436,7 +439,7 @@ QVariant QQStyleKitPropertyResolver::readProperty(
         rebuildVariationsForReader(styleReader, style);
 
     /* Sync the palette of the style with the palette of the current reader. Note
-     * that this will cause palette bindings in the style to change, which will
+     * that this can cause palette bindings in the style to change, which will
      * result in calls to writeStyleProperty(). */
     style->setPalette(styleReader->palette());
 
@@ -488,17 +491,20 @@ QVariant QQStyleKitPropertyResolver::readStyleProperty(
     const QQSK::Subclass subclass = controlProperties->subclass();
 
     if (subclass == QQSK::Subclass::QQStyleKitState) {
-        /* Because of propagation, we need to know the state of the reader in order to
-         * resolve the value for the given property. E.g the color of a background delegate
-         * will take a difference search path, and end up with a different value, depending
-         * of if the reader is a Slider or a Button, and if it's hovered or pressed etc.
-         * Therefore, when a property is instead accessed from a control (or a state in a
-         * control) in the UnifedStyle, we cannot support propagation. But to still allow
-         * static (as in non-propagating) bindings between the properties in a Style,
-         * we fall back to simply return the value specified in the accessed control. */
-        const auto [control, nestedState] = controlProperties->asQQStyleKitState()->controlAndState();
+        /* Due to propagation, we must know the reader’s state in order to resolve the value
+         * of a given property. For example, the background delegate’s color may follow a
+         * completely different lookup path—and therefore produce a different result—depending
+         * on whether the reader is a Slider or a Button, and whether it is hovered, pressed, etc.
+         * For this reason, when a property is accessed directly from a control (or one of its
+         * states) within the StyleKit, full propagation cannot be supported: the necessary
+         * reader context is unavailable.
+         * However, to still allow static (i.e., non-propagating) bindings between properties
+         * inside a Style, we fall back to simply returning the value defined on the accessed
+         * control itself. */
+        const QQStyleKitControlState *controlState = controlProperties->asQQStyleKitState();
+        const QQStyleKitControl *control = controlState->control();
         const PropertyPathId propertyPathId = group->propertyPathId(property, PropertyPathId::Flag::IncludeSubtype);
-        const PropertyStorageId key = propertyPathId.storageId(nestedState);
+        const PropertyStorageId key = propertyPathId.storageId(controlState->nestedState());
         return control->readStyleProperty(key);
     }
 
@@ -605,7 +611,9 @@ bool QQStyleKitPropertyResolver::writeStyleProperty(
 
     if (subclass == QQSK::Subclass::QQStyleKitState) {
         // This is a write to a control inside the StyleKit style
-        const auto [control, nestedState] = controlProperties->asQQStyleKitState()->controlAndState();
+        const QQStyleKitControlState *controlState = controlProperties->asQQStyleKitState();
+        QQStyleKitControl *control = controlState->control();
+        const QQSK::State nestedState = controlState->nestedState();
         const PropertyStorageId key = propertyPathId.storageId(nestedState);
         const QVariant currentValue = control->readStyleProperty(key);
         const bool valueChanged = currentValue != value;
@@ -640,8 +648,9 @@ bool QQStyleKitPropertyResolver::hasLocalStyleProperty(
     }
 
     if (subclass == QQSK::Subclass::QQStyleKitState) {
-        const auto [control, nestedState] = controlProperties->asQQStyleKitState()->controlAndState();
-        const PropertyStorageId key = propertyPathId.storageId(nestedState);
+        const QQStyleKitControlState *controlState = controlProperties->asQQStyleKitState();
+        const QQStyleKitControl *control = controlState->control();
+        const PropertyStorageId key = propertyPathId.storageId(controlState->nestedState());
         return control->readStyleProperty(key).isValid();
     }
 

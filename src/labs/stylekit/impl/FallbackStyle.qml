@@ -33,7 +33,7 @@ BaseStyle {
         indicator {
             implicitWidth: style.indicatorSize
             implicitHeight: style.indicatorSize
-            color: style.palette.base
+            color: style.palette.mid
             border.color: "black"
             border.width: 1
             foreground {

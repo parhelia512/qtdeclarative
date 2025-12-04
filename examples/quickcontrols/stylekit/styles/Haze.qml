@@ -190,6 +190,7 @@ Style {
 
     scrollBar {
         padding: 2
+        background.visible: false
     }
 
     // You can define one or more Instance Variations that can be enabled from the
@@ -270,6 +271,10 @@ Style {
             }
         }
     }
+    /* Because 'groupBox' falls back to 'frame', any Variation applied to a frame
+     * is automatically inherited by all group boxes. Since I only want the Variation
+     * on the frame itself, I need to explicitly unset it for group boxes. */
+    groupBox.variations: []
 
     readonly property int fancyButton: 0
     CustomControl {
@@ -299,14 +304,20 @@ Style {
     light: Theme {
         control {
             background {
+                color: "lightgray"
                 border.color: "white"
                 shadow.color: "white"
             }
 
             handle {
-                color: palette.accent
+                color: "lightgray"
                 shadow.color: "white"
                 border.color: "white"
+            }
+
+            indicator {
+                color: "white"
+                foreground.image.color: palette.accent
             }
 
             checked {
@@ -342,9 +353,6 @@ Style {
         }
 
         abstractButton {
-            background {
-                color: "lightgray"
-            }
             hovered.background {
                 shadow.scale: 1.4
                 color: palette.accent
@@ -354,11 +362,36 @@ Style {
             }
         }
 
+        pane {
+            /* The controls change background color on states like hover, but panes
+             * should not. Override the property here to disable that behavior for panes. */
+            background.color: Qt.darker("gainsboro", 1.05)
+            background.border.color: "#3d373b"
+            background.shadow.visible: false
+        }
+
+        switchControl {
+            indicator.foreground.color: "white"
+            checked.indicator.foreground.color: palette.accent
+        }
+
         textField {
-            background.shadow.scale: 0
-            hovered.background.color: "white"
-            hovered.background.shadow.scale: 1.2
-            focused.background.border.color: palette.accent
+            background {
+                shadow.scale: 0
+                border.color: "darkgray"
+                color: "white"
+            }
+            hovered.background {
+                border.color: "lightgray"
+                shadow.scale: 1.1
+            }
+            focused {
+                background.border.color: palette.accent
+                background.border.width: 2
+            }
+            focused.hovered {
+                background.border.color: palette.accent
+            }
         }
 
         CustomControl {
@@ -400,7 +433,7 @@ Style {
         control {
             background {
                 border.color: "#3d373b"
-                shadow.color: "#404040"
+                shadow.color: "#555555"
                 color: "#8e848a"
             }
 
@@ -415,6 +448,14 @@ Style {
                     shadow.color: "white"
                     color: "#bbbbbb"
                 }
+            }
+
+            indicator {
+                color: Qt.darker("#8e848a", 1.6)
+            }
+
+            handle {
+                color: "#8e848a"
             }
 
             hovered {
@@ -453,6 +494,23 @@ Style {
             indicator.foreground.color: "white"
         }
 
+        switchControl {
+            indicator.foreground.color: Qt.lighter("#8e848a", 1.3)
+            checked.indicator.foreground.color: palette.accent
+        }
+
+        slider {
+            indicator.foreground.color: palette.accent
+        }
+
+        pane {
+            /* The controls change background color on states like hover, but panes
+             * should not. Override the property here to disable that behavior for panes. */
+            background.color: Qt.lighter("#544e52", 1.3)
+            background.border.color: "#3d373b"
+            background.shadow.visible: false
+        }
+
         CustomControl {
             controlType: fancyButton
             background {
@@ -487,7 +545,7 @@ Style {
                 background {
                     implicitHeight: 40
                     shadow.color: "transparent"
-                    color: "ghostwhite"
+                    color: "lightgray"
                     border.color: "black"
                     border.width: 2
                     gradient: null
@@ -496,6 +554,7 @@ Style {
                 indicator {
                     implicitWidth: 30
                     implicitHeight: 30
+                    color: "ghostwhite"
                     border.color: "black"
                     foreground.margins: 4
                     foreground.color: "black"
@@ -524,6 +583,14 @@ Style {
                 disabled {
                     background.color: "white"
                 }
+            }
+
+            abstractButton {
+                background.color: "ghostwhite"
+            }
+
+            textInput {
+                background.color: "white"
             }
 
             slider {
@@ -588,8 +655,9 @@ Style {
                 indicator.implicitHeight: 15
                 background.color: "#8e848a"
                 background.border.width: 1
-                indicator.border.width: 1
-                indicator.foreground.color: "white"
+                indicator.border.width: 3
+                indicator.foreground.margins: 3
+                indicator.foreground.color: "lightgray"
             }
 
             palettes {
@@ -654,6 +722,12 @@ Style {
                         shadow.color: "transparent"
                     }
                 }
+            }
+
+            pane {
+                background.color: Qt.lighter("#547454", 1.1)
+                background.border.color: "#3d373b"
+                background.shadow.visible: false
             }
 
             switchControl {

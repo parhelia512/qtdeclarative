@@ -120,8 +120,8 @@ Style {
         bottomPadding: 5
 
         background {
-            implicitWidth: 100
             implicitHeight: myTheme.controlHeight
+            color: myTheme.neutralBackground.normal
             delegate: NoiseDelegate {}
         }
 
@@ -164,6 +164,7 @@ Style {
 
     abstractButton {
         background {
+            implicitWidth: 100
             radius: 255
             border.width: 2
             border.color: myTheme.neutralStroke.normal
@@ -203,6 +204,30 @@ Style {
                 border.color: myTheme.neutralStroke.subtle
                 shadow.color: "transparent"
             }
+        }
+    }
+
+    pane {
+        background.delegate: null
+    }
+
+    scrollIndicator {
+        padding: 2
+        background.implicitHeight: 20
+        indicator.implicitHeight: 20
+        vertical {
+            background.implicitWidth: 20
+            indicator.implicitWidth: 20
+        }
+    }
+
+    scrollBar {
+        padding: 2
+        background.implicitHeight: 20
+        indicator.implicitHeight: 20
+        vertical {
+            background.implicitWidth: 20
+            indicator.implicitWidth: 20
         }
     }
 

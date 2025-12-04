@@ -3,47 +3,41 @@
 // Qt-Security score:significant reason:default
 
 #include "quicktest_p.h"
+
+#include "qtestoptions_p.h"
 #include "quicktestresult_p.h"
+
 #include <QtTest/qtestsystem.h>
 #include <QtTest/private/qtestcrashhandler_p.h>
-#include "qtestoptions_p.h"
-#include <QtQml/qqml.h>
-#include <QtQml/qqmlengine.h>
-#include <QtQml/qqmlcontext.h>
-#include <QtQuick/private/qquickitem_p.h>
-#include <QtQuick/private/qquickwindow_p.h>
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
 #include <QtQuick/qquickwindow.h>
-#include <QtQml/qjsvalue.h>
-#include <QtQml/qjsengine.h>
-#include <QtQml/qqmlpropertymap.h>
 #include <QtQuick/private/qquickitem_p.h>
-#include <QtQuick/qquickitem.h>
-#include <qopengl.h>
-#include <QtCore/qurl.h>
-#include <QtCore/qfileinfo.h>
+#include <QtQuick/private/qquickwindow_p.h>
+#include <QtQml/qqml.h>
+#include <QtQml/qqmlcontext.h>
+#include <QtQml/qqmlengine.h>
+#include <QtQml/qqmlfileselector.h>
+#include <QtQml/qqmlpropertymap.h>
+#include <QtQml/private/qqmlcomponent_p.h>
+#include <QtQml/private/qv4resolvedtypereference_p.h>
+#include <QtCore/qdebug.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qdiriterator.h>
-#include <QtCore/qfile.h>
-#include <QtCore/qdebug.h>
 #include <QtCore/qeventloop.h>
+#include <QtCore/qfile.h>
+#include <QtCore/qfileinfo.h>
 #include <QtCore/qtextstream.h>
 #include <QtCore/qtimer.h>
-#include <QtGui/qtextdocument.h>
-#include <QtGui/QGuiApplication>
+#include <QtCore/qtranslator.h>
+#include <QtCore/qurl.h>
+#include <QtGui/qguiapplication.h>
 #include <QtGui/private/qguiapplication_p.h>
 #include <QtGui/qpa/qplatformintegration.h>
-#include <QtCore/QTranslator>
-#include <QtTest/QSignalSpy>
-#include <QtQml/QQmlFileSelector>
 
 #ifdef Q_OS_ANDROID
 #  include <android/androidtestutils_p.h>
 #endif
-
-#include <private/qqmlcomponent_p.h>
-#include <private/qv4resolvedtypereference_p.h>
 
 QT_BEGIN_NAMESPACE
 

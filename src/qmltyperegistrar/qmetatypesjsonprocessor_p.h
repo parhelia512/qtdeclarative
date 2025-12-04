@@ -155,9 +155,12 @@ struct MetaTypePrivate
     enum Kind : quint8 { Object, Gadget, Namespace, Unknown };
 
     MetaTypePrivate() = default;
-    MetaTypePrivate(const QCborMap &cbor, const QString &inputFile);
+    MetaTypePrivate(const QCborMap &cbor, const QString &inputFile, const QCborMap &hashes);
 
-    const QCborMap cbor; // need to keep this to hold on to the strings
+    // need to keep these to hold on to the strings
+    const QCborMap cbor;
+    const QCborMap hashes;
+
     const QString inputFile;
 
     QAnyStringView className;
@@ -174,6 +177,8 @@ struct MetaTypePrivate
 
     Enum::Container enums;
 
+    QAnyStringView metaObjectHash;
+
     Kind kind = Unknown;
     int lineNumber = 0;
 };
@@ -184,7 +189,7 @@ public:
     using Kind = MetaTypePrivate::Kind;
 
     MetaType() = default;
-    MetaType(const QCborMap &cbor, const QString &inputFile);
+    MetaType(const QCborMap &cbor, const QString &inputFile, const QCborMap &hashes);
 
     bool isEmpty() const { return d == &s_empty; }
 
@@ -204,6 +209,8 @@ public:
     const Enum::Container &enums() const { return d->enums; }
 
     Kind kind() const { return d->kind; }
+
+    QAnyStringView metaObjectHash() const { return d->metaObjectHash; }
 
 private:
     friend bool operator==(const MetaType &a, const MetaType &b) noexcept

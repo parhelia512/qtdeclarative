@@ -169,6 +169,8 @@ void QmlTypesCreator::writeClassProperties(const QmlTypesClassDescription &colle
 
     if (!collector.attachedType.isEmpty())
         m_qml.writeStringBinding(S_ATTACHED_TYPE, collector.attachedType);
+
+    m_qml.writeStringBinding(S_META_OBJECT_HASH, collector.metaObjectHash);
 }
 
 void QmlTypesCreator::writeType(QAnyStringView type)

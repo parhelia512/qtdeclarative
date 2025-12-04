@@ -219,6 +219,9 @@ void QmlTypesClassDescription::collect(
         lineNumber = classDef.lineNumber();
     }
 
+    if (metaObjectHash.isEmpty())
+        metaObjectHash = classDef.metaObjectHash();
+
     const QAnyStringView classDefName = classDef.className();
     const QList<QAnyStringView> namespaces = MetaTypesJsonProcessor::namespaces(classDef);
 

@@ -1013,6 +1013,8 @@ private slots:
 #endif
 
 private:
+    QByteArray emptyMetaObjectHashes(const QByteArray &qmltypes);
+
     QByteArray qmltypesData;
     QString m_qmljsrootgenPath;
 };

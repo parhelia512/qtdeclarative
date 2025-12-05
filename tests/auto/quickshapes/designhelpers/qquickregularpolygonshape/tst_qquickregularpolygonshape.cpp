@@ -44,13 +44,13 @@ void tst_QQuickRegularPolygonShape::basicShape()
     QCOMPARE(shape->height(), 200);
     QCOMPARE(shape->cornerRadius(), 10);
     QCOMPARE(shape->sideCount(), 6);
-    QCOMPARE(shape->strokeWidth(), 4);
+    QCOMPARE(shape->strokeWidth(), 1);
     QCOMPARE(shape->dashOffset(), 0);
     QCOMPARE(shape->capStyle(), QQuickShapePath::SquareCap);
     QCOMPARE(shape->joinStyle(), QQuickShapePath::BevelJoin);
     QCOMPARE(shape->strokeStyle(), QQuickShapePath::SolidLine);
     QCOMPARE(shape->fillColor(), QColor(Qt::white));
-    QCOMPARE(shape->strokeColor(), QColor(Qt::red));
+    QCOMPARE(shape->strokeColor(), QColor(Qt::black));
 }
 
 void tst_QQuickRegularPolygonShape::changeSignals_data()

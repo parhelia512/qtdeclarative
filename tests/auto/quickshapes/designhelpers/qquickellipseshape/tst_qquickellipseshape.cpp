@@ -41,12 +41,12 @@ void tst_QQuickEllipseShape::basicShape()
 
     QCOMPARE(ellipseShape->sweepAngle(), 360);
     QCOMPARE(ellipseShape->startAngle(), 0);
-    QCOMPARE(ellipseShape->width(), 100);
-    QCOMPARE(ellipseShape->height(), 100);
+    QCOMPARE(ellipseShape->width(), 200);
+    QCOMPARE(ellipseShape->height(), 200);
     QCOMPARE(ellipseShape->cornerRadius(), 10);
     QCOMPARE(ellipseShape->innerArcRatio(), 0);
     QCOMPARE(ellipseShape->hideLine(), false);
-    QCOMPARE(ellipseShape->strokeWidth(), 4);
+    QCOMPARE(ellipseShape->strokeWidth(), 1);
     QCOMPARE(ellipseShape->dashOffset(), 0);
     QCOMPARE(ellipseShape->capStyle(), QQuickShapePath::SquareCap);
     QCOMPARE(ellipseShape->joinStyle(), QQuickShapePath::BevelJoin);

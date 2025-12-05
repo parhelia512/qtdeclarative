@@ -44,13 +44,13 @@ void tst_QQuickStarShape::basicShape()
     QCOMPARE(shape->cornerRadius(), 10);
     QCOMPARE(shape->pointCount(), 6);
     QCOMPARE(shape->ratio(), 0.5);
-    QCOMPARE(shape->strokeWidth(), 4);
+    QCOMPARE(shape->strokeWidth(), 1);
     QCOMPARE(shape->dashOffset(), 0);
     QCOMPARE(shape->capStyle(), QQuickShapePath::SquareCap);
     QCOMPARE(shape->joinStyle(), QQuickShapePath::BevelJoin);
     QCOMPARE(shape->strokeStyle(), QQuickShapePath::SolidLine);
     QCOMPARE(shape->fillColor(), QColor(Qt::white));
-    QCOMPARE(shape->strokeColor(), QColor(Qt::red));
+    QCOMPARE(shape->strokeColor(), QColor(Qt::black));
 }
 
 void tst_QQuickStarShape::changeSignals_data()

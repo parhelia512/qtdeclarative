@@ -577,14 +577,15 @@ QQuickEllipseShape::QQuickEllipseShape(QQuickItem *parent)
 
     setPreferredRendererType(CurveRenderer);
 
-    setWidth(100);
-    setHeight(100);
+    setWidth(200);
+    setHeight(200);
 
     d->path = new QQuickShapePath(this);
     d->path->setParent(this);
     d->path->setAsynchronous(true);
-    d->path->setStrokeWidth(4);
+    d->path->setStrokeWidth(1);
     d->path->setStrokeColor(QColorConstants::Black);
+    d->path->setFillColor(QColorConstants::White);
 
     d->sp.append(d->path);
     d->path->setParent(this);

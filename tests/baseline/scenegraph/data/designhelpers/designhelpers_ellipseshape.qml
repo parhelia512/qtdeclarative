@@ -17,7 +17,10 @@ Rectangle {
     Flow {
         spacing: 2
         anchors.fill: parent
-        EllipseShape {} // default
+        EllipseShape {
+            width: 90
+            height: 90
+        }
         TestEllipseShape {
             startAngle: 0
             sweepAngle: 180

@@ -427,9 +427,9 @@ QQuickRectangleShape::QQuickRectangleShape(QQuickItem *parent)
     // Create the ShapePath.
     d->shapePath = new QQuickShapePath(this);
     d->shapePath->setObjectName("rectangleShapeShapePath");
-    d->shapePath->setStrokeWidth(4);
+    d->shapePath->setStrokeWidth(1);
     d->shapePath->setStrokeColor(QColorConstants::Black);
-    d->shapePath->setFillColor(QColorConstants::Transparent);
+    d->shapePath->setFillColor(QColorConstants::White);
     d->shapePath->setJoinStyle(QQuickShapePath::BevelJoin);
     // Don't make it asynchronous, as it results in brief periods of incorrect rendering.
 
@@ -453,7 +453,7 @@ QQuickRectangleShape::QQuickRectangleShape(QQuickItem *parent)
     d->extra.value().resourcesList.append(d->shapePath);
 
     setWidth(200);
-    setHeight(150);
+    setHeight(200);
     setPreferredRendererType(CurveRenderer);
 
     // QQuickShape::componentComplete sets up the connections to each path.

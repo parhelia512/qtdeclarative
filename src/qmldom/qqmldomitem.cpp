@@ -756,13 +756,13 @@ struct ResolveToDo {
     int pathIndex;
 };
 
-static QMap<LookupType, QString> lookupTypeToStringMap()
+static QMap<QString, LookupType> stringToLookupTypeMap()
 {
-    static QMap<LookupType, QString> map = []() {
+    static auto map = []() {
         QMetaEnum metaEnum = QMetaEnum::fromType<LookupType>();
-        QMap<LookupType, QString> res;
+        QMap<QString, LookupType> res;
         for (int i = 0; i < metaEnum.keyCount(); ++i) {
-            res[LookupType(metaEnum.value(i))] = QString::fromUtf8(metaEnum.key(i));
+            res[QString::fromUtf8(metaEnum.key(i)).toLower()] = LookupType(metaEnum.value(i));
         }
         return res;
     }();
@@ -844,6 +844,15 @@ static LookupOptions resolveLookupOptions(const PathCurrent &current, const DomI
             opt = opt | LookupOption::Strict;
     }
     return opt;
+}
+
+static std::optional<LookupType> lookupTypeFromString(const QString &expectedType)
+{
+    const auto &map = stringToLookupTypeMap();
+    auto it = map.find(expectedType.toLower());
+    if (it == map.end())
+        return {};
+    return *it;
 }
 
 bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHandler &errorHandler,
@@ -1038,35 +1047,15 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                         return false;
                     }
                     QString expectedType = cNow.headName();
-                    LookupType lookupType = LookupType::Symbol;
-                    {
-                        bool found = false;
-                        auto m = lookupTypeToStringMap();
-                        auto it = m.begin();
-                        auto end = m.end();
-                        while (it != end) {
-                            if (it.value().compare(expectedType, Qt::CaseInsensitive) == 0) {
-                                lookupType = it.key();
-                                found = true;
-                            }
-                            ++it;
-                        }
-                        if (!found) {
-                            QString types;
-                            it = lookupTypeToStringMap().begin();
-                            while (it != end) {
-                                if (!types.isEmpty())
-                                    types += QLatin1String("', '");
-                                types += it.value();
-                                ++it;
-                            }
-                            myResolveErrors()
-                                    .error(tr("Type for lookup was expected to be one of '%1', not "
-                                              "%2")
-                                                   .arg(types, expectedType))
-                                    .handle(errorHandler);
-                            return false;
-                        }
+                    auto lookupType = lookupTypeFromString(expectedType);
+                    if (!lookupType) {
+                        myResolveErrors()
+                                .error(tr("Type for lookup was expected to be one of '%1', not "
+                                          "%2")
+                                               .arg(stringToLookupTypeMap().keys().join(", "_L1),
+                                                    expectedType))
+                                .handle(errorHandler);
+                        return false;
                     }
                     cNow = path[iPath++];
                     if (cNow.headKind() != Path::Kind::Key) {
@@ -1097,7 +1086,8 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                                 toDos.append({ subEl, iPath });
                                 return true;
                             },
-                            lookupType, opt, errorHandler, &(visited[iPath]), visitedRefs);
+                            *(std::move(lookupType)), opt, errorHandler, &(visited[iPath]),
+                            visitedRefs);
                     branchExhausted = true;
                     break;
                 }

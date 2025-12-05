@@ -32,6 +32,7 @@ qt_internal_add_qml_module(QtQuickStyleKit
         QT_NO_CAST_FROM_ASCII
         QT_NO_CAST_TO_ASCII
     QML_FILES
+        ApplicationWindow.qml
         Button.qml
         CheckBox.qml
         ComboBox.qml

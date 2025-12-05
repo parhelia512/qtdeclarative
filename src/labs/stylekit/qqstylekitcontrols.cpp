@@ -64,7 +64,9 @@ void QQStyleKitControls::set_ ## NAME(QQStyleKitControl *control) \
     m_controls.insert(TYPE, control); \
 }
 
+
 IMPLEMENT_ACCESSORS(abstractButton, QQStyleKitReader::ControlType::AbstractButton)
+IMPLEMENT_ACCESSORS(applicationWindow, QQStyleKitReader::ControlType::ApplicationWindow)
 IMPLEMENT_ACCESSORS(control, QQStyleKitReader::ControlType::Control)
 IMPLEMENT_ACCESSORS(button, QQStyleKitReader::ControlType::Button)
 IMPLEMENT_ACCESSORS(flatButton, QQStyleKitReader::ControlType::FlatButton)

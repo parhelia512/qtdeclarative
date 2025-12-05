@@ -32,6 +32,7 @@ class QQStyleKitControls : public QObject, public QQmlParserStatus
     Q_INTERFACES(QQmlParserStatus)
 
     Q_PROPERTY(QQStyleKitControl *abstractButton READ abstractButton WRITE set_abstractButton NOTIFY abstractButtonChanged FINAL)
+    Q_PROPERTY(QQStyleKitControl *applicationWindow READ applicationWindow WRITE set_applicationWindow NOTIFY applicationWindowChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *control READ control WRITE set_control NOTIFY controlChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *button READ button WRITE set_button NOTIFY buttonChanged FINAL)
     Q_PROPERTY(QQStyleKitControl *checkBox READ checkBox WRITE set_checkBox NOTIFY checkBoxChanged FINAL)
@@ -73,6 +74,7 @@ public:
     QQStyleKitControl *NAME() const; \
     void set_ ## NAME(QQStyleKitControl *control);
 
+    IMPLEMENT_ACCESSORS(applicationWindow)
     IMPLEMENT_ACCESSORS(abstractButton)
     IMPLEMENT_ACCESSORS(control)
     IMPLEMENT_ACCESSORS(button)
@@ -114,6 +116,7 @@ public:
 
 signals:
     void dataChanged();
+    void applicationWindowChanged();
     void abstractButtonChanged();
     void controlChanged();
     void buttonChanged();

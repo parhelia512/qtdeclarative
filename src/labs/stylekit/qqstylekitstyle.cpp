@@ -262,13 +262,10 @@ QQStyleKitStyle* QQStyleKitStyle::current()
 QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
 {
     switch (reader->type()) {
-        case QQStyleKitReader::ControlType::Control:
-            return m_theme->fonts()->system();
         case QQStyleKitReader::ControlType::AbstractButton:
         case QQStyleKitReader::ControlType::Button:
-        case QQStyleKitReader::ControlType::FlatButton: {
+        case QQStyleKitReader::ControlType::FlatButton:
             return m_theme->fonts()->button();
-        }
         case QQStyleKitReader::ControlType::CheckBox:
             return m_theme->fonts()->checkBox();
         case QQStyleKitReader::ControlType::ComboBox:

@@ -14,6 +14,10 @@ BaseStyle {
 
     readonly property real indicatorSize: 24
 
+    applicationWindow {
+        background.color: style.palette.window
+    }
+
     control {
         spacing: 5
         padding: 5
@@ -76,7 +80,7 @@ BaseStyle {
             implicitWidth: 200
             implicitHeight: 200
             border.width: 1
-            border.color: "black"
+            border.color: style.palette.dark
             color: style.palette.base
         }
     }

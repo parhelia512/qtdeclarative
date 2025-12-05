@@ -37,6 +37,10 @@ const QList<QQStyleKitExtendedControlType> QQStyleKitPropertyResolver::baseTypes
      *     Control.
      */
     switch (exactType) {
+    case QQStyleKitReader::ApplicationWindow: {
+        static QList<QQStyleKitExtendedControlType> t =
+            { QQStyleKitReader::ApplicationWindow };
+        return t; }
     case QQStyleKitReader::Button:
     case QQStyleKitReader::ToolButton:
     case QQStyleKitReader::TabButton:

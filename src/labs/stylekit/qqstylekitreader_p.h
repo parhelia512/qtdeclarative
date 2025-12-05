@@ -51,6 +51,7 @@ public:
         Unspecified = 100000,
         Control,
         AbstractButton,
+        ApplicationWindow,
         Button,
         CheckBox,
         ComboBox,

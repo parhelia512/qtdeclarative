@@ -107,6 +107,11 @@ void tst_qmlls_modules::cleanup()
     m_protocol->requestShutdown(nullptr, []() {});
     m_protocol->notifyExit(nullptr);
 
+    m_server.disconnect(this);
+    if constexpr (enable_debug_output) {
+        m_server.disconnect(this);
+    }
+
     m_server.waitForFinished();
     QTRY_COMPARE(m_server.state(), QProcess::NotRunning);
     QCOMPARE(m_server.exitStatus(), QProcess::NormalExit);

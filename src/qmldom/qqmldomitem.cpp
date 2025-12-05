@@ -827,6 +827,25 @@ static DomItem resolveReference(const DomItem &it, const Path &refRef, QList<Pat
     return resolveRes;
 }
 
+static LookupOptions resolveLookupOptions(const PathCurrent &current, const DomItem &it)
+{
+    LookupOptions opt = LookupOption::Normal;
+    if (current == PathCurrent::LookupStrict)
+        return opt | LookupOption::Strict;
+
+    if (current == PathCurrent::Lookup) {
+        DomItem comp = it.component();
+        DomItem strict = comp.field(u"~strictLookup~");
+        if (!strict) {
+            DomItem env = it.environment();
+            strict = env.field(u"defaultStrictLookup");
+        }
+        if (strict && strict.value().toBool())
+            opt = opt | LookupOption::Strict;
+    }
+    return opt;
+}
+
 bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHandler &errorHandler,
                       ResolveOptions options, const Path &fullPath, QList<Path> *visitedRefs) const
 {
@@ -979,19 +998,7 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                 case PathCurrent::LookupStrict:
                 case PathCurrent::LookupDynamic:
                 case PathCurrent::Lookup: {
-                    LookupOptions opt = LookupOption::Normal;
-                    if (current == PathCurrent::Lookup) {
-                        DomItem comp = it.component();
-                        DomItem strict = comp.field(u"~strictLookup~");
-                        if (!strict) {
-                            DomItem env = it.environment();
-                            strict = env.field(u"defaultStrictLookup");
-                        }
-                        if (strict && strict.value().toBool())
-                            opt = opt | LookupOption::Strict;
-                    } else if (current == PathCurrent::LookupStrict) {
-                        opt = opt | LookupOption::Strict;
-                    }
+                    const LookupOptions opt = resolveLookupOptions(current, it);
                     if (it.internalKind() == DomType::ScriptExpression) {
                         myResolveErrors()
                                 .error(tr("Javascript lookups not yet implemented"))

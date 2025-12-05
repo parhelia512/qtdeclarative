@@ -97,6 +97,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEnumsAreNotTypes;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEqualityTypeCoercion;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlEval;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlFunctionUsedBeforeDeclaration;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlIdShadowsMember;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImport;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlImportFileSelector;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlIncompatibleType;
@@ -118,6 +119,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRecursionDepthError
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRedundantOptionalChaining;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRequired;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlShadow;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlShadowMethod;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSignalParameters;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlStalePropertyRead;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntax;

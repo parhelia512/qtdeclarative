@@ -97,6 +97,8 @@ warning levels.
     X(qmlFunctionUsedBeforeDeclaration, "function-used-before-declaration",                        \
       "FunctionUsedBeforeDeclaration", "Warn if a function is used before declaration",            \
       Disable, NonEssential)                                                                       \
+    X(qmlIdShadowsMember, "id-shadows-member", "IdShadowsMember",                                  \
+      "Warn about ids potentially shadowing members", Warning, NonEssential)                       \
     X(qmlImport, "import", "ImportFailure", "Warn about failing imports and deprecated qmltypes",  \
       Warning, NonEssential)                                                                       \
     X(qmlImportFileSelector, "import-file-selector", "ImportFileSelector",                         \

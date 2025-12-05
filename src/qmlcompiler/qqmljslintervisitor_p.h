@@ -56,6 +56,8 @@ protected:
     bool visit(QQmlJS::AST::CaseBlock *) override;
     bool visit(QQmlJS::AST::ExpressionStatement *ast) override;
 
+    void endVisit(QQmlJS::AST::UiProgram *ast) override;
+
     bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
                                 const QQmlJSScope::JavaScriptIdentifier &identifier) override;
 
@@ -102,6 +104,8 @@ private:
             const QQmlJS::AST::UiPublicMember *associatedPropertyDefinition = nullptr) override;
     void handleLiteralBinding(const QQmlJSMetaPropertyBinding &binding,
                               const AST::UiPublicMember *associatedPropertyDefinition) override;
+
+    void checkIdShadows();
 };
 
 } // namespace QQmlJS

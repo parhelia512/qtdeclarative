@@ -3,6 +3,8 @@
 // Qt-Security score:significant
 
 #include "qqmljslintervisitor_p.h"
+#include "qqmljsutils_p.h"
+#include <stack>
 
 QT_BEGIN_NAMESPACE
 
@@ -573,6 +575,122 @@ void LinterVisitor::handleLiteralBinding(const QQmlJSMetaPropertyBinding &bindin
     default: {
         break;
     }
+    }
+}
+
+void LinterVisitor::endVisit(UiProgram *ast)
+{
+    QQmlJSImportVisitor::endVisit(ast);
+    checkIdShadows();
+}
+
+enum MethodOrProperty { Method, Property };
+void warnForShadowsInCurrentScope(const QQmlJSScope::ConstPtr &scopeWithId, const QString &name,
+                                  const QQmlJSScope::ConstPtr &currentScope,
+                                  const QQmlJS::SourceLocation &location, MethodOrProperty mode,
+                                  QQmlJSLogger *logger)
+{
+    static constexpr QLatin1String warningMessage =
+            "Id \"%1\" shadows %2 \"%1\"%3. Rename the id or the %2."_L1;
+
+    if (mode == Property ? !currentScope->hasProperty(name) : !currentScope->hasMethod(name))
+        return;
+
+    const auto owner = mode == Property ? QQmlJSScope::ownerOfProperty(currentScope, name).scope
+                                        : QQmlJSScope::ownerOfMethod(currentScope, name).scope;
+    const QString currentScopeName =
+            QQmlJSUtils::getScopeName(currentScope, QQmlSA::ScopeType::QMLScope);
+
+    const QLatin1String memberType = mode == Property
+            ? "property"_L1
+            : (owner->methods(name).front().methodType() == QQmlJSMetaMethodType::Signal
+                       ? "signal"_L1
+                       : "method"_L1);
+
+    const QQmlJS::SourceLocation definitionLocation = mode == Property
+            ? currentScope->property(name).sourceLocation()
+            : currentScope->methods(name).front().sourceLocation();
+    auto log = [&](const QString &asdf) {
+        logger->log(warningMessage.arg(name, memberType, asdf), qmlIdShadowsMember, location);
+
+        // add hint if the member clashing with the id is defined in the current file
+        if (owner->filePath() == scopeWithId->filePath()) {
+            logger->log("Note: %1 \"%2\" defined here is shadowed by id \"%2\""_L1.arg(memberType,
+                                                                                       name),
+                        qmlIdShadowsMember, definitionLocation, true, true, {}, location.startLine);
+        } else {
+            logger->log(
+                    "Note: type \"%1\" defined here has a %2 \"%3\" shadowed by id \"%3\""_L1.arg(
+                            currentScopeName, memberType, name),
+                    qmlIdShadowsMember, currentScope->sourceLocation(), true, true, {},
+                    location.startLine);
+        }
+    };
+
+    if (currentScope != scopeWithId) {
+        log(" from \"%1\" defined at %2:%3:%4"_L1.arg(
+                currentScopeName, currentScope->filePath(),
+                QString::number(currentScope->sourceLocation().startLine),
+                QString::number(currentScope->sourceLocation().startColumn)));
+        return;
+    }
+    log(" from current type"_L1);
+}
+
+/*!
+\internal
+
+Searches for ids shadowing properties, methods and signals.
+
+An id shadows all properties, methods and signals inside the context the id is defined when
+ComponentBehavior is not set to Bound.
+The id shadows also properties, methods and signals in the child contexts of the context the id
+was defined when ComponentBehavior is set to Bound. Assume here that components are bound for
+clarity.
+
+Compute all possible scopes where an id can shadow properties, methods and signals. All of these
+scopes are inside the component boundary, so represent this set of scopes with the root scope inside
+the component boundary. All descendants of the root scope, that are in the same component
+boundary as the root scope, can have properties, methods and signals shadowed by its id.
+
+Once all roots are computed in "componentRootsToIds", iterate over their descendents to find
+potential clashes of properties and methods with the ids that can be referred from inside that
+component boundary.
+*/
+void LinterVisitor::checkIdShadows()
+{
+    const auto componentRootsToIds = m_scopesById.computeComponentRootsToIds();
+    if (componentRootsToIds.empty())
+        return;
+
+    using It = decltype(componentRootsToIds.begin());
+    auto begin = componentRootsToIds.begin();
+    auto end = componentRootsToIds.end();
+    auto nextKey = [&](It it) -> It {
+        return it == end ? it : componentRootsToIds.upper_bound(it->first);
+    };
+
+    for (auto it = begin, it2 = nextKey(begin); it != end; it = std::exchange(it2, nextKey(it2))) {
+        std::stack<QQmlJSScope::ConstPtr> stack{ { it->first } };
+        while (!stack.empty()) {
+            QQmlJSScope::ConstPtr current = stack.top();
+            stack.pop();
+
+            for (auto scopeWithIdIt = it, scopeWithIdEnd = it2; scopeWithIdIt != scopeWithIdEnd;
+                 ++scopeWithIdIt) {
+                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
+                                             current,
+                                             scopeWithIdIt->second.scope->idSourceLocation(),
+                                             MethodOrProperty::Property, m_logger);
+                warnForShadowsInCurrentScope(scopeWithIdIt->second.scope, scopeWithIdIt->second.id,
+                                             current,
+                                             scopeWithIdIt->second.scope->idSourceLocation(),
+                                             MethodOrProperty::Method, m_logger);
+            }
+            const auto children = current->childScopes();
+            for (const QQmlJSScope::ConstPtr &child : children)
+                stack.push(child);
+        }
     }
 }
 

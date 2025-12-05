@@ -789,6 +789,44 @@ static DomItem rootFromContext(const DomItem &root, PathRoot contextId)
     }
 }
 
+/*!
+   \internal
+ Is used to resolve the "get" field of QQmlJS::Dom::Reference. Reference contains a link to a type,
+ and its "get" field does return the DomItem for the linked type. For example, a type has a link to
+ its base type.
+*/
+static DomItem resolveReference(const DomItem &it, const Path &refRef, QList<Path> *visitedRefs,
+                                const ErrorHandler &errorHandler, const ErrorGroups &errorGroup)
+{
+    if (visitedRefs->contains(refRef)) {
+        errorGroup
+                .error([visitedRefs, refRef](const Sink &sink) {
+                    const QString msg = DomItem::tr("Circular reference:") + QLatin1Char('\n');
+                    sink(QStringView{ msg });
+                    for (const Path &vPath : *visitedRefs) {
+                        sink(u"  ");
+                        vPath.dump(sink);
+                        sink(u" >\n");
+                    }
+                    refRef.dump(sink);
+                })
+                .handle(errorHandler);
+        return {};
+    }
+
+    Path toResolve = it.as<Reference>()->referredObjectPath;
+    visitedRefs->append(refRef);
+    DomItem resolveRes;
+    it.resolve(
+            toResolve,
+            [&resolveRes](Path, const DomItem &r) {
+                resolveRes = r;
+                return false;
+            },
+            errorHandler, ResolveOption::None, toResolve, visitedRefs);
+    return resolveRes;
+}
+
 bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHandler &errorHandler,
                       ResolveOptions options, const Path &fullPath, QList<Path> *visitedRefs) const
 {
@@ -844,37 +882,9 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
                 break;
             case Path::Kind::Field:
                 if (cNow.checkHeadName(Fields::get) && it.internalKind() == DomType::Reference) {
-                    Path toResolve = it.as<Reference>()->referredObjectPath;
-                    Path refRef = it.canonicalPath();
-                    if (visitedRefs == nullptr) {
-                        visitedRefs = &vRefs;
-                    }
-                    if (visitedRefs->contains(refRef)) {
-                        myResolveErrors()
-                                .error([visitedRefs, refRef](const Sink &sink) {
-                                    const QString msg = tr("Circular reference:") + QLatin1Char('\n');
-                                    sink(QStringView{msg});
-                                    for (const Path &vPath : *visitedRefs) {
-                                        sink(u"  ");
-                                        vPath.dump(sink);
-                                        sink(u" >\n");
-                                    }
-                                    refRef.dump(sink);
-                                })
-                                .handle(errorHandler);
-                        it = DomItem();
-                    } else {
-                        visitedRefs->append(refRef);
-                        DomItem resolveRes;
-                        it.resolve(
-                                toResolve,
-                                [&resolveRes](Path, const DomItem &r) {
-                                    resolveRes = r;
-                                    return false;
-                                },
-                                errorHandler, ResolveOption::None, toResolve, visitedRefs);
-                        it = resolveRes;
-                    }
+                    it = resolveReference(it, it.canonicalPath(),
+                                          visitedRefs == nullptr ? &vRefs : visitedRefs,
+                                          errorHandler, myResolveErrors());
                 } else {
                     it = it.field(cNow.headName()); // avoid instantiation of QString?
                 }

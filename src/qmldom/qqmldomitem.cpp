@@ -769,6 +769,26 @@ static QMap<LookupType, QString> lookupTypeToStringMap()
     return map;
 }
 
+static DomItem rootFromContext(const DomItem &root, PathRoot contextId)
+{
+    switch (contextId) {
+    case PathRoot::Modules:
+        return root.environment().field(Fields::moduleIndexWithUri);
+    case PathRoot::Cpp:
+        return root.environment()[Fields::qmltypesFileWithPath];
+    case PathRoot::Libs:
+        return root.environment()[Fields::plugins];
+    case PathRoot::Top:
+        return root.top();
+    case PathRoot::Env:
+        return root.environment();
+    case PathRoot::Universe:
+        return root.environment()[u"universe"];
+    default:
+        return DomItem{};
+    }
+}
+
 bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHandler &errorHandler,
                       ResolveOptions options, const Path &fullPath, QList<Path> *visitedRefs) const
 {
@@ -782,29 +802,11 @@ bool DomItem::resolve(const Path &path, DomItem::Visitor visitor, const ErrorHan
     Path myPath = path;
     QVector<ResolveToDo> toDos(1); // invariant: always increase pathIndex to guarantee end even with only partial visited match
     if (path.headKind() == Path::Kind::Root) {
-        DomItem root = *this;
-        PathRoot contextId = path.headRoot();
-        switch (contextId) {
-        case PathRoot::Modules:
-            root = root.environment().field(Fields::moduleIndexWithUri);
-            break;
-        case PathRoot::Cpp:
-                root = root.environment()[Fields::qmltypesFileWithPath];
-            break;
-        case PathRoot::Libs:
-            root = root.environment()[Fields::plugins];
-            break;
-        case PathRoot::Top:
-            root = root.top();
-            break;
-        case PathRoot::Env:
-            root = root.environment();
-            break;
-        case PathRoot::Universe:
-            root = root.environment()[u"universe"];
-            break;
-        case PathRoot::Other:
-            myResolveErrors().error(tr("Root context %1 is not known").arg(path.headName())).handle(errorHandler);
+        DomItem root = rootFromContext(*this, path.headRoot());
+        if (!root) {
+            myResolveErrors()
+                    .error(tr("Root context %1 is not known").arg(path.headName()))
+                    .handle(errorHandler);
             return false;
         }
         toDos[0] = {std::move(root), 1};

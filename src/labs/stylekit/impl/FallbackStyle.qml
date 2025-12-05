@@ -54,6 +54,12 @@ BaseStyle {
         }
     }
 
+    /* A control’s text color can be customized for different states and variations.
+     * By default, however, it should remain bound to the control’s palette. Otherwise
+     * it will fail to respect both the theme palette and any application overrides. */
+    control.text.color: palette.buttonText
+    textInput.text.color: palette.text
+
     textInput {
         padding: 5
         background {

@@ -387,8 +387,8 @@ Style {
             spinBox.highlight: "lightgray"
 
             button {
-                buttonText: "white"
-                highlightedText: "white"
+                buttonText: "black"
+                highlightedText: "black"
                 brightText: "#4e4e4e"
                 disabled.buttonText: "#4e4e4e"
                 disabled.highlightedText: "#4e4e4e"

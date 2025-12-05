@@ -18,7 +18,6 @@ DelegateContainer {
     scale: vertical ? -1 : 1
     delegateProperties: root.indicatorProperties
 
-    required property QtObject parentControl
     required property StyleKitDelegateProperties indicatorProperties
     property bool vertical: false
     /* Some indicators (Slider, RangeSlider) should let the foreground delegate

@@ -54,6 +54,7 @@ qt_internal_add_qml_module(QtQuickStyleKit
         TabButton.qml
         ToolBar.qml
         ToolButton.qml
+        ToolSeparator.qml
         Page.qml
         Pane.qml
         Popup.qml

@@ -269,6 +269,16 @@ BaseStyle {
         background.implicitHeight: 40
     }
 
+    toolSeparator {
+        padding: 2
+        background.visible: false
+        indicator.implicitWidth: 30
+        indicator.implicitHeight: 1
+        indicator.border.width: 0
+        indicator.color: palette.mid
+        indicator.foreground.visible: false
+    }
+
     label {
         background.visible: false
         text.color: style.palette.windowText

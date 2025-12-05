@@ -70,6 +70,7 @@ public:
         TextInput,
         ToolBar,
         ToolButton,
+        ToolSeparator,
         RadioButton,
         ItemDelegate,
         Popup,

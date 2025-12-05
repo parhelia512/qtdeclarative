@@ -291,6 +291,7 @@ QFont QQStyleKitStyle::fontForReader(QQStyleKitReader *reader) const
             return m_theme->fonts()->textArea();
         case QQStyleKitReader::ControlType::ToolBar:
         case QQStyleKitReader::ControlType::ToolButton:
+        case QQStyleKitReader::ControlType::ToolSeparator:
             return m_theme->fonts()->toolBar();
         case QQStyleKitReader::ControlType::ItemDelegate:
             return m_theme->fonts()->itemView();

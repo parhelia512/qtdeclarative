@@ -20,6 +20,7 @@ T.ToolBar {
     rightPadding: SafeArea.margins.right + styleReader.rightPadding
     topPadding: SafeArea.margins.top + styleReader.topPadding
     bottomPadding: SafeArea.margins.bottom + styleReader.bottomPadding
+    spacing: styleReader.spacing
 
     StyleKitControl.controlType: styleReader.type
     StyleKitReader {

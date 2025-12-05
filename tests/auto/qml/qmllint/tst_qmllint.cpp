@@ -3937,7 +3937,9 @@ void TestQmllint::shadow_data()
     QTest::addColumn<Result>("result");
     QTest::addColumn<CallQmllintOptions>("options");
 
-    const CallQmllintOptions defaultOptions;
+    CallQmllintOptions defaultOptions;
+    defaultOptions.categorySeverityOverrides[qmlShadow.name().toString()] =
+            QQmlJS::WarningSeverity::Warning;
 
     QTest::newRow("shadowMethod")
             << u"component IC: Item { function f() {} }\n"
@@ -4002,7 +4004,7 @@ void TestQmllint::shadow_data()
             << defaultOptions;
 
     {
-        CallQmllintOptions options;
+        CallQmllintOptions options = defaultOptions;
         options.importPaths.append(testFile("ImportPath"));
         QTest::newRow("shadowPropertyFromAnotherFile")
                 << u"import ModuleInImportPath\n"

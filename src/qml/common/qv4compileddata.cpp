@@ -167,7 +167,7 @@ bool CompilationUnit::loadFromDisk(
     return false;
 }
 
-bool CompilationUnit::saveToDisk(const QUrl &unitUrl, QString *errorString)
+bool CompilationUnit::saveToDisk(const QUrl &unitUrl, QString *errorString) const
 {
     if (unitData()->sourceTimeStamp == 0) {
         *errorString = QStringLiteral("Missing time stamp for source file");

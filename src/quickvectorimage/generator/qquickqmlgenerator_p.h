@@ -109,6 +109,7 @@ protected:
     bool generateStructureNode(const StructureNodeInfo &info) override;
     bool generateRootNode(const StructureNodeInfo &info) override;
     bool generateMaskNode(const MaskNodeInfo &info) override;
+    bool generateMarkerNode(const MarkerNodeInfo &info) override;
     void outputShapePath(const PathNodeInfo &info, const QPainterPath *path, const QQuadPath *quadPath, QQuickVectorImageGenerator::PathSelector pathSelector, const QRectF &boundingRect) override;
 
 private:
@@ -117,6 +118,7 @@ private:
         ColorOpacity = 1
     };
 
+    QString generateNodeId(const NodeInfo &info);
     void generateGradient(const QGradient *grad);
     void generateTransform(const QTransform &xf);
     void generatePathContainer(const StructureNodeInfo &info);
@@ -138,6 +140,7 @@ private:
                                    const QString &propertyName,
                                    AnimationType animationType = AnimationType::Auto);
     void generateShaderUse(const NodeInfo &info);
+    void generateMarkers(const PathNodeInfo &info);
     qsizetype generateFilterStep(const FilterNodeInfo &info, qsizetype stepIndex);
 
     QStringView indent();

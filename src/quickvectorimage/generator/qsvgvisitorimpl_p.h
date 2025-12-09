@@ -72,6 +72,9 @@ protected:
     bool visitFeFilterPrimitiveNodeStart(const QSvgFeFilterPrimitive *node) override;
     void visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive *node) override;
 
+    bool visitMarkerNodeStart(const QSvgMarker *node) override;
+    void visitMarkerNodeEnd(const QSvgMarker *node) override;
+
 private:
     typedef std::pair<const QSvgAbstractAnimation *, const QSvgAbstractAnimatedProperty *> AnimationPair;
     QList<AnimationPair> collectAnimations(const QSvgNode *node, const QString &propertyName);
@@ -88,6 +91,7 @@ private:
     void fillFilterPrimitiveInfo(const QSvgFilterContainer *node,
                                  const QSvgFeFilterPrimitive *filterPrimitive,
                                  FilterNodeInfo &info);
+    void fillMarkerInfo(const QSvgMarker *node, MarkerNodeInfo &info);
     void handleBaseNodeSetup(const QSvgNode *node);
     void handleBaseNode(const QSvgNode *node);
     void handleBaseNodeEnd(const QSvgNode *node);

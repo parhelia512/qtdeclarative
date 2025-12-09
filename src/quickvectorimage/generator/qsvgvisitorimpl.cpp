@@ -166,6 +166,7 @@ inline bool isPathContainer(const QSvgStructureNode *node)
         case QSvgNode::Text:
         case QSvgNode::Tspan:
         case QSvgNode::Mask:
+        case QSvgNode::Marker:
             //qCDebug(lcQuickVectorGraphics) << "NOT path container because" << node->typeName() ;
             return false;
 
@@ -184,6 +185,9 @@ inline bool isPathContainer(const QSvgStructureNode *node)
         case QSvgNode::Polyline:
         {
             if (child->hasFilter())
+                return false;
+
+            if (child->hasAnyMarker())
                 return false;
 
             if (!child->style().opacity.isDefault())
@@ -376,6 +380,12 @@ void QSvgVisitorImpl::pregenerateReferencedNodes(const QSvgNode *doc)
             referencedIds.insert(node->filterId());
         if (node->hasMask())
             referencedIds.insert(node->maskId());
+        if (node->hasMarkerStart())
+            referencedIds.insert(node->markerStartId());
+        if (node->hasMarkerMid())
+            referencedIds.insert(node->markerMidId());
+        if (node->hasMarkerEnd())
+            referencedIds.insert(node->markerEndId());
     };
     recurseSvgNodes(doc, findReferencedIds);
 
@@ -2007,6 +2017,15 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
     if (fillStyle)
         info.fillRule = fillStyle->fillRule();
 
+    if (node->hasMarkerStart())
+        info.markerStartId = findOrCreateId(node->markerStartId());
+
+    if (node->hasMarkerMid())
+        info.markerMidId = findOrCreateId(node->markerMidId());
+
+    if (node->hasMarkerEnd())
+        info.markerEndId = findOrCreateId(node->markerEndId());
+
     const QGradient *strokeGradient = m_styleResolver->currentStrokeGradient();
 
     info.path.setDefaultValue(QVariant::fromValue(path));
@@ -2035,6 +2054,76 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
     }
 
     handleBaseNodeEnd(node);
+}
+
+void QSvgVisitorImpl::fillMarkerInfo(const QSvgMarker *node, MarkerNodeInfo &info)
+{
+    QTransform oldTransform = info.transform.defaultValue().value<QTransform>();
+
+    info.markerSize = node->rect().size();
+    info.anchorPoint = node->refP();
+    info.clipBox = oldTransform.mapRect(node->clipRect());
+    info.viewBox = node->viewBox();
+    switch (node->orientation()) {
+    case QSvgMarker::Orientation::Auto:
+        info.orientation = MarkerNodeInfo::Orientation::Auto;
+        break;
+    case QSvgMarker::Orientation::AutoStartReverse:
+        info.orientation = MarkerNodeInfo::Orientation::AutoStartReverse;
+        break;
+    case QSvgMarker::Orientation::Value:
+        info.orientation = MarkerNodeInfo::Orientation::Value;
+        break;
+    }
+
+    switch (node->markerUnits()) {
+    case QSvgMarker::MarkerUnits::UserSpaceOnUse:
+        info.markerUnits = MarkerNodeInfo::MarkerUnits::UserSpace;
+        break;
+    case QSvgMarker::MarkerUnits::StrokeWidth:
+        info.markerUnits = MarkerNodeInfo::MarkerUnits::StrokeWidth;
+        break;
+    }
+
+    info.angle = node->orientationAngle();
+
+    QTransform xform = node->aspectRatioTransform();
+    if (!xform.isIdentity()) {
+        info.isDefaultTransform = false;
+        xform = xform * oldTransform;
+        info.transform.setDefaultValue(QVariant::fromValue(xform));
+    }
+
+    info.preserveAspectRatio = MarkerNodeInfo::PreserveAspectRatio(node->preserveAspectRatios().toInt());
+}
+
+bool QSvgVisitorImpl::visitMarkerNodeStart(const QSvgMarker *node)
+{
+    if (!m_pregeneratingReferencedNodes)
+        return false;
+
+    handleBaseNodeSetup(node);
+
+    MarkerNodeInfo info;
+
+    fillCommonNodeInfo(node, info);
+    fillAnimationInfo(node, info);
+    fillMarkerInfo(node, info);
+    info.stage = StructureNodeStage::Start;
+
+    return m_generator->generateMarkerNode(info);
+}
+
+void QSvgVisitorImpl::visitMarkerNodeEnd(const QSvgMarker *node)
+{
+    handleBaseNodeEnd(node);
+
+    MarkerNodeInfo info;
+    fillCommonNodeInfo(node, info);
+    fillMarkerInfo(node, info);
+    info.stage = StructureNodeStage::End;
+
+    m_generator->generateMarkerNode(info);
 }
 
 QT_END_NAMESPACE

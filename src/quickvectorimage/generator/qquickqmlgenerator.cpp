@@ -553,6 +553,77 @@ void QQuickQmlGenerator::generateImageNode(const ImageNodeInfo &info)
     generateNodeEnd(info);
 }
 
+void QQuickQmlGenerator::generateMarkers(const PathNodeInfo &info)
+{
+    const QPainterPath path = info.path.defaultValue().value<QPainterPath>();
+    for (int i = 0; i < path.elementCount(); ++i) {
+        const QPainterPath::Element element = path.elementAt(i);
+        QString markerId;
+        qreal angle;
+
+        // Copied from Qt SVG
+        auto getMeanAngle = [](QPointF p0, QPointF p1, QPointF p2) -> qreal {
+            QPointF t1 = p1 - p0;
+            QPointF t2 = p2 - p1;
+            qreal hyp1 =  hypot(t1.x(), t1.y());
+            if (hyp1 > 0)
+                t1 /= hyp1;
+            else
+                return 0.;
+            qreal hyp2 =  hypot(t2.x(), t2.y());
+            if (hyp2 > 0)
+                t2 /= hyp2;
+            else
+                return 0.;
+            QPointF tangent = t1 + t2;
+            return -atan2(tangent.y(), tangent.x()) / M_PI * 180.;
+        };
+
+        if (i == 0) {
+            markerId = info.markerStartId;
+            angle = path.angleAtPercent(0.0);
+        } else if (i == path.elementCount() - 1) {
+            markerId = info.markerEndId;
+            angle = path.angleAtPercent(1.0);
+        } else if (path.elementAt(i + 1).type != QPainterPath::CurveToDataElement) {
+            markerId = info.markerMidId;
+
+            const QPainterPath::Element prevElement = path.elementAt(i - 1);
+            const QPainterPath::Element nextElement = path.elementAt(i + 1);
+
+            QPointF p1(prevElement.x, prevElement.y);
+            QPointF p2(element.x, element.y);
+            QPointF p3(nextElement.x, nextElement.y);
+
+            angle = getMeanAngle(p1, p2, p3);
+        }
+
+        if (!markerId.isEmpty()) {
+            stream() << "Loader {";
+            m_indentLevel++;
+
+            //stream() << "clip: true";
+            stream() << "sourceComponent: " << markerId << "_container";
+            stream() << "property real strokeWidth: " << info.strokeStyle.width;
+            stream() << "transform: [";
+            m_indentLevel++;
+            if (i == 0) {
+                stream() << "Scale { "
+                         << "xScale: " << markerId << "_markerParameters.startReversed ? -1 : 1; "
+                         << "yScale: " << markerId << "_markerParameters.startReversed ? -1 : 1 },";
+            }
+            stream() << "Rotation { angle: " << markerId << "_markerParameters.autoAngle(" << -angle << ") },";
+            stream() << "Translate { x: " << element.x << "; y: " << element.y << "}";
+
+            m_indentLevel--;
+            stream() << "]";
+
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+}
+
 void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect)
 {
     if (!isNodeVisible(info))
@@ -575,6 +646,13 @@ void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &ov
             stream() << "asynchronous: true";
         optimizePaths(info, overrideBoundingRect);
         //qCDebug(lcQuickVectorGraphics) << *node->qpath();
+
+        if (!info.markerStartId.isEmpty()
+            || !info.markerMidId.isEmpty()
+            || !info.markerEndId.isEmpty()) {
+            generateMarkers(info);
+        }
+
         generateNodeEnd(info);
         m_inShapeItemLevel--;
     }
@@ -1969,6 +2047,147 @@ qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
     stream() << "}";
 
     return stepIndex;
+}
+
+bool QQuickQmlGenerator::generateMarkerNode(const MarkerNodeInfo &info)
+{
+    if (info.stage == StructureNodeStage::Start) {
+        startDefsSuffixBlock();
+        stream() << "QtObject {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id << "_markerParameters";
+
+        stream() << "property bool startReversed: ";
+        if (info.orientation == MarkerNodeInfo::Orientation::AutoStartReverse)
+            stream(SameLine) << "true";
+        else
+            stream(SameLine) << "false";
+
+        stream() << "function autoAngle(adaptedAngle) {";
+        m_indentLevel++;
+        if (info.orientation == MarkerNodeInfo::Orientation::Value)
+            stream() << "return " << info.angle;
+        else
+            stream() << "return adaptedAngle";
+        m_indentLevel--;
+        stream() << "}";
+
+        m_indentLevel--;
+        stream() << "}";
+        endDefsSuffixBlock();
+
+        if (!info.clipBox.isEmpty()) {
+            stream() << "Item {";
+            m_indentLevel++;
+
+            stream() << "x: " << info.clipBox.x();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "y: " << info.clipBox.y();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "width: " << info.clipBox.width();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "height: " << info.clipBox.height();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "clip: true";
+        }
+
+        stream() << "Item {";
+        m_indentLevel++;
+
+        if (!info.clipBox.isEmpty()) {
+            stream() << "x: " << -info.clipBox.x();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+            stream() << "y: " << -info.clipBox.y();
+            if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+                stream(SameLine) << " * strokeWidth";
+        }
+
+        stream() << "id: " << info.id;
+
+        stream() << "property real markerWidth: " << info.markerSize.width();
+        if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+            stream(SameLine) << " * strokeWidth";
+
+        stream() << "property real markerHeight: " << info.markerSize.height();
+        if (info.markerUnits == MarkerNodeInfo::MarkerUnits::StrokeWidth)
+            stream(SameLine) << " * strokeWidth";
+
+        stream() << "function calculateMarkerScale(w, h) {";
+        m_indentLevel++;
+
+        stream() << "var scaleX = 1.0";
+        stream() << "var scaleY = 1.0";
+        stream() << "var offsetX = 0.0";
+        stream() << "var offsetY = 0.0";
+        if (info.viewBox.width() > 0)
+            stream() << "if (w > 0) scaleX = w / " << info.viewBox.width();
+        if (info.viewBox.height() > 0)
+            stream() << "if (h > 0) scaleY = h / " << info.viewBox.height();
+
+        if (info.preserveAspectRatio & MarkerNodeInfo::xyMask) {
+            stream() << "if (scaleX != scaleY) {";
+            m_indentLevel++;
+
+            if (info.preserveAspectRatio & MarkerNodeInfo::meet)
+                stream() << "scaleX = scaleY = Math.min(scaleX, scaleY)";
+            else
+                stream() << "scaleX = scaleY = Math.max(scaleX, scaleY)";
+
+            QString overflowX = QStringLiteral("scaleX * %1 - w").arg(info.viewBox.width());
+            QString overflowY = QStringLiteral("scaleY * %1 - h").arg(info.viewBox.height());
+
+            const quint8 xRatio = info.preserveAspectRatio & MarkerNodeInfo::xMask;
+            if (xRatio == MarkerNodeInfo::xMid)
+                stream() << "offsetX -= " << overflowX << " / 2";
+            else if (xRatio == MarkerNodeInfo::xMax)
+                stream() << "offsetX -= " << overflowX;
+
+            const quint8 yRatio = info.preserveAspectRatio & MarkerNodeInfo::yMask;
+            if (yRatio == MarkerNodeInfo::yMid)
+                stream() << "offsetY -= " << overflowY << " / 2";
+            else if (yRatio == MarkerNodeInfo::yMax)
+                stream() << "offsetY -= " << overflowY;
+
+            m_indentLevel--;
+            stream() << "}";
+        }
+
+        stream() << "return Qt.vector4d("
+                 << "offsetX - " << info.anchorPoint.x() << " * scaleX, "
+                 << "offsetY - " << info.anchorPoint.y() << " * scaleY, "
+                 << "scaleX, "
+                 << "scaleY)";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "property vector4d markerScale: calculateMarkerScale(markerWidth, markerHeight)";
+
+        stream() << "transform: [";
+        m_indentLevel++;
+
+        stream() << "Scale { xScale: " << info.id << ".markerScale.z; yScale: " << info.id << ".markerScale.w },";
+        stream() << "Translate { x: " << info.id << ".markerScale.x; y: " << info.id << ".markerScale.y }";
+
+        m_indentLevel--;
+        stream() << "]";
+
+    } else {
+        generateNodeEnd(info);
+
+        if (!info.clipBox.isEmpty()) {
+            m_indentLevel--;
+            stream() << "}";
+        }
+    }
+
+    return true;
 }
 
 bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)

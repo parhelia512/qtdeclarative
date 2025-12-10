@@ -531,7 +531,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCut()
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     auto *contextMenu = editor->findChild<QQuickContextMenu *>();
     QVERIFY(contextMenu);
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     auto *cutMenuItem = qobject_cast<QQuickMenuItem *>(contextMenu->menu()->itemAt(
         static_cast<int>(TextEditingContextMenuItemType::Cut)));
     QVERIFY(cutMenuItem);
@@ -550,7 +550,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCut()
     const QString cutText = QLatin1Char(' ') + moriStr;
     QCOMPARE(editor->property("selectedText").toString(), cutText);
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(cutMenuItem->isEnabled(), hasClipboardSupport);
     // QTBUG-133302: the first menu item shouldn't be immediately triggered.
     QCOMPARE(QQuickMenuItemPrivate::get(cutMenuItem)->animateTimer, 0);
@@ -574,7 +574,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCut()
     QVERIFY(QMetaObject::invokeMethod(editor, "selectAll"));
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(cutMenuItem->text(), "Cut");
     QVERIFY(!cutMenuItem->isEnabled());
 
@@ -606,7 +606,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCopy()
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     auto *contextMenu = editor->findChild<QQuickContextMenu *>();
     QVERIFY(contextMenu);
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     auto *copyMenuItem = qobject_cast<QQuickMenuItem *>(contextMenu->menu()->itemAt(
         static_cast<int>(TextEditingContextMenuItemType::Copy)));
     QVERIFY(copyMenuItem);
@@ -622,7 +622,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCopy()
     QVERIFY(QMetaObject::invokeMethod(editor, "select", Q_ARG(int, 0), Q_ARG(int, mementoStr.length())));
     QCOMPARE(editor->property("selectedText").toString(), mementoStr);
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(copyMenuItem->isEnabled(), hasClipboardSupport);
 
     // Click on the Copy menu item (if enabled) and close the menu.
@@ -644,7 +644,7 @@ void tst_QQuickContextMenu::textEditingContextMenuCopy()
     editor->setProperty("readOnly", true);
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(copyMenuItem->text(), "Copy");
     // Select some text.
     QVERIFY(QMetaObject::invokeMethod(editor, "select", Q_ARG(int, 0), Q_ARG(int, mementoStr.length())));
@@ -685,7 +685,8 @@ void tst_QQuickContextMenu::textEditingContextMenuPaste()
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     auto *contextMenu = editor->findChild<QQuickContextMenu *>();
     QVERIFY(contextMenu);
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
+
     auto *pasteMenuItem = qobject_cast<QQuickMenuItem *>(contextMenu->menu()->itemAt(
         static_cast<int>(TextEditingContextMenuItemType::Paste)));
     QVERIFY(pasteMenuItem);
@@ -709,7 +710,7 @@ void tst_QQuickContextMenu::textEditingContextMenuPaste()
     editor->setProperty("readOnly", true);
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(pasteMenuItem->text(), "Paste");
     QVERIFY(!pasteMenuItem->isEnabled());
 
@@ -741,7 +742,7 @@ void tst_QQuickContextMenu::textEditingContextMenuDelete()
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     auto *contextMenu = editor->findChild<QQuickContextMenu *>();
     QVERIFY(contextMenu);
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     auto *deleteMenuItem = qobject_cast<QQuickMenuItem *>(contextMenu->menu()->itemAt(
         static_cast<int>(TextEditingContextMenuItemType::Delete)));
     QCOMPARE(deleteMenuItem->text(), "Delete");
@@ -756,7 +757,7 @@ void tst_QQuickContextMenu::textEditingContextMenuDelete()
         Q_ARG(int, editor->property("length").toInt())));
     QCOMPARE(editor->property("selectedText").toString(), QLatin1Char(' ') + moriStr);
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QVERIFY(deleteMenuItem->isEnabled());
 
     // Click on the Delete menu item and close the menu.
@@ -773,7 +774,7 @@ void tst_QQuickContextMenu::textEditingContextMenuDelete()
     QVERIFY(QMetaObject::invokeMethod(editor, "selectAll"));
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(deleteMenuItem->text(), "Delete");
     QVERIFY(!deleteMenuItem->isEnabled());
 
@@ -804,7 +805,7 @@ void tst_QQuickContextMenu::textEditingContextMenuSelectAll()
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
     auto *contextMenu = editor->findChild<QQuickContextMenu *>();
     QVERIFY(contextMenu);
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     auto *selectAllMenuItem = qobject_cast<QQuickMenuItem *>(contextMenu->menu()->itemAt(
         static_cast<int>(TextEditingContextMenuItemType::SelectAll)));
     QVERIFY(selectAllMenuItem);
@@ -823,7 +824,7 @@ void tst_QQuickContextMenu::textEditingContextMenuSelectAll()
     editor->setProperty("readOnly", true);
     // Right click on the editor to open the context menu.
     QTest::mouseClick(&window, Qt::RightButton, Qt::NoModifier, mapCenterToWindow(editor));
-    QTRY_VERIFY(contextMenu->menu()->isOpened());
+    TRY_VERIFY_POPUP_OPENED(contextMenu->menu());
     QCOMPARE(selectAllMenuItem->text(), "Select All");
     QVERIFY(selectAllMenuItem->isEnabled());
     editor->setProperty("readOnly", false);

@@ -18,6 +18,7 @@
 #include <private/qduplicatetracker_p.h>
 
 #include <QtCore/qcbormap.h>
+#include <QtCore/qmap.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qtyperevision.h>
 #include <QtCore/qvarlengtharray.h>
@@ -268,6 +269,10 @@ public:
     QList<QAnyStringView> referencedTypes() const { return m_referencedTypes; }
     QList<UsingDeclaration> usingDeclarations() const { return m_usingDeclarations; }
     QList<QString> includes() const { return m_includes; }
+    QMap<QAnyStringView, QAnyStringView> foreignTypeMetaObjectHashses() const
+    {
+        return m_foreignTypeMetaObjectHashes;
+    }
 
     QString extractRegisteredTypes() const;
 
@@ -307,6 +312,9 @@ private:
     QVector<MetaType> m_types;
     QVector<MetaType> m_foreignTypes;
     QDuplicateTracker<QString> m_seenMetaTypesFiles;
+    // Types declared as QML_FOREIGN(T) need to get the metaObject hash of the target T type.
+    // Hold it here until generation.
+    QMap<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
     bool m_privateIncludes = false;
 };
 

@@ -385,6 +385,10 @@ void QmlTypesCreator::writeComponents()
         collector.collect(component, m_ownTypes, m_foreignTypes,
                           QmlTypesClassDescription::TopLevel, m_version);
 
+        const auto it = m_foreignTypeMetaObjectHashes.find(component.qualifiedClassName());
+        if (it != m_foreignTypeMetaObjectHashes.constEnd())
+            collector.metaObjectHash = *it;
+
         writeComponent(collector);
 
         if (collector.resolvedClass != component

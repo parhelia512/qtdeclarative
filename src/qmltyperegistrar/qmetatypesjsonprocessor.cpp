@@ -607,6 +607,9 @@ void MetaTypesJsonProcessor::addRelatedTypes()
                         break;
                     // No, you cannot chain S_FOREIGN declarations. Sorry.
                 }
+
+                m_foreignTypeMetaObjectHashes.insert(classDef.qualifiedClassName(),
+                                                     found.native.metaObjectHash());
             } else if (!QmlTypesClassDescription::findType(
                                m_types, {}, foreignClassName, namespaces)) {
                 unresolvedForeign = foreignClassName;

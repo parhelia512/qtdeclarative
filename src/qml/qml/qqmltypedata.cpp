@@ -418,22 +418,26 @@ bool QQmlTypeData::checkDependencies()
                  || type.typeData->isCompleteOrError()
                  || type.type.isInlineComponentType());
 
-        if (type.type.isInlineComponentType()) {
-            const QUrl url = type.type.sourceUrl();
-            if (!QQmlMetaType::equalBaseUrls(url, finalUrl())
-                    && !QQmlMetaType::obtainCompilationUnit(type.type.typeId())) {
-                const QString &typeName = stringAt(it.key());
-                int lastDot = typeName.lastIndexOf(u'.');
-                createError(
-                        type,
-                        QQmlTypeLoader::tr("Type %1 has no inline component type called %2")
-                                .arg(QStringView{typeName}.left(lastDot), type.type.elementName()));
-                return false;
-            }
-        }
         if (type.typeData && type.typeData->isError()) {
             const QString &typeName = stringAt(it.key());
             createError(type, QQmlTypeLoader::tr("Type %1 unavailable").arg(typeName));
+            return false;
+        }
+
+        if (!type.selfReference && type.type.isInlineComponentType()) {
+            const QString icName = type.type.elementName();
+            Q_ASSERT(!icName.isEmpty());
+
+            // We have a CU here. Check if the inline component exists.
+            if (type.typeData && type.typeData->compilationUnit()->inlineComponentId(icName) >= 0)
+                return true;
+
+            const QString typeName = stringAt(it.key());
+            const qsizetype lastDot = typeName.lastIndexOf(u'.');
+            createError(
+                    type,
+                    QQmlTypeLoader::tr("Type %1 has no inline component type called %2")
+                            .arg(QStringView{typeName}.left(lastDot), icName));
             return false;
         }
     }

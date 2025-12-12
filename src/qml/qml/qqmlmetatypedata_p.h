@@ -43,7 +43,7 @@ struct QQmlMetaTypeData
     typedef QHash<QUrl, const QQmlTypePrivate *> Files; //For file imported composite types only
     Files urlToType;
 
-    typedef QMultiHash<const QMetaObject *, QQmlTypePrivate *> MetaObjects;
+    typedef QMultiHash<const QMetaObject *, const QQmlTypePrivate *> MetaObjects;
     MetaObjects metaObjectToType;
     QVector<QHash<QTypeRevision, QQmlPropertyCache::ConstPtr>> typePropertyCaches;
     QHash<int, QQmlValueType *> metaTypeToValueType;

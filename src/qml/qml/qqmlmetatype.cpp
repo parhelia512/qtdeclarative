@@ -1537,7 +1537,7 @@ void QQmlMetaType::unregisterType(int typeIndex)
     }
 }
 
-void QQmlMetaType::registerMetaObjectForType(const QMetaObject *metaobject, QQmlTypePrivate *type)
+void QQmlMetaType::registerMetaObjectForType(const QMetaObject *metaobject, const QQmlTypePrivate *type)
 {
     Q_ASSERT(type);
 
@@ -1822,7 +1822,7 @@ QList<QQmlProxyMetaObject::ProxyData> QQmlMetaType::proxyData(const QMetaObject 
     if (!mo)
         return metaObjects;
 
-    auto createProxyMetaObject = [&](QQmlTypePrivate *This,
+    auto createProxyMetaObject = [&](const QQmlTypePrivate *This,
                                      const QMetaObject *superdataBaseMetaObject,
                                      const QMetaObject *extMetaObject,
                                      QObject *(*extFunc)(QObject *)) {
@@ -1850,7 +1850,7 @@ QList<QQmlProxyMetaObject::ProxyData> QQmlMetaType::proxyData(const QMetaObject 
         //       loaded before. Just adding all possible extensions would also be pretty random.
         //       The right way to do this would be to take the relations between the QML modules
         //       into account. For this we would need proper module dependency information.
-        if (QQmlTypePrivate *t = data->metaObjectToType.value(mo)) {
+        if (const QQmlTypePrivate *t = data->metaObjectToType.value(mo)) {
             if (t->regType == QQmlType::CppType) {
                 createProxyMetaObject(
                         t, t->baseMetaObject, t->extraData.cppTypeData->extMetaObject,

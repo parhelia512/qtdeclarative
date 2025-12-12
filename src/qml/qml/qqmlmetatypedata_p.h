@@ -32,8 +32,16 @@ struct QQmlMetaTypeData
     QQmlMetaTypeData();
     ~QQmlMetaTypeData();
     void registerType(QQmlTypePrivate *priv);
-    QList<QQmlType> types;
+
+    struct Type
+    {
+        QQmlType type;
+        QHash<QTypeRevision, QQmlPropertyCache::ConstPtr> propertyCaches;
+    };
+
+    QList<Type> types;
     QSet<QQmlType> undeletableTypes;
+
     typedef QHash<int, QQmlTypePrivate *> Ids;
     Ids idToType;
 
@@ -45,7 +53,6 @@ struct QQmlMetaTypeData
 
     typedef QMultiHash<const QMetaObject *, const QQmlTypePrivate *> MetaObjects;
     MetaObjects metaObjectToType;
-    QVector<QHash<QTypeRevision, QQmlPropertyCache::ConstPtr>> typePropertyCaches;
     QHash<int, QQmlValueType *> metaTypeToValueType;
 
     // This has to be a multihash because a user can create a compilation unit using arbitrary
@@ -110,7 +117,6 @@ struct QQmlMetaTypeData
     QQmlPropertyCache::ConstPtr propertyCacheForVersion(int index, QTypeRevision version) const;
     void setPropertyCacheForVersion(
             int index, QTypeRevision version, const QQmlPropertyCache::ConstPtr &cache);
-    void clearPropertyCachesForVersion(int index);
 
     QQmlPropertyCache::ConstPtr propertyCache(const QMetaObject *metaObject, QTypeRevision version);
     QQmlPropertyCache::ConstPtr propertyCache(const QQmlType &type, QTypeRevision version);

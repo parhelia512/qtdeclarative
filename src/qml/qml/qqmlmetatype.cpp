@@ -329,7 +329,6 @@ void QQmlMetaType::clearTypeRegistrations()
     data->idToType.clear();
     data->nameToType.clear();
     data->urlToType.clear();
-    data->typePropertyCaches.clear();
     data->metaObjectToType.clear();
     data->undeletableTypes.clear();
     data->propertyCaches.clear();
@@ -350,7 +349,7 @@ void QQmlMetaType::clearTypeRegistrations()
 void QQmlMetaType::registerTypeAlias(int typeIndex, const QString &name)
 {
     QQmlMetaTypeDataPtr data;
-    const QQmlType type = data->types.value(typeIndex);
+    const QQmlType type = data->types.value(typeIndex).type;
     const QQmlTypePrivate *priv = type.priv();
     data->nameToType.insert(name, priv);
 }
@@ -928,7 +927,8 @@ static bool namespaceContainsRegistrations(const QQmlMetaTypeData *data, const Q
 {
     // Has any type previously been installed to this namespace?
     QHashedString nameSpace(uri);
-    for (const QQmlType &type : data->types) {
+    for (const auto &typeAndCaches : std::as_const(data->types)) {
+        const QQmlType &type = typeAndCaches.type;
         if (type.module() == nameSpace && type.version().majorVersion() == version.majorVersion())
             return true;
     }
@@ -1328,10 +1328,7 @@ QQmlType QQmlMetaType::qmlType(const QMetaObject *metaObject, const QHashedStrin
 QQmlType QQmlMetaType::qmlTypeById(int qmlTypeId)
 {
     const QQmlMetaTypeDataPtr data;
-    QQmlType type = data->types.value(qmlTypeId);
-    if (type.isValid())
-        return type;
-    return QQmlType();
+    return data->types.value(qmlTypeId).type;
 }
 
 /*!
@@ -1519,7 +1516,7 @@ QQmlPropertyCache::ConstPtr QQmlMetaType::rawPropertyCacheForType(
 void QQmlMetaType::unregisterType(int typeIndex)
 {
     QQmlMetaTypeDataPtr data;
-    const QQmlType type = data->types.value(typeIndex);
+    const QQmlType type = data->types.value(typeIndex).type;
     if (const QQmlTypePrivate *d = type.priv()) {
         if (d->regType == QQmlType::CompositeType || d->regType == QQmlType::CompositeSingletonType)
             removeFromInlineComponents(data->urlToType, d);
@@ -1529,8 +1526,7 @@ void QQmlMetaType::unregisterType(int typeIndex)
         removeQQmlTypePrivate(data->metaObjectToType, d);
         for (auto & module : data->uriToModule)
             module->remove(d);
-        data->clearPropertyCachesForVersion(typeIndex);
-        data->types[typeIndex] = QQmlType();
+        data->types[typeIndex] = QQmlMetaTypeData::Type();
         data->undeletableTypes.remove(type);
     }
 }
@@ -1607,9 +1603,9 @@ void QQmlMetaType::freeUnusedTypesAndCaches()
     bool deletedAtLeastOneType;
     do {
         deletedAtLeastOneType = false;
-        QList<QQmlType>::Iterator it = data->types.begin();
+        auto it = data->types.begin();
         while (it != data->types.end()) {
-            const QQmlTypePrivate *d = (*it).priv();
+            const QQmlTypePrivate *d = it->type.priv();
             if (d && d->count() == 1 && !hasActiveInlineComponents(data, d)) {
                 deletedAtLeastOneType = true;
 
@@ -1625,8 +1621,7 @@ void QQmlMetaType::freeUnusedTypesAndCaches()
                 for (auto &module : data->uriToModule)
                     module->remove(d);
 
-                data->clearPropertyCachesForVersion(d->index);
-                *it = QQmlType();
+                *it = QQmlMetaTypeData::Type();
             } else {
                 ++it;
             }
@@ -1687,7 +1682,12 @@ QList<QQmlType> QQmlMetaType::qmlTypes()
 QList<QQmlType> QQmlMetaType::qmlAllTypes()
 {
     const QQmlMetaTypeDataPtr data;
-    return data->types;
+    QList<QQmlType> types;
+    types.reserve(data->types.size());
+    std::transform(
+            data->types.constBegin(), data->types.constEnd(),
+            std::back_inserter(types), [](const auto &type) { return type.type; });
+    return types;
 }
 
 /*!

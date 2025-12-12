@@ -386,8 +386,6 @@ QQmlType QQmlMetaType::registerInterface(const QQmlPrivate::RegisterInterface &t
     data->idToType.insert(priv->typeId.id(), priv);
     data->idToType.insert(priv->listId.id(), priv);
 
-    data->interfaces.insert(type.typeId.id());
-
     return QQmlType(priv);
 }
 
@@ -1231,10 +1229,10 @@ QMetaMethod QQmlMetaType::defaultMethod(QObject *obj)
 /*!
     See qmlRegisterInterface() for information about when this will return true.
 */
-bool QQmlMetaType::isInterface(QMetaType type)
+bool QQmlMetaType::isInterface(QMetaType metaType)
 {
     const QQmlMetaTypeDataPtr data;
-    return data->interfaces.contains(type.id());
+    return QQmlType(data->idToType.value(metaType.id())).isInterface();
 }
 
 const char *QQmlMetaType::interfaceIId(QMetaType metaType)

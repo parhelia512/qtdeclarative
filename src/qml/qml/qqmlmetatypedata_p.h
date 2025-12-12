@@ -95,8 +95,6 @@ struct QQmlMetaTypeData
     QHash<QString, void (*)()> moduleTypeRegistrationFunctions;
     bool registerModuleTypes(const QString &uri);
 
-    QSet<int> interfaces;
-
     QList<QQmlPrivate::AutoParentFunction> parentFunctions;
     QVector<QQmlPrivate::QmlUnitCacheLookupFunction> lookupCachedQmlUnit;
 

@@ -133,10 +133,11 @@ void QQmlCodeModelManager::setBuildPathsOn(const QQmlWorkspace *ws, const QStrin
         ws->codeModel->setResourceFiles(resourceFiles);
         return;
     }
-    // fallback for qt projects < 6.11 without resource files in  their .qmlls.build.ini
-    ws->codeModel->setResourceFiles(
-                isFallback ? QQmlJSUtils::resourceFilesFromBuildFolders(ws->codeModel->buildPaths())
-                           : defaultResourceFiles());
+    // fallback for qt projects < 6.11 without resource files in their .qmlls.build.ini
+    const QStringList resourceFiles =
+            QQmlJSUtils::resourceFilesFromBuildFolders(ws->codeModel->buildPaths());
+    ws->codeModel->setResourceFiles(isFallback ? resourceFiles
+                                               : resourceFiles + defaultResourceFiles());
 }
 
 void QQmlCodeModelManager::appendWorkspace(const QByteArray &url, ManagedBy managedBy)
@@ -284,7 +285,7 @@ QStringList QQmlCodeModelManager::resourceFilesForFileUrl(const QByteArray &url)
     }
 
     // fallback, for standalone qmlls on projects targeting qt < 6.11
-    return QQmlJSUtils::resourceFilesFromBuildFolders(buildPathsForFileUrl(url));
+    return findCodeModelForFile(url)->resourceFiles();
 }
 
 QByteArray QQmlCodeModelManager::shortestRootUrlForFile(const QByteArray &fileUrl) const

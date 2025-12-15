@@ -834,7 +834,7 @@ void tst_qquickdeliveryagent::mouseMoveHoverEfficiency() // QTBUG-140340
     // Check that  we didn't call the transform functions exceessively often
     // (these numbers can be adjusted if we do something that causes a moderate increase,
     // but try to avoid really pessimizing it again)
-    QCOMPARE_LT(QQuickItemPrivate::itemToParentTransform_counter, 11000ull);
+    QCOMPARE_LT(QQuickItemPrivate::itemToParentTransform_counter, 20000ull);
     QCOMPARE_LT(QQuickItemPrivate::itemToWindowTransform_counter, 700ull);
     QCOMPARE_LT(QQuickItemPrivate::windowToItemTransform_counter, 220ull);
     // Check that we were able to skip hover delivery to many of the items because

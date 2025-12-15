@@ -9,9 +9,11 @@
 #if QT_CONFIG(accessibility)
 #include "qquickpage_p.h"
 #include "qquickscrollbar_p.h"
+#include "qquickslider_p.h"
 #include "accessible/qaccessiblequickcontrol_p.h"
 #include "accessible/qaccessiblequickpage_p.h"
 #include "accessible/qaccessiblequickscrollbar_p.h"
+#include "accessible/qaccessiblequickslider_p.h"
 #endif
 
 QT_BEGIN_NAMESPACE
@@ -23,6 +25,8 @@ static QAccessibleInterface *qQuickAccessibleFactory(const QString &classname, Q
         return new QAccessibleQuickPage(qobject_cast<QQuickPage *>(object));
     if (classname == u"QQuickScrollBar")
         return new QAccessibleQuickScrollBar(qobject_cast<QQuickScrollBar *>(object));
+    if (classname == u"QQuickSlider")
+        return new QAccessibleQuickSlider(qobject_cast<QQuickSlider *>(object));
     if (classname == u"QQuickControl")
         return new QAccessibleQuickControl(qobject_cast<QQuickControl *>(object));
 

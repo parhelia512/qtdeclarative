@@ -274,6 +274,24 @@ static QString dashArrayString(QList<qreal> dashArray)
 }
 };
 
+static QString scrub(const QString &raw)
+{
+    QString res(raw.left(80));
+
+    if (!res.isEmpty()) {
+        constexpr QLatin1StringView legalSymbols("_-.:"); // Only valid SVG id characters
+        qsizetype i = 0;
+        do {
+            if (res.at(i).isLetterOrNumber() || legalSymbols.contains(res.at(i)))
+                i++;
+            else
+                res.remove(i, 1);
+        } while (i < res.size());
+    }
+
+    return res;
+}
+
 QSvgVisitorImpl::QSvgVisitorImpl(const QString svgFileName,
                                  QQuickGenerator *generator,
                                  bool assumeTrustedSource)
@@ -285,6 +303,99 @@ QSvgVisitorImpl::QSvgVisitorImpl(const QString svgFileName,
 }
 
 QSvgVisitorImpl::~QSvgVisitorImpl() = default;
+
+bool QSvgVisitorImpl::startDefsBlock(const QSvgNode *node)
+{
+    StructureNodeInfo info;
+    fillCommonNodeInfo(node, info);
+
+    info.stage = StructureNodeStage::Start;
+
+    if (!m_generator->generateDefsNode(info))
+        return false;
+
+    return true;
+}
+
+void QSvgVisitorImpl::endDefsBlock(const QSvgNode *node)
+{
+    StructureNodeInfo info;
+    fillCommonNodeInfo(node, info);
+
+    info.stage = StructureNodeStage::End;
+
+    m_generator->generateDefsNode(info);
+}
+
+static inline bool isStructureNode(const QSvgNode *node)
+{
+    switch (node->type()) {
+    case QSvgNode::Switch:
+    case QSvgNode::Doc:
+    case QSvgNode::Defs:
+    case QSvgNode::Group:
+    case QSvgNode::Mask:
+    case QSvgNode::Symbol:
+    case QSvgNode::Filter:
+    case QSvgNode::FeMerge:
+    case QSvgNode::FeMergenode:
+    case QSvgNode::FeColormatrix:
+    case QSvgNode::FeGaussianblur:
+    case QSvgNode::FeOffset:
+    case QSvgNode::FeComposite:
+    case QSvgNode::FeFlood:
+    case QSvgNode::FeBlend:
+    case QSvgNode::Marker:
+    case QSvgNode::Pattern:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void recurseSvgNodes(const QSvgNode *root, const std::function<void(const QSvgNode *)> &fnc)
+{
+    fnc(root);
+
+    if (isStructureNode(root)) {
+        const QSvgStructureNode *sn = static_cast<const QSvgStructureNode *>(root);
+        const QList<QSvgNode *> children = sn->renderers();
+        for (const QSvgNode *child : children)
+            recurseSvgNodes(child, fnc);
+    }
+}
+
+void QSvgVisitorImpl::pregenerateReferencedNodes(const QSvgNode *doc)
+{
+    Q_ASSERT(m_generator != nullptr);
+
+    // Find any node which is referenced from elsewhere and generate a Component definition
+    // for it
+    QSet<QString> referencedIds;
+    auto findReferencedIds = [&referencedIds](const QSvgNode *node) {
+        if (node->hasFilter())
+            referencedIds.insert(node->filterId());
+        if (node->hasMask())
+            referencedIds.insert(node->maskId());
+    };
+    recurseSvgNodes(doc, findReferencedIds);
+
+    m_pregeneratingReferencedNodes = true;
+    for (const QString &referencedId : referencedIds) {
+        const QSvgNode *referencedNode = doc->document()->namedNode(referencedId);
+        if (referencedNode == nullptr)
+            continue;
+
+        if (!startDefsBlock(referencedNode))
+            return;
+
+        traverse(referencedNode);
+
+        endDefsBlock(referencedNode);
+    }
+
+    m_pregeneratingReferencedNodes = false;
+}
 
 bool QSvgVisitorImpl::doTraversal()
 {
@@ -304,14 +415,12 @@ bool QSvgVisitorImpl::doTraversal()
     }
 
     QSvgVisitor::traverse(doc);
+
     return true;
 }
 
 void QSvgVisitorImpl::visitNode(const QSvgNode *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     handleBaseNodeSetup(node);
 
     NodeInfo info;
@@ -325,9 +434,6 @@ void QSvgVisitorImpl::visitNode(const QSvgNode *node)
 
 void QSvgVisitorImpl::visitImageNode(const QSvgImage *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     // TODO: this requires proper asset management.
     handleBaseNodeSetup(node);
 
@@ -345,9 +451,6 @@ void QSvgVisitorImpl::visitImageNode(const QSvgImage *node)
 
 void QSvgVisitorImpl::visitRectNode(const QSvgRect *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QRectF rect = node->rect();
     QPointF rads = node->radius();
     // This is using Qt::RelativeSize semantics: percentage of half rect size
@@ -380,9 +483,6 @@ void QSvgVisitorImpl::visitRectNode(const QSvgRect *node)
 
 void QSvgVisitorImpl::visitEllipseNode(const QSvgEllipse *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QRectF rect = node->rect();
 
     QPainterPath p;
@@ -393,17 +493,11 @@ void QSvgVisitorImpl::visitEllipseNode(const QSvgEllipse *node)
 
 void QSvgVisitorImpl::visitPathNode(const QSvgPath *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     handlePathNode(node, node->path());
 }
 
 void QSvgVisitorImpl::visitLineNode(const QSvgLine *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QPainterPath p;
     p.moveTo(node->line().p1());
     p.lineTo(node->line().p2());
@@ -412,18 +506,12 @@ void QSvgVisitorImpl::visitLineNode(const QSvgLine *node)
 
 void QSvgVisitorImpl::visitPolygonNode(const QSvgPolygon *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QPainterPath p = QQuickVectorImageGenerator::Utils::polygonToPath(node->polygon(), true);
     handlePathNode(node, p);
 }
 
 void QSvgVisitorImpl::visitPolylineNode(const QSvgPolyline *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QPainterPath p = QQuickVectorImageGenerator::Utils::polygonToPath(node->polygon(), false);
     handlePathNode(node, p);
 }
@@ -690,9 +778,6 @@ static QVariant calculateInterpolatedValue(const QSvgAbstractAnimatedProperty *p
 
 void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     handleBaseNodeSetup(node);
     const bool isTextArea = node->type() == QSvgNode::Textarea;
 
@@ -1033,24 +1118,17 @@ void QSvgVisitorImpl::visitTextNode(const QSvgText *node)
 
 void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 {
-    if (m_defsLevel > 0)
-        return;
-
     QSvgNode *link = node->link();
     if (!link)
         return;
-
     handleBaseNodeSetup(node);
     UseNodeInfo info;
     QPointF startPos = node->start();
-
     fillCommonNodeInfo(node, info);
     fillAnimationInfo(node, info);
-
     if (!info.bounds.isNull())
         info.bounds.translate(-startPos);
     info.stage = StructureNodeStage::Start;
-
     if (!startPos.isNull()) {
         QTransform xform;
         if (!info.isDefaultTransform)
@@ -1059,17 +1137,13 @@ void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
         info.transform.setDefaultValue(QVariant::fromValue(xform));
         info.isDefaultTransform = false;
     }
-
     m_generator->generateUseNode(info);
-
     QString oldLinkSuffix = m_linkSuffix;
     m_linkSuffix += QStringLiteral("_use") + info.id;
-
     m_useLevel++;
     QSvgVisitor::traverse(link);
     m_useLevel--;
     m_linkSuffix = oldLinkSuffix;
-
     info.stage = StructureNodeStage::End;
     m_generator->generateUseNode(info);
     handleBaseNodeEnd(node);
@@ -1077,9 +1151,6 @@ void QSvgVisitorImpl::visitUseNode(const QSvgUse *node)
 
 bool QSvgVisitorImpl::visitSwitchNodeStart(const QSvgSwitch *node)
 {
-    if (m_defsLevel > 0)
-        return false;
-
     QSvgNode *link = node->childToRender();
     if (!link)
         return false;
@@ -1099,17 +1170,13 @@ void QSvgVisitorImpl::visitSwitchNodeEnd(const QSvgSwitch *node)
 
 bool QSvgVisitorImpl::visitDefsNodeStart(const QSvgDefs *node)
 {
-    Q_UNUSED(node)
-
-    m_defsLevel++;
-    return true;
+    Q_UNUSED(node);
+    return m_pregeneratingReferencedNodes;
 }
 
 void QSvgVisitorImpl::visitDefsNodeEnd(const QSvgDefs *node)
 {
-    Q_UNUSED(node)
-
-    m_defsLevel--;
+    Q_UNUSED(node);
 }
 
 bool QSvgVisitorImpl::visitSymbolNodeStart(const QSvgSymbol *node)
@@ -1139,7 +1206,6 @@ bool QSvgVisitorImpl::visitSymbolNodeStart(const QSvgSymbol *node)
 
 void QSvgVisitorImpl::visitSymbolNodeEnd(const QSvgSymbol *node)
 {
-    Q_ASSERT(m_useLevel > 0);
     handleBaseNodeSetup(node);
 
     StructureNodeInfo info;
@@ -1154,6 +1220,9 @@ void QSvgVisitorImpl::visitSymbolNodeEnd(const QSvgSymbol *node)
 
 bool QSvgVisitorImpl::visitMaskNodeStart(const QSvgMask *node)
 {
+    if (!m_pregeneratingReferencedNodes)
+        return false;
+
     handleBaseNodeSetup(node);
 
     MaskNodeInfo info;
@@ -1188,6 +1257,9 @@ void QSvgVisitorImpl::visitMaskNodeEnd(const QSvgMask *node)
 bool QSvgVisitorImpl::visitFilterNodeStart(const QSvgFilterContainer *node)
 {
     Q_UNUSED(node)
+
+    if (!m_pregeneratingReferencedNodes)
+        return false;
 
     if (!m_filterPrimitives.isEmpty()) {
         qCWarning(lcQuickVectorImage) << "Filter defined inside a filter";
@@ -1422,9 +1494,6 @@ void QSvgVisitorImpl::visitFeFilterPrimitiveNodeEnd(const QSvgFeFilterPrimitive 
 
 bool QSvgVisitorImpl::visitStructureNodeStart(const QSvgStructureNode *node)
 {
-    if (m_defsLevel > 0)
-        return false;
-
     constexpr bool forceSeparatePaths = false;
     handleBaseNodeSetup(node);
 
@@ -1460,7 +1529,6 @@ QString QSvgVisitorImpl::nextNodeId() const
 
 bool QSvgVisitorImpl::visitDocumentNodeStart(const QSvgDocument *node)
 {
-    Q_ASSERT(m_defsLevel == 0);
     handleBaseNodeSetup(node);
 
     StructureNodeInfo info;
@@ -1474,7 +1542,12 @@ bool QSvgVisitorImpl::visitDocumentNodeStart(const QSvgDocument *node)
     info.forceSeparatePaths = false;
     info.stage = StructureNodeStage::Start;
 
-    return m_generator->generateRootNode(info);
+    if (m_generator->generateRootNode(info)) {
+        pregenerateReferencedNodes(node);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void QSvgVisitorImpl::visitDocumentNodeEnd(const QSvgDocument *node)
@@ -1491,35 +1564,31 @@ void QSvgVisitorImpl::visitDocumentNodeEnd(const QSvgDocument *node)
     m_generator->generateRootNode(info);
 }
 
-static QString scrub(const QString &raw)
+QString QSvgVisitorImpl::findOrCreateId(const QString &id)
 {
-    QString res(raw.left(80));
-
-    if (!res.isEmpty()) {
-        constexpr QLatin1StringView legalSymbols("_-.:"); // Only valid SVG id characters
-        qsizetype i = 0;
-        do {
-            if (res.at(i).isLetterOrNumber() || legalSymbols.contains(res.at(i)))
-                i++;
-            else
-                res.remove(i, 1);
-        } while (i < res.size());
+    QString ret = m_idForNodeId.value(id);
+    if (ret.isEmpty()) {
+        ret = nextNodeId();
+        m_idForNodeId.insert(id, ret);
     }
+    return ret;
+}
 
-    return res;
+QString QSvgVisitorImpl::findOrCreateId(const QSvgNode *node, const QString &nodeId)
+{
+    QString key = nodeId;
+    const QSvgNode *n = m_nodesForKeys.value(key);
+    if (key.isEmpty() || (n != nullptr && n != node))
+        key = QString::number(quintptr(node), 16);
+
+    m_nodesForKeys.insert(key, node);
+    return findOrCreateId(key);
 }
 
 void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, const QString &idSuffix)
 {
     const QString nodeId = scrub(node->nodeId());
-    const QString key = nodeId.isEmpty()
-                            ? QString::number(quintptr(node), 16)
-                            : nodeId;
-    info.id = m_idForNodeId.value(key);
-    if (info.id.isEmpty()) {
-        info.id = nextNodeId();
-        m_idForNodeId.insert(key, info.id);
-    }
+    info.id = findOrCreateId(node, nodeId);
 
     // Internal disambiguation when multiple items come from the same node
     info.id += idSuffix;
@@ -1546,21 +1615,11 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
         info.bounds = node->internalBounds(&p, states);
     }
 
-    if (node->hasMask()) {
-        info.maskId = m_idForNodeId.value(node->maskId());
-        if (info.maskId.isEmpty()) {
-            info.maskId = nextNodeId();
-            m_idForNodeId.insert(node->maskId(), info.maskId);
-        }
-    }
+    if (node->hasMask())
+        info.maskId = findOrCreateId(node->maskId());
 
-    if (node->hasFilter()) {
-        info.filterId = m_idForNodeId.value(node->filterId());
-        if (info.filterId.isEmpty()) {
-            info.filterId = nextNodeId();
-            m_idForNodeId.insert(node->filterId(), info.filterId);
-        }
-    }
+    if (node->hasFilter())
+        info.filterId = findOrCreateId(node->filterId());
 }
 
 QList<QSvgVisitorImpl::AnimationPair> QSvgVisitorImpl::collectAnimations(const QSvgNode *node,

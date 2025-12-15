@@ -108,22 +108,13 @@ QString QQuickQmlGenerator::commentString() const
     return m_commentString;
 }
 
-QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
+QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info, const QString &idSuffix)
 {
     if (!info.nodeId.isEmpty())
         stream() << "objectName: \"" << info.nodeId << "\"";
 
-    QString idString = info.id;
-    if (!idString.isEmpty()) {
-        // If input contains multiple items with the same id, then this is invalid. However we
-        // shouldn't generate invalid QML from it. So we add a suffix if this is detected.
-        if (m_generatedIds.contains(idString))
-            idString += QStringLiteral("_%1").arg(m_generatedIds.size());
-
-        m_generatedIds.insert(idString);
-
-        stream() << "id: " << idString;
-    }
+    if (!info.id.isEmpty())
+        stream() << "id: " << info.id << idSuffix;
 
     if (!info.bounds.isNull()) {
         stream() << "property var originalBounds: Qt.rect("
@@ -131,8 +122,8 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
                  << info.bounds.y() << ", "
                  << info.bounds.width() << ", "
                  << info.bounds.height() << ")";
-        stream() << "implicitWidth: originalBounds.width";
-        stream() << "implicitHeight: originalBounds.height";
+        stream() << "width: originalBounds.width";
+        stream() << "height: originalBounds.height";
     }
 
     stream() << "transformOrigin: Item.TopLeft";
@@ -140,10 +131,10 @@ QString QQuickQmlGenerator::generateNodeBase(const NodeInfo &info)
     if (info.filterId.isEmpty() && info.maskId.isEmpty()) {
         if (!info.isDefaultOpacity)
             stream() << "opacity: " << info.opacity.defaultValue().toReal();
-        generateItemAnimations(idString, info);
+        generateItemAnimations(info.id, info);
     }
 
-    return idString;
+    return info.id;
 }
 
 void QQuickQmlGenerator::generateNodeEnd(const NodeInfo &info)
@@ -483,11 +474,33 @@ void QQuickQmlGenerator::generateShaderUse(const NodeInfo &info)
     stream() << "}";
 }
 
-bool QQuickQmlGenerator::generateDefsNode(const NodeInfo &info)
+bool QQuickQmlGenerator::generateDefsNode(const StructureNodeInfo &info)
 {
-    Q_UNUSED(info)
+    if (info.stage == StructureNodeStage::Start) {
+        m_oldIndentLevel = m_indentLevel;
 
-    return false;
+        stream() << "Component {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id << "_container";
+
+        stream() << "Item {";
+        m_indentLevel++;
+
+        generateNodeBase(info, QStringLiteral("_defs"));
+    } else {
+        generateNodeEnd(info);
+
+        m_indentLevel--;
+        stream() << "}"; // Component
+
+        stream() << m_defsSuffix;
+        m_defsSuffix.clear();
+
+        m_indentLevel = m_oldIndentLevel;
+    }
+
+    return true;
 }
 
 void QQuickQmlGenerator::generateImageNode(const ImageNodeInfo &info)
@@ -1533,14 +1546,16 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 {
     // Generate an invisible item subtree which can be used in ShaderEffectSource
-    if (info.stage == StructureNodeStage::Start) {
-        stream() << "Item {";
+    if (info.stage == StructureNodeStage::End) {
+        // Generate code to add after defs block
+        startDefsSuffixBlock();
+        stream() << "Loader {";
         m_indentLevel++;
 
-        generateNodeBase(info);
-
-        stream() << "width: originalBounds.width";
-        stream() << "height: originalBounds.height";
+        stream() << "id: " << info.id; // This is in a different scope, so we can reuse the ID
+        stream() << "sourceComponent: " << info.id << "_container";
+        stream() << "width: item !== null ? item.originalBounds.width : 0";
+        stream() << "height: item !== null ? item.originalBounds.height : 0";
 
         stream() << "property real maskX: " << info.maskRect.left();
         stream() << "property real maskY: " << info.maskRect.top();
@@ -1553,25 +1568,27 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
         stream() << "return ";
         if (info.isMaskRectRelativeCoordinates) {
             stream(SameLine)
-                << "Qt.rect("
-                << info.id << ".maskX * otherWidth + otherX,"
-                << info.id << ".maskY * otherHeight + otherY,"
-                << info.id << ".maskWidth * otherWidth,"
-                << info.id << ".maskHeight * otherHeight)";
+            << "Qt.rect("
+            << info.id << ".maskX * otherWidth + otherX,"
+            << info.id << ".maskY * otherHeight + otherY,"
+            << info.id << ".maskWidth * otherWidth,"
+            << info.id << ".maskHeight * otherHeight)";
         } else {
             stream(SameLine)
-                << "Qt.rect("
-                << info.id << ".maskX, "
-                << info.id << ".maskY, "
-                << info.id << ".maskWidth, "
-                << info.id << ".maskHeight)";
+            << "Qt.rect("
+            << info.id << ".maskX, "
+            << info.id << ".maskY, "
+            << info.id << ".maskWidth, "
+            << info.id << ".maskHeight)";
         }
 
         m_indentLevel--;
         stream() << "}";
 
-    } else {
-        generateNodeEnd(info);
+        m_indentLevel--;
+        stream() << "}";
+
+        endDefsSuffixBlock();
     }
 
     return true;
@@ -1579,11 +1596,25 @@ bool QQuickQmlGenerator::generateMaskNode(const MaskNodeInfo &info)
 
 void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 {
+    stream() << "Item {";
+    m_indentLevel++;
+
+    generateNodeBase(info);
+
+    stream() << "property real originalWidth: filterSourceItem.sourceItem.originalBounds.width";
+    stream() << "property real originalHeight: filterSourceItem.sourceItem.originalBounds.height";
+    stream() << "property rect filterRect: " << info.id << "_filterParameters"
+             << ".adaptToFilterRect(0, 0, originalWidth, originalHeight)";
+
+    for (qsizetype i = 0; i < info.steps.size();)
+        i = generateFilterStep(info, i);
+
+    // Generate code to be added after defs block
+    startDefsSuffixBlock();
     stream() << "QtObject {";
     m_indentLevel++;
 
     stream() << "id: " << info.id << "_filterParameters";
-
     stream() << "property int wrapMode: ";
     if (info.wrapMode == QSGTexture::Repeat)
         stream(SameLine) << "ShaderEffectSource.Repeat";
@@ -1599,13 +1630,10 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
     stream() << "function adaptToFilterRect(sx, sy, sw, sh) {";
     m_indentLevel++;
 
-    // If the shader requires an offset to the source rect, we apply that here
     if (info.csFilterRect == FilterNodeInfo::CoordinateSystem::Absolute) {
         stream() << "return Qt.rect(filterRect.x, filterRect.y, filterRect.width, filterRect.height)";
     } else {
-        stream() << "return Qt.rect("
-                 << "sx + sw * filterRect.x, sy + sh * filterRect.y,"
-                 << "sw * filterRect.width, sh * filterRect.height)";
+        stream() <<  "return Qt.rect(sx + sw * filterRect.x, sy + sh * filterRect.y, sw * filterRect.width, sh * filterRect.height)";
     }
 
     m_indentLevel--;
@@ -1613,30 +1641,9 @@ void QQuickQmlGenerator::generateFilterNode(const FilterNodeInfo &info)
 
     m_indentLevel--;
     stream() << "}";
-
-    stream() << "Component {";
-    m_indentLevel++;
-
-    stream() << "id: " << info.id << "_container";
-
-    // Container for transform and effects
-    stream() << "Item {";
-    m_indentLevel++;
-
-    stream() << "property real originalWidth: filterSourceItem.sourceItem.originalBounds.width";
-    stream() << "property real originalHeight: filterSourceItem.sourceItem.originalBounds.height";
-    stream() << "property rect filterRect: " << info.id << "_filterParameters"
-             << ".adaptToFilterRect(0, 0, originalWidth, originalHeight)";
-
-    generateNodeBase(info);
-
-    for (qsizetype i = 0; i < info.steps.size();)
-        i = generateFilterStep(info, i);
+    endDefsSuffixBlock();
 
     generateNodeEnd(info);
-
-    m_indentLevel--;
-    stream() << "}"; // End of Component
 }
 
 qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
@@ -1935,14 +1942,14 @@ qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
         stream() << "property real fpx2: " << x2 << " * filterSourceItem.sourceItem.originalBounds.width";
         stream() << "property real fpy2: " << y2 << " * filterSourceItem.sourceItem.originalBounds.height";
     } else { // Just match filter rect
-        stream() << "property real fpx1: filterRect.x";
-        stream() << "property real fpy1: filterRect.y";
-        stream() << "property real fpx2: filterRect.x + filterRect.width";
-        stream() << "property real fpy2: filterRect.y + filterRect.height";
+        stream() << "property real fpx1: parent.filterRect.x";
+        stream() << "property real fpy1: parent.filterRect.y";
+        stream() << "property real fpx2: parent.filterRect.x + parent.filterRect.width";
+        stream() << "property real fpy2: parent.filterRect.y + parent.filterRect.height";
     }
 
     stream() << "sourceItem: " << primitiveId;
-    stream() << "sourceRect: Qt.rect(fpx1 - filterRect.x, fpy1 - filterRect.y, width, height)";
+    stream() << "sourceRect: Qt.rect(fpx1 - parent.filterRect.x, fpy1 - parent.filterRect.y, width, height)";
 
     stream() << "x: fpx1";
     stream() << "y: fpy1";
@@ -2085,6 +2092,18 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
     return true;
 }
 
+void QQuickQmlGenerator::startDefsSuffixBlock()
+{
+    std::swap(m_indentLevel, m_oldIndentLevel);
+    m_stream.setString(&m_defsSuffix);
+}
+
+void QQuickQmlGenerator::endDefsSuffixBlock()
+{
+    std::swap(m_indentLevel, m_oldIndentLevel);
+    m_stream.setDevice(&m_result);
+}
+
 QStringView QQuickQmlGenerator::indent()
 {
     static QString indentString;
@@ -2096,7 +2115,7 @@ QStringView QQuickQmlGenerator::indent()
 
 QTextStream &QQuickQmlGenerator::stream(int flags)
 {
-    if (m_stream.device() == nullptr)
+    if (m_stream.device() == nullptr && m_stream.string() == nullptr)
         m_stream.setDevice(&m_result);
     else if (!(flags & StreamFlags::SameLine))
         m_stream << Qt::endl << indent();

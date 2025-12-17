@@ -1181,7 +1181,7 @@ bool QQmlTypeData::resolveType(const QString &typeName, QTypeRevision &version,
                 error.setDescription(QQmlTypeLoader::tr("Unreported error adding script import to import database"));
             }
             error.setUrl(m_importCache->baseUrl());
-            error.setDescription(QQmlTypeLoader::tr("%1 %2").arg(typeName).arg(error.description()));
+            error.setDescription(QQmlTypeLoader::tr("%1 %2").arg(typeName, error.description()));
         }
 
         if (lineNumber != -1)

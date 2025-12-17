@@ -826,7 +826,7 @@ static void doRegisterTypeAndRevisions(
     uniqueRevisions(&revisions, type.version, added);
 
     AliasRegistrar aliasRegistrar(&elementNames);
-    for (QTypeRevision revision : revisions) {
+    for (QTypeRevision revision : std::as_const(revisions)) {
         if (revision.hasMajorVersion() && revision.majorVersion() > type.version.majorVersion())
             break;
 

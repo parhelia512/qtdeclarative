@@ -812,7 +812,7 @@ void QQmlTypeData::continueLoadFromIR()
 {
     assertTypeLoaderThread();
 
-    for (auto const& object: m_document->objects) {
+    for (auto const& object: std::as_const(m_document->objects)) {
         for (auto it = object->inlineComponentsBegin(); it != object->inlineComponentsEnd(); ++it) {
             QString const nameString = m_document->stringAt(it->nameIndex);
             auto importUrl = finalUrl();

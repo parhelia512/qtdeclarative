@@ -25,6 +25,24 @@ QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 
+/*
+Note: users are in full control of the severity level of a category. It is not possible to
+have a single category and use it as a warning in one context, and as an info message in
+another context.
+For that use case, create two distinct categories instead, and give them appropriate default
+warning levels.
+ */
+
+/* The X macro provides (in order):
+   category, name, setting, description, level, ignored, isDefault
+ - category is the C++ variable name of the category
+ - name is the user visible category name, i.e. what what qmllint put in bewteen "[" and "]"
+ - setting name is the name that is used in the qmllint.ini file to configure the category
+ - description is a _short_ description of the category's use
+ - level is the default warning level of the category (can be overriden by the user though)
+ - ignored and default map to the respective LoggerCategory value, but are about to change
+ */
+
 // don't forget to forward-declare your logging category ID in qqmljsloggingutils.h!
 #define QMLLINT_BUILTIN_CATEGORIES                                                                 \
     X(qmlAccessSingleton, "access-singleton-via-object", "AccessSingletonViaObject",               \

@@ -5,7 +5,7 @@
 
 #include <QtCore/private/qcore_mac_p.h>
 #include <QtGui/private/qcoregraphics_p.h>
-#include <QtGui/QGuiApplication.h>
+#include <QtGui/qguiapplication.h>
 #include <QtGui/qstylehints.h>
 
 #include <AppKit/AppKit.h>

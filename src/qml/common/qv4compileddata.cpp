@@ -38,11 +38,14 @@ bool Unit::verifyHeader(QDateTime expectedSourceTimeStamp, QString *errorString)
     if (sourceTimeStamp) {
         // Files from the resource system do not have any time stamps, so fall back to the application
         // executable.
-        if (!expectedSourceTimeStamp.isValid())
+        if (!expectedSourceTimeStamp.isValid()) {
             expectedSourceTimeStamp = QFileInfo(QCoreApplication::applicationFilePath()).lastModified();
-
-        if (expectedSourceTimeStamp.isValid()
-            && expectedSourceTimeStamp.toMSecsSinceEpoch() != sourceTimeStamp) {
+            if (!expectedSourceTimeStamp.isValid()) {
+                *errorString = QStringLiteral("Failed to get valid timestamp from application executable");
+                return false;
+            }
+        }
+        if (expectedSourceTimeStamp.toMSecsSinceEpoch() != sourceTimeStamp) {
             *errorString = QStringLiteral("QML source file has a different time stamp than cached file.");
             return false;
         }

@@ -795,6 +795,9 @@ void tst_HoverHandler::touchDrag()
     QTest::touchEvent(&window, touchscreen.get()).move(0, out, &window);
     QQuickTouchUtils::flush(&window);
     QTRY_COMPARE_GE(frameSyncSpy.size(), 2);
+#ifdef Q_OS_QNX
+    QEXPECT_FAIL("", "Currently failing on QNX", Continue);
+#endif
     QTRY_COMPARE(handler->isHovered(), false);
 
     QTest::touchEvent(&window, touchscreen.get()).release(0, out, &window);

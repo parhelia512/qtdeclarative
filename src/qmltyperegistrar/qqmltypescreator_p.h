@@ -18,7 +18,7 @@
 #include "qqmltypesclassdescription_p.h"
 #include "qqmljsstreamwriter_p.h"
 
-#include <QtCore/qmap.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qset.h>
 
@@ -38,7 +38,7 @@ public:
     void setVersion(QTypeRevision version) { m_version = version; }
     void setUsingDeclarations(QList<UsingDeclaration> usingDeclarations) { m_usingDeclarations = std::move(usingDeclarations);}
     void setGeneratingJSRoot(bool jsroot) { m_generatingJSRoot = jsroot; }
-    void setForeignTypeMetaObjectHashes(const QMap<QAnyStringView, QAnyStringView> &foreignHashes)
+    void setForeignTypeMetaObjectHashes(const QHash<QAnyStringView, QAnyStringView> &foreignHashes)
     {
         m_foreignTypeMetaObjectHashes = foreignHashes;
     }
@@ -61,7 +61,7 @@ private:
     QList<UsingDeclaration> m_usingDeclarations;
     QByteArray m_module;
     QTypeRevision m_version = QTypeRevision::zero();
-    QMap<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
+    QHash<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
     bool m_generatingJSRoot = false;
 };
 

@@ -16,7 +16,7 @@
 //
 
 #include <QtCore/qcbormap.h>
-#include <QtCore/qmap.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qversionnumber.h>
 
 #include <cstdlib>
@@ -37,7 +37,7 @@ class QmlTypeRegistrar
     QVector<MetaType> m_foreignTypes;
     QList<QAnyStringView> m_referencedTypes;
     QList<UsingDeclaration> m_usingDeclarations;
-    QMap<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
+    QHash<QAnyStringView, QAnyStringView> m_foreignTypeMetaObjectHashes;
 
     MetaType findType(QAnyStringView name) const;
     MetaType findTypeForeign(QAnyStringView name) const;
@@ -52,7 +52,7 @@ public:
     void setTypes(const QVector<MetaType> &types, const QVector<MetaType> &foreignTypes);
     void setReferencedTypes(const QList<QAnyStringView> &referencedTypes);
     void setUsingDeclarations(const QList<UsingDeclaration> &usingDeclarations);
-    void setForeignTypeMetaObjectHashes(const QMap<QAnyStringView, QAnyStringView> &foreignHashes);
+    void setForeignTypeMetaObjectHashes(const QHash<QAnyStringView, QAnyStringView> &foreignHashes);
 
     static bool argumentsFromCommandLineAndFile(QStringList &allArguments,
                                                 const QStringList &arguments);

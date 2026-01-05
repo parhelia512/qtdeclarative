@@ -584,7 +584,7 @@ void QmlTypeRegistrar::setUsingDeclarations(const QList<UsingDeclaration> &using
 }
 
 void QmlTypeRegistrar::setForeignTypeMetaObjectHashes(
-        const QMap<QAnyStringView, QAnyStringView> &foreignHashes)
+        const QHash<QAnyStringView, QAnyStringView> &foreignHashes)
 {
     m_foreignTypeMetaObjectHashes = foreignHashes;
 }

@@ -291,19 +291,6 @@ MetaTypesJsonProcessor::PreProcessResult MetaTypesJsonProcessor::preProcess(
 
 }
 
-// TODO: Remove this when QAnyStringView gets a proper qHash()
-static size_t qHash(QAnyStringView string, size_t seed = 0)
-{
-    return string.visit([seed](auto view) {
-        if constexpr (std::is_same_v<decltype(view), QStringView>)
-            return qHash(view, seed);
-        if constexpr (std::is_same_v<decltype(view), QLatin1StringView>)
-            return qHash(view, seed);
-        if constexpr (std::is_same_v<decltype(view), QUtf8StringView>)
-            return qHash(QByteArrayView(view.data(), view.length()), seed);
-    });
-}
-
 static bool qualifiedClassNameLessThan(const MetaType &a, const MetaType &b)
 {
     return a.qualifiedClassName() < b.qualifiedClassName();

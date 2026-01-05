@@ -114,6 +114,7 @@ struct PathNodeInfo : NodeInfo
     QString markerStartId;
     QString markerMidId;
     QString markerEndId;
+    QString patternId;
 };
 
 struct TextNodeInfo : NodeInfo
@@ -154,6 +155,12 @@ struct StructureNodeInfo : NodeInfo
     QSize size;
     QRectF clipBox;
     bool isPathContainer = false;
+};
+
+struct PatternNodeInfo : StructureNodeInfo
+{
+    bool isPatternRectRelativeCoordinates = false;
+    QRectF patternRect;
 };
 
 struct MarkerNodeInfo : StructureNodeInfo

@@ -950,7 +950,48 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
         stream() << "fillColor: \"" << fillColor.name(QColor::HexArgb) << "\"";
     }
 
-    if (!fillTransform.isIdentity()) {
+    if (!info.patternId.isEmpty()) {
+        stream() << "fillItem: ShaderEffectSource {";
+        m_indentLevel++;
+
+        stream() << "parent: " << info.id;
+        stream() << "sourceItem: " << info.patternId;
+        stream() << "hideSource: true";
+        stream() << "visible: false";
+        stream() << "width: " << info.patternId << ".width";
+        stream() << "height: " << info.patternId << ".height";
+        stream() << "wrapMode: ShaderEffectSource.Repeat";
+        stream() << "textureSize: Qt.size(width * __qt_toplevel_scale_itemspy.requiredTextureSize.width, "
+                 << "height * __qt_toplevel_scale_itemspy.requiredTextureSize.height)";;
+        stream() << "sourceRect: " << info.patternId << ".sourceRect("
+                 << info.id << ".width, "
+                 << info.id << ".height)";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        // Fill transform has to include the inverse of the scene scale, since the texture size
+        // is scaled by this amount
+        stream() << "function calculateFillTransform(xScale, yScale) {";
+        m_indentLevel++;
+
+        stream() << "var m = ";
+        generateTransform(fillTransform);
+
+        stream() << "m.translate(" << info.patternId << ".sourceOffset("
+                 << info.id << ".width, "
+                 << info.id << ".height))";
+
+        stream() << "m.scale(1.0 / xScale, 1.0 / yScale, 1.0)";
+        stream() << "return m";
+
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "fillTransform: calculateFillTransform(__qt_toplevel_scale_itemspy.requiredTextureSize.width, "
+                 << "__qt_toplevel_scale_itemspy.requiredTextureSize.height)";
+
+    } else if (!fillTransform.isIdentity()) {
         const QTransform &xf = fillTransform;
         stream() << "fillTransform: ";
         if (info.fillTransform.type() == QTransform::TxTranslate)
@@ -2049,6 +2090,60 @@ qsizetype QQuickQmlGenerator::generateFilterStep(const FilterNodeInfo &info,
     return stepIndex;
 }
 
+bool QQuickQmlGenerator::generatePatternNode(const PatternNodeInfo &info)
+{
+    if (info.stage == StructureNodeStage::Start) {
+        return true;
+    } else {
+        startDefsSuffixBlock();
+        stream() << "Loader {";
+        m_indentLevel++;
+
+        stream() << "id: " << info.id; // This is in a different scope, so we can reuse the ID
+        stream() << "sourceComponent: " << info.id << "_container";
+        stream() << "width: item !== null ? item.originalBounds.width : 0";
+        stream() << "height: item !== null ? item.originalBounds.height : 0";
+        stream() << "visible: false";
+        stream() << "function sourceRect(targetWidth, targetHeight) {";
+        m_indentLevel++;
+
+        stream() << "return Qt.rect(0, 0, ";
+        if (!info.isPatternRectRelativeCoordinates) {
+            stream(SameLine) << info.patternRect.width() << ", "
+                             << info.patternRect.height();
+        } else {
+            stream(SameLine) << info.patternRect.width() << " * targetWidth, "
+                             << info.patternRect.height() << " * targetHeight";
+        }
+        stream(SameLine) << ")";
+        m_indentLevel--;
+        stream() << "}";
+
+        stream() << "function sourceOffset(targetWidth, targetHeight) {";
+        m_indentLevel++;
+
+        stream() << "return Qt.vector3d(";
+        if (!info.isPatternRectRelativeCoordinates) {
+            stream(SameLine) << info.patternRect.x() << ", "
+                             << info.patternRect.y() << ", ";
+        } else {
+            stream(SameLine) << info.patternRect.x() << " * targetWidth, "
+                             << info.patternRect.y() << " * targetHeight, ";
+        }
+        stream(SameLine) << "0.0)";
+        m_indentLevel--;
+        stream() << "}";
+
+
+        m_indentLevel--;
+        stream() << "}";
+
+        endDefsSuffixBlock();
+
+        return true;
+    }
+}
+
 bool QQuickQmlGenerator::generateMarkerNode(const MarkerNodeInfo &info)
 {
     if (info.stage == StructureNodeStage::Start) {
@@ -2265,6 +2360,16 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
             stream() << "}";
             stream() << "property AnimationsInfo animations : AnimationsInfo {}";
         }
+
+        stream() << "Item {";
+        m_indentLevel++;
+        stream() << "width: 1";
+        stream() << "height: 1";
+
+        stream() << "ItemSpy { id: __qt_toplevel_scale_itemspy; anchors.fill: parent }";
+
+        m_indentLevel--;
+        stream() << "}";
 
         if (!info.viewBox.isEmpty()) {
             stream() << "transform: [";

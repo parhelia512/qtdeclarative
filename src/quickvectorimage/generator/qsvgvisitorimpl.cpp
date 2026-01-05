@@ -167,6 +167,7 @@ inline bool isPathContainer(const QSvgStructureNode *node)
         case QSvgNode::Tspan:
         case QSvgNode::Mask:
         case QSvgNode::Marker:
+        case QSvgNode::Pattern:
             //qCDebug(lcQuickVectorGraphics) << "NOT path container because" << node->typeName() ;
             return false;
 
@@ -315,6 +316,13 @@ bool QSvgVisitorImpl::startDefsBlock(const QSvgNode *node)
 
     info.stage = StructureNodeStage::Start;
 
+    // Pattern transforms handled through the fill transform, the transform property is ignored, so
+    // we overwrite it with identity.
+    if (node->type() == QSvgNode::Pattern) {
+        info.transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
+        info.isDefaultTransform = true;
+    }
+
     if (!m_generator->generateDefsNode(info))
         return false;
 
@@ -386,6 +394,8 @@ void QSvgVisitorImpl::pregenerateReferencedNodes(const QSvgNode *doc)
             referencedIds.insert(node->markerMidId());
         if (node->hasMarkerEnd())
             referencedIds.insert(node->markerEndId());
+        if (node->type() == QSvgNode::Pattern)
+            referencedIds.insert(node->nodeId());
     };
     recurseSvgNodes(doc, findReferencedIds);
 
@@ -1188,6 +1198,49 @@ void QSvgVisitorImpl::visitDefsNodeEnd(const QSvgDefs *node)
     Q_UNUSED(node);
 }
 
+bool QSvgVisitorImpl::visitPatternNodeStart(const QSvgPattern *node)
+{
+    if (m_pregeneratingReferencedNodes) {
+        handleBaseNodeSetup(node);
+
+        PatternNodeInfo info;
+        fillCommonNodeInfo(node, info);
+        fillAnimationInfo(node, info);
+
+        info.stage = StructureNodeStage::Start;
+
+        QSvgRectF r = node->rect();
+        info.isPatternRectRelativeCoordinates = r.unitX() == QtSvg::UnitTypes::objectBoundingBox;
+        info.patternRect = r;
+
+        if (node->contentUnits() == QtSvg::UnitTypes::objectBoundingBox)
+            qCWarning(lcQuickVectorImage) << "Only user space content units supported for patterns";
+
+        return m_generator->generatePatternNode(info);
+    } else {
+        return false;
+    }
+}
+
+void QSvgVisitorImpl::visitPatternNodeEnd(const QSvgPattern *node)
+{
+    Q_ASSERT(m_pregeneratingReferencedNodes);
+
+    handleBaseNodeSetup(node);
+
+    PatternNodeInfo info;
+    fillCommonNodeInfo(node, info);
+    fillAnimationInfo(node, info);
+
+    QSvgRectF r = node->rect();
+    info.isPatternRectRelativeCoordinates = r.unitX() == QtSvg::UnitTypes::objectBoundingBox;
+    info.patternRect = r;
+
+    info.stage = StructureNodeStage::End;
+
+    m_generator->generatePatternNode(info);
+}
+
 bool QSvgVisitorImpl::visitSymbolNodeStart(const QSvgSymbol *node)
 {
     if (m_useLevel == 0)
@@ -1616,7 +1669,10 @@ void QSvgVisitorImpl::fillCommonNodeInfo(const QSvgNode *node, NodeInfo &info, c
     info.isVisible = node->isVisible();
     info.isDisplayed = node->displayMode() != QSvgNode::DisplayMode::NoneMode;
 
-    if (node->hasFilter() || node->hasMask() || node->type() == QSvgNode::Type::Mask) {
+    if (node->hasFilter()
+        || node->hasMask()
+        || node->type() == QSvgNode::Type::Mask
+        || node->type() == QSvgNode::Type::Pattern) {
         QImage dummy(1, 1, QImage::Format_RGB32);
         QPainter p(&dummy);
         QSvgExtraStates states;
@@ -2013,9 +2069,6 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
 
     PathNodeInfo info;
     fillCommonNodeInfo(node, info);
-    auto fillStyle = node->style().fill;
-    if (fillStyle)
-        info.fillRule = fillStyle->fillRule();
 
     if (node->hasMarkerStart())
         info.markerStartId = findOrCreateId(node->markerStartId());
@@ -2027,10 +2080,14 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
         info.markerEndId = findOrCreateId(node->markerEndId());
 
     const QGradient *strokeGradient = m_styleResolver->currentStrokeGradient();
+    auto strokeStyle = node->style().stroke;
+    bool hasStrokePattern = strokeStyle
+                            && strokeStyle->style()
+                            && strokeStyle->style()->type() == QSvgStyleProperty::PATTERN;
 
     info.path.setDefaultValue(QVariant::fromValue(path));
     info.fillColor.setDefaultValue(m_styleResolver->currentFillColor());
-    if (strokeGradient == nullptr) {
+    if (strokeGradient == nullptr && !hasStrokePattern) {
         info.strokeStyle = StrokeStyle::fromPen(m_styleResolver->currentStroke());
         info.strokeStyle.color.setDefaultValue(m_styleResolver->currentStrokeColor());
     }
@@ -2038,15 +2095,37 @@ void QSvgVisitorImpl::handlePathNode(const QSvgNode *node, const QPainterPath &p
         info.grad = m_styleResolver->applyOpacityToGradient(*m_styleResolver->currentFillGradient(), m_styleResolver->currentFillOpacity());
     info.fillTransform = m_styleResolver->currentFillTransform();
 
+    auto fillStyle = node->style().fill;
+    if (fillStyle) {
+        info.fillRule = fillStyle->fillRule();
+
+        if (fillStyle->style() && fillStyle->style()->type() == QSvgStyleProperty::PATTERN) {
+            QSvgPatternStyle *patternStyle = static_cast<QSvgPatternStyle *>(fillStyle->style());
+            info.patternId = findOrCreateId(patternStyle->patternNode()->nodeId());
+
+            // The fill transform in the style resolver is a calculated transform which contains
+            // the inverse of the QPainter's world transform at the given time to negate any other
+            // transform set. We avoid this by generating the pattern definition in isolation and
+            // ignore its transform, so we just use the raw pattern transform from the input here.
+            info.fillTransform = patternStyle->patternNode()->transform();
+        }
+    }
+
     fillPathAnimationInfo(node, info);
 
     m_generator->generatePath(info);
 
-    if (strokeGradient != nullptr) {
+    if (strokeGradient != nullptr || hasStrokePattern) {
         PathNodeInfo strokeInfo;
         fillCommonNodeInfo(node, strokeInfo, QStringLiteral("_stroke"));
 
-        strokeInfo.grad = *strokeGradient;
+        if (strokeGradient != nullptr) {
+            strokeInfo.grad = *strokeGradient;
+        } else {
+            QSvgPatternStyle *patternStyle = static_cast<QSvgPatternStyle *>(strokeStyle->style());
+            strokeInfo.patternId = findOrCreateId(patternStyle->patternNode()->nodeId());
+            strokeInfo.fillTransform = patternStyle->patternNode()->transform();
+        }
 
         QPainterPathStroker stroker(m_styleResolver->currentStroke());
         strokeInfo.path.setDefaultValue(QVariant::fromValue(stroker.createStroke(path)));

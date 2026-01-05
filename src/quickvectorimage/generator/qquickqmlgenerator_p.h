@@ -110,6 +110,7 @@ protected:
     bool generateRootNode(const StructureNodeInfo &info) override;
     bool generateMaskNode(const MaskNodeInfo &info) override;
     bool generateMarkerNode(const MarkerNodeInfo &info) override;
+    bool generatePatternNode(const PatternNodeInfo &info) override;
     void outputShapePath(const PathNodeInfo &info, const QPainterPath *path, const QQuadPath *quadPath, QQuickVectorImageGenerator::PathSelector pathSelector, const QRectF &boundingRect) override;
 
 private:

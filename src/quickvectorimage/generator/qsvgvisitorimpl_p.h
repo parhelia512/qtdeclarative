@@ -75,6 +75,9 @@ protected:
     bool visitMarkerNodeStart(const QSvgMarker *node) override;
     void visitMarkerNodeEnd(const QSvgMarker *node) override;
 
+    bool visitPatternNodeStart(const QSvgPattern *) override;
+    void visitPatternNodeEnd(const QSvgPattern *) override;
+
 private:
     typedef std::pair<const QSvgAbstractAnimation *, const QSvgAbstractAnimatedProperty *> AnimationPair;
     QList<AnimationPair> collectAnimations(const QSvgNode *node, const QString &propertyName);

@@ -215,6 +215,16 @@ QString QQuickControlsTestUtils::visualFocusFailureMessage(QQuickControl *contro
     return message;
 }
 
+bool QQuickControlsTestUtils::ApplicationAttributes::test(Qt::ApplicationAttribute attribute) const
+{
+    return QCoreApplication::testAttribute(attribute);
+}
+
+void QQuickControlsTestUtils::ApplicationAttributes::set(Qt::ApplicationAttribute attribute, bool on)
+{
+    QCoreApplication::setAttribute(attribute, on);
+}
+
 bool QQuickControlsTestUtils::arePopupWindowsSupported()
 {
 #if defined(Q_OS_WINDOWS) || defined(Q_OS_MACOS)

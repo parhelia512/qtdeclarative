@@ -107,6 +107,17 @@ namespace QQuickControlsTestUtils
         Q_INVOKABLE bool setValue(const QString &name, const QString &value);
     };
 
+    class ApplicationAttributes : public QObject
+    {
+        Q_OBJECT
+        QML_ELEMENT
+        QML_SINGLETON
+
+    public:
+        Q_INVOKABLE bool test(Qt::ApplicationAttribute attribute) const;
+        Q_INVOKABLE void set(Qt::ApplicationAttribute attribute, bool on = true);
+    };
+
     [[nodiscard]] bool arePopupWindowsSupported();
 
     // Helper that allows us to call setFastAnimations, which requires a QCoreApplication instance.

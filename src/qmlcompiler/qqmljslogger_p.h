@@ -330,7 +330,7 @@ private:
     void printContext(const QQmlJS::SourceLocation &location);
     void printFix(const QQmlJSFixSuggestion &fix);
 
-    void log(Message diagMsg, bool showContext = false, bool showFileName = true);
+    void log(Message &&diagMsg, bool showContext = false, bool showFileName = true);
 
     void countMessage(const Message &message);
 

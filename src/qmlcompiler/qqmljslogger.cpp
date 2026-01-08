@@ -261,7 +261,7 @@ static bool isMsgTypeLess(QtMsgType a, QtMsgType b)
     return level[a] < level[b];
 }
 
-void QQmlJSLogger::log(Message diagMsg, bool showContext, bool showFileName)
+void QQmlJSLogger::log(Message &&diagMsg, bool showContext, bool showFileName)
 {
     Q_ASSERT(m_categoryLevels.contains(diagMsg.id.toString()));
 

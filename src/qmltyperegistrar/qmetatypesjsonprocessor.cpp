@@ -614,7 +614,7 @@ void MetaTypesJsonProcessor::addRelatedTypes()
     }
 }
 
-void MetaTypesJsonProcessor::sortTypes(QVector<MetaType> &types)
+void MetaTypesJsonProcessor::sortTypes(QList<MetaType> &types)
 {
     std::sort(types.begin(), types.end(), qualifiedClassNameLessThan);
 }

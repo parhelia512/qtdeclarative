@@ -103,7 +103,7 @@ struct QQmlMetaTypeData
     bool registerModuleTypes(const QString &uri);
 
     QList<QQmlPrivate::AutoParentFunction> parentFunctions;
-    QVector<QQmlPrivate::QmlUnitCacheLookupFunction> lookupCachedQmlUnit;
+    QList<QQmlPrivate::QmlUnitCacheLookupFunction> lookupCachedQmlUnit;
 
     QHash<const QMetaObject *, QQmlPropertyCache::ConstPtr> propertyCaches;
 

@@ -151,7 +151,6 @@ struct Chunk {
         return usedSlots;
     }
 
-    bool sweep(ClassDestroyStatsCallback classCountPtr);
     void resetBlackBits();
     bool sweep(ExecutionEngine *engine);
     void freeAll(ExecutionEngine *engine);

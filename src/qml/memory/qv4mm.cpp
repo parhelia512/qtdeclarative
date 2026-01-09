@@ -265,7 +265,6 @@ static void increaseFreedCountForClass(const char *className)
     (*freedObjectStatsGlobal())[className]++;
 }
 
-//bool Chunk::sweep(ClassDestroyStatsCallback classCountPtr)
 bool Chunk::sweep(ExecutionEngine *engine)
 {
     bool hasUsedSlots = false;

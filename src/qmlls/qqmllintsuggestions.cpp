@@ -335,7 +335,7 @@ void QmlLintSuggestions::diagnoseHelper(const QByteArray &url,
 
     QQmlToolingSettings settings(QLatin1String("qmllint"));
     if (settings.search(filename).isValid()) {
-        QQmlJS::LoggingUtils::updateLogLevels(categories, settings, nullptr);
+        QQmlJS::LoggingUtils::updateLogSeverities(categories, settings, nullptr);
     }
 
     // TODO: pass the workspace folders to QQmlJSLinter

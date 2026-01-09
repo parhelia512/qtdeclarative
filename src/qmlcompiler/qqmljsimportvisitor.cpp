@@ -2879,11 +2879,11 @@ bool QQmlJSImportVisitor::visit(QQmlJS::AST::UiPragma *pragma)
 {
     if (pragma->name == u"Strict"_s) {
         // If a file uses pragma Strict, it expects to be compiled, so automatically
-        // enable compiler warnings unless the level is set explicitly already (e.g.
+        // enable compiler warnings unless the severity is set explicitly already (e.g.
         // by the user).
 
         if (!m_logger->wasCategoryChanged(qmlCompiler))
-            m_logger->setCategoryLevel(qmlCompiler, QQmlJS::WarningLevel::Warning);
+            m_logger->setCategorySeverity(qmlCompiler, QQmlJS::WarningSeverity::Warning);
     } else if (pragma->name == u"Singleton") {
         m_rootIsSingleton = true;
     } else if (pragma->name == u"ComponentBehavior") {

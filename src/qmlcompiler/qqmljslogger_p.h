@@ -149,13 +149,13 @@ public:
             f(msg);
     }
 
-    QQmlJS::WarningLevel categoryLevel(QQmlJS::LoggerWarningId id) const
+    QQmlJS::WarningSeverity categorySeverity(QQmlJS::LoggerWarningId id) const
     {
-        return m_categoryLevels[id.name().toString()];
+        return m_categorySeverities[id.name().toString()];
     }
-    void setCategoryLevel(QQmlJS::LoggerWarningId id, QQmlJS::WarningLevel level)
+    void setCategorySeverity(QQmlJS::LoggerWarningId id, QQmlJS::WarningSeverity severity)
     {
-        m_categoryLevels[id.name().toString()] = level;
+        m_categorySeverities[id.name().toString()] = severity;
         m_categoryChanged[id.name().toString()] = true;
     }
 
@@ -164,8 +164,8 @@ public:
         return m_categoryChanged[id.name().toString()];
     }
 
-    QQmlJS::WarningLevel compileErrorLevel() const { return m_compileErrorLevel; }
-    void setCompileErrorLevel(QQmlJS::WarningLevel level) { m_compileErrorLevel = level; }
+    QQmlJS::WarningSeverity compileErrorSeverity() const { return m_compileErrorSeverity; }
+    void setCompileErrorSeverity(QQmlJS::WarningSeverity severity) { m_compileErrorSeverity = severity; }
 
     QString compileErrorPrefix() const { return m_compileErrorPrefix; }
     void setCompileErrorPrefix(const QString &prefix) { m_compileErrorPrefix = prefix; }
@@ -178,21 +178,21 @@ public:
         Logs \a message with severity deduced from \a category. Prefer using
         this function in most cases.
 
-        \sa setCategoryLevel
+        \sa setCategorySeverity
     */
     void log(const QString &message, QQmlJS::LoggerWarningId id,
              const QQmlJS::SourceLocation &srcLocation, bool showContext = true,
              bool showFileName = true, const std::optional<QQmlJSFixSuggestion> &suggestion = {},
              std::optional<quint32> customLineForDisabling = std::nullopt)
     {
-        const auto &levelForCategory = m_categoryLevels[id.name().toString()];
-        if (levelForCategory == QQmlJS::WarningLevel::Disable)
+        const auto &severityForCategory = m_categorySeverities[id.name().toString()];
+        if (severityForCategory == QQmlJS::WarningSeverity::Disable)
             return;
 
         log(Message {
                 QQmlJS::DiagnosticMessage {
                     message,
-                    QtMsgType(levelForCategory),
+                    QtMsgType(severityForCategory),
                     srcLocation,
                 },
                 id.name(),
@@ -204,7 +204,7 @@ public:
 
     void logCompileError(const QString &message, const QQmlJS::SourceLocation &srcLocation)
     {
-        if (m_compileErrorLevel == QQmlJS::WarningLevel::Disable)
+        if (m_compileErrorSeverity == QQmlJS::WarningSeverity::Disable)
             return;
 
         if (m_inTransaction)
@@ -215,7 +215,7 @@ public:
         log(Message {
                 QQmlJS::DiagnosticMessage {
                     m_compileErrorPrefix + message,
-                    QtMsgType(m_compileErrorLevel), // OK, as the level can't be Disable
+                    QtMsgType(m_compileErrorSeverity), // OK, as the severity can't be Disable
                     srcLocation
                 },
                 qmlCompiler.name(),
@@ -227,14 +227,14 @@ public:
 
     void logCompileSkip(const QString &message, const QQmlJS::SourceLocation &srcLocation)
     {
-        if (m_compileSkipLevel == QQmlJS::WarningLevel::Disable)
+        if (m_compileSkipSeverity == QQmlJS::WarningSeverity::Disable)
             return;
 
         m_hasCompileSkip = true;
         log(Message {
                 QQmlJS::DiagnosticMessage {
                         m_compileSkipPrefix + message,
-                        QtMsgType(m_compileSkipLevel), // OK, as the severity can't be Disable
+                        QtMsgType(m_compileSkipSeverity), // OK, as the severity can't be Disable
                         srcLocation
                 },
                 qmlCompiler.name(),
@@ -329,8 +329,7 @@ private:
 
     QColorOutput m_output;
 
-    QHash<QString, QQmlJS::WarningLevel> m_categoryLevels;
-
+    QHash<QString, QQmlJS::WarningSeverity> m_categorySeverities;
     QHash<QString, bool> m_categoryChanged;
 
     QList<Message> m_pendingMessages;
@@ -349,8 +348,8 @@ private:
     bool m_hasCompileSkip = false;
     bool m_isDisabled = false;
 
-    QQmlJS::WarningLevel m_compileErrorLevel = QQmlJS::WarningLevel::Warning;
-    QQmlJS::WarningLevel m_compileSkipLevel = QQmlJS::WarningLevel::Info;
+    QQmlJS::WarningSeverity m_compileErrorSeverity = QQmlJS::WarningSeverity::Warning;
+    QQmlJS::WarningSeverity m_compileSkipSeverity = QQmlJS::WarningSeverity::Info;
 };
 
 QT_END_NAMESPACE

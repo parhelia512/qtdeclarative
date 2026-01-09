@@ -16,16 +16,16 @@ class QQmlJSScope;
 namespace QQmlSA {
 class SourceLocation;
 
-enum class WarningLevel
+enum class WarningSeverity
 {
     Disable = 100, // Some number different from the other QtMsgType levels
     Info = QtMsgType::QtInfoMsg,
     Warning = QtMsgType::QtWarningMsg,
     Error = QtMsgType::QtCriticalMsg,
 };
-static_assert(int(WarningLevel::Disable) != int(QtMsgType::QtInfoMsg));
-static_assert(int(WarningLevel::Disable) != int(QtMsgType::QtWarningMsg));
-static_assert(int(WarningLevel::Disable) != int(QtMsgType::QtCriticalMsg));
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtInfoMsg));
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtWarningMsg));
+static_assert(int(WarningSeverity::Disable) != int(QtMsgType::QtCriticalMsg));
 }
 
 namespace QQmlSA {

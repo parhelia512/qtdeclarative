@@ -180,13 +180,13 @@ warning levels.
       "positives when checking for unqualified access",                                            \
       QtWarningMsg, false, false)
 
-#define X(category, name, setting, description, level, ignored, isDefault) \
+#define X(category, name, setting, description, severity, ignored, isDefault) \
     const QQmlSA::LoggerWarningId category{ name };
 QMLLINT_BUILTIN_CATEGORIES
 #undef X
 
 
-#define X(category, name, setting, description, level, ignored, isDefault) ++i;
+#define X(category, name, setting, description, severity, ignored, isDefault) ++i;
 constexpr size_t numCategories = [] { size_t i = 0; QMLLINT_BUILTIN_CATEGORIES return i; }();
 #undef X
 
@@ -201,15 +201,15 @@ constexpr bool isUnique(const std::array<std::string_view, numCategories>& field
     return true;
 }
 
-#define X(category, name, setting, description, level, ignored, isDefault) std::string_view(name),
+#define X(category, name, setting, description, severity, ignored, isDefault) std::string_view(name),
 static_assert(isUnique(std::array{ QMLLINT_BUILTIN_CATEGORIES }), "Duplicate names found!");
 #undef X
 
-#define X(category, name, setting, description, level, ignored, isDefault) std::string_view(setting),
+#define X(category, name, setting, description, severity, ignored, isDefault) std::string_view(setting),
 static_assert(isUnique(std::array{ QMLLINT_BUILTIN_CATEGORIES }), "Duplicate settings found!");
 #undef X
 
-#define X(category, name, setting, description, level, ignored, isDefault) std::string_view(description),
+#define X(category, name, setting, description, severity, ignored, isDefault) std::string_view(description),
 static_assert(isUnique(std::array{ QMLLINT_BUILTIN_CATEGORIES }), "Duplicate description found!");
 #undef X
 
@@ -231,8 +231,8 @@ QQmlJSLogger::QQmlJSLogger()
 const QList<QQmlJS::LoggerCategory> &QQmlJSLogger::builtinCategories()
 {
     static const QList<QQmlJS::LoggerCategory> cats = {
-#define X(category, name, setting, description, level, ignored, isDefault) \
-    QQmlJS::LoggerCategory{ name##_L1, setting##_L1, description##_L1, /* TODO */ ignored ? QQmlJS::WarningLevel::Disable : QQmlJS::WarningLevel(level), isDefault },
+#define X(category, name, setting, description, severity, ignored, isDefault) \
+    QQmlJS::LoggerCategory{ name##_L1, setting##_L1, description##_L1, /* TODO */ ignored ? QQmlJS::WarningSeverity::Disable : QQmlJS::WarningSeverity(severity), isDefault },
         QMLLINT_BUILTIN_CATEGORIES
 #undef X
     };
@@ -264,7 +264,7 @@ void QQmlJSLogger::registerCategory(const QQmlJS::LoggerCategory &category)
         return;
     }
 
-    m_categoryLevels[category.name()] = category.level();
+    m_categorySeverities[category.name()] = category.severity();
     m_categories.insert(category.name(), category);
 }
 
@@ -280,9 +280,9 @@ static bool isMsgTypeLess(QtMsgType a, QtMsgType b)
 
 void QQmlJSLogger::log(Message &&diagMsg, bool showContext, bool showFileName)
 {
-    Q_ASSERT(m_categoryLevels.contains(diagMsg.id.toString()));
+    Q_ASSERT(m_categorySeverities.contains(diagMsg.id.toString()));
 
-    if (categoryLevel(diagMsg.id) == QQmlJS::WarningLevel::Disable || isDisabled())
+    if (categorySeverity(diagMsg.id) == QQmlJS::WarningSeverity::Disable || isDisabled())
         return;
 
     // Note: assume \a type is the type we should prefer for logging
@@ -345,7 +345,7 @@ void QQmlJSLogger::processMessages(QSpan<const QQmlJS::DiagnosticMessage> messag
                                    QQmlJS::LoggerWarningId id,
                                    const QQmlJS::SourceLocation &sourceLocation)
 {
-    if (messages.isEmpty() || categoryLevel(id) == QQmlJS::WarningLevel::Disable || isDisabled())
+    if (messages.isEmpty() || categorySeverity(id) == QQmlJS::WarningSeverity::Disable || isDisabled())
         return;
 
     m_output.write(QStringLiteral("---\n"));

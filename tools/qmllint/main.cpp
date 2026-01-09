@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
                                  { QLatin1String("General"), QLatin1String("Warnings") });
     parser.setApplicationDescription(QLatin1String(R"(QML syntax verifier and analyzer
 
-All warnings can be set to four levels:
+All warnings can be set to four levels of severity:
     disable - Fully disables the warning.
     info - Displays the warning but does not influence the return code.
     warning - Displays the warning and leads to a non-zero exit code if more warnings than max-warnings occur.
@@ -221,11 +221,11 @@ All warnings can be set to four levels:
                 category.id().name().toString(),
                 category.description()
                         + QStringLiteral(" (default: %1)")
-                                  .arg(QQmlJS::LoggingUtils::levelToString(category)),
-                QStringLiteral("level"), QQmlJS::LoggingUtils::levelToString(category));
+                                  .arg(QQmlJS::LoggingUtils::severityToString(category)),
+                QStringLiteral("severity"), QQmlJS::LoggingUtils::severityToString(category));
         parser.addOption(option);
         settings.addOption(QStringLiteral("Warnings/") + category.settingsName(),
-                           QQmlJS::LoggingUtils::levelToString(category));
+                           QQmlJS::LoggingUtils::severityToString(category));
     };
 
     for (const auto &category : QQmlJSLogger::builtinCategories()) {
@@ -363,7 +363,7 @@ All warnings can be set to four levels:
             options.isQmllintSilent = silent;
             settings.search(filename, options);
         }
-        QQmlJS::LoggingUtils::updateLogLevels(categories, settings, &parser);
+        QQmlJS::LoggingUtils::updateLogSeverities(categories, settings, &parser);
 
         resourceFiles = defaultResourceFiles;
         resourceFiles.append(settings.valueAsAbsolutePathList(resourceSetting, filename));

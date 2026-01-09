@@ -226,7 +226,7 @@ private:
         QList<QQmlJS::LoggerCategory> *categories = nullptr;
         LintType type = LintFile;
         bool readSettings = false;
-        QHash<QString, QQmlJS::WarningLevel> categoryLevelOverrides = {};
+        QHash<QString, QQmlJS::WarningSeverity> categorySeverityOverrides = {};
         QStringList rootUrls = {};
         QHash<QString, QString> qrcToFilePaths = {};
     };
@@ -1899,8 +1899,8 @@ void TestQmllint::dirtyJsSnippet_data()
             << defaultOptions;
     {
         CallQmllintOptions options;
-        options.categoryLevelOverrides.insert(qmlFunctionUsedBeforeDeclaration.name().toString(),
-                                              QQmlJS::WarningLevel::Warning);
+        options.categorySeverityOverrides.insert(qmlFunctionUsedBeforeDeclaration.name().toString(),
+                                                 QQmlJS::WarningSeverity::Warning);
         QTest::newRow("functionUsedBeforeDeclaration")
                 << u"fff(); function fff() {}"_s
                 << Result{ { { "Function 'fff' is used here before its declaration"_L1, 1, 1 },
@@ -2063,7 +2063,7 @@ void TestQmllint::dirtyJsSnippet_data()
             << defaultOptions;
     {
         CallQmllintOptions options;
-        options.categoryLevelOverrides.insert(qmlVoid.name().toString(), QQmlJS::WarningLevel::Warning);
+        options.categorySeverityOverrides.insert(qmlVoid.name().toString(), QQmlJS::WarningSeverity::Warning);
         QTest::newRow("void")
                 << u"void 1;"_s
                 << Result{ { { "Do not use void expressions"_L1, 1, 1 } } }
@@ -2657,7 +2657,7 @@ void TestQmllint::compilerWarnings()
     Q_ASSERT(category != categories.end());
 
     if (enableCompilerWarnings)
-        category->setLevel(QQmlJS::WarningLevel::Warning);
+        category->setSeverity(QQmlJS::WarningSeverity::Warning);
 
     runTest(filename, result, {}, {}, {}, UseDefaultImports, &categories);
 }
@@ -2793,11 +2793,11 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
         QList<QQmlJS::LoggerCategory> resolvedCategories =
                 options.categories != nullptr ? *options.categories : m_categories;
 
-        for (const auto &[cat, level] : options.categoryLevelOverrides.asKeyValueRange()) {
+        for (const auto &[cat, severity] : options.categorySeverityOverrides.asKeyValueRange()) {
             for (QQmlJS::LoggerCategory &category : resolvedCategories) {
                 if (category.name() != cat)
                     continue;
-                category.setLevel(level);
+                category.setSeverity(severity);
                 break;
             }
         }
@@ -2805,7 +2805,7 @@ QJsonArray TestQmllint::callQmllintImpl(const QString &fileToLint, const QString
         if (options.readSettings) {
             QQmlToolingSettings settings(QLatin1String("qmllint"), { "General"_L1, "Warnings"_L1 });
             if (settings.search(lintedFile).isValid())
-                QQmlJS::LoggingUtils::updateLogLevels(resolvedCategories, settings, nullptr);
+                QQmlJS::LoggingUtils::updateLogSeverities(resolvedCategories, settings, nullptr);
         }
 
         QList<QString> resourceFiles = options.resources;
@@ -3185,7 +3185,7 @@ void TestQmllint::attachedPropertyReuse()
     });
     Q_ASSERT(category != categories.end());
 
-    category->setLevel(QQmlJS::WarningLevel::Warning);
+    category->setSeverity(QQmlJS::WarningSeverity::Warning);
     runTest("attachedPropNotReused.qml",
             Result { { Message { QStringLiteral("Using attached type QQuickKeyNavigationAttached "
                                                 "already initialized in a parent "
@@ -3376,15 +3376,15 @@ void TestQmllint::hasTestPlugin()
 
         for (auto &category : plugin.categories()) {
             if (category.name() == u"testPlugin.TestDefaultValue") {
-                QCOMPARE(category.level(), QQmlJS::WarningLevel::Disable);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Disable);
             } else if (category.name() == u"testPlugin.TestDefaultValue2") {
-                QCOMPARE(category.level(), QQmlJS::WarningLevel::Info);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Info);
             } else if (category.name() == u"testPlugin.test") {
-                QCOMPARE(category.level(), QQmlJS::WarningLevel::Warning);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Warning);
             } else if (category.name() == u"testPlugin.TestDefaultValue3"){
-                QCOMPARE(category.level(), QQmlJS::WarningLevel::Warning);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Warning);
             } else if (category.name() == u"testPlugin.TestDefaultValue4"){
-                QCOMPARE(category.level(), QQmlJS::WarningLevel::Error);
+                QCOMPARE(category.severity(), QQmlJS::WarningSeverity::Error);
             } else {
                 QFAIL("This category was not tested!");
             }

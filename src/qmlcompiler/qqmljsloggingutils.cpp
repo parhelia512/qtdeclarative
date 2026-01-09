@@ -34,9 +34,9 @@ namespace QQmlJS {
 LoggerCategory::LoggerCategory() : d_ptr{ new LoggerCategoryPrivate } { }
 
 LoggerCategory::LoggerCategory(
-        const QString &name, const QString &settingsName, const QString &description, WarningLevel level,
+        const QString &name, const QString &settingsName, const QString &description, WarningSeverity severity,
         bool isDefault)
-    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, level, isDefault) }
+    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, severity, isDefault) }
 {
 }
 
@@ -75,10 +75,10 @@ QString LoggerCategory::description() const
     return d->description();
 }
 
-WarningLevel LoggerCategory::level() const
+WarningSeverity LoggerCategory::severity() const
 {
     Q_D(const LoggerCategory);
-    return d->level();
+    return d->severity();
 }
 
 bool LoggerCategory::isDefault() const
@@ -93,26 +93,26 @@ LoggerWarningId LoggerCategory::id() const
     return d->id();
 }
 
-void LoggerCategory::setLevel(WarningLevel level)
+void LoggerCategory::setSeverity(WarningSeverity severity)
 {
     Q_D(LoggerCategory);
-    d->setLevel(level);
+    d->setSeverity(severity);
 }
 
 LoggerCategoryPrivate::LoggerCategoryPrivate(const QString &name, const QString &settingsName,
-                                             const QString &description, WarningLevel level,
+                                             const QString &description, WarningSeverity severity,
                                              bool isDefault)
-    : m_name(name), m_settingsName(settingsName), m_description(description), m_level(level)
+    : m_name(name), m_settingsName(settingsName), m_description(description), m_severity(severity)
     , m_isDefault(isDefault)
 {
 }
 
-void LoggerCategoryPrivate::setLevel(WarningLevel level)
+void LoggerCategoryPrivate::setSeverity(WarningSeverity severity)
 {
-    if (m_level == level)
+    if (m_severity == severity)
         return;
 
-    m_level = level;
+    m_severity = severity;
     m_changed = true;
 }
 
@@ -124,16 +124,16 @@ LoggerCategoryPrivate *LoggerCategoryPrivate::get(LoggerCategory *loggerCategory
 
 namespace LoggingUtils {
 
-QString levelToString(const QQmlJS::LoggerCategory &category)
+QString severityToString(const QQmlJS::LoggerCategory &category)
 {
-    switch (category.level()) {
-    case QQmlJS::WarningLevel::Disable:
+    switch (category.severity()) {
+    case QQmlJS::WarningSeverity::Disable:
         return QStringLiteral("disable");
-    case QQmlJS::WarningLevel::Info:
+    case QQmlJS::WarningSeverity::Info:
         return QStringLiteral("info");
-    case QQmlJS::WarningLevel::Warning:
+    case QQmlJS::WarningSeverity::Warning:
         return QStringLiteral("warning");
-    case QQmlJS::WarningLevel::Error:
+    case QQmlJS::WarningSeverity::Error:
         return QStringLiteral("error");
     default:
         Q_UNREACHABLE();
@@ -170,7 +170,7 @@ static QString lookInSettings(const LoggerCategory &category, const QQmlToolingS
     return {};
 }
 
-static QString levelValueForCategory(const LoggerCategory &category,
+static QString severityValueForCategory(const LoggerCategory &category,
                                      const QQmlToolingSettings &settings,
                                      QCommandLineParser *parser)
 {
@@ -184,9 +184,9 @@ static QString levelValueForCategory(const LoggerCategory &category,
         if (value.isEmpty())
             continue;
 
-        // Do not try to set the levels if it's due to a default config option.
+        // Do not try to set the severity if it's due to a default config option.
         // This way we can tell which options have actually been overwritten by the user.
-        if (levelToString(category) == value)
+        if (severityToString(category) == value)
             return QString();
 
         return value;
@@ -194,27 +194,27 @@ static QString levelValueForCategory(const LoggerCategory &category,
     return QString();
 }
 
-bool applyLevelToCategory(const QStringView level, LoggerCategory &category)
+bool applySeverityToCategory(const QStringView severity, LoggerCategory &category)
 {
     // TODO yes we want to allow downgrading errors. But not essentials
     // you can't downgrade errors
-    if (category.level() == QQmlJS::WarningLevel::Error && level != "error"_L1)
+    if (category.severity() == QQmlJS::WarningSeverity::Error && severity != "error"_L1)
         return false;
 
-    if (level == "disable"_L1) {
-        category.setLevel(QQmlJS::WarningLevel::Disable);
+    if (severity == "disable"_L1) {
+        category.setSeverity(QQmlJS::WarningSeverity::Disable);
         return true;
     }
-    if (level == "info"_L1) {
-        category.setLevel(QQmlJS::WarningLevel::Info);
+    if (severity == "info"_L1) {
+        category.setSeverity(QQmlJS::WarningSeverity::Info);
         return true;
     }
-    if (level == "warning"_L1) {
-        category.setLevel(QQmlJS::WarningLevel::Warning);
+    if (severity == "warning"_L1) {
+        category.setSeverity(QQmlJS::WarningSeverity::Warning);
         return true;
     }
-    if (level == "error"_L1) {
-        category.setLevel(QQmlJS::WarningLevel::Error);
+    if (severity == "error"_L1) {
+        category.setSeverity(QQmlJS::WarningSeverity::Error);
         return true;
     }
 
@@ -223,10 +223,10 @@ bool applyLevelToCategory(const QStringView level, LoggerCategory &category)
 
 /*!
 \internal
-Sets the category levels from a settings file and an optional parser.
-Calls \c {parser->showHelp(-1)} for invalid logging levels.
+Sets the category severity from a settings file and an optional parser.
+Calls \c {parser->showHelp(-1)} for an invalid logging severity.
 */
-void updateLogLevels(QList<LoggerCategory> &categories,
+void updateLogSeverities(QList<LoggerCategory> &categories,
                      const QQmlToolingSettings &settings,
                      QCommandLineParser *parser)
 {
@@ -235,15 +235,15 @@ void updateLogLevels(QList<LoggerCategory> &categories,
         if (category.isDefault())
             continue;
 
-        const QString value = levelValueForCategory(category, settings, parser);
+        const QString value = severityValueForCategory(category, settings, parser);
         if (value.isEmpty())
             continue;
 
-        if (!applyLevelToCategory(value, category)) {
-            qWarning() << "Invalid logging level" << value << "provided for"
+        if (!applySeverityToCategory(value, category)) {
+            qWarning() << "Invalid logging severity" << value << "provided for"
                        << category.id().name().toString()
                        << "(allowed are: disable, info, warning, error)\n."
-                          "You can't change categories that have level \"error\" by default."; // TODO we want that to be changeable
+                          "You can't change categories that have severity \"error\" by default."; // TODO we want that to be changeable
             success = false;
         }
     }

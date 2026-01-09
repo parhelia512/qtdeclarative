@@ -1716,7 +1716,7 @@ bool PassManager::hasImportedModule(QAnyStringView module) const
 bool PassManager::isCategoryEnabled(LoggerWarningId category) const
 {
     const auto *logger = PassManagerPrivate::visitor(*this)->logger();
-    return logger->categoryLevel(category) != WarningLevel::Disable;
+    return logger->categorySeverity(category) != WarningSeverity::Disable;
 }
 
 QQmlJSImportVisitor *QQmlSA::PassManagerPrivate::visitor(const QQmlSA::PassManager &manager)

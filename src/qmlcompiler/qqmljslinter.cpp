@@ -264,14 +264,14 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
                 : prefix + settingsNameIt->toString(categoryId);
         m_categories << QQmlJS::LoggerCategory{ categoryId, settingsName,
                                                 object["description"_L1].toString(),
-                                                QQmlJS::WarningLevel::Warning };
-        const auto itLevel= object.find("defaultLevel"_L1);
-        if (itLevel == object.end())
+                                                QQmlJS::WarningSeverity::Warning };
+        const auto itSeverity = object.find("defaultSeverity"_L1);
+        if (itSeverity == object.end())
             continue;
 
-        const QString level = itLevel->toString();
-        if (!QQmlJS::LoggingUtils::applyLevelToCategory(level, m_categories.last())) {
-            qWarning() << "Invalid logging level" << level << "provided for"
+        const QString severity = itSeverity->toString();
+        if (!QQmlJS::LoggingUtils::applySeverityToCategory(severity, m_categories.last())) {
+            qWarning() << "Invalid logging severity" << severity << "provided for"
                        << m_categories.last().id().name().toString()
                        << "(allowed are: disable, info, warning, error) found in plugin metadata.";
         }
@@ -626,7 +626,7 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
         if (auto logger = *it; !QQmlJS::LoggerCategoryPrivate::get(&logger)->hasChanged())
             continue;
 
-        m_logger->setCategoryLevel(it->id(), it->level());
+        m_logger->setCategorySeverity(it->id(), it->severity());
     }
 
     parseComments(m_logger.get(), engine.comments());

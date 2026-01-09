@@ -105,7 +105,7 @@ void QQmlJSLinterCodegen::analyzeFunction(const QV4::Compiler::Context *context,
                                  m_passManager, m_contextPropertyInfo)
                     .run(function);
 
-    if (m_logger->categoryLevel(qmlCompiler) == QQmlJS::WarningLevel::Disable)
+    if (m_logger->categorySeverity(qmlCompiler) == QQmlJS::WarningSeverity::Disable)
         return;
 
     if (!m_logger->currentFunctionHasCompileError()) {

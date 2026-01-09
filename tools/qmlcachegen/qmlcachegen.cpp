@@ -282,7 +282,7 @@ int main(int argc, char **argv)
             logger.setFilePath(inputFile);
 
             // Always trigger the qFatal() on "pragma Strict" violations.
-            logger.setCategoryLevel(qmlCompiler, QQmlJS::WarningLevel::Error);
+            logger.setCategorySeverity(qmlCompiler, QQmlJS::WarningSeverity::Error);
 
             if (!parser.isSet(verboseOption) && !parser.isSet(warningsAreErrorsOption))
                 logger.setSilent(true);

@@ -29,7 +29,7 @@ class QCommandLineParser;
 namespace QQmlJS {
 
 using LoggerWarningId = QQmlSA::LoggerWarningId;
-using WarningLevel = QQmlSA::WarningLevel;
+using WarningSeverity = QQmlSA::WarningSeverity;
 
 class LoggerCategoryPrivate;
 
@@ -41,7 +41,7 @@ public:
     LoggerCategory();
     LoggerCategory(
             const QString &name, const QString &settingsName, const QString &description,
-            WarningLevel level, bool isDefault = false);
+            WarningSeverity severity, bool isDefault = false);
     LoggerCategory(const LoggerCategory &);
     LoggerCategory(LoggerCategory &&) noexcept;
     LoggerCategory &operator=(const LoggerCategory &);
@@ -51,12 +51,12 @@ public:
     QString name() const;
     QString settingsName() const;
     QString description() const;
-    WarningLevel level() const;
+    WarningSeverity severity() const;
     bool isDefault() const;
 
     LoggerWarningId id() const;
 
-    void setLevel(WarningLevel);
+    void setSeverity(WarningSeverity);
 
 private:
     std::unique_ptr<QQmlJS::LoggerCategoryPrivate> d_ptr;
@@ -67,7 +67,7 @@ class LoggerCategoryPrivate
 public:
     LoggerCategoryPrivate() = default;
     LoggerCategoryPrivate(const QString &name, const QString &settingsName,
-                          const QString &description, WarningLevel level,
+                          const QString &description, WarningSeverity severity,
                           bool isDefault);
 
     LoggerWarningId id() const { return LoggerWarningId(m_name); }
@@ -77,8 +77,8 @@ public:
     QString description() const { return m_description; }
     bool isDefault() const { return m_isDefault; }
 
-    WarningLevel level() const { return m_level; }
-    void setLevel(WarningLevel);
+    WarningSeverity severity() const { return m_severity; }
+    void setSeverity(WarningSeverity);
 
     bool hasChanged() const { return m_changed; }
 
@@ -101,18 +101,18 @@ private:
     QString m_name;
     QString m_settingsName;
     QString m_description;
-    WarningLevel m_level= WarningLevel::Info;
+    WarningSeverity m_severity = WarningSeverity::Info;
     bool m_isDefault = false; // Whether or not the category can be disabled
     bool m_changed = false;
 };
 
 namespace LoggingUtils {
-Q_QMLCOMPILER_EXPORT void updateLogLevels(QList<LoggerCategory> &categories,
-                                          const QQmlToolingSettings &settings,
-                                          QCommandLineParser *parser);
+Q_QMLCOMPILER_EXPORT void updateLogSeverities(QList<LoggerCategory> &categories,
+                                              const QQmlToolingSettings &settings,
+                                              QCommandLineParser *parser);
 
-Q_QMLCOMPILER_EXPORT QString levelToString(const QQmlJS::LoggerCategory &category);
-Q_QMLCOMPILER_EXPORT bool applyLevelToCategory(const QStringView level, LoggerCategory &category);
+Q_QMLCOMPILER_EXPORT QString severityToString(const QQmlJS::LoggerCategory &category);
+Q_QMLCOMPILER_EXPORT bool applySeverityToCategory(const QStringView severity, LoggerCategory &category);
 } // namespace LoggingUtils
 
 } // namespace QQmlJS

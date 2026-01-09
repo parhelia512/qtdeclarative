@@ -161,9 +161,9 @@ QQmlJSCompilePass::Function QQmlJSFunctionInitializer::run(
 
         // If the function is a signal handler and just returns a closure, it's harmless.
         // Otherwise it's a warning.
-        m_logger->setCompileErrorLevel(context->returnsClosure
-                                                  ? QQmlJS::WarningLevel::Info
-                                                  : QQmlJS::WarningLevel::Warning);
+        m_logger->setCompileErrorSeverity(context->returnsClosure
+                                                  ? QQmlJS::WarningSeverity::Info
+                                                  : QQmlJS::WarningSeverity::Warning);
     };
 
     if (irBinding.type() != QmlIR::Binding::Type_Script) {

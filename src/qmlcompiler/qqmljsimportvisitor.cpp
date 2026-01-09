@@ -2882,11 +2882,8 @@ bool QQmlJSImportVisitor::visit(QQmlJS::AST::UiPragma *pragma)
         // enable compiler warnings unless the level is set explicitly already (e.g.
         // by the user).
 
-        if (!m_logger->wasCategoryChanged(qmlCompiler)) {
-            // TODO: the logic here is rather complicated and may be buggy
-            m_logger->setCategoryLevel(qmlCompiler, QtWarningMsg);
-            m_logger->setCategoryIgnored(qmlCompiler, false);
-        }
+        if (!m_logger->wasCategoryChanged(qmlCompiler))
+            m_logger->setCategoryLevel(qmlCompiler, QQmlJS::WarningLevel::Warning);
     } else if (pragma->name == u"Singleton") {
         m_rootIsSingleton = true;
     } else if (pragma->name == u"ComponentBehavior") {

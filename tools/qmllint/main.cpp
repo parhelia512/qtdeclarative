@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
                                  { QLatin1String("General"), QLatin1String("Warnings") });
     parser.setApplicationDescription(QLatin1String(R"(QML syntax verifier and analyzer
 
-All warnings can be set to three levels:
+All warnings can be set to four levels:
     disable - Fully disables the warning.
     info - Displays the warning but does not influence the return code.
     warning - Displays the warning and leads to a non-zero exit code if more warnings than max-warnings occur.
@@ -223,8 +223,6 @@ All warnings can be set to three levels:
                         + QStringLiteral(" (default: %1)")
                                   .arg(QQmlJS::LoggingUtils::levelToString(category)),
                 QStringLiteral("level"), QQmlJS::LoggingUtils::levelToString(category));
-        if (category.isIgnored())
-            option.setFlags(QCommandLineOption::HiddenFromHelp);
         parser.addOption(option);
         settings.addOption(QStringLiteral("Warnings/") + category.settingsName(),
                            QQmlJS::LoggingUtils::levelToString(category));

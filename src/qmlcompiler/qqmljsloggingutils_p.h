@@ -29,6 +29,7 @@ class QCommandLineParser;
 namespace QQmlJS {
 
 using LoggerWarningId = QQmlSA::LoggerWarningId;
+using WarningLevel = QQmlSA::WarningLevel;
 
 class LoggerCategoryPrivate;
 
@@ -40,7 +41,7 @@ public:
     LoggerCategory();
     LoggerCategory(
             const QString &name, const QString &settingsName, const QString &description,
-            QtMsgType level, bool ignored = false, bool isDefault = false);
+            WarningLevel level, bool isDefault = false);
     LoggerCategory(const LoggerCategory &);
     LoggerCategory(LoggerCategory &&) noexcept;
     LoggerCategory &operator=(const LoggerCategory &);
@@ -50,14 +51,12 @@ public:
     QString name() const;
     QString settingsName() const;
     QString description() const;
-    QtMsgType level() const;
-    bool isIgnored() const;
+    WarningLevel level() const;
     bool isDefault() const;
 
     LoggerWarningId id() const;
 
-    void setLevel(QtMsgType);
-    void setIgnored(bool);
+    void setLevel(WarningLevel);
 
 private:
     std::unique_ptr<QQmlJS::LoggerCategoryPrivate> d_ptr;
@@ -68,7 +67,7 @@ class LoggerCategoryPrivate
 public:
     LoggerCategoryPrivate() = default;
     LoggerCategoryPrivate(const QString &name, const QString &settingsName,
-                          const QString &description, QtMsgType level, bool isIgnored,
+                          const QString &description, WarningLevel level,
                           bool isDefault);
 
     LoggerWarningId id() const { return LoggerWarningId(m_name); }
@@ -78,11 +77,8 @@ public:
     QString description() const { return m_description; }
     bool isDefault() const { return m_isDefault; }
 
-    QtMsgType level() const { return m_level; }
-    void setLevel(QtMsgType);
-
-    bool isIgnored() const { return m_isIgnored; }
-    void setIgnored(bool);
+    WarningLevel level() const { return m_level; }
+    void setLevel(WarningLevel);
 
     bool hasChanged() const { return m_changed; }
 
@@ -105,8 +101,7 @@ private:
     QString m_name;
     QString m_settingsName;
     QString m_description;
-    QtMsgType m_level = QtDebugMsg;
-    bool m_isIgnored = false;
+    WarningLevel m_level= WarningLevel::Info;
     bool m_isDefault = false; // Whether or not the category can be disabled
     bool m_changed = false;
 };

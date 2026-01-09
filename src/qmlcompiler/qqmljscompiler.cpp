@@ -652,7 +652,7 @@ QQmlJS::DiagnosticMessage QQmlJSAotCompiler::diagnose(
 {
     if (isStrict(m_document)
             && (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg)
-            && m_logger->isCategoryFatal(qmlCompiler)) {
+            && m_logger->categoryLevel(qmlCompiler) == QQmlSA::WarningLevel::Error) {
         qFatal("%s:%d: (strict mode) %s",
                qPrintable(QFileInfo(m_resourcePath).fileName()),
                location.startLine, qPrintable(message));

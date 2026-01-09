@@ -34,9 +34,9 @@ namespace QQmlJS {
 LoggerCategory::LoggerCategory() : d_ptr{ new LoggerCategoryPrivate } { }
 
 LoggerCategory::LoggerCategory(
-        const QString &name, const QString &settingsName, const QString &description, QtMsgType level,
-        bool isIgnored, bool isDefault)
-    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, level, isIgnored, isDefault) }
+        const QString &name, const QString &settingsName, const QString &description, WarningLevel level,
+        bool isDefault)
+    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, level, isDefault) }
 {
 }
 
@@ -75,16 +75,10 @@ QString LoggerCategory::description() const
     return d->description();
 }
 
-QtMsgType LoggerCategory::level() const
+WarningLevel LoggerCategory::level() const
 {
     Q_D(const LoggerCategory);
     return d->level();
-}
-
-bool LoggerCategory::isIgnored() const
-{
-    Q_D(const LoggerCategory);
-    return d->isIgnored();
 }
 
 bool LoggerCategory::isDefault() const
@@ -99,41 +93,26 @@ LoggerWarningId LoggerCategory::id() const
     return d->id();
 }
 
-void LoggerCategory::setLevel(QtMsgType type)
+void LoggerCategory::setLevel(WarningLevel level)
 {
     Q_D(LoggerCategory);
-    d->setLevel(type);
+    d->setLevel(level);
 }
 
 LoggerCategoryPrivate::LoggerCategoryPrivate(const QString &name, const QString &settingsName,
-                                             const QString &description, QtMsgType level,
-                                             bool isIgnored, bool isDefault)
+                                             const QString &description, WarningLevel level,
+                                             bool isDefault)
     : m_name(name), m_settingsName(settingsName), m_description(description), m_level(level)
-    , m_isIgnored(isIgnored), m_isDefault(isDefault)
+    , m_isDefault(isDefault)
 {
 }
 
-void LoggerCategoryPrivate::setLevel(QtMsgType type)
+void LoggerCategoryPrivate::setLevel(WarningLevel level)
 {
-    if (m_level == type)
+    if (m_level == level)
         return;
 
-    m_level = type;
-    m_changed = true;
-}
-
-void LoggerCategory::setIgnored(bool isIgnored)
-{
-    Q_D(LoggerCategory);
-    d->setIgnored(isIgnored);
-}
-
-void LoggerCategoryPrivate::setIgnored(bool isIgnored)
-{
-    if (m_isIgnored == isIgnored)
-        return;
-
-    m_isIgnored = isIgnored;
+    m_level = level;
     m_changed = true;
 }
 
@@ -147,15 +126,14 @@ namespace LoggingUtils {
 
 QString levelToString(const QQmlJS::LoggerCategory &category)
 {
-    if (category.isIgnored())
-        return QStringLiteral("disable");
-
     switch (category.level()) {
-    case QtInfoMsg:
+    case QQmlJS::WarningLevel::Disable:
+        return QStringLiteral("disable");
+    case QQmlJS::WarningLevel::Info:
         return QStringLiteral("info");
-    case QtWarningMsg:
+    case QQmlJS::WarningLevel::Warning:
         return QStringLiteral("warning");
-    case QtCriticalMsg:
+    case QQmlJS::WarningLevel::Error:
         return QStringLiteral("error");
     default:
         Q_UNREACHABLE();
@@ -218,28 +196,25 @@ static QString levelValueForCategory(const LoggerCategory &category,
 
 bool applyLevelToCategory(const QStringView level, LoggerCategory &category)
 {
+    // TODO yes we want to allow downgrading errors. But not essentials
     // you can't downgrade errors
-    if (category.level() == QtCriticalMsg && !category.isIgnored() && level != "error"_L1)
+    if (category.level() == QQmlJS::WarningLevel::Error && level != "error"_L1)
         return false;
 
     if (level == "disable"_L1) {
-        category.setLevel(QtCriticalMsg);
-        category.setIgnored(true);
+        category.setLevel(QQmlJS::WarningLevel::Disable);
         return true;
     }
     if (level == "info"_L1) {
-        category.setLevel(QtInfoMsg);
-        category.setIgnored(false);
+        category.setLevel(QQmlJS::WarningLevel::Info);
         return true;
     }
     if (level == "warning"_L1) {
-        category.setLevel(QtWarningMsg);
-        category.setIgnored(false);
+        category.setLevel(QQmlJS::WarningLevel::Warning);
         return true;
     }
     if (level == "error"_L1) {
-        category.setLevel(QtCriticalMsg);
-        category.setIgnored(false);
+        category.setLevel(QQmlJS::WarningLevel::Error);
         return true;
     }
 
@@ -268,7 +243,7 @@ void updateLogLevels(QList<LoggerCategory> &categories,
             qWarning() << "Invalid logging level" << value << "provided for"
                        << category.id().name().toString()
                        << "(allowed are: disable, info, warning, error)\n."
-                          "You can't change categories that have level \"error\" by default.";
+                          "You can't change categories that have level \"error\" by default."; // TODO we want that to be changeable
             success = false;
         }
     }

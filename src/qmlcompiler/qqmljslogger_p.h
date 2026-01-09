@@ -149,33 +149,13 @@ public:
             f(msg);
     }
 
-    QtMsgType categoryLevel(QQmlJS::LoggerWarningId id) const
+    QQmlJS::WarningLevel categoryLevel(QQmlJS::LoggerWarningId id) const
     {
         return m_categoryLevels[id.name().toString()];
     }
-    void setCategoryLevel(QQmlJS::LoggerWarningId id, QtMsgType level)
+    void setCategoryLevel(QQmlJS::LoggerWarningId id, QQmlJS::WarningLevel level)
     {
         m_categoryLevels[id.name().toString()] = level;
-        m_categoryChanged[id.name().toString()] = true;
-    }
-
-    bool isCategoryIgnored(QQmlJS::LoggerWarningId id) const
-    {
-        return m_categoryIgnored[id.name().toString()];
-    }
-    void setCategoryIgnored(QQmlJS::LoggerWarningId id, bool error)
-    {
-        m_categoryIgnored[id.name().toString()] = error;
-        m_categoryChanged[id.name().toString()] = true;
-    }
-
-    bool isCategoryFatal(QQmlJS::LoggerWarningId id) const
-    {
-        return m_categoryFatal[id.name().toString()];
-    }
-    void setCategoryFatal(QQmlJS::LoggerWarningId id, bool error)
-    {
-        m_categoryFatal[id.name().toString()] = error;
         m_categoryChanged[id.name().toString()] = true;
     }
 
@@ -184,8 +164,8 @@ public:
         return m_categoryChanged[id.name().toString()];
     }
 
-    QtMsgType compileErrorLevel() const { return m_compileErrorLevel; }
-    void setCompileErrorLevel(QtMsgType level) { m_compileErrorLevel = level; }
+    QQmlJS::WarningLevel compileErrorLevel() const { return m_compileErrorLevel; }
+    void setCompileErrorLevel(QQmlJS::WarningLevel level) { m_compileErrorLevel = level; }
 
     QString compileErrorPrefix() const { return m_compileErrorPrefix; }
     void setCompileErrorPrefix(const QString &prefix) { m_compileErrorPrefix = prefix; }
@@ -205,10 +185,14 @@ public:
              bool showFileName = true, const std::optional<QQmlJSFixSuggestion> &suggestion = {},
              std::optional<quint32> customLineForDisabling = std::nullopt)
     {
+        const auto &levelForCategory = m_categoryLevels[id.name().toString()];
+        if (levelForCategory == QQmlJS::WarningLevel::Disable)
+            return;
+
         log(Message {
                 QQmlJS::DiagnosticMessage {
                     message,
-                    m_categoryLevels[id.name().toString()],
+                    QtMsgType(levelForCategory),
                     srcLocation,
                 },
                 id.name(),
@@ -220,6 +204,9 @@ public:
 
     void logCompileError(const QString &message, const QQmlJS::SourceLocation &srcLocation)
     {
+        if (m_compileErrorLevel == QQmlJS::WarningLevel::Disable)
+            return;
+
         if (m_inTransaction)
             m_hasPendingCompileError = true;
         else
@@ -228,7 +215,7 @@ public:
         log(Message {
                 QQmlJS::DiagnosticMessage {
                     m_compileErrorPrefix + message,
-                    m_compileErrorLevel,
+                    QtMsgType(m_compileErrorLevel), // OK, as the level can't be Disable
                     srcLocation
                 },
                 qmlCompiler.name(),
@@ -240,11 +227,14 @@ public:
 
     void logCompileSkip(const QString &message, const QQmlJS::SourceLocation &srcLocation)
     {
+        if (m_compileSkipLevel == QQmlJS::WarningLevel::Disable)
+            return;
+
         m_hasCompileSkip = true;
         log(Message {
                 QQmlJS::DiagnosticMessage {
                         m_compileSkipPrefix + message,
-                        m_compileSkipLevel,
+                        QtMsgType(m_compileSkipLevel), // OK, as the severity can't be Disable
                         srcLocation
                 },
                 qmlCompiler.name(),
@@ -339,12 +329,7 @@ private:
 
     QColorOutput m_output;
 
-    QHash<QString, QtMsgType> m_categoryLevels;
-    QHash<QString, bool> m_categoryIgnored;
-
-    // If true, triggers qFatal on documents with "pragma Strict"
-    // TODO: Works only for qmlCompiler category so far.
-    QHash<QString, bool> m_categoryFatal;
+    QHash<QString, QQmlJS::WarningLevel> m_categoryLevels;
 
     QHash<QString, bool> m_categoryChanged;
 
@@ -364,8 +349,8 @@ private:
     bool m_hasCompileSkip = false;
     bool m_isDisabled = false;
 
-    QtMsgType m_compileErrorLevel = QtWarningMsg;
-    QtMsgType m_compileSkipLevel = QtInfoMsg;
+    QQmlJS::WarningLevel m_compileErrorLevel = QQmlJS::WarningLevel::Warning;
+    QQmlJS::WarningLevel m_compileSkipLevel = QQmlJS::WarningLevel::Info;
 };
 
 QT_END_NAMESPACE

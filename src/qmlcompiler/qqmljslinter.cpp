@@ -255,9 +255,6 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
             }
         }
 
-        const auto it = object.find("enabled"_L1);
-        const bool ignored = (it != object.end() && !it->toBool());
-
         const QString prefix = (m_isInternal ? u""_s : u"Plugin."_s).append(m_name).append(u'.');
         const QString categoryId =
                 prefix + object[u"name"].toString();
@@ -266,9 +263,9 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
                 ? categoryId
                 : prefix + settingsNameIt->toString(categoryId);
         m_categories << QQmlJS::LoggerCategory{ categoryId, settingsName,
-                                                object["description"_L1].toString(), QtWarningMsg,
-                                                ignored };
-        const auto itLevel = object.find("defaultLevel"_L1);
+                                                object["description"_L1].toString(),
+                                                QQmlJS::WarningLevel::Warning };
+        const auto itLevel= object.find("defaultLevel"_L1);
         if (itLevel == object.end())
             continue;
 
@@ -629,7 +626,6 @@ QQmlJSLinter::lintFile(const QString &filename, const QString *fileContents, con
         if (auto logger = *it; !QQmlJS::LoggerCategoryPrivate::get(&logger)->hasChanged())
             continue;
 
-        m_logger->setCategoryIgnored(it->id(), it->isIgnored());
         m_logger->setCategoryLevel(it->id(), it->level());
     }
 

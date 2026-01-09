@@ -232,7 +232,7 @@ const QList<QQmlJS::LoggerCategory> &QQmlJSLogger::builtinCategories()
 {
     static const QList<QQmlJS::LoggerCategory> cats = {
 #define X(category, name, setting, description, level, ignored, isDefault) \
-    QQmlJS::LoggerCategory{ name##_L1, setting##_L1, description##_L1, level, ignored, isDefault },
+    QQmlJS::LoggerCategory{ name##_L1, setting##_L1, description##_L1, /* TODO */ ignored ? QQmlJS::WarningLevel::Disable : QQmlJS::WarningLevel(level), isDefault },
         QMLLINT_BUILTIN_CATEGORIES
 #undef X
     };
@@ -265,7 +265,6 @@ void QQmlJSLogger::registerCategory(const QQmlJS::LoggerCategory &category)
     }
 
     m_categoryLevels[category.name()] = category.level();
-    m_categoryIgnored[category.name()] = category.isIgnored();
     m_categories.insert(category.name(), category);
 }
 
@@ -283,7 +282,7 @@ void QQmlJSLogger::log(Message &&diagMsg, bool showContext, bool showFileName)
 {
     Q_ASSERT(m_categoryLevels.contains(diagMsg.id.toString()));
 
-    if (isCategoryIgnored(diagMsg.id) || isDisabled())
+    if (categoryLevel(diagMsg.id) == QQmlJS::WarningLevel::Disable || isDisabled())
         return;
 
     // Note: assume \a type is the type we should prefer for logging
@@ -346,7 +345,7 @@ void QQmlJSLogger::processMessages(QSpan<const QQmlJS::DiagnosticMessage> messag
                                    QQmlJS::LoggerWarningId id,
                                    const QQmlJS::SourceLocation &sourceLocation)
 {
-    if (messages.isEmpty() || isCategoryIgnored(id) || isDisabled())
+    if (messages.isEmpty() || categoryLevel(id) == QQmlJS::WarningLevel::Disable || isDisabled())
         return;
 
     m_output.write(QStringLiteral("---\n"));

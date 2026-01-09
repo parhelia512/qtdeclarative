@@ -76,7 +76,7 @@ struct Chunk {
     quintptr blackBitmap[BitmapSize/sizeof(quintptr)];
     quintptr objectBitmap[BitmapSize/sizeof(quintptr)];
     quintptr extendsBitmap[BitmapSize/sizeof(quintptr)];
-    char data[ChunkSize - HeaderSize];
+    char data[DataSize];
 
     HeapItem *realBase();
     HeapItem *first();

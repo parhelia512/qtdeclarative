@@ -2081,6 +2081,14 @@ void TestQmllint::dirtyJsSnippet_data()
             << u"for (;;) { x + 3; return x; }"_s
             << Result{ { { "Expression statement has no obvious effect."_L1, 1, 12 } } }
             << defaultOptions;
+    QTest::newRow("varVariableInBlockScope")
+            << uR"(let i = 0;
+        {
+            var j = 1;
+        }
+        i = j;)"_s
+            << Result { { { "var declaration in block scope is hoisted to function scope"_L1, 3, 17 } } }
+            << defaultOptions;
 }
 
 void TestQmllint::dirtyJsSnippet()

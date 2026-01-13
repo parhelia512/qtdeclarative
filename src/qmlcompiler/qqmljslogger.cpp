@@ -54,6 +54,8 @@ warning levels.
       "Warn if attached types from parent components aren't reused. This is handled by the "       \
       "QtQuick lint plugin. Use Quick.AttachedPropertyReuse instead.",                             \
       Disable, NonEssential)                                                                       \
+    X(qmlBlockScopeVarDeclaration, "block-scope-var-declaration", "BlockScopeVarDeclaration",      \
+      "Warn if a variable is declared with var inside a block scope", Warning, NonEssential)       \
     X(qmlComma, "comma", "Comma", "Warn about using comma expressions.", Warning, NonEssential)    \
     X(qmlCompiler, "compiler", "CompilerWarnings", "Warn about compiler issues", Disable,          \
       NonEssential)                                                                                \

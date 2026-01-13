@@ -489,6 +489,25 @@ bool LinterVisitor::visit(ExpressionStatement *ast)
     return true;
 }
 
+bool LinterVisitor::safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name, const QQmlJSScope::JavaScriptIdentifier &identifier)
+{
+    if (scope->scopeType() == QQmlSA::ScopeType::JSLexicalScope &&
+        identifier.kind == QQmlJSScope::JavaScriptIdentifier::FunctionScoped) {
+        // var is generally not great, but we don't want to emit this warning if you
+        // are in the single, toplevel block of a binding
+        Q_ASSERT(!scope->parentScope().isNull()); // lexical scope should always have a parent
+        auto parentScopeType = scope->parentScope()->scopeType();
+        bool inTopLevelBindingBlockScope = parentScopeType == QQmlSA::ScopeType::BindingFunctionScope
+                || parentScopeType == QQmlSA::ScopeType::SignalHandlerFunctionScope;
+        if (!inTopLevelBindingBlockScope) {
+            m_logger->log(u"var declaration in block scope is hoisted to function scope\n"_s
+                          u"Replace it with const or let to silence the warning\n"_s,
+                          qmlBlockScopeVarDeclaration, identifier.location);
+        }
+    }
+    return QQmlJSImportVisitor::safeInsertJSIdentifier(scope, name, identifier);
+}
+
 QQmlJSImportVisitor::BindingExpressionParseResult LinterVisitor::parseBindingExpression(
         const QString &name, const QQmlJS::AST::Statement *statement,
         const QQmlJS::AST::UiPublicMember *associatedPropertyDefinition)

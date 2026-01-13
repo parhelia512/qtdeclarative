@@ -56,6 +56,9 @@ protected:
     bool visit(QQmlJS::AST::CaseBlock *) override;
     bool visit(QQmlJS::AST::ExpressionStatement *ast) override;
 
+    bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
+                                const QQmlJSScope::JavaScriptIdentifier &identifier) override;
+
 private:
     struct SeenImport
     {

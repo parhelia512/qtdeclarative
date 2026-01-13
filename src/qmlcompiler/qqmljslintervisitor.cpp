@@ -504,6 +504,15 @@ bool LinterVisitor::safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QStrin
                           u"Replace it with const or let to silence the warning\n"_s,
                           qmlBlockScopeVarDeclaration, identifier.location);
         }
+    } else if (scope->scopeType() == QQmlSA::ScopeType::QMLScope) {
+        const QQmlJSScope *scopePtr = scope.get();
+        std::pair<const QQmlJSScope*, QString> misplaced { scopePtr, name };
+        if (misplacedJSIdentifiers.contains(misplaced))
+            return false; // we only want to warn once
+        misplacedJSIdentifiers.insert(misplaced);
+        m_logger->log(u"JavaScript declarations are not allowed in QML elements"_s, qmlSyntax,
+                      identifier.location);
+        return false;
     }
     return QQmlJSImportVisitor::safeInsertJSIdentifier(scope, name, identifier);
 }

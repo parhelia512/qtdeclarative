@@ -198,7 +198,6 @@ protected:
     QSet<QString> m_usedTypes;
 
     QList<UnfinishedBinding> m_bindings;
-    QSet<std::pair<const QQmlJSScope *, QString>> misplacedJSIdentifiers;
 
     // stores JS functions and Script bindings per scope (only the name). mimics
     // the content of QmlIR::Object::functionsAndExpressions

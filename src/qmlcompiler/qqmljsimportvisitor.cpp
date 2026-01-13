@@ -98,19 +98,10 @@ bool QQmlJSImportVisitor::safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const 
      to add some recovery rule to the grammar in any case.
      We use this method instead to avoid an assertion in insertJSIdentifier
   */
-    if (scope->scopeType() != QQmlSA::ScopeType::QMLScope) {
-        scope->insertJSIdentifier(name, identifier);
-        return true;
-    } else {
-        const QQmlJSScope *scopePtr = scope.get();
-        std::pair<const QQmlJSScope*, QString> misplaced { scopePtr, name };
-        if (misplacedJSIdentifiers.contains(misplaced))
-            return false; // we only want to warn once
-        misplacedJSIdentifiers.insert(misplaced);
-        m_logger->log(u"JavaScript declarations are not allowed in QML elements"_s, qmlSyntax,
-                      identifier.location);
-        return false;
-    }
+    if (scope->scopeType() == QQmlSA::ScopeType::QMLScope)
+      return false;
+    scope->insertJSIdentifier(name, identifier);
+    return true;
 }
 
 /*!

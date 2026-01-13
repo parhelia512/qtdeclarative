@@ -89,6 +89,7 @@ private:
     };
     QQmlJS::Engine *m_engine = nullptr;
     QSet<SeenImport> m_seenImports;
+    QSet<std::pair<const QQmlJSScope *, QString>> misplacedJSIdentifiers;
     std::vector<QQmlJS::AST::Node *> m_ancestryIncludingCurrentNode;
 
     void handleDuplicateEnums(QQmlJS::AST::UiEnumMemberList *members, QStringView key,

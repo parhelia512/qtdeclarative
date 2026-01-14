@@ -390,7 +390,7 @@ public:
 
     void dumpStats() const;
 
-    size_t getUsedMem() const;
+    size_t getRegularItemsMem() const;
     size_t getAllocatedMem() const;
     size_t getLargeItemsMem() const;
 
@@ -501,9 +501,9 @@ public:
     size_t lastAllocRequestedSlots = 0;
 
     struct {
-        size_t maxReservedMem = 0;
         size_t maxAllocatedMem = 0;
-        size_t maxUsedMem = 0;
+        size_t maxUsedBeforeGC = 0;
+        size_t maxUsedAfterGC = 0;
         uint allocations[BlockAllocator::NumBins];
     } statistics;
 };

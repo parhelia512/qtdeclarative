@@ -220,7 +220,7 @@ struct HugeItemAllocator {
     {}
 
     HeapItem *allocate(size_t size);
-    void sweep(ClassDestroyStatsCallback classCountPtr);
+    void sweep();
     void freeAll();
     void resetBlackBits();
 
@@ -430,7 +430,7 @@ private:
 
 public:
     void collectFromJSStack(MarkStack *markStack) const;
-    void sweep(bool lastSweep = false, ClassDestroyStatsCallback classCountPtr = nullptr);
+    void sweep(bool lastSweep = false);
     void cleanupDeletedQObjectWrappersInSweep();
     bool isAboveUnmanagedHeapLimit()
     {

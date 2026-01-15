@@ -27,8 +27,6 @@ namespace QV4 {
 
 struct MarkStack;
 
-typedef void(*ClassDestroyStatsCallback)(const char *);
-
 /*
  * Chunks are the basic structure containing GC managed objects.
  *

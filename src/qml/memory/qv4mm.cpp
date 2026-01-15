@@ -254,17 +254,6 @@ QString binary(quintptr) { return QString(); }
 #define SDUMP if (1) ; else qDebug
 #endif
 
-// Stores a classname -> freed count mapping.
-typedef QHash<const char*, int> MMStatsHash;
-Q_GLOBAL_STATIC(MMStatsHash, freedObjectStatsGlobal)
-
-// This indirection avoids sticking QHash code in each of the call sites, which
-// shaves off some instructions in the case that it's unused.
-static void increaseFreedCountForClass(const char *className)
-{
-    (*freedObjectStatsGlobal())[className]++;
-}
-
 bool Chunk::sweep(ExecutionEngine *engine)
 {
     bool hasUsedSlots = false;
@@ -595,13 +584,11 @@ HeapItem *HugeItemAllocator::allocate(size_t size) {
     return c->first();
 }
 
-static void freeHugeChunk(ChunkAllocator *chunkAllocator, const HugeItemAllocator::HugeChunk &c, ClassDestroyStatsCallback classCountPtr)
+static void freeHugeChunk(ChunkAllocator *chunkAllocator, const HugeItemAllocator::HugeChunk &c)
 {
     HeapItem *itemToFree = c.chunk->first();
     Heap::Base *b = *itemToFree;
     const VTable *v = b->internalClass->vtable;
-    if (Q_UNLIKELY(classCountPtr))
-        classCountPtr(v->className);
 
     if (v->destroy) {
         v->destroy(b);
@@ -619,14 +606,14 @@ static void freeHugeChunk(ChunkAllocator *chunkAllocator, const HugeItemAllocato
 #endif
 }
 
-void HugeItemAllocator::sweep(ClassDestroyStatsCallback classCountPtr)
+void HugeItemAllocator::sweep()
 {
-    auto isBlack = [this, classCountPtr] (const HugeChunk &c) {
+    auto isBlack = [this] (const HugeChunk &c) {
         bool b = c.chunk->first()->isBlack();
         Chunk::clearBit(c.chunk->blackBitmap, c.chunk->first() - c.chunk->realBase());
         if (!b) {
             Q_V4_PROFILE_DEALLOC(engine, c.size, Profiling::LargeItem);
-            freeHugeChunk(chunkAllocator, c, classCountPtr);
+            freeHugeChunk(chunkAllocator, c);
         }
         return !b;
     };
@@ -645,7 +632,7 @@ void HugeItemAllocator::freeAll()
 {
     for (auto &c : chunks) {
         Q_V4_PROFILE_DEALLOC(engine, c.size, Profiling::LargeItem);
-        freeHugeChunk(chunkAllocator, c, nullptr);
+        freeHugeChunk(chunkAllocator, c);
     }
 }
 
@@ -679,11 +666,14 @@ GCState initMarkPersistentValues(GCStateMachine *that, ExtraData &stateData)
     return GCState::MarkPersistentValues;
 }
 
-static constexpr int markLoopIterationCount = 1024;
+enum: int {
+    MarkLoopIterationCount = 1024,
+    MarkLoopIterationCountForDrain = 10240,
+};
 
 bool wasDrainNecessary(MarkStack *ms, QDeadlineTimer deadline)
 {
-    if (ms->remainingBeforeSoftLimit() > markLoopIterationCount)
+    if (ms->remainingBeforeSoftLimit() > MarkLoopIterationCount)
         return false;
     // drain
     ms->drain(deadline);
@@ -696,7 +686,7 @@ GCState markPersistentValues(GCStateMachine *that, ExtraData &stateData) {
         return GCState::MarkPersistentValues;
     PersistentValueStorage::Iterator& it = get<GCIteratorStorage>(stateData).it;
     // avoid repeatedly hitting the timer constantly by batching iterations
-    for (int i = 0; i < markLoopIterationCount; ++i) {
+    for (int i = 0; i < MarkLoopIterationCount; ++i) {
         if (!it.p)
             return GCState::InitMarkWeakValues;
         if (Managed *m = (*it).as<Managed>())
@@ -719,7 +709,7 @@ GCState markWeakValues(GCStateMachine *that, ExtraData &stateData)
         return GCState::MarkWeakValues;
     PersistentValueStorage::Iterator& it = get<GCIteratorStorage>(stateData).it;
     // avoid repeatedly hitting the timer constantly by batching iterations
-    for (int i = 0; i < markLoopIterationCount; ++i) {
+    for (int i = 0; i < MarkLoopIterationCount; ++i) {
         if (!it.p)
             return GCState::MarkDrain;
         QObjectWrapper *qobjectWrapper = (*it).as<QObjectWrapper>();
@@ -876,7 +866,7 @@ GCState callDestroyObject(GCStateMachine *that, ExtraData &stateData)
         that->mm->gcBlocked = oldState;
     });
     // avoid repeatedly hitting the timer constantly by batching iterations
-    for (int i = 0; i < markLoopIterationCount; ++i) {
+    for (int i = 0; i < MarkLoopIterationCount; ++i) {
         if (!it.p)
             return GCState::FreeWeakMaps;
         Managed *m = (*it).managed();
@@ -938,7 +928,7 @@ GCState doSweep(GCStateMachine *that, ExtraData &)
 
     mm->engine->identifierTable->sweep();
     mm->blockAllocator.sweep();
-    mm->hugeItemAllocator.sweep(that->mm->gcCollectorStats ? increaseFreedCountForClass : nullptr);
+    mm->hugeItemAllocator.sweep();
     mm->icAllocator.sweep();
 
     // reset all black bits
@@ -1117,8 +1107,6 @@ Heap::Object *MemoryManager::allocObjectWithMemberData(const QV4::VTable *vtable
     return o;
 }
 
-static uint markStackSize = 0;
-
 MarkStack::MarkStack(ExecutionEngine *engine)
     : m_engine(engine)
 {
@@ -1134,7 +1122,6 @@ void MarkStack::drain()
     // we're not calling drain(QDeadlineTimer::Forever) as that has higher overhead
     while (m_top > m_base) {
         Heap::Base *h = pop();
-        ++markStackSize;
         Q_ASSERT(h); // at this point we should only have Heap::Base objects in this area on the stack. If not, weird things might happen.
         Q_ASSERT(h->internalClass);
         h->internalClass->vtable->markObjects(h, this);
@@ -1144,11 +1131,10 @@ void MarkStack::drain()
 MarkStack::DrainState MarkStack::drain(QDeadlineTimer deadline)
 {
     do {
-        for (int i = 0; i <= markLoopIterationCount * 10; ++i) {
+        for (int i = 0; i <= MarkLoopIterationCountForDrain; ++i) {
             if (m_top == m_base)
                 return DrainState::Complete;
             Heap::Base *h = pop();
-            ++markStackSize;
             Q_ASSERT(h); // at this point we should only have Heap::Base objects in this area on the stack. If not, weird things might happen.
             Q_ASSERT(h->internalClass);
             h->internalClass->vtable->markObjects(h, this);
@@ -1184,7 +1170,7 @@ void MemoryManager::setGCTimeLimit(int timeMs)
     gcStateMachine->timeLimit = std::chrono::milliseconds(timeMs);
 }
 
-void MemoryManager::sweep(bool lastSweep, ClassDestroyStatsCallback classCountPtr)
+void MemoryManager::sweep(bool lastSweep)
 {
 
     for (PersistentValueStorage::Iterator it = m_weakValues->begin(); it != m_weakValues->end(); ++it) {
@@ -1206,7 +1192,7 @@ void MemoryManager::sweep(bool lastSweep, ClassDestroyStatsCallback classCountPt
     if (!lastSweep) {
         engine->identifierTable->sweep();
         blockAllocator.sweep(/*classCountPtr*/);
-        hugeItemAllocator.sweep(classCountPtr);
+        hugeItemAllocator.sweep();
         icAllocator.sweep(/*classCountPtr*/);
     }
 
@@ -1391,20 +1377,6 @@ void MemoryManager::runGC()
         size_t memInBins = dumpBins(&blockAllocator, "Block")
                 + dumpBins(&icAllocator, "InternalClasss");
         qDebug(stats) << "Marked object in" << markTime << "us.";
-        qDebug(stats) << "   " << markStackSize << "objects marked";
-
-        // sort our object types by number of freed instances
-        MMStatsHash freedObjectStats;
-        std::swap(freedObjectStats, *freedObjectStatsGlobal());
-        typedef std::pair<const char*, int> ObjectStatInfo;
-        std::vector<ObjectStatInfo> freedObjectsSorted;
-        freedObjectsSorted.reserve(freedObjectStats.size());
-        for (auto it = freedObjectStats.constBegin(); it != freedObjectStats.constEnd(); ++it) {
-            freedObjectsSorted.push_back(std::make_pair(it.key(), it.value()));
-        }
-        std::sort(freedObjectsSorted.begin(), freedObjectsSorted.end(), [](const ObjectStatInfo &a, const ObjectStatInfo &b) {
-            return a.second > b.second && strcmp(a.first, b.first) < 0;
-        });
 
         qDebug(stats) << "Regular item memory before GC:" << regularItemsBefore;
         qDebug(stats) << "Regular item memory after GC:" << regularItemsAfter;
@@ -1418,10 +1390,6 @@ void MemoryManager::runGC()
             qDebug(stats) << "Large item memory before GC:" << largeItemsBefore;
             qDebug(stats) << "Large item memory after GC:" << largeItemsAfter;
             qDebug(stats) << "Large item memory freed up:" << (largeItemsBefore - largeItemsAfter);
-        }
-
-        for (auto it = freedObjectsSorted.cbegin(); it != freedObjectsSorted.cend(); ++it) {
-            qDebug(stats).noquote() << QString::fromLatin1("Freed JS type: %1 (%2 instances)").arg(QString::fromLatin1(it->first), QString::number(it->second));
         }
 
         qDebug(stats) << "======== End GC ========";

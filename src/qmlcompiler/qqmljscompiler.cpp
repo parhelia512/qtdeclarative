@@ -745,7 +745,7 @@ std::optional<QList<QQmlJS::DiagnosticMessage>> QQmlJSAotCompiler::finalizeBindi
 }
 
 QQmlJSAotFunction QQmlJSAotCompiler::doCompile(
-        const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function)
+        const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function)
 {
     if (m_logger->currentFunctionHasErrorOrSkip())
         return QQmlJSAotFunction();
@@ -795,7 +795,7 @@ QQmlJSAotFunction QQmlJSAotCompiler::doCompile(
 }
 
 QQmlJSAotFunction QQmlJSAotCompiler::doCompileAndRecordAotStats(
-        const QV4::Compiler::Context *context, QQmlJSCompilePass::Function *function,
+        const QV4::Compiler::Context *context, const QQmlJSCompilePass::Function *function,
         const QString &name, QQmlJS::SourceLocation location)
 {
     QElapsedTimer timer {};

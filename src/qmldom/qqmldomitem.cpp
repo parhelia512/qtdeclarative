@@ -814,16 +814,17 @@ static DomItem resolveReference(const DomItem &it, const Path &refRef, QList<Pat
         return {};
     }
 
-    Path toResolve = it.as<Reference>()->referredObjectPath;
+    const Reference *ref = it.as<Reference>();
+    Q_ASSERT(ref);
     visitedRefs->append(refRef);
     DomItem resolveRes;
     it.resolve(
-            toResolve,
+            ref->referredObjectPath,
             [&resolveRes](Path, const DomItem &r) {
                 resolveRes = r;
                 return false;
             },
-            errorHandler, ResolveOption::None, toResolve, visitedRefs);
+            errorHandler, ResolveOption::None, ref->referredObjectPath, visitedRefs);
     return resolveRes;
 }
 

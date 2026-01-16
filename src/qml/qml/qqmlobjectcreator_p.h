@@ -264,7 +264,7 @@ private:
     QQmlData *_ddata;
     QQmlPropertyCache::ConstPtr _propertyCache;
     QQmlVMEMetaObject *_vmeMetaObject;
-    QQmlListProperty<void> _currentList;
+    QQmlListProperty<QObject> _currentList;
     QV4::QmlContext *_qmlContext;
 
     friend struct QQmlObjectCreatorRecursionWatcher;

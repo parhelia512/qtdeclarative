@@ -248,7 +248,7 @@ void QQmlObjectCreator::populateDeferred(QObject *instance, int deferredIndex,
         Q_ASSERT(qmlProperty);
         Q_ASSERT(binding->hasFlag(QV4::CompiledData::Binding::IsDeferredBinding));
 
-        QQmlListProperty<void> savedList;
+        QQmlListProperty<QObject> savedList;
         qSwap(_currentList, savedList);
 
         const QQmlPropertyData &property = qmlProperty->core;
@@ -257,7 +257,7 @@ void QQmlObjectCreator::populateDeferred(QObject *instance, int deferredIndex,
             void *argv[1] = { (void*)&_currentList };
             QMetaObject::metacall(_qobject, QMetaObject::ReadProperty, property.coreIndex(), argv);
         } else if (_currentList.object) {
-            _currentList = QQmlListProperty<void>();
+            _currentList = QQmlListProperty<QObject>();
         }
 
         setPropertyBinding(&property, binding);
@@ -700,7 +700,7 @@ static QQmlType qmlTypeForObject(QObject *object)
 
 void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
 {
-    QQmlListProperty<void> savedList;
+    QQmlListProperty<QObject> savedList;
     qSwap(_currentList, savedList);
 
     const QV4::CompiledData::BindingPropertyData *propertyData
@@ -818,7 +818,7 @@ void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
                 }
             }
         } else if (_currentList.object) {
-            _currentList = QQmlListProperty<void>();
+            _currentList = QQmlListProperty<QObject>();
             currentListPropertyIndex = -1;
         }
 
@@ -1227,13 +1227,13 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
         } else if (bindingProperty->propType().flags().testFlag(QMetaType::IsQmlList)) {
             Q_ASSERT(_currentList.object);
 
-            void *itemToAdd = createdSubObject;
+            QObject *itemToAdd = createdSubObject;
 
             QMetaType listItemType = QQmlMetaType::listValueType(bindingProperty->propType());
             if (listItemType.isValid()) {
                 const char *iid = QQmlMetaType::interfaceIId(listItemType);
                 if (iid)
-                    itemToAdd = createdSubObject->qt_metacast(iid);
+                    itemToAdd = static_cast<QObject *>(createdSubObject->qt_metacast(iid));
             }
 
             if (_currentList.append)

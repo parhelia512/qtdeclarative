@@ -34,13 +34,13 @@ warning levels.
  */
 
 /* The X macro provides (in order):
-   category, name, setting, description, level, ignored, isDefault
+   category, name, setting, description, severity, essentiality
  - category is the C++ variable name of the category
  - name is the user visible category name, i.e. what what qmllint put in bewteen "[" and "]"
  - setting name is the name that is used in the qmllint.ini file to configure the category
  - description is a _short_ description of the category's use
- - level is the default warning level of the category (can be overriden by the user though)
- - ignored and default map to the respective LoggerCategory value, but are about to change
+ - severity is the default warning level of the category (can be overriden by the user though)
+ - essentiality marks essential categories that are required for the proper function of qmllint and can't be disabled by the user
  */
 
 // don't forget to forward-declare your logging category ID in qqmljsloggingutils.h!

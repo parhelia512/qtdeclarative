@@ -34,9 +34,9 @@ namespace QQmlJS {
 LoggerCategory::LoggerCategory() : d_ptr{ new LoggerCategoryPrivate } { }
 
 LoggerCategory::LoggerCategory(
-        const QString &name, const QString &settingsName, const QString &description, WarningSeverity severity,
-        EssentialCategory essential)
-    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, severity, essential) }
+        const QString &name, const QString &settingsName, const QString &description,
+        WarningSeverity severity, Essentiality essentiality)
+    : d_ptr{ new LoggerCategoryPrivate(name, settingsName, description, severity, essentiality) }
 {
 }
 
@@ -101,9 +101,9 @@ void LoggerCategory::setSeverity(WarningSeverity severity)
 
 LoggerCategoryPrivate::LoggerCategoryPrivate(const QString &name, const QString &settingsName,
                                              const QString &description, WarningSeverity severity,
-                                             LoggerCategory::EssentialCategory isEssential)
+                                             LoggerCategory::Essentiality essentiality)
     : m_name(name), m_settingsName(settingsName), m_description(description), m_severity(severity)
-    , m_isEssential(isEssential)
+    , m_isEssential(essentiality)
 {
 }
 

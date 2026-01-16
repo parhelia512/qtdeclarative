@@ -38,12 +38,12 @@ class Q_QMLCOMPILER_EXPORT LoggerCategory
     Q_DECLARE_PRIVATE(LoggerCategory)
 
 public:
-    enum EssentialCategory { Essential, NonEssential };
+    enum Essentiality { Essential, NonEssential };
 
     LoggerCategory();
     LoggerCategory(
             const QString &name, const QString &settingsName, const QString &description,
-            WarningSeverity severity, EssentialCategory essential = NonEssential);
+            WarningSeverity severity, Essentiality essentiality = NonEssential);
     LoggerCategory(const LoggerCategory &);
     LoggerCategory(LoggerCategory &&) noexcept;
     LoggerCategory &operator=(const LoggerCategory &);
@@ -70,7 +70,7 @@ public:
     LoggerCategoryPrivate() = default;
     LoggerCategoryPrivate(const QString &name, const QString &settingsName,
                           const QString &description, WarningSeverity severity,
-                          LoggerCategory::EssentialCategory isEssential);
+                          LoggerCategory::Essentiality essentiality);
 
     LoggerWarningId id() const { return LoggerWarningId(m_name); }
 

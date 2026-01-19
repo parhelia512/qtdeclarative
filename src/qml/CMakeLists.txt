@@ -786,6 +786,7 @@ qt_internal_add_docs(Qml
 
 target_sources(Qml
     PRIVATE
+        doc/src/advanced-topics.qdoc
         doc/src/qtqml.qdoc
         doc/src/qmldiskcache.qdoc
         doc/src/includes/qqmlcomponent.qdoc
@@ -803,6 +804,8 @@ target_sources(Qml
         doc/src/cppintegration/data.qdoc
         doc/src/cppintegration/macros.qdoc
         doc/src/debugging.qdoc
+        doc/src/profiling.qdoc
+        doc/src/prototyping-debugging-profiling.qdoc
         doc/src/qmllint/import.qdoc
         doc/src/qmllint/enum-key-case.qdoc
         doc/src/qmllint/warn-assignment-in-condition.qdoc
@@ -856,10 +859,11 @@ target_sources(Qml
         doc/src/qmllint/compiler.qdoc
         doc/src/qmllint/deferred-property-id.qdoc
         doc/src/external-resources.qdoc
-        doc/src/qmllanguageref/modules/qmldir.qdoc
+        doc/src/qmllanguageref/modules/cmake-module-integration.qdoc
+        doc/src/qmllanguageref/modules/cppplugins.qdoc
         doc/src/qmllanguageref/modules/identifiedmodules.qdoc
         doc/src/qmllanguageref/modules/legacymodules.qdoc
-        doc/src/qmllanguageref/modules/cppplugins.qdoc
+        doc/src/qmllanguageref/modules/qmldir.qdoc
         doc/src/qmllanguageref/modules/topic.qdoc
         doc/src/qmllanguageref/documents/scope.qdoc
         doc/src/qmllanguageref/documents/structure.qdoc
@@ -873,29 +877,33 @@ target_sources(Qml
         doc/src/qmllanguageref/syntax/propertybinding.qdoc
         doc/src/qmllanguageref/syntax/imports.qdoc
         doc/src/qmllanguageref/syntax/objectattributes.qdoc
-        doc/src/qmllanguageref/typesystem/references.qdoc
-        doc/src/qmllanguageref/typesystem/enumerations.qdoc
-        doc/src/qmllanguageref/typesystem/valuetypes.qdoc
+        doc/src/qmllanguageref/typesystem/attachedtypes.qdoc
         doc/src/qmllanguageref/typesystem/basictypes.qdoc
-        doc/src/qmllanguageref/typesystem/sequencetypes.qdoc
+        doc/src/qmllanguageref/typesystem/enumerations.qdoc
         doc/src/qmllanguageref/typesystem/namespaces.qdoc
-        doc/src/qmllanguageref/typesystem/topic.qdoc
         doc/src/qmllanguageref/typesystem/objecttypes.qdoc
+        doc/src/qmllanguageref/typesystem/references.qdoc
+        doc/src/qmllanguageref/typesystem/sequencetypes.qdoc
+        doc/src/qmllanguageref/typesystem/topic.qdoc
+        doc/src/qmllanguageref/typesystem/valuetypes.qdoc
+        doc/src/qmllanguageref/qml-language.qdoc
         doc/src/qmllanguageref/qmlreference.qdoc
-        doc/src/cmake/qt_target_compile_qml_to_cpp.qdoc
-        doc/src/cmake/qt_import_qml_plugins.qdoc
-        doc/src/cmake/policy/qtp0004.qdoc
-        doc/src/cmake/policy/qtp0001.qdoc
-        doc/src/cmake/policy/qtp0005.qdoc
-        doc/src/cmake/qt_query_qml_module.qdoc
+        doc/src/cmake/cmake-integration.qdoc
+        doc/src/cmake/cmake-policies.qdoc
         doc/src/cmake/cmake-properties.qdoc
-        doc/src/cmake/qt_add_qml_plugin.qdoc
         doc/src/cmake/cmake-variables.qdoc
-        doc/src/cmake/qt_generate_deploy_qml_app_script.qdoc
+        doc/src/cmake/policy/qtp0001.qdoc
+        doc/src/cmake/policy/qtp0004.qdoc
+        doc/src/cmake/policy/qtp0005.qdoc
         doc/src/cmake/qt_add_qml_module.qdoc
+        doc/src/cmake/qt_add_qml_plugin.qdoc
         doc/src/cmake/qt_deploy_qml_imports.qdoc
-        doc/src/cmake/qt_target_qml_sources.qdoc
+        doc/src/cmake/qt_generate_deploy_qml_app_script.qdoc
         doc/src/cmake/qt_generate_foreign_qml_types.qdoc
+        doc/src/cmake/qt_import_qml_plugins.qdoc
+        doc/src/cmake/qt_query_qml_module.qdoc
+        doc/src/cmake/qt_target_compile_qml_to_cpp.qdoc
+        doc/src/cmake/qt_target_qml_sources.qdoc
         doc/src/qt6-changes.qdoc
         doc/src/qtqml-writing-a-module.qdoc
         doc/src/qtqml-tooling.qdoc

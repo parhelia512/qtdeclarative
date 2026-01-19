@@ -3272,9 +3272,9 @@ void AOTCompiledContext::setObjectImplicitDestructible(QObject *object) const
   \fn template<typename T, int metaObjectRevision> int qmlRegisterRevision(const char *uri, int versionMajor, int versionMinor)
   \relates <qqml.h>
 
-  This template function registers the specified revision of a C++ type in the QML system with
-  the library imported from \a uri having the version number composed
-  from \a versionMajor and \a versionMinor.
+  This template function registers the C++ type \a T at the specified revision
+  \a metaObjectRevision in the QML system with the library imported from \a uri
+  having the version number composed from \a versionMajor and \a versionMinor.
 
   Returns the QML type id.
 

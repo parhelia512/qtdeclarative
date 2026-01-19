@@ -358,9 +358,11 @@ All warnings can be set to four levels of severity:
     if (parser.isSet(dryRun))
         settings.reportConfigForFiles(positionalArguments);
 
+    settings.saveValues();
     QJsonArray jsonFiles;
 
     for (const QString &filename : positionalArguments) {
+        settings.restoreValues();
         if (!parser.isSet(ignoreSettings)) {
             QQmlToolingSettings::SearchOptions options;
             options.isQmllintSilent = silent;

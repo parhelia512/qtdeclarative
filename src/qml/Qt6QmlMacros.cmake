@@ -4354,7 +4354,7 @@ endfunction()
 
 function(qt6_qml_type_registration)
     message(FATAL_ERROR
-        "This function, previously available under Technical Preview, has been removed. "
+        "This function, previously available under Technology Preview, has been removed. "
         "Please use qt6_add_qml_module() instead."
     )
 endfunction()
@@ -4362,7 +4362,7 @@ endfunction()
 if(NOT QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
     function(qt_qml_type_registration)
         message(FATAL_ERROR
-            "This function, previously available under Technical Preview, has been removed. "
+            "This function, previously available under Technology Preview, has been removed. "
             "Please use qt_add_qml_module() instead."
         )
     endfunction()

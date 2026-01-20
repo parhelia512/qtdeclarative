@@ -154,10 +154,6 @@ warning levels.
     X(qmlSyntaxIdQuotation, "syntax.id-quotation", "", "ID quotation", Warning, NonEssential)      \
     X(qmlTopLevelComponent, "top-level-component", "TopLevelComponent",                            \
       "Warn if a top level Component is encountered", Warning, NonEssential)                       \
-    X(qmlTranslationFunctionMismatch, "translation-function-mismatch",                             \
-      "TranslationFunctionMismatch",                                                               \
-      "Warn about usages of ID and non-ID translation functions in the same file.", Warning,       \
-      NonEssential)                                                                                \
     X(qmlUncreatableType, "uncreatable-type", "UncreatableType",                                   \
       "Warn if uncreatable types are created", Warning, NonEssential)                              \
     X(qmlUnintentionalEmptyBlock, "unintentional-empty-block", "UnintentionalEmptyBlock",          \

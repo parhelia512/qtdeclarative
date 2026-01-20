@@ -126,7 +126,6 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntax;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntaxDuplicateIds;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSyntaxIdQuotation;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlTopLevelComponent;
-extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlTranslationFunctionMismatch;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUncreatableType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUnintentionalEmptyBlock;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlUnqualified;

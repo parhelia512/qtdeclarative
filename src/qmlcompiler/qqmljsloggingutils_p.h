@@ -77,7 +77,7 @@ public:
     QString name() const { return m_name; }
     QString settingsName() const { return m_settingsName; }
     QString description() const { return m_description; }
-    bool isEssential() const { return m_isEssential == LoggerCategory::Essential; }
+    bool isEssential() const { return m_isEssential; }
 
     WarningSeverity severity() const { return m_severity; }
     void setSeverity(WarningSeverity);

@@ -177,6 +177,7 @@ private Q_SLOTS:
     void replayImportWarnings();
     void errorCategory();
     void noSettingsPollution();
+    void syntaxIsEssential();
 
 private:
     enum DefaultImportOption { NoDefaultImports, UseDefaultImports };
@@ -4050,6 +4051,17 @@ void TestQmllint::noSettingsPollution()
 
     run({ aFile, bFile });
     run({ bFile, aFile });
+}
+
+void TestQmllint::syntaxIsEssential()
+{
+    const auto &builtins = QQmlJSLogger::builtinCategories();
+    builtins.first().name();
+    const auto it = std::find_if(builtins.cbegin(), builtins.cend(), [](const auto &c) {
+        return c.name() == "syntax"_L1;
+    });
+    QVERIFY(it != builtins.cend());
+    QVERIFY(it->isEssential());
 }
 
 QTEST_GUILESS_MAIN(TestQmllint)

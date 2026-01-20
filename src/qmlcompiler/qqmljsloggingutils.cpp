@@ -103,7 +103,7 @@ LoggerCategoryPrivate::LoggerCategoryPrivate(const QString &name, const QString 
                                              const QString &description, WarningSeverity severity,
                                              LoggerCategory::Essentiality essentiality)
     : m_name(name), m_settingsName(settingsName), m_description(description), m_severity(severity)
-    , m_isEssential(essentiality)
+    , m_isEssential(essentiality == LoggerCategory::Essential)
 {
 }
 

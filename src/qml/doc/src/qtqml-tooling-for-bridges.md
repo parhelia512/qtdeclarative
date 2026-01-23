@@ -255,33 +255,41 @@ form:
     ...
 ],
 ```
-In a C++ CMake project, the classInfos are set via C++'s QML_* macros. Here is a "translation" table from
-C++ macro to class info object:
+In a C++ CMake project, the classInfos are set via C++'s QML_* and Q_CLASSINFO macros. Here is a "translation" table from
+QML_* C++ macro to class info object:
 
-| corresponding C++ macro                    | name(s) (as string)                    | value(s)                                                               |
-|--------------------------------------------|----------------------------------------|------------------------------------------------------------------------|
-| QML_ELEMENT                                | QML.Element                            | "auto"                                                                 |
-| QML_NAMED_ELEMENT("name")                  | QML.Element                            | "name"                                                                 |
-| QML_ANONYMOUS                              | QML.Element                            | "anonymous"                                                            |
-| QML_UNCREATABLE("reason...")               | QML.Creatable, QML.UncreatableReason   | "false", "reason..."                                                   |
-| QML_VALUE_TYPE("name")                     | QML.Element                            | "name"                                                                 |
-| QML_CONSTRUCTIBLE_VALUE                    | QML.Creatable, QML.CreationMethod      | "true", "construct"                                                    |
-| QML_STRUCTURED_VALUE                       | QML.Creatable, QML.CreationMethod      | "true", "structured"                                                   |
-| QML_SINGLETON                              | QML.Singleton                          | "true"                                                                 |
-| QML_ADDED_IN_VERSION(x,y)                  | QML.AddedInVersion                     | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_EXTRA_VERSION(x,y)                     | QML.ExtraVersion                       | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_REMOVED_IN_VERSION(X,Y)                | QML.RemovedInVersion                   | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
-| QML_ATTACHED(attachedType)                 | QML.Attached                           | attachedType's name                                                    |
-| QML_EXTENDED(extendedType)                 | QML.Extended                           | extendedType's name                                                    |
-| QML_EXTENDED_NAMESPACE(extendedNamespace)  | QML.Extended, QML.ExtensionIsNamespace | extendedNamespace's name, "true"                                       |
-| QML_NAMESPACE_EXTENDED(extendedNamespace)  | QML.Extended                           | extendedNamespace's name                                               |
-| QML_SEQUENTIAL_CONTAINER(valueType)        | QML.Sequence                           | valueType's name                                                       |
-| QML_FOREIGN(foreignType)                   | QML.Foreign                            | foreignType's name                                                     |
-| QML_UNAVAILABLE                            | QML.Foreign                            | "QQmlTypeNotAvailable"                                                 |
-| QML_FOREIGN_NAMESPACE(foreignNamespace)    | QML.Foreign, QML.ForeignIsNamespace    | foreignNamespace's name, "true"                                        |
-| QML_CUSTOMPARSER                           | QML.HasCustomParser                    | "true"                                                                 |
-| QML_USING(originalType)                    | QML.Using                              | originalType's name                                                    |
+| corresponding C++ macro                                  | name(s) (as string)                    | value(s)                                                               |
+|----------------------------------------------------------|----------------------------------------|------------------------------------------------------------------------|
+| QML_ELEMENT                                              | QML.Element                            | "auto"                                                                 |
+| QML_NAMED_ELEMENT("name")                                | QML.Element                            | "name"                                                                 |
+| QML_ANONYMOUS                                            | QML.Element                            | "anonymous"                                                            |
+| QML_UNCREATABLE("reason...")                             | QML.Creatable, QML.UncreatableReason   | "false", "reason..."                                                   |
+| QML_VALUE_TYPE("name")                                   | QML.Element                            | "name"                                                                 |
+| QML_CONSTRUCTIBLE_VALUE                                  | QML.Creatable, QML.CreationMethod      | "true", "construct"                                                    |
+| QML_STRUCTURED_VALUE                                     | QML.Creatable, QML.CreationMethod      | "true", "structured"                                                   |
+| QML_SINGLETON                                            | QML.Singleton                          | "true"                                                                 |
+| QML_ADDED_IN_VERSION(x,y)                                | QML.AddedInVersion                     | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_EXTRA_VERSION(x,y)                                   | QML.ExtraVersion                       | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_REMOVED_IN_VERSION(X,Y)                              | QML.RemovedInVersion                   | `QString::number(QTypeRevision::fromVersion(x, y).toEncodedVersion())` |
+| QML_ATTACHED(attachedType)                               | QML.Attached                           | attachedType's name                                                    |
+| QML_EXTENDED(extendedType)                               | QML.Extended                           | extendedType's name                                                    |
+| QML_EXTENDED_NAMESPACE(extendedNamespace)                | QML.Extended, QML.ExtensionIsNamespace | extendedNamespace's name, "true"                                       |
+| QML_NAMESPACE_EXTENDED(extendedNamespace)                | QML.Extended                           | extendedNamespace's name                                               |
+| QML_SEQUENTIAL_CONTAINER(valueType)                      | QML.Sequence                           | valueType's name                                                       |
+| QML_FOREIGN(foreignType)                                 | QML.Foreign                            | foreignType's name                                                     |
+| QML_UNAVAILABLE                                          | QML.Foreign                            | "QQmlTypeNotAvailable"                                                 |
+| QML_FOREIGN_NAMESPACE(foreignNamespace)                  | QML.Foreign, QML.ForeignIsNamespace    | foreignNamespace's name, "true"                                        |
+| QML_CUSTOMPARSER                                         | QML.HasCustomParser                    | "true"                                                                 |
+| QML_USING(originalType)                                  | QML.Using                              | originalType's name                                                    |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_APPEND                 | QML.ListPropertyAssignBehavior         | "Append"                                                               |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_REPLACE_IF_NOT_DEFAULT | QML.ListPropertyAssignBehavior         | "ReplaceIfNotDefault"                                                  |
+| QML_LIST_PROPERTY_ASSIGN_BEHAVIOR_REPLACE                | QML.ListPropertyAssignBehavior         | "Replace"                                                              |
 
+
+Direct usage of the `Q_CLASSINFO` macro in C++ is used to:
+* define default and parent properties via `DefaultProperty` and `ParentProperty`, see also [here](https://doc.qt.io/qt-6/qtqml-cppintegration-definetypes.html#specifying-default-and-parent-properties-for-qml-object-types)
+* tweak enum scope behavior via `RegisterEnumClassesUnscoped`, see also [here](https://doc.qt.io/qt-6/qtqml-cppintegration-data.html#enumeration-types)
+* define deferred or immediate properties via `DeferredPropertyNames` and `ImmediatePropertyNames`
 
 
 ### className

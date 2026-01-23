@@ -46,6 +46,7 @@ public:
                        dashPatternChanged FINAL)
     Q_PROPERTY(QQuickShapeGradient *fillGradient READ fillGradient WRITE setFillGradient NOTIFY
                        gradientChanged RESET resetFillGradient FINAL)
+    Q_PROPERTY(QQuickItem *fillItem READ fillItem WRITE setFillItem NOTIFY fillItemChanged FINAL REVISION(6, 12))
 
     QML_NAMED_ELEMENT(StarShape)
     QML_ADDED_IN_VERSION(6, 11)
@@ -91,6 +92,9 @@ public:
     void setFillGradient(QQuickShapeGradient *fillGradient);
     void resetFillGradient();
 
+    QQuickItem *fillItem() const;
+    void setFillItem(QQuickItem *newFillItem);
+
 Q_SIGNALS:
     void cornerRadiusChanged();
     void ratioChanged();
@@ -104,6 +108,7 @@ Q_SIGNALS:
     void dashOffsetChanged();
     void dashPatternChanged();
     void gradientChanged();
+    Q_REVISION(6, 12) void fillItemChanged();
 
 protected:
     void itemChange(ItemChange change, const ItemChangeData &value) override;

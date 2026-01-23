@@ -221,7 +221,6 @@ QQuickRegularPolygonShape::QQuickRegularPolygonShape(QQuickItem *parent)
     setHeight(200);
 
     d->path = new QQuickShapePath(this);
-    d->path->setAsynchronous(true);
     d->path->setStrokeWidth(1);
     d->path->setStrokeColor(QColorConstants::Black);
     d->path->setFillColor(QColorConstants::White);
@@ -490,6 +489,20 @@ void QQuickRegularPolygonShape::setFillGradient(QQuickShapeGradient *fillGradien
 void QQuickRegularPolygonShape::resetFillGradient()
 {
     setFillGradient(nullptr);
+}
+
+QQuickItem *QQuickRegularPolygonShape::fillItem() const
+{
+    Q_D(const QQuickRegularPolygonShape);
+    return d->path->fillItem();
+}
+
+void QQuickRegularPolygonShape::setFillItem(QQuickItem *newFillItem)
+{
+    Q_D(QQuickRegularPolygonShape);
+    d->path->setFillItem(newFillItem);
+
+    emit fillItemChanged();
 }
 
 void QQuickRegularPolygonShape::itemChange(ItemChange change, const ItemChangeData &value)

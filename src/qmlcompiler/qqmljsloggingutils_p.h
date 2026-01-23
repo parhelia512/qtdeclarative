@@ -113,8 +113,8 @@ Q_QMLCOMPILER_EXPORT void updateLogSeverities(QList<LoggerCategory> &categories,
                                               const QQmlToolingSettings &settings,
                                               QCommandLineParser *parser);
 
-Q_QMLCOMPILER_EXPORT QString severityToString(const QQmlJS::LoggerCategory &category);
-Q_QMLCOMPILER_EXPORT bool applySeverityToCategory(const QStringView severity, LoggerCategory &category);
+Q_QMLCOMPILER_EXPORT std::optional<QQmlJS::WarningSeverity> severityFromString(const QString &);
+Q_QMLCOMPILER_EXPORT QString severityToString(QQmlJS::WarningSeverity);
 } // namespace LoggingUtils
 
 } // namespace QQmlJS

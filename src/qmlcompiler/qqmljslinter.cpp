@@ -237,9 +237,8 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
         return false;
     }
 
-    QJsonArray categories = pluginMetaData[u"loggingCategories"].toArray();
-
-    for (const QJsonValue &value : std::as_const(categories)) {
+    const QJsonArray categories = pluginMetaData[u"loggingCategories"].toArray();
+    for (const QJsonValue &value : categories) {
         if (!value.isObject()) {
             qWarning() << pluginName << "has invalid loggingCategories entries, skipping";
             return false;
@@ -269,12 +268,16 @@ bool QQmlJSLinter::Plugin::parseMetaData(const QJsonObject &metaData, QString pl
         if (itSeverity == object.end())
             continue;
 
-        const QString severity = itSeverity->toString();
-        if (!QQmlJS::LoggingUtils::applySeverityToCategory(severity, m_categories.last())) {
-            qWarning() << "Invalid logging severity" << severity << "provided for"
+        const QString severityName = itSeverity->toString();
+        const auto severity = QQmlJS::LoggingUtils::severityFromString(severityName);
+        if (!severity.has_value()) {
+            qWarning() << "Invalid logging severity" << severityName << "provided for"
                        << m_categories.last().id().name().toString()
                        << "(allowed are: disable, info, warning, error) found in plugin metadata.";
+            continue;
         }
+
+        m_categories.last().setSeverity(severity.value());
     }
 
     return true;

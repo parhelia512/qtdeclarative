@@ -220,15 +220,12 @@ All warnings can be set to four levels of severity:
         if (category.isEssential())
             return;
 
-        QCommandLineOption option(
-                category.id().name().toString(),
-                category.description()
-                        + QStringLiteral(" (default: %1)")
-                                  .arg(QQmlJS::LoggingUtils::severityToString(category)),
-                QStringLiteral("severity"), QQmlJS::LoggingUtils::severityToString(category));
+        const QString severity = QQmlJS::LoggingUtils::severityToString(category.severity());
+        QCommandLineOption option(category.id().name().toString(),
+                                  category.description() + " (default: %1)"_L1.arg(severity),
+                                  "severity"_L1, severity);
         parser.addOption(option);
-        settings.addOption(QStringLiteral("Warnings/") + category.settingsName(),
-                           QQmlJS::LoggingUtils::severityToString(category));
+        settings.addOption("Warnings/"_L1 + category.settingsName(), severity);
     };
 
     for (const auto &category : QQmlJSLogger::builtinCategories()) {

@@ -124,9 +124,9 @@ LoggerCategoryPrivate *LoggerCategoryPrivate::get(LoggerCategory *loggerCategory
 
 namespace LoggingUtils {
 
-QString severityToString(const QQmlJS::LoggerCategory &category)
+QString severityToString(QQmlJS::WarningSeverity severity)
 {
-    switch (category.severity()) {
+    switch (severity) {
     case QQmlJS::WarningSeverity::Disable:
         return QStringLiteral("disable");
     case QQmlJS::WarningSeverity::Info:
@@ -188,7 +188,7 @@ static QString severityValueForCategory(const LoggerCategory &category,
 
         // Do not try to set the severity if it's due to a default config option.
         // This way we can tell which options have actually been overwritten by the user.
-        if (severityToString(category) == value)
+        if (severityToString(category.severity()) == value)
             return QString();
 
         return value;
@@ -196,27 +196,18 @@ static QString severityValueForCategory(const LoggerCategory &category,
     return QString();
 }
 
-bool applySeverityToCategory(const QStringView severity, LoggerCategory &category)
+std::optional<QQmlJS::WarningSeverity> severityFromString(const QString &s)
 {
-    if (severity == "disable"_L1) {
-        category.setSeverity(QQmlJS::WarningSeverity::Disable);
-        return true;
-    }
-    if (severity == "info"_L1) {
-        category.setSeverity(QQmlJS::WarningSeverity::Info);
-        return true;
-    }
-    if (severity == "warning"_L1) {
-        category.setSeverity(QQmlJS::WarningSeverity::Warning);
-        return true;
-    }
-    if (severity == "error"_L1) {
-        category.setSeverity(QQmlJS::WarningSeverity::Error);
-        return true;
-    }
-
-    return false;
-};
+    if (s == "disable"_L1)
+        return QQmlJS::WarningSeverity::Disable;
+    if (s == "info"_L1)
+        return QQmlJS::WarningSeverity::Info;
+    if (s == "warning"_L1)
+        return QQmlJS::WarningSeverity::Warning;
+    if (s == "error"_L1)
+        return QQmlJS::WarningSeverity::Error;
+    return {};
+}
 
 /*!
 \internal
@@ -240,11 +231,15 @@ void updateLogSeverities(QList<LoggerCategory> &categories,
             continue;
         }
 
-        if (!applySeverityToCategory(value, category)) {
+        const std::optional<QQmlJS::WarningSeverity> severity = severityFromString(value);
+        if (!severity.has_value()) {
             qWarning() << "Invalid logging severity" << value << "provided for" << name
                        << "(allowed are: disable, info, warning, error).";
             success = false;
+            continue;
         }
+
+        category.setSeverity(*severity);
     }
     if (!success && parser)
         parser->showHelp(-1);

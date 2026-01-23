@@ -971,9 +971,11 @@ void TestQmllint::dirtyQmlCode_data()
     QTest::newRow("enumsAreNotTypes_functionAnnotations")
             << QStringLiteral("EnumsAreNotTypes_functionAnnotations.qml")
             << Result{ { { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1, 5, 17 },
+                           "(int or double) instead."_L1,
+                           5, 17 },
                          { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1, 6, 9 } } };
+                           "(int or double) instead."_L1,
+                           6, 9 } } };
     QTest::newRow("id_in_value_type")
             << QStringLiteral("idInValueType.qml")
             << Result{ { { "id declarations are only allowed in objects"_L1 } } };
@@ -1491,6 +1493,12 @@ void TestQmllint::dirtyQmlSnippet_data()
                u"Item { component A: Item {} }\n"_s
             << Result{ { { "Duplicate inline component 'A'"_L1, 2, 8 },
                          { "Note: previous component named 'A' here"_L1, 1, 1 } } }
+            << defaultOptions;
+    QTest::newRow("enumsAreNotTypes")
+            << u"function f(a: enum) {}"_s
+            << Result{ { { "QML does not have an `enum` type. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+               1, 15 } },
+    { { "QML enumerations are not types"_L1} }, }
             << defaultOptions;
     QTest::newRow("equality-with-coercion")
             << u"function f(a: int, b: string): bool { return a == b; }"_s

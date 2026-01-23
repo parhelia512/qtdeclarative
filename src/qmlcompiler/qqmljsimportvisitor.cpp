@@ -820,12 +820,9 @@ void QQmlJSImportVisitor::processMethodTypes()
 {
     const auto isEnumUsedAsType = [&](QStringView typeName, const QQmlJS::SourceLocation &loc) {
         if (typeName == "enum"_L1) {
-            m_logger->log("QML does not have an `enum` type. Use the enum's underlying type "
-                          "(int or double)."_L1,
-                          qmlEnumsAreNotTypes, loc);
+            // note: we already warned about 'enum' in the parser
             return true;
         }
-
         const auto split = typeName.tokenize(u'.').toContainer<QVarLengthArray<QStringView, 4>>();
         if (split.size() != 2)
             return false;

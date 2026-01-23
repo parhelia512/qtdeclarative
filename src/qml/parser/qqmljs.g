@@ -1802,6 +1802,16 @@ Type: UiQualifiedId T_LT SimpleType T_GT;
     } break;
 ./
 
+Type: T_ENUM;
+/.
+    case $rule_number: {
+        syntaxError(loc(1), "QML does not have an `enum` type. Use int, or use double if the enum's underlying type does not fit into int.");
+        AST::UiQualifiedId *id = new (pool) AST::UiQualifiedId(stringRef(1));
+        id->identifierToken = loc(1);
+        sym(1).Type = new (pool) AST::Type(id->finish());
+    } break;
+./
+
 Type: SimpleType;
 
 SimpleType: T_VAR;

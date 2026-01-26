@@ -970,12 +970,12 @@ void TestQmllint::dirtyQmlCode_data()
                        { { "Did you mean \"U2\"?"_L1, 10, 38, QtInfoMsg } } };
     QTest::newRow("enumsAreNotTypes_functionAnnotations")
             << QStringLiteral("EnumsAreNotTypes_functionAnnotations.qml")
-            << Result{ { { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1,
-                           5, 17 },
-                         { "QML enumerations are not types. Use underlying type "
-                           "(int or double) instead."_L1,
-                           6, 9 } } };
+            << Result{
+                   { { "QML enumerations are not types. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+                       5, 17 },
+                     { "QML enumerations are not types. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+                       6, 9 } }
+               };
     QTest::newRow("id_in_value_type")
             << QStringLiteral("idInValueType.qml")
             << Result{ { { "id declarations are only allowed in objects"_L1 } } };

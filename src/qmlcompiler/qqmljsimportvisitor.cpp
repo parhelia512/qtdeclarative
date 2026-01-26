@@ -833,9 +833,9 @@ void QQmlJSImportVisitor::processMethodTypes()
         if (auto scope = QQmlJSScope::findType(scopeName.toString(),
                                                m_rootScopeImports.contextualTypes()).scope) {
             if (scope->enumeration(enumName.toString()).isValid()) {
-                m_logger->log("QML enumerations are not types. Use underlying type "
-                              "(int or double) instead."_L1,
-                              qmlEnumsAreNotTypes, loc);
+                m_logger->log(
+                        "QML enumerations are not types. Use int, or use double if the enum's underlying type does not fit into int."_L1,
+                        qmlEnumsAreNotTypes, loc);
                 return true;
             }
         }

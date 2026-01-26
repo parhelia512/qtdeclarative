@@ -171,7 +171,7 @@ warning levels.
     X(qmlUnusedImports, "unused-imports", "UnusedImports", "Warn about unused imports", Info,      \
       NonEssential)                                                                                \
     X(qmlUseProperFunction, "use-proper-function", "UseProperFunction",                            \
-      "Warn if var is used for storing functions", Warning, NonEssential)                          \
+      "Warn if var is used for storing functions", Disable, NonEssential)                          \
     X(qmlVarUsedBeforeDeclaration, "var-used-before-declaration", "VarUsedBeforeDeclaration",      \
       "Warn if a variable is used before declaration", Warning, NonEssential)                      \
     X(qmlVoid, "void", "Void", "Warn about void expressions.", Disable, NonEssential)              \

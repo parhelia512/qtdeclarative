@@ -140,8 +140,6 @@ warning levels.
       "Warn about optional chaining on non-voidable and non-nullable base", Warning, NonEssential) \
     X(qmlRequired, "required", "RequiredProperty", "Warn about required properties", Warning,      \
       NonEssential)                                                                                \
-    X(qmlRestrictedType, "restricted-type", "RestrictedType", "Warn about restricted types",       \
-      Warning, NonEssential)                                                                       \
     X(qmlShadow, "shadow", "Shadow", "Warn about shadowing attributes from a base class", Disable, \
       NonEssential)                                                                                \
     X(qmlSignalParameters, "signal-handler-parameters", "BadSignalHandlerParameters",              \

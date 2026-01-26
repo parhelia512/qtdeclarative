@@ -224,10 +224,6 @@ All warnings can be set to four levels of severity:
     auto addCategory = [&](const QQmlJS::LoggerCategory &category) {
         categories.push_back(category);
 
-        // We don't let the user change them, so don't offer the option either
-        if (category.isEssential()) // TODO can still be raised...
-            return;
-
         const QString severity = QQmlJS::LoggingUtils::severityToString(category.severity());
         QCommandLineOption option(category.id().name().toString(),
                                   category.description() + " (default: %1)"_L1.arg(severity),

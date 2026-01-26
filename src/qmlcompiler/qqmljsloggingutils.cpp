@@ -175,9 +175,7 @@ static QString severityValueForCategory(const LoggerCategory &category,
                                      QCommandLineParser *parser)
 {
     const QString key = category.id().name().toString();
-
-    // Essential categories have no option as their severity cannot be changed.
-    if (!category.isEssential() && parser && parser->isSet(key))
+    if (parser && parser->isSet(key))
         return parser->value(key);
 
     const QStringList settingsName = settingsNamesForCategory(category);
@@ -238,10 +236,9 @@ void updateLogSeverities(QList<LoggerCategory> &categories,
             continue;
         }
 
-        if (category.isEssential()) {
-            // TODO It can't be lowered, but it can still be raised or explitly set to the same level
+        if (category.isEssential() && severity.value() < category.severity()) {
             qWarning() << "In order to ensure the proper function of qmllint, the severity of the "
-                          "essential category %1 cannot be changed."_L1.arg(name);
+                          "essential category %1 cannot be lowered."_L1.arg(name);
             continue;
         }
 

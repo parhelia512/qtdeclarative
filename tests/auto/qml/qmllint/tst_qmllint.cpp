@@ -183,6 +183,8 @@ private Q_SLOTS:
     void errorCategory();
     void noSettingsPollution();
     void syntaxIsEssential();
+    void essentialCantBeLowered();
+    void essentialCanBeRaised();
 
     void onlyExplicitCategories();
     void onlyExplicitCategoriesIni();
@@ -4105,6 +4107,48 @@ void TestQmllint::syntaxIsEssential()
     });
     QVERIFY(it != builtins.cend());
     QVERIFY(it->isEssential());
+}
+
+void TestQmllint::essentialCantBeLowered()
+{
+    const auto warning = "In order to ensure the proper function of qmllint, the severity of the "
+                         "essential category syntax cannot be lowered."_L1;
+    {
+        QProcess process;
+        process.setProcessChannelMode(QProcess::MergedChannels);
+        process.start(m_qmllintPath, { "--syntax=info"_L1, testFile("dummy.qml") });
+        QVERIFY(process.waitForFinished());
+        const QString output = process.readAllStandardOutput();
+        QVERIFY(output.contains(warning));
+    }
+    {
+        QProcess process;
+        process.setProcessChannelMode(QProcess::MergedChannels);
+        process.start(m_qmllintPath, { testFile("essentialCantBeLowered/file.qml") });
+        QVERIFY(process.waitForFinished());
+        const QString output = process.readAllStandardOutput();
+        QVERIFY(output.contains(warning));
+    }
+}
+
+void TestQmllint::essentialCanBeRaised()
+{
+    CallQmllintOptions options;
+    options.readSettings = true;
+    const QJsonArray json = callQmllint(testFile("essentialCanBeRaised/file.qml"), options,
+                                        CallQmllintCheck::ShouldFail);
+
+    const QString error = "Nested inline components are not supported"_L1;
+    bool foundSyntaxError = false;
+    for (const auto &entry : json) {
+        const QJsonObject &message = entry.toObject();
+        if (message["id"] == "syntax"_L1 && message["type"] == "critical"_L1
+                && message["message"].toString().contains(error)) {
+            foundSyntaxError = true;
+            break;
+        }
+    }
+    QVERIFY(foundSyntaxError);
 }
 
 static const auto OnlyExplicitCategories_unqualified = "7:26: Unqualified access"_L1;

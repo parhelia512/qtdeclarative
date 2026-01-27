@@ -564,7 +564,7 @@ void QQuickQmlGenerator::generateMarkers(const PathNodeInfo &info)
     for (int i = 0; i < path.elementCount(); ++i) {
         const QPainterPath::Element element = path.elementAt(i);
         QString markerId;
-        qreal angle;
+        qreal angle = 0;
 
         // Copied from Qt SVG
         auto getMeanAngle = [](QPointF p0, QPointF p1, QPointF p2) -> qreal {

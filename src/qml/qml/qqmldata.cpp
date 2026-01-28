@@ -378,7 +378,7 @@ QHash<QQmlAttachedPropertiesFunc, QObject *> *QQmlData::attachedProperties() con
     return &extendedData->attachedProperties;
 }
 
-void QQmlData::destroyed(QObject *object)
+void QQmlData::removeFromContext()
 {
     if (nextContextObject)
         nextContextObject->prevContextObject = prevContextObject;
@@ -387,48 +387,27 @@ void QQmlData::destroyed(QObject *object)
     else if (outerContext && outerContext->ownedObjects() == this)
         outerContext->setOwnedObjects(nextContextObject);
 
-    QQmlAbstractBinding *binding = bindings;
-    while (binding) {
-        binding->setAddedToObject(false);
-        binding = binding->nextBinding();
+    nextContextObject = nullptr;
+    prevContextObject = nullptr;
+    outerContext = nullptr;
+}
+
+void QQmlData::clearBindings()
+{
+    if (QQmlAbstractBinding *binding = std::exchange(bindings, nullptr)) {
+        for (QQmlAbstractBinding *next = binding; next; next = next->nextBinding())
+            next->setAddedToObject(false);
+        if (!binding->ref.deref())
+            delete binding;
     }
-    if (bindings && !bindings->ref.deref())
-        delete bindings;
+}
 
-    compilationUnit.reset();
-
-    qDeleteAll(deferredData);
-    deferredData.clear();
-
-    QQmlBoundSignal *signalHandler = signalHandlers;
-    while (signalHandler) {
+bool QQmlData::clearSignalHandlers()
+{
+    for (QQmlBoundSignal *signalHandler = std::exchange(signalHandlers, nullptr); signalHandler;) {
         if (signalHandler->isNotifying()) {
-            // The object is being deleted during signal handler evaluation.
-            // This will cause a crash due to invalid memory access when the
-            // evaluation has completed.
-            // Abort with a friendly message instead.
-            QString locationString;
-            QQmlBoundSignalExpression *expr = signalHandler->expression();
-            if (expr) {
-                QQmlSourceLocation location = expr->sourceLocation();
-                if (location.sourceFile.isEmpty())
-                    location.sourceFile = QStringLiteral("<Unknown File>");
-                locationString.append(location.sourceFile);
-                locationString.append(QStringLiteral(":%0: ").arg(location.line));
-                QString source = expr->expression();
-                if (source.size() > 100) {
-                    source.truncate(96);
-                    source.append(QLatin1String(" ..."));
-                }
-                locationString.append(source);
-            } else {
-                locationString = QStringLiteral("<Unknown Location>");
-            }
-            qFatal("Object %p destroyed while one of its QML signal handlers is in progress.\n"
-                   "Most likely the object was deleted synchronously (use QObject::deleteLater() "
-                   "instead), or the application is running a nested event loop.\n"
-                   "This behavior is NOT supported!\n"
-                   "%s", object, qPrintable(locationString));
+            signalHandlers = signalHandler;
+            return false;
         }
 
         QQmlBoundSignal *next = signalHandler->m_nextSignal;
@@ -436,6 +415,47 @@ void QQmlData::destroyed(QObject *object)
         signalHandler->m_nextSignal = nullptr;
         delete signalHandler;
         signalHandler = next;
+    }
+
+    return true;
+}
+
+void QQmlData::destroyed(QObject *object)
+{
+    removeFromContext();
+    clearBindings();
+
+    compilationUnit.reset();
+    qDeleteAll(deferredData);
+    deferredData.clear();
+
+    if (!clearSignalHandlers()) {
+        // The object is being deleted during signal handler evaluation.
+        // This will cause a crash due to invalid memory access when the
+        // evaluation has completed.
+        // Abort with a friendly message instead.
+        QString locationString;
+        QQmlBoundSignalExpression *expr = signalHandlers->expression();
+        if (expr) {
+            QQmlSourceLocation location = expr->sourceLocation();
+            if (location.sourceFile.isEmpty())
+                location.sourceFile = QStringLiteral("<Unknown File>");
+            locationString.append(location.sourceFile);
+            locationString.append(QStringLiteral(":%0: ").arg(location.line));
+            QString source = expr->expression();
+            if (source.size() > 100) {
+                source.truncate(96);
+                source.append(QLatin1String(" ..."));
+            }
+            locationString.append(source);
+        } else {
+            locationString = QStringLiteral("<Unknown Location>");
+        }
+        qFatal("Object %p destroyed while one of its QML signal handlers is in progress.\n"
+               "Most likely the object was deleted synchronously (use QObject::deleteLater() "
+               "instead), or the application is running a nested event loop.\n"
+               "This behavior is NOT supported!\n"
+               "%s", object, qPrintable(locationString));
     }
 
     if (bindingBitsArraySize > InlineBindingArraySize)

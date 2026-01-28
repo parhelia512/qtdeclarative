@@ -265,7 +265,7 @@ qt_internal_add_qml_module(Qml
         qml/qqmlcontext.cpp qml/qqmlcontext.h qml/qqmlcontext_p.h
         qml/qqmlcontextdata.cpp qml/qqmlcontextdata_p.h
         qml/qqmlcustomparser.cpp qml/qqmlcustomparser_p.h
-        qml/qqmldata_p.h
+        qml/qqmldata.cpp qml/qqmldata_p.h
         qml/qqmldatablob.cpp qml/qqmldatablob_p.h
         qml/qqmldelayedcallqueue.cpp qml/qqmldelayedcallqueue_p.h
         qml/qqmldirdata.cpp qml/qqmldirdata_p.h

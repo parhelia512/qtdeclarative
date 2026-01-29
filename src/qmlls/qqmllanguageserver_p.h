@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "documentSymbolSupport/qqmldocumentsymbolsupport_p.h"
+#include "qqmldocumentsymbolsupport_p.h"
 #include "qlanguageserver_p.h"
 #include "qqmlcodemodelmanager_p.h"
 #include "qqmlfindusagessupport_p.h"

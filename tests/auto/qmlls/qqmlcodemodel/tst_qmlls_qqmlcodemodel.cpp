@@ -155,15 +155,10 @@ void tst_qmlls_qqmlcodemodel::resourceFiles()
     QTemporaryDir buildDir;
     QVERIFY(buildDir.isValid());
     QDir(buildDir.path()).mkdir(".qt"_L1);
-    {
-        const QString qmllsBuildIni = buildDir.filePath(".qt/.qmlls.build.ini"_L1);
-        QFile qmllsBuildIniFile(qmllsBuildIni);
-        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
-        qmllsBuildIniFile.write("[General]\n[%1]\nresourceFiles=\"%7\"\n"_L1
-                                        .arg(testFile("somePath").replace("/"_L1, "<SLASH>"_L1),
-                                             testFile("FolderWithResources/Good.qrc"))
-                                        .toUtf8());
-    }
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.addModuleSetting(QmlLsp::ModuleSetting{
+            testFile("somePath"), {}, { testFile("FolderWithResources/Good.qrc") } });
+    buildIni.writeQmllsBuildIniContent(buildDir.filePath(".qt/.qmlls.build.ini"_L1));
 
     manager.addRootUrls({ rootUrl });
 
@@ -628,18 +623,12 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIni()
     const QString resourceFileB = buildPathA.filePath("resourceB.qrc");
 
     QDir(buildPathA.path()).mkdir(".qt"_L1);
-
-    {
-        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
-        QFile qmllsBuildIniFile(qmllsBuildIni);
-        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
-        qmllsBuildIniFile.write(
-                "[General]\n[%1]\nimportPaths=\"%2%6%3\"\nresourceFiles=\"%7\"\n[%4]\nimportPaths=\"%5%6%3\"\nresourceFiles=\"%8\""_L1
-                        .arg(QString(rootA).replace("/"_L1, "<SLASH>"_L1), importPathA,
-                             defaultImportPath, QString(rootB).replace("/"_L1, "<SLASH>"_L1),
-                             importPathB, QDir::listSeparator(), resourceFileA, resourceFileB)
-                        .toUtf8());
-    }
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.addModuleSetting(
+            QmlLsp::ModuleSetting{ rootA, { importPathA, defaultImportPath }, { resourceFileA } });
+    buildIni.addModuleSetting(
+            QmlLsp::ModuleSetting{ rootB, { importPathB, defaultImportPath }, { resourceFileB } });
+    buildIni.writeQmllsBuildIniContent(buildPathA.filePath(".qt/.qmlls.build.ini"_L1));
 
     TestCodeModelManager manager;
     manager.addRootUrls({ rootAUrl });
@@ -697,19 +686,11 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIniRelativeImportPath()
     QVERIFY(buildPathA.isValid());
 
     QDir(buildPathA.path()).mkdir(".qt"_L1);
-
-    {
-        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
-        QFile qmllsBuildIniFile(qmllsBuildIni);
-        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly | QFile::Text));
-
-        const QString rootA = testFile("twoWorkspaces/WorkSpaceA/"_L1);
-        qmllsBuildIniFile.write("[General]\n[%1]\nimportPaths=\"%2%4%3\"\n"_L1
-                                        .arg(QString(rootA).replace("/"_L1, "<SLASH>"_L1),
-                                             "../ImportPathA", defaultImportPath,
-                                             QDir::listSeparator())
-                                        .toUtf8());
-    }
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.addModuleSetting(QmlLsp::ModuleSetting{ testFile("twoWorkspaces/WorkSpaceA/"_L1),
+                                                     { "../ImportPathA"_L1, defaultImportPath },
+                                                     {} });
+    buildIni.writeQmllsBuildIniContent(buildPathA.filePath(".qt/.qmlls.build.ini"_L1));
 
     const QByteArray rootAUrl = testFileUrl("twoWorkspaces/WorkSpaceA/"_L1).toEncoded();
     TestCodeModelManager manager;
@@ -747,16 +728,10 @@ void tst_qmlls_qqmlcodemodel::withQmllsBuildIniWithoutRootUrls()
 
     QDir(buildPathA.path()).mkdir(".qt"_L1);
 
-    {
-        const QString qmllsBuildIni = buildPathA.filePath(".qt/.qmlls.build.ini"_L1);
-        QFile qmllsBuildIniFile(qmllsBuildIni);
-        QVERIFY(qmllsBuildIniFile.open(QFile::WriteOnly));
-        qmllsBuildIniFile.write(
-                "[General]\n[%1]\nimportPaths=\"%2%4%3\"\n"_L1
-                        .arg(testFile("twoWorkspaces/WorkSpaceA/"_L1).replace("/"_L1, "<SLASH>"_L1),
-                             importPath, defaultImportPath, QDir::listSeparator())
-                        .toUtf8());
-    }
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.addModuleSetting(QmlLsp::ModuleSetting{
+            testFile("twoWorkspaces/WorkSpaceA/"_L1), { importPath, defaultImportPath }, {} });
+    buildIni.writeQmllsBuildIniContent(buildPathA.filePath(".qt/.qmlls.build.ini"_L1));
 
     TestCodeModelManager manager;
     manager.addRootUrls({ projectRootUrl });
@@ -1036,7 +1011,39 @@ void tst_qmlls_qqmlcodemodel::multipleQProcessScheduler()
     }
 }
 
-void tst_qmlls_qqmlcodemodel::reloadQmllsBuildIniAfterBuild()
+void tst_qmlls_qqmlcodemodel::reloadQmllsBuildIniV2AfterBuild()
+{
+    QmlLsp::QQmlCodeModelManager manager;
+    const QByteArray rootUrl{ testFileUrl("rootA").toEncoded() };
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+    manager.addRootUrls({ rootUrl });
+
+    manager.setBuildPathsForRootUrl(rootUrl, { temporaryDir.path() });
+    QCOMPARE(manager.importPathsForUrl(rootUrl), QStringList{ temporaryDir.path() });
+
+    QDir dir(temporaryDir.path());
+
+    dir.mkdir(".qt"_L1);
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.addModuleSetting(QmlLsp::ModuleSetting{ testFile("rootA"_L1), { "test"_L1 }, {} });
+    buildIni.writeQmllsBuildIniContent(temporaryDir.filePath(".qt/.qmlls.build.ini"_L1));
+
+    manager.onBuildFinished(rootUrl);
+
+    QCOMPARE(manager.importPathsForUrl(rootUrl), QStringList{ testFile("test"_L1) });
+
+    QmlLsp::QQmllsBuildInformation buildIni2;
+    buildIni2.addModuleSetting(QmlLsp::ModuleSetting{ testFile("rootA"_L1), { "test2"_L1 }, {} });
+    buildIni2.writeQmllsBuildIniContent(temporaryDir.filePath(".qt/.qmlls.build.ini"_L1));
+
+    manager.onBuildFinished(rootUrl);
+
+    QCOMPARE(manager.importPathsForUrl(rootUrl), QStringList{ testFile("test2"_L1) });
+}
+
+void tst_qmlls_qqmlcodemodel::reloadQmllsBuildIniV1AfterBuild()
 {
     QmlLsp::QQmlCodeModelManager manager;
     const QByteArray rootUrl{ testFileUrl("rootA").toEncoded() };

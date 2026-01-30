@@ -1406,6 +1406,7 @@ endfunction()
 
 function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targets)
     set(content_to_append "")
+    set(index 0)
     foreach(current_target IN LISTS qmlls_build_ini_targets)
         # prepare import paths
         _qt_internal_collect_qml_import_paths(_import_paths ${current_target})
@@ -1414,15 +1415,17 @@ function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targe
         # _qt_internal_list_to_ini takes care of removing these duplicates.
         _qt_internal_list_to_ini(_import_paths)
 
-        # prepare source paths: replace / with <SLASH> as .ini files do not support / in group names
         get_target_property(source_path "${current_target}" SOURCE_DIR)
-        string(REPLACE "/" "<SLASH>" source_path "${source_path}")
-
         get_target_property(_qrc_files ${current_target} _qt_generated_qrc_files)
         _qt_internal_list_to_ini(_qrc_files)
 
-        set(content_to_append "${content_to_append}[${source_path}]\nimportPaths=\"${_import_paths}\"\nresourceFiles=\"${_qrc_files}\"\n")
+        set(prefix "${index}\\")
+        set(content_to_append "${content_to_append}${prefix}sourcePath=\"${source_path}\"\n")
+        set(content_to_append "${content_to_append}${prefix}importPaths=\"${_import_paths}\"\n")
+        set(content_to_append "${content_to_append}${prefix}resourceFiles=\"${_qrc_files}\"\n")
+        MATH(EXPR index "${index}+1")
     endforeach()
+    set(content_to_append "${content_to_append}size=${index}\n")
     set(${out_var} "${content_to_append}" PARENT_SCOPE)
 endfunction()
 
@@ -1442,7 +1445,8 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
         OUTPUT
             ${qmlls_build_ini_file}
         COMMAND ${CMAKE_COMMAND} -E echo "[General]" > ${qmlls_build_ini_file}
-        COMMENT "Populating .qmlls.ini file at ${qmlls_build_ini_file}"
+        COMMAND ${CMAKE_COMMAND} -E echo "version=2" >> ${qmlls_build_ini_file}
+        COMMENT "Populating .qmlls.build.ini file at ${qmlls_build_ini_file}"
         VERBATIM
     )
     # qtpaths only supports --query when the settings config is enabled
@@ -1464,6 +1468,7 @@ function(_qt_internal_write_deferred_qmlls_build_ini_file qt_cmake_export_namesp
     add_custom_command(
         OUTPUT
             "${qmlls_build_ini_file}"
+        COMMAND ${CMAKE_COMMAND} -E echo "[workspaces]" >> ${qmlls_build_ini_file}
         COMMAND ${CMAKE_COMMAND}
             -E cat "${qmlls_build_ini_file}.part" >> "${qmlls_build_ini_file}"
         APPEND

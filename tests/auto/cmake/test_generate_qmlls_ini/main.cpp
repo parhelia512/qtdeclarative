@@ -198,14 +198,26 @@ void tst_generate_qmlls_ini::qmllsBuildIni()
 
     const QString content = contentOf(build.filePath(qmllsBuildIniPath));
 
-    static constexpr QLatin1String expectedContent = R"([%1]
-importPaths="%2"
-resourceFiles="%3"
-)"_L1;
-    QVERIFY(content.contains(
-            expectedContent.arg(expectedSource.replace("/"_L1, "<SLASH>"_L1),
-                                expectedImportPaths.join(QDir::listSeparator()),
-                                expectedResourceFiles.join(QDir::listSeparator()))));
+    QVERIFY(content.contains("version=2"));
+
+    const qsizetype endIndex = content.indexOf("\\sourcePath=\"%1\""_L1.arg(expectedSource));
+    QCOMPARE_NE(endIndex, -1);
+    const qsizetype startIndex = QStringView(content).first(endIndex).lastIndexOf(u'\n');
+    QCOMPARE_NE(startIndex, -1);
+
+    bool ok = false;
+    const qsizetype index =
+            QStringView(content).slice(startIndex, endIndex - startIndex).toInt(&ok);
+    QVERIFY(ok);
+
+    const QString expectedContent = R"(
+%4\sourcePath="%1"
+%4\importPaths="%2"
+%4\resourceFiles="%3"
+)"_L1.arg(expectedSource, expectedImportPaths.join(QDir::listSeparator()),
+          expectedResourceFiles.join(QDir::listSeparator()), QString::number(index));
+
+    QVERIFY(content.contains(expectedContent));
 }
 
 QTEST_MAIN(tst_generate_qmlls_ini)

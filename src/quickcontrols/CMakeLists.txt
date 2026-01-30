@@ -103,6 +103,8 @@ if(QT_FEATURE_quickcontrols2_windows)
     add_subdirectory(windows)
 endif()
 
+add_subdirectory(native)
+
 qt_internal_add_docs(QuickControls2
     doc/qtquickcontrols.qdocconf
 )

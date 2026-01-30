@@ -16,11 +16,11 @@
 // We mean it.
 //
 
-#include "qlanguageserver_p.h"
-#include "qtextdocument_p.h"
-#include "qprocessscheduler_p.h"
-#include "qqmllshelputils_p.h"
-#include "qqmlsemantictokens_p.h"
+#include <private/qlanguageserver_p.h>
+#include <private/qtextdocument_p.h>
+#include <private/qprocessscheduler_p.h>
+#include <private/qqmllshelputils_p.h>
+#include <private/qqmlsemantictokens_p.h>
 
 #include <QObject>
 #include <QHash>

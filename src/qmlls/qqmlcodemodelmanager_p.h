@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qqmlcodemodel_p.h"
+#include <private/qqmlcodemodel_p.h>
 
 #include <QObject>
 #include <QHash>

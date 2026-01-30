@@ -25,6 +25,7 @@ class QQmlEngine;
 class QQuickApplicationWindow;
 class QQuickAbstractButton;
 class QQuickControl;
+class QQuickPopup;
 
 namespace QQuickControlsTestUtils
 {
@@ -119,6 +120,7 @@ namespace QQuickControlsTestUtils
     };
 
     [[nodiscard]] bool arePopupWindowsSupported();
+    [[nodiscard]] QQuickPopup *popupParent(QQuickItem *item);
 
     // Helper that allows us to call setFastAnimations, which requires a QCoreApplication instance.
     class QmlTestHelper : public QObject

@@ -1030,6 +1030,9 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
     engine.collectGarbage();
 
     auto state_machine = handle->memoryManager->gcStateMachine.get();
+    std::vector<QV4::GCStateMachine::BitmapError> bitmapErrors;
+    state_machine->bitmapErrors = &bitmapErrors;
+
     QCOMPARE(handle->memoryManager->gcBlocked, QV4::MemoryManager::Unblocked);
     state_machine->reset();
     handle->memoryManager->gcBlocked = QV4::MemoryManager::NormalBlocked;
@@ -1083,10 +1086,10 @@ void tst_qv4mm::validateIncrementalMarkPhase() {
     QV4::GCStateInfo& stateInfo = state_machine->stateInfoMap[int(state_machine->state)];
     state_machine->state = stateInfo.execute(state_machine, state_machine->stateData);
 
-    QCOMPARE(state_machine->bitmapErrors.size(), block_mutations.size());
+    QCOMPARE(bitmapErrors.size(), block_mutations.size());
 
     for (std::size_t i = 0; i < block_mutations.size(); ++i)
-        QCOMPARE(state_machine->bitmapErrors[i], block_mutations[i]);
+        QCOMPARE(bitmapErrors[i], block_mutations[i]);
 }
 #endif
 

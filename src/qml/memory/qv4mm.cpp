@@ -786,6 +786,14 @@ GCState crossValidateIncrementalMarkPhase(GCStateMachine *that, ExtraData &)
 
     auto checkBlackBitmap = [&that, &getChunk](auto& allocator, const std::vector<quintptr>& storedBitmap) {
         auto reportError = [&allocator, &getChunk, &that](std::size_t chunk_index, std::size_t bitmap_index, uint bit_index){
+            #ifdef QT_BUILD_INTERNAL
+            // If we're collecting errors, don't output the debug message.
+            if (auto errors = that->bitmapErrors) {
+                errors->emplace_back(chunk_index, bitmap_index, bit_index);
+                return;
+            }
+            #endif
+
             Q_UNUSED(that);
             auto object = reinterpret_cast<Heap::Base*>(getChunk(allocator.chunks[chunk_index])->realBase() + (bit_index + (bitmap_index*Chunk::Bits)));
             qDebug() << "Cross Validation Error on chunk" << chunk_index
@@ -793,10 +801,6 @@ GCState crossValidateIncrementalMarkPhase(GCStateMachine *that, ExtraData &)
                         << ((object->internalClass) ? "With type" : "")
                         << ((object->internalClass) ?
                             Managed::typeToString(Managed::Type(object->internalClass->vtable->type)) : QString());
-
-            #ifdef QT_BUILD_INTERNAL
-            that->bitmapErrors.emplace_back(chunk_index, bitmap_index, bit_index);
-            #endif
         };
 
         auto original = storedBitmap.begin();
@@ -815,7 +819,8 @@ GCState crossValidateIncrementalMarkPhase(GCStateMachine *that, ExtraData &)
     };
 
     #ifdef QT_BUILD_INTERNAL
-    that->bitmapErrors.clear();
+    if (auto *errors = that->bitmapErrors)
+        errors->clear();
     #endif
 
     std::vector<quintptr> blockBitmap{};

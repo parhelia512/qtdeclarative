@@ -137,7 +137,7 @@ public:
     #ifdef QT_BUILD_INTERNAL
     // This is used only to simplify testing.
     using BitmapError = std::tuple<std::size_t, std::size_t, quintptr>;
-    std::vector<BitmapError> bitmapErrors;
+    std::vector<BitmapError> *bitmapErrors = nullptr;
     #endif
 
     GCStateMachine();

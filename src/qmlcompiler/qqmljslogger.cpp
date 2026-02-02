@@ -129,8 +129,6 @@ warning levels.
     X(qmlUnterminatedCase, "unterminated-case", "UnterminatedCase", "Warn about non-empty case "   \
       "blocks that are not terminated by control flow or by a fallthrough comment", Warning,       \
       NonEssential)                                                                                \
-    X(qmlPlugin, "plugin", "LintPluginWarnings", "Warn if a qmllint plugin finds an issue",        \
-      Disable, NonEssential)                                                                       \
     X(qmlPreferNonVarProperties, "prefer-non-var-properties", "PreferNonVarProperties",            \
       "Warn about var properties that could use a more specific type", Warning, NonEssential)      \
     X(qmlPrefixedImportType, "prefixed-import-type", "PrefixedImportType",                         \

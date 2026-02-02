@@ -373,26 +373,6 @@ public:
     virtual void run(const Element &element) = 0;
 };
 
-class Q_QMLCOMPILER_EXPORT DebugElementPass : public ElementPass
-{
-    void run(const Element &element) override;
-};
-
-class Q_QMLCOMPILER_EXPORT DebugPropertyPass : public QQmlSA::PropertyPass
-{
-public:
-    DebugPropertyPass(QQmlSA::PassManager *manager);
-
-    void onRead(const QQmlSA::Element &element, const QString &propertyName,
-                const QQmlSA::Element &readScope, QQmlSA::SourceLocation location) override;
-    void onBinding(const QQmlSA::Element &element, const QString &propertyName,
-                   const QQmlSA::Binding &binding, const QQmlSA::Element &bindingScope,
-                   const QQmlSA::Element &value) override;
-    void onWrite(const QQmlSA::Element &element, const QString &propertyName,
-                 const QQmlSA::Element &value, const QQmlSA::Element &writeScope,
-                 QQmlSA::SourceLocation location) override;
-};
-
 class Q_QMLCOMPILER_EXPORT FixSuggestion
 {
     Q_DECLARE_PRIVATE(FixSuggestion)

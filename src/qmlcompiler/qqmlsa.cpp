@@ -1756,18 +1756,6 @@ QSet<PropertyPass *> PassManagerPrivate::findPropertyUsePasses(const QQmlSA::Ele
     return passes;
 }
 
-void DebugElementPass::run(const Element &element) {
-    emitWarning(u"Type: " + element.baseTypeName(), qmlPlugin);
-    if (auto bindings = element.propertyBindings(u"objectName"_s); !bindings.isEmpty()) {
-        emitWarning(u"is named: " + bindings.first().stringValue(), qmlPlugin);
-    }
-    if (auto defPropName = element.defaultPropertyName(); !defPropName.isEmpty()) {
-        emitWarning(u"binding " + QString::number(element.propertyBindings(defPropName).size())
-                            + u" elements to property "_s + defPropName,
-                    qmlPlugin);
-    }
-}
-
 /*!
     \class QQmlSA::LintPlugin
     \inmodule QtQmlCompiler
@@ -1950,58 +1938,6 @@ void PropertyPass::onWrite(const Element &element, const QString &propertyName,
     Q_UNUSED(writeScope);
     Q_UNUSED(expressionType);
     Q_UNUSED(location);
-}
-
-DebugPropertyPass::DebugPropertyPass(QQmlSA::PassManager *manager) : QQmlSA::PropertyPass(manager)
-{
-}
-
-void DebugPropertyPass::onRead(const QQmlSA::Element &element, const QString &propertyName,
-                               const QQmlSA::Element &readScope, QQmlSA::SourceLocation location)
-{
-    emitWarning(u"onRead "_s
-                        + (QQmlJSScope::scope(element)->internalName().isEmpty()
-                                   ? element.baseTypeName()
-                                   : QQmlJSScope::scope(element)->internalName())
-                        + u' ' + propertyName + u' ' + QQmlJSScope::scope(readScope)->internalName()
-                        + u' ' + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
-}
-
-void DebugPropertyPass::onBinding(const QQmlSA::Element &element, const QString &propertyName,
-                                  const QQmlSA::Binding &binding,
-                                  const QQmlSA::Element &bindingScope, const QQmlSA::Element &value)
-{
-    const auto location = QQmlSA::SourceLocation{ binding.sourceLocation() };
-    emitWarning(u"onBinding element: '"_s
-                        + (QQmlJSScope::scope(element)->internalName().isEmpty()
-                                   ? element.baseTypeName()
-                                   : QQmlJSScope::scope(element)->internalName())
-                        + u"' property: '"_s + propertyName + u"' value: '"_s
-                        + (value.isNull() ? u"NULL"_s
-                                          : (QQmlJSScope::scope(value)->internalName().isNull()
-                                                     ? value.baseTypeName()
-                                                     : QQmlJSScope::scope(value)->internalName()))
-                        + u"' binding_scope: '"_s
-                        + (QQmlJSScope::scope(bindingScope)->internalName().isEmpty()
-                                   ? bindingScope.baseTypeName()
-                                   : QQmlJSScope::scope(bindingScope)->internalName())
-                        + u"' "_s + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
-}
-
-void DebugPropertyPass::onWrite(const QQmlSA::Element &element, const QString &propertyName,
-                                const QQmlSA::Element &value, const QQmlSA::Element &writeScope,
-                                QQmlSA::SourceLocation location)
-{
-    emitWarning(u"onWrite "_s + element.baseTypeName() + u' ' + propertyName + u' '
-                        + QQmlJSScope::scope(value)->internalName() + u' '
-                        + QQmlJSScope::scope(writeScope)->internalName() + u' '
-                        + QString::number(location.startLine()) + u':'
-                        + QString::number(location.startColumn()),
-                qmlPlugin, location);
 }
 
 /*!

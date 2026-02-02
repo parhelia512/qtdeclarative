@@ -65,8 +65,13 @@ public:
     }
 
     void emitDestruction();
-    void clearContext();
+    void clearExpressions();
     void clearContextRecursively();
+    void clearChildrenAndSiblings();
+    void clearImportedScripts();
+    void clearOwnedObjects();
+    void clearContextGuards();
+    void clearIdValues();
     void invalidate();
 
     bool isValid() const

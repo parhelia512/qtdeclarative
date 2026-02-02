@@ -1503,6 +1503,20 @@ static void markChildQObjectsRecursively(QObject *parent, MarkStack *markStack)
     }
 }
 
+static void recordObjectForCompilationUnits(
+        QObject *o, const QQmlVMEMetaObject *vme,
+        MemoryManager::ObjectsForCompilationUnit *recorded)
+{
+    for (; vme; vme = vme->parentVMEMetaObject()) {
+        for (const auto &unit : recorded->compilationUnits) {
+            if (vme->compilationUnit()->baseCompilationUnit() == unit) {
+                recorded->objects.push_back(o);
+                return;
+            }
+        }
+    }
+}
+
 void Heap::QObjectWrapper::markObjects(Heap::Base *that, MarkStack *markStack)
 {
     Object::markObjects(that, markStack);
@@ -1525,10 +1539,11 @@ void Heap::QObjectWrapper::markObjects(Heap::Base *that, MarkStack *markStack)
         return;
 
     if (ddata->hasVMEMetaObject) {
-        QQmlVMEMetaObject *vme = static_cast<QQmlVMEMetaObject *>(
-                QObjectPrivate::get(o)->metaObject);
-        if (vme)
+        if (auto *vme = static_cast<QQmlVMEMetaObject *>(QObjectPrivate::get(o)->metaObject)) {
             vme->mark(markStack);
+            if (auto *recorded = markStack->engine()->memoryManager->m_recordedObjects)
+                recordObjectForCompilationUnits(o, vme, recorded);
+        }
     }
 
     if (!ddata->hasConstWrapper || !that->internalClass->engine->m_multiplyWrappedQObjects)

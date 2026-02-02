@@ -1631,6 +1631,19 @@ void GCStateMachine::transition() {
     }
 }
 
+std::vector<QObject *> MemoryManager::findObjectsForCompilationUnits(
+        std::vector<QQmlRefPointer<QV4::CompiledData::CompilationUnit>> &&units)
+{
+
+    ObjectsForCompilationUnit recorded { std::move(units), {} };
+    m_recordedObjects = &recorded;
+
+    runFullGC();
+
+    m_recordedObjects = nullptr;
+    return std::exchange(recorded.objects, {});
+}
+
 } // namespace QV4
 
 QT_END_NAMESPACE

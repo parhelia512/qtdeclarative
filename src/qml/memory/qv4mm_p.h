@@ -418,6 +418,9 @@ public:
     void setGCTimeLimit(int timeMs);
     MarkStack* markStack() { return m_markStack.get(); }
 
+    std::vector<QObject *> findObjectsForCompilationUnits(
+            std::vector<QQmlRefPointer<CompiledData::CompilationUnit>> &&units);
+
 protected:
     /// expects size to be aligned
     Heap::Base *allocString(std::size_t unmanagedSize);
@@ -473,6 +476,11 @@ private:
     }
 
 public:
+    struct ObjectsForCompilationUnit {
+        const std::vector<QQmlRefPointer<QV4::CompiledData::CompilationUnit>> compilationUnits;
+        std::vector<QObject *> objects;
+    };
+
     QV4::ExecutionEngine *engine;
     ChunkAllocator *chunkAllocator;
     BlockAllocator blockAllocator;
@@ -487,6 +495,9 @@ public:
     std::unique_ptr<GCStateMachine> gcStateMachine{nullptr};
     std::unique_ptr<MarkStack> m_markStack{nullptr};
 
+    // For recording objects from compilation units during GC
+    ObjectsForCompilationUnit *m_recordedObjects = nullptr;
+
     std::size_t unmanagedHeapSize = 0; // the amount of bytes of heap that is not managed by the memory manager, but which is held onto by managed items.
     std::size_t unmanagedHeapSizeGCLimit;
     std::size_t usedSlotsAfterLastFullSweep = 0;
@@ -498,8 +509,10 @@ public:
     bool gcStats = false;
     bool gcCollectorStats = false;
 
+#if defined(MM_STATS) || !defined(QT_NO_DEBUG)
     int allocationCount = 0;
     size_t lastAllocRequestedSlots = 0;
+#endif
 
     struct {
         size_t maxAllocatedMem = 0;

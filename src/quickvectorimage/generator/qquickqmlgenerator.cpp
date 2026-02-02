@@ -487,6 +487,11 @@ bool QQuickQmlGenerator::generateDefsNode(const StructureNodeInfo &info)
         stream() << "Item {";
         m_indentLevel++;
 
+        if (!info.transformReferenceChildId.isEmpty()) {
+            stream() << "property alias transformMatrix: "
+                     << info.transformReferenceChildId << ".transformMatrix";
+        }
+
         generateNodeBase(info, QStringLiteral("_defs"));
     } else {
         generateNodeEnd(info);

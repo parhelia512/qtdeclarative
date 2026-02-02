@@ -38,6 +38,7 @@ struct NodeInfo
     QString maskId;
     QString filterId;
     QString transformReferenceId;
+    QString transformReferenceChildId;
     QString customItemType;
     QQuickAnimatedProperty transform = QQuickAnimatedProperty(QVariant::fromValue(QTransform{}));
     QQuickAnimatedProperty opacity = QQuickAnimatedProperty(QVariant::fromValue(1.0));

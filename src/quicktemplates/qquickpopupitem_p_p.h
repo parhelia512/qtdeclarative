@@ -60,6 +60,8 @@ protected:
     void mirrorChange() override;
     void itemChange(ItemChange change, const ItemChangeData &data) override;
     void paddingChange(const QMarginsF &newPadding, const QMarginsF &oldPadding) override;
+    void insetChange(const QMarginsF &newInset, const QMarginsF &oldInset) override;
+    void spacingChange(qreal newSpacing, qreal oldSpacing) override;
     void enabledChange() override;
 
     QFont defaultFont() const override;

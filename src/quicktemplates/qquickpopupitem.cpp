@@ -346,6 +346,20 @@ void QQuickPopupItem::paddingChange(const QMarginsF &newPadding, const QMarginsF
     d->popup->paddingChange(newPadding, oldPadding);
 }
 
+void QQuickPopupItem::insetChange(const QMarginsF &newInset, const QMarginsF &oldInset)
+{
+    Q_D(QQuickPopupItem);
+    QQuickPage::insetChange(newInset, oldInset);
+    d->popup->insetChange(newInset, oldInset);
+}
+
+void QQuickPopupItem::spacingChange(qreal newSpacing, qreal oldSpacing)
+{
+    Q_D(QQuickPopupItem);
+    QQuickPage::spacingChange(newSpacing, oldSpacing);
+    d->popup->spacingChange(newSpacing, oldSpacing);
+}
+
 void QQuickPopupItem::enabledChange()
 {
     Q_D(QQuickPopupItem);

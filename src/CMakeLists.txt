@@ -62,10 +62,6 @@ if(TARGET Qt::Gui AND TARGET Qt::qsb AND QT_FEATURE_qml_animation)
     add_subdirectory(quickcontrolsimpl)
     add_subdirectory(quickcontrols)
 
-    if(QT_FEATURE_quickcontrols2_macos OR QT_FEATURE_quickcontrols2_windows)
-        add_subdirectory(quicknativestyle)
-    endif()
-
 else()
     qt_configure_add_summary_section(NAME "Qt Quick")
     qt_configure_add_summary_entry(TYPE "message" ARGS "Qt Quick support" MESSAGE "no")

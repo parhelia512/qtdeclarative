@@ -62,6 +62,10 @@ qt_internal_add_resource(qtquickcontrols2plugin "indirectBasic"
         qmldir
 )
 
+if(QT_FEATURE_quickcontrols2_macos OR QT_FEATURE_quickcontrols2_windows)
+    add_subdirectory(quicknativestyle)
+endif()
+
 if(QT_FEATURE_quick_designer)
     add_subdirectory(designer)
 endif()

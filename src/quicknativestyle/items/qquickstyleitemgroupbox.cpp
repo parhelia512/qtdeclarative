@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemgroupbox.h"
+#include "qquickstyleitemgroupbox_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -71,4 +71,4 @@ QPointF QQuickStyleItemGroupBox::labelPos() const
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemgroupbox.cpp"
+#include "moc_qquickstyleitemgroupbox_p.cpp"

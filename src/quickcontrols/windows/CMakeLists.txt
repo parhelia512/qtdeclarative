@@ -87,7 +87,7 @@ qt_internal_add_qml_module(qtquickcontrols2windowsstyleplugin
 
 # Native style is a dependency of the Windows style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2windowsstyleplugin
-                                              qtquickcontrols2nativestyleplugin)
+                                              qtquicknativestyleplugin)
 # Fusion style is the required fallback style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2windowsstyleplugin
                                               qtquickcontrols2fusionstyleplugin)

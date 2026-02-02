@@ -2,23 +2,22 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitem.h"
+#include "qquickstyleitem_p.h"
 
-#include <QtCore/qscopedvaluerollback.h>
-#include <QtCore/qdir.h>
+#include <private/qqc2qstylehelper_p.h>
+#include <private/qquickbutton_p.h>
+#include <private/qquickcontrol_p.h>
+#include <private/qquickstyleitembutton_p.h>
+#include <private/qquickwindow_p.h>
 
-#include <QtQuick/qsgninepatchnode.h>
-#include <QtQuick/private/qquickwindow_p.h>
-#include <QtQuick/qquickwindow.h>
 #include <QtQuick/qquickrendercontrol.h>
-
-#include <QtQuickTemplates2/private/qquickcontrol_p.h>
-#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include <QtQuick/qquickwindow.h>
+#include <QtQuick/qsgninepatchnode.h>
 
 #include <QtQml/qqml.h>
 
-#include "qquickstyleitembutton.h"
-#include "qquickstylehelper_p.h"
+#include <QtCore/qdir.h>
+#include <QtCore/qscopedvaluerollback.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -561,4 +560,4 @@ QFont QQuickStyleItem::styleFont(QQuickItem *control) const
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitem.cpp"
+#include "moc_qquickstyleitem_p.cpp"

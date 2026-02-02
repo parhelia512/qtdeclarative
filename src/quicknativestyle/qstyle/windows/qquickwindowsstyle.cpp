@@ -4,32 +4,35 @@
 
 #include "qquickwindowsstyle_p.h"
 #include "qquickwindowsstyle_p_p.h"
-#include "qquickstyleoption.h"
-#include "qquickstylehelper_p.h"
-#include "qquickdrawutil.h"
+
+#include <private/qguiapplication_p.h>
+#include <private/qguiapplication_p.h>
+#include <private/qhighdpiscaling_p.h>
+#include <private/qmath_p.h>
+#include <private/qqc2qdrawutil_p.h>
+#include <private/qqc2qstylehelper_p.h>
+#include <private/qqc2qstyleoption_p.h>
+#include <private/qquicktheme_p.h>
+
+#include <qpa/qplatformintegration.h>
+#include <qpa/qplatformnativeinterface.h>
+#include <qpa/qplatformscreen.h>
+#include <qpa/qplatformtheme.h>
 
 #include <QtGui/qbitmap.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpaintengine.h>
 #include <QtGui/qpainter.h>
+#include <QtGui/qpainterpath.h>
+#include <QtGui/qpixmapcache.h>
+#include <QtGui/qscreen.h>
+#include <QtGui/qstylehints.h>
+#include <QtGui/qwindow.h>
+
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
+#include <QtCore/qmath.h>
 #include <QtCore/qtextstream.h>
-#include <QtGui/qpixmapcache.h>
-#include <QtGui/qpa/qplatformintegration.h>
-#include <QtGui/private/qguiapplication_p.h>
-#include <QtGui/qstylehints.h>
-#include <private/qmath_p.h>
-#include <qmath.h>
-#include <QtGui/qpainterpath.h>
-#include <QtGui/qscreen.h>
-#include <QtGui/qwindow.h>
-#include <qpa/qplatformtheme.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
-#include <private/qhighdpiscaling_p.h>
-#include <qpa/qplatformnativeinterface.h>
-#include <QtQuickTemplates2/private/qquicktheme_p.h>
 
 #if 0 && QT_CONFIG(animation)
 //#include <private/qstyleanimation_p.h>
@@ -99,6 +102,7 @@ bool QWindowsStylePrivate::hasSeenAlt(const QWidget *widget) const
 }
 
 /*!
+    \internal
     \reimp
 */
 bool QWindowsStyle::eventFilter(QObject *o, QEvent *e)
@@ -155,12 +159,9 @@ bool QWindowsStyle::eventFilter(QObject *o, QEvent *e)
 #endif
 
 /*!
+    \internal
     \class QWindowsStyle
     \brief The QWindowsStyle class provides a Microsoft Windows-like look and feel.
-
-    \ingroup appearance
-    \inmodule QtWidgets
-    \internal
 
     This style is Qt's default GUI style on Windows.
 
@@ -169,6 +170,7 @@ bool QWindowsStyle::eventFilter(QObject *o, QEvent *e)
 */
 
 /*!
+    \internal
     Constructs a QWindowsStyle object.
 */
 QWindowsStyle::QWindowsStyle() : QCommonStyle(*new QWindowsStylePrivate)
@@ -194,7 +196,10 @@ void QWindowsStyle::timerEvent(QTimerEvent* event)
     }
 }
 
-/*! Destroys the QWindowsStyle object. */
+/*!
+    \internal
+    Destroys the QWindowsStyle object.
+ */
 QWindowsStyle::~QWindowsStyle()
 {
 }
@@ -322,6 +327,7 @@ qreal QWindowsStylePrivate::nativeMetricScaleFactor(const QWindow *win)
 }
 
 /*!
+  \internal
   \reimp
 */
 int QWindowsStyle::pixelMetric(PixelMetric pm, const QStyleOption *opt) const
@@ -388,6 +394,7 @@ int QWindowsStyle::pixelMetric(PixelMetric pm, const QStyleOption *opt) const
 }
 
 /*!
+ \internal
  \reimp
  */
 QPixmap QWindowsStyle::standardPixmap(StandardPixmap standardPixmap, const QStyleOption *opt) const
@@ -435,7 +442,10 @@ QPixmap QWindowsStyle::standardPixmap(StandardPixmap standardPixmap, const QStyl
     return QCommonStyle::standardPixmap(standardPixmap, opt);
 }
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 int QWindowsStyle::styleHint(StyleHint hint, const QStyleOption *opt,
                              QStyleHintReturn *returnData) const
 {
@@ -554,7 +564,10 @@ int QWindowsStyle::styleHint(StyleHint hint, const QStyleOption *opt,
     return ret;
 }
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 void QWindowsStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPainter *p) const
 {
     // Used to restore across fallthrough cases. Currently only used in PE_IndicatorCheckBox
@@ -959,7 +972,10 @@ void QWindowsStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, 
     }
 }
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 void QWindowsStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPainter *p) const
 {
     switch (ce) {
@@ -1757,7 +1773,10 @@ void QWindowsStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPai
     }
 }
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 QRect QWindowsStyle::subElementRect(SubElement sr, const QStyleOption *opt) const
 {
     QRect r;
@@ -1793,7 +1812,10 @@ QRect QWindowsStyle::subElementRect(SubElement sr, const QStyleOption *opt) cons
 }
 
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 void QWindowsStyle::drawComplexControl(ComplexControl cc, const QStyleOptionComplex *opt,
                                        QPainter *p) const
 {
@@ -2199,7 +2221,10 @@ void QWindowsStyle::drawComplexControl(ComplexControl cc, const QStyleOptionComp
 #endif
 }
 
-/*! \reimp */
+/*!
+   \internal
+   \reimp
+ */
 QSize QWindowsStyle::sizeFromContents(ContentsType ct, const QStyleOption *opt, const QSize &csz) const
 {
     QSize sz(csz);
@@ -2309,6 +2334,7 @@ void QWindowsStyle::polish()
 }
 
 /*!
+    \internal
     \reimp
 */
 QIcon QWindowsStyle::standardIcon(StandardPixmap standardIcon, const QStyleOption *option) const

@@ -16,8 +16,8 @@
 // We mean it.
 //
 
-#include "qquickcommonstyle.h"
-#include "private/qglobal_p.h"
+#include <private/qglobal_p.h>
+#include <private/qqc2qcommonstyle_p.h>
 
 #define QQC2_NAMESPACE QQC2
 

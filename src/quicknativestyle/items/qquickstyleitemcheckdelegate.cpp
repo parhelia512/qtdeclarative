@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemcheckdelegate.h"
+#include "qquickstyleitemcheckdelegate_p.h"
 
-#include <QtQuickTemplates2/private/qquickcheckdelegate_p.h>
+#include <private/qquickcheckdelegate_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -30,4 +30,4 @@ void QQuickStyleItemCheckDelegate::initStyleOption(QStyleOptionButton &styleOpti
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemcheckdelegate.cpp"
+#include "moc_qquickstyleitemcheckdelegate_p.cpp"

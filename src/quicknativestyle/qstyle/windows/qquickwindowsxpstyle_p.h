@@ -16,7 +16,7 @@
 // We mean it.
 //
 
-#include "qquickwindowsstyle_p.h"
+#include <private/qquickwindowsstyle_p.h>
 
 QT_BEGIN_NAMESPACE
 

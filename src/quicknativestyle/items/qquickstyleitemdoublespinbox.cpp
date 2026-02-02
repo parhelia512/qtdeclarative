@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemdoublespinbox.h"
-#include <QtQuickTemplates2/private/qquickindicatorbutton_p.h>
+#include "qquickstyleitemdoublespinbox_p.h"
+#include <private/qquickindicatorbutton_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -86,4 +86,4 @@ void QQuickStyleItemDoubleSpinBox::initStyleOption(QStyleOptionSpinBox &styleOpt
 }
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemdoublespinbox.cpp"
+#include "moc_qquickstyleitemdoublespinbox_p.cpp"

@@ -96,7 +96,7 @@ qt_internal_add_qml_module(qtquickcontrols2macosstyleplugin
 
 # Native style is a dependency of the macOS style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2macosstyleplugin
-                                              qtquickcontrols2nativestyleplugin)
+                                              qtquicknativestyleplugin)
 
 # Fusion style is the required fallback style.
 _qt_internal_add_qml_static_plugin_dependency(qtquickcontrols2macosstyleplugin

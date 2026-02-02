@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickfocusframe.h"
+#include "qquickfocusframe_p.h"
 
 #include <private/qquickitem_p.h>
+#include <private/qquickstyleitem_p.h>
 
-#include <QtCore/qmetaobject.h>
-
-#include <QtGui/qguiapplication.h>
-
-#include <QtQml/qqmlengine.h>
-#include <QtQml/qqmlcontext.h>
 #include <QtQml/qqmlcomponent.h>
+#include <QtQml/qqmlcontext.h>
+#include <QtQml/qqmlengine.h>
 
 #include <QtQuick/qquickitem.h>
 
-#include "items/qquickstyleitem.h"
+#include <QtGui/qguiapplication.h>
+
+#include <QtCore/qmetaobject.h>
+
 
 QT_BEGIN_NAMESPACE
 

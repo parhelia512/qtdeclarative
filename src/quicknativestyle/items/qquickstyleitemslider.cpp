@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemslider.h"
+#include "qquickstyleitemslider_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -94,4 +94,4 @@ void QQuickStyleItemSlider::initStyleOption(QStyleOptionSlider &styleOption) con
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemslider.cpp"
+#include "moc_qquickstyleitemslider_p.cpp"

@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
+#include <private/qquickstyleplugin_p.h>
+
 #include <QtQml/qqml.h>
 #include <QtQml/qqmlextensionplugin.h>
-#include <QtQuickControls2/private/qquickstyleplugin_p.h>
 
 #if defined(Q_OS_MACOS)
-#  include "qquickmacfocusframe.h"
+#  include <private/qquickmacfocusframe_p.h>
 #elif defined(Q_OS_WINDOWS)
-#  include "qquickwindowsfocusframe.h"
+#  include <private/qquickwindowsfocusframe_p.h>
 #endif
 
 QT_BEGIN_NAMESPACE

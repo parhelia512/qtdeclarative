@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemdelaybutton.h"
+#include "qquickstyleitemdelaybutton_p.h"
 
-#include <QtQuickTemplates2/private/qquickdelaybutton_p.h>
+#include <private/qquickdelaybutton_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -26,4 +26,4 @@ void QQuickStyleItemDelayButton::initStyleOption(QStyleOptionButton &styleOption
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemdelaybutton.cpp"
+#include "moc_qquickstyleitemdelaybutton_p.cpp"

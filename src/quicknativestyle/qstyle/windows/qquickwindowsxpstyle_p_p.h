@@ -16,11 +16,12 @@
 // We mean it.
 //
 
-//#include <QtWidgets/private/qtwidgetsglobal_p.h>
 #include "qquickwindowsxpstyle_p.h"
-#include "qquickwindowsstyle_p_p.h"
+
+#include <private/qquickwindowsstyle_p_p.h>
+
 #include <QtCore/qmap.h>
-#include <qt_windows.h>
+#include <QtCore/qt_windows.h>
 
 #include <uxtheme.h>
 #include <vssym32.h>

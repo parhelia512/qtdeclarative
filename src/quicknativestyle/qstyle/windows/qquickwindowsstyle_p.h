@@ -16,9 +16,10 @@
 // We mean it.
 //
 
-#include "qquickcommonstyle.h"
-#include "private/qglobal_p.h"
-#include <QBasicTimer>
+#include <private/qglobal_p.h>
+#include <private/qqc2qcommonstyle_p.h>
+
+#include <QtCore/qbasictimer.h>
 
 QT_BEGIN_NAMESPACE
 

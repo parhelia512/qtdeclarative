@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemcombobox.h"
+#include "qquickstyleitemcombobox_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -60,4 +60,4 @@ void QQuickStyleItemComboBox::initStyleOption(QStyleOptionComboBox &styleOption)
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemcombobox.cpp"
+#include "moc_qquickstyleitemcombobox_p.cpp"

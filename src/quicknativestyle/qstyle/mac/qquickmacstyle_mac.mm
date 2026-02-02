@@ -7,35 +7,34 @@
   .../doc/src/qstyles.qdoc.
 */
 
-#include <AppKit/AppKit.h>
-
 #include "qquickmacstyle_mac_p.h"
 #include "qquickmacstyle_mac_p_p.h"
-#include "qquickstylehelper_p.h"
 
-#include <QtQuickTemplates2/private/qquickcontrol_p.h>
+#include <private/qcore_mac_p.h>
+#include <private/qcoregraphics_p.h>
+#include <private/qguiapplication_p.h>
+#include <private/qqc2qstylehelper_p.h>
+#include <private/qquickcontrol_p.h>
 
-#define QMAC_QAQUASTYLE_SIZE_CONSTRAIN
-//#define DEBUG_SIZE_CONSTRAINT
+#include <qpa/qplatformfontdatabase.h>
+#include <qpa/qplatformnativeinterface.h>
+#include <qpa/qplatformtheme.h>
+
+#include <QtGui/qpainterpath.h>
+#include <QtGui/qstylehints.h>
 
 #include <QtCore/qoperatingsystemversion.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qvarlengtharray.h>
 
-#include <QtGui/qpainterpath.h>
-#include <QtGui/qstylehints.h>
-#include <QtGui/qpa/qplatformnativeinterface.h>
-#include <QtGui/qpa/qplatformfontdatabase.h>
-#include <QtGui/qpa/qplatformtheme.h>
+#include <cmath>
 
-#include <QtCore/private/qcore_mac_p.h>
-#include <QtGui/private/qcoregraphics_p.h>
-#include <QtGui/private/qguiapplication_p.h>
+#define QMAC_QAQUASTYLE_SIZE_CONSTRAIN
 
 using namespace QQC2;
-#include <QtGui/private/qmacstyle_p.h>
 
-#include <cmath>
+// TODO: qmacstyle_p.h is not self-contained. Move it into the header section when that is fixed.
+#include <private/qmacstyle_p.h>
 
 QT_USE_NAMESPACE
 

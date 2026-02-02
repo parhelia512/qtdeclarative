@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickmacfocusframe.h"
+#include "qquickmacfocusframe_p.h"
 
-#include <AppKit/AppKit.h>
+#include <private/qcoregraphics_p.h>
 
 #include <QtGui/qguiapplication.h>
-#include <QtGui/private/qcoregraphics_p.h>
 
 #include <QtQml/qqmlcomponent.h>
+
+#include <AppKit/AppKit.h>
 
 QT_BEGIN_NAMESPACE
 

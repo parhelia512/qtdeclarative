@@ -1,20 +1,22 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
-#include "qquickstylehelper_p.h"
 #include "qquickwindowsxpstyle_p.h"
 #include "qquickwindowsxpstyle_p_p.h"
 
 #include <private/qobject_p.h>
 #include <private/qpaintengine_raster_p.h>
+#include <private/qqc2qstylehelper_p.h>
+
 #include <qpa/qplatformnativeinterface.h>
-#include <qpainter.h>
-#include <qpaintengine.h>
-#include <qbackingstore.h>
-#include <qpixmapcache.h>
-#include <qpa/qplatformnativeinterface.h>
-#include <qvarlengtharray.h>
-#include <qdebug.h>
+
+#include <QtGui/qbackingstore.h>
+#include <QtGui/qpaintengine.h>
+#include <QtGui/qpainter.h>
+#include <QtGui/qpixmapcache.h>
+
+#include <QtCore/qdebug.h>
+#include <QtCore/qvarlengtharray.h>
 
 #include <algorithm>
 
@@ -992,12 +994,10 @@ bool QWindowsXPStylePrivate::drawBackgroundThruNativeBuffer(XPThemeData &themeDa
 // ------------------------------------------------------------------------------------------------
 
 /*!
+    \internal
     \class QWindowsXPStyle
     \brief The QWindowsXPStyle class provides a Microsoft Windows XP-like look and feel.
 
-    \ingroup appearance
-    \inmodule QtWidgets
-    \internal
 
     \warning This style is only available on the Windows XP platform
     because it makes use of Windows XP's style engine.
@@ -1013,6 +1013,7 @@ bool QWindowsXPStylePrivate::drawBackgroundThruNativeBuffer(XPThemeData &themeDa
 */
 
 /*!
+    \internal
     Constructs a QWindowsStyle
 */
 QWindowsXPStyle::QWindowsXPStyle()
@@ -1021,11 +1022,15 @@ QWindowsXPStyle::QWindowsXPStyle()
 }
 
 /*!
+    \internal
     Destroys the style.
 */
 QWindowsXPStyle::~QWindowsXPStyle() = default;
 
-/*! \reimp */
+/*!
+    \internal
+    \reimp
+ */
 QRect QWindowsXPStyle::subElementRect(SubElement sr, const QStyleOption *option) const
 {
     if (!QWindowsXPStylePrivate::useXP()) {
@@ -1116,6 +1121,7 @@ QRect QWindowsXPStyle::subElementRect(SubElement sr, const QStyleOption *option)
 }
 
 /*!
+    \internal
     \reimp
 */
 void QWindowsXPStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *option, QPainter *p) const
@@ -1696,6 +1702,7 @@ case PE_Frame:
 }
 
 /*!
+    \internal
     \reimp
 */
 void QWindowsXPStyle::drawControl(ControlElement element, const QStyleOption *option, QPainter *p) const
@@ -2327,6 +2334,7 @@ static void populateTitleBarButtonTheme(const QStyle *proxy,
 }
 
 /*!
+    \internal
     \reimp
 */
 void QWindowsXPStyle::drawComplexControl(ComplexControl cc, const QStyleOptionComplex *option,
@@ -3065,7 +3073,10 @@ int QWindowsXPStylePrivate::pixelMetricFromSystemDp(QStyle::PixelMetric pm, cons
     return QWindowsXPStylePrivate::InvalidMetric;
 }
 
-/*! \reimp */
+/*!
+    \internal
+    \reimp
+ */
 int QWindowsXPStyle::pixelMetric(PixelMetric pm, const QStyleOption *option) const
 {
     if (!QWindowsXPStylePrivate::useXP())
@@ -3202,6 +3213,7 @@ static bool buttonVisible(const QStyle::SubControl sc, const QStyleOptionTitleBa
 }
 
 /*!
+    \internal
     \reimp
 */
 QRect QWindowsXPStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex *option,
@@ -3420,6 +3432,7 @@ QRect QWindowsXPStyle::subControlRect(ComplexControl cc, const QStyleOptionCompl
 }
 
 /*!
+    \internal
     \reimp
 */
 QSize QWindowsXPStyle::sizeFromContents(ContentsType ct, const QStyleOption *option,
@@ -3546,7 +3559,10 @@ QSize QWindowsXPStyle::sizeFromContents(ContentsType ct, const QStyleOption *opt
 }
 
 
-/*! \reimp */
+/*!
+    \internal
+    \reimp
+ */
 int QWindowsXPStyle::styleHint(StyleHint hint, const QStyleOption *option,
                                QStyleHintReturn *returnData) const
 {
@@ -3653,13 +3669,17 @@ QMargins QWindowsXPStyle::ninePatchMargins(QStyle::ComplexControl cc, const QSty
 }
 
 
-/*! \reimp */
+/*!
+    \internal
+    \reimp
+ */
 QPalette QWindowsXPStyle::standardPalette() const
 {
     return QWindowsXPStylePrivate::useXP() ? QPalette() : QWindowsStyle::standardPalette();
 }
 
 /*!
+    \internal
     \reimp
 */
 QPixmap QWindowsXPStyle::standardPixmap(StandardPixmap standardPixmap, const QStyleOption *option) const
@@ -3690,6 +3710,7 @@ QPixmap QWindowsXPStyle::standardPixmap(StandardPixmap standardPixmap, const QSt
 }
 
 /*!
+    \internal
     \reimp
 */
 QIcon QWindowsXPStyle::standardIcon(StandardPixmap standardIcon,

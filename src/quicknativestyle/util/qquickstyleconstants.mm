@@ -1,10 +1,11 @@
 // Copyright (C) 2025 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "qquickstyleconstants.h"
+#include "qquickstyleconstants_p.h"
 
-#include <QtCore/private/qcore_mac_p.h>
-#include <QtGui/private/qcoregraphics_p.h>
+#include <private/qcore_mac_p.h>
+#include <private/qcoregraphics_p.h>
+
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qstylehints.h>
 
@@ -56,4 +57,4 @@ QColor QQuickStyleConstants::tertiarySystemFillColor() const
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleconstants.cpp"
+#include "moc_qquickstyleconstants_p.cpp"

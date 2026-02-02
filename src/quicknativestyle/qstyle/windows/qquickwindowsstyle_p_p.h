@@ -17,19 +17,18 @@
 //
 
 #include "qquickwindowsstyle_p.h"
-#include "qquickcommonstyle_p.h"
-#include "qquickstylehelper_p.h"
+
+#include <private/qqc2qcommonstyle_p_p.h>
+#include <private/qqc2qstylehelper_p.h>
+#include <private/qqc2qstyleoption_p.h>
+
+#include <QtCore/qlist.h>
 
 QT_BEGIN_NAMESPACE
 
 namespace QQC2 {
 
 class QStyleOptionButton;
-class QWindowsStylePrivate;
-
-#include <qlist.h>
-
-class QTime;
 
 class QWindowsStylePrivate : public QCommonStylePrivate
 {

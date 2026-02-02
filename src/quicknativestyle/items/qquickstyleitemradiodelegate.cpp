@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
-#include "qquickstyleitemradiodelegate.h"
+#include "qquickstyleitemradiodelegate_p.h"
 
-#include <QtQuickTemplates2/private/qquickradiodelegate_p.h>
+#include <private/qquickradiodelegate_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -27,4 +27,4 @@ void QQuickStyleItemRadioDelegate::initStyleOption(QStyleOptionButton &styleOpti
 
 QT_END_NAMESPACE
 
-#include "moc_qquickstyleitemradiodelegate.cpp"
+#include "moc_qquickstyleitemradiodelegate_p.cpp"

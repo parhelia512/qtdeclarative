@@ -7,8 +7,19 @@
 #define QMACSTYLE_MAC_P_P_H
 
 #include "qquickmacstyle_mac_p.h"
-#include "qquickcommonstyle_p.h"
-#include "qquickstylehelper_p.h"
+
+#include <private/qcore_mac_p.h>
+#include <private/qpainter_p.h>
+#include <private/qqc2qcommonstyle_p_p.h>
+#include <private/qqc2qstylehelper_p.h>
+
+#include <QtQuick/qquickitem.h>
+
+#include <QtGui/qbitmap.h>
+#include <QtGui/qevent.h>
+#include <QtGui/qpaintdevice.h>
+#include <QtGui/qpainter.h>
+#include <QtGui/qpixmapcache.h>
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
@@ -18,16 +29,7 @@
 #include <QtCore/qtextstream.h>
 #include <QtCore/qvector.h>
 
-#include <QtGui/qbitmap.h>
-#include <QtGui/qevent.h>
-#include <QtGui/qpaintdevice.h>
-#include <QtGui/qpainter.h>
-#include <QtGui/qpixmapcache.h>
-
-#include <QtQuick/qquickitem.h>
-
-#include <QtCore/private/qcore_mac_p.h>
-#include <QtGui/private/qpainter_p.h>
+#include <AppKit/AppKit.h>
 
 //
 //  W A R N I N G

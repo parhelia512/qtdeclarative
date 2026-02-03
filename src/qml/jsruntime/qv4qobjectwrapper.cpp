@@ -1505,50 +1505,54 @@ static void markChildQObjectsRecursively(QObject *parent, MarkStack *markStack)
 
 void Heap::QObjectWrapper::markObjects(Heap::Base *that, MarkStack *markStack)
 {
-    QObjectWrapper *This = static_cast<QObjectWrapper *>(that);
+    Object::markObjects(that, markStack);
 
-    if (QObject *o = This->object()) {
-        if (QQmlData *ddata = QQmlData::get(o)) {
-            if (ddata->hasVMEMetaObject) {
-                if (QQmlVMEMetaObject *vme
-                        = static_cast<QQmlVMEMetaObject *>(QObjectPrivate::get(o)->metaObject)) {
-                    vme->mark(markStack);
-                }
-            }
+    QObject *o = static_cast<QObjectWrapper *>(that)->object();
+    if (!o)
+        return;
 
-            // mark the const wrapper if our engine has interacted with it at some point
-            if (ddata->hasConstWrapper && that->internalClass->engine->m_multiplyWrappedQObjects) {
-                Scope scope(that->internalClass->engine);
-
-                Scoped<QV4::QObjectWrapper> constWrapper(
-                        scope,
-                        scope.engine->m_multiplyWrappedQObjects->value(
-                                static_cast<const QObject *>(o)));
-
-                if (constWrapper) {
-                    if (This == constWrapper->d()) {
-                        // We've got the const wrapper. Also mark the non-const one
-                        if (ddata->jsEngineId == scope.engine->m_engineId)
-                            ddata->jsWrapper.markOnce(markStack);
-                        else
-                            scope.engine->m_multiplyWrappedQObjects->mark(o, markStack);
-                    } else {
-                        // We've got the non-const wrapper. Also mark the const one.
-                        constWrapper->mark(markStack);
-                    }
-                }
-            }
-        }
-
+    const auto markChildrenRecursivelyGuard = qScopeGuard([o, markStack]() {
         // Children usually don't need to be marked, the gc keeps them alive.
         // But in the rare case of a "floating" QObject without a parent that
         // _gets_ marked (we've been called here!) then we also need to
         // propagate the marking down to the children recursively.
         if (!o->parent())
             markChildQObjectsRecursively(o, markStack);
+    });
+
+    QQmlData *ddata = QQmlData::get(o);
+    if (!ddata)
+        return;
+
+    if (ddata->hasVMEMetaObject) {
+        QQmlVMEMetaObject *vme = static_cast<QQmlVMEMetaObject *>(
+                QObjectPrivate::get(o)->metaObject);
+        if (vme)
+            vme->mark(markStack);
     }
 
-    Object::markObjects(that, markStack);
+    if (!ddata->hasConstWrapper || !that->internalClass->engine->m_multiplyWrappedQObjects)
+        return;
+
+    // mark the const wrapper if our engine has interacted with it at some point
+    Scope scope(that->internalClass->engine);
+    Scoped<QV4::QObjectWrapper> constWrapper(
+            scope, scope.engine->m_multiplyWrappedQObjects->value(static_cast<const QObject *>(o)));
+
+    if (!constWrapper)
+        return;
+
+    if (that != constWrapper->d()) {
+        // We've got the non-const wrapper. Also mark the const one.
+        constWrapper->mark(markStack);
+        return;
+    }
+
+    // We've got the const wrapper. Also mark the non-const one
+    if (ddata->jsEngineId == scope.engine->m_engineId)
+        ddata->jsWrapper.markOnce(markStack);
+    else
+        scope.engine->m_multiplyWrappedQObjects->mark(o, markStack);
 }
 
 void QObjectWrapper::destroyObject(bool lastCall)

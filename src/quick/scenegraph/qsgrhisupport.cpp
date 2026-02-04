@@ -9,6 +9,8 @@
 #include <QtQuick/private/qquickwindow_p.h>
 
 #include <QtGui/qwindow.h>
+#include <QtGui/qpa/qplatformintegration.h>
+#include <QtGui/private/qguiapplication_p.h>
 
 #if QT_CONFIG(vulkan)
 #include <QtGui/private/qvulkandefaultinstance_p.h>
@@ -127,8 +129,14 @@ void QSGRhiSupport::adjustToPlatformQuirks()
     if (m_rhiBackend == QRhi::Metal) {
         QRhiMetalInitParams rhiParams;
         if (!QRhi::probe(m_rhiBackend, &rhiParams)) {
-            m_rhiBackend = QRhi::OpenGLES2;
             qCDebug(QSG_LOG_INFO, "Metal does not seem to be supported. Falling back to OpenGL.");
+            auto *platformIntegration = QGuiApplicationPrivate::platformIntegration();
+            if (platformIntegration->hasCapability(QPlatformIntegration::OpenGL)) {
+                m_rhiBackend = QRhi::OpenGLES2;
+            } else {
+                qCWarning(QSG_LOG_INFO, "OpenGL not available. Falling back to Null backend.");
+                m_rhiBackend = QRhi::Null;
+            }
         }
     }
 #endif

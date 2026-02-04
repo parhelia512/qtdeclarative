@@ -51,8 +51,6 @@ protected:
     void finished() override;
 
 private:
-    QQuickTransition *effectiveTransition(QQuickTransition *transition) const;
-
     QQuickPopupPrivate *popup = nullptr;
 };
 

@@ -1331,7 +1331,7 @@ void QQuickPopupTransitionManager::transitionEnter()
         return;
 
     if (popup->window)
-        transition(popup->enterActions, effectiveTransition(popup->enter), popup->q_func());
+        transition(popup->enterActions, popup->enter, popup->q_func());
     else
         finished();
 }
@@ -1342,7 +1342,7 @@ void QQuickPopupTransitionManager::transitionExit()
         return;
 
     if (popup->window)
-        transition(popup->exitActions, effectiveTransition(popup->exit), popup->q_func());
+        transition(popup->exitActions, popup->exit, popup->q_func());
     else
         finished();
 }
@@ -1353,12 +1353,6 @@ void QQuickPopupTransitionManager::finished()
         popup->finalizeEnterTransition();
     else if (popup->transitionState == QQuickPopupPrivate::ExitTransition)
         popup->finalizeExitTransition();
-}
-
-QQuickTransition *QQuickPopupTransitionManager::effectiveTransition(QQuickTransition *transition) const
-{
-    static const bool popupsDisabled = qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_DISABLE_POPUP_TRANSITIONS");
-    return !popupsDisabled ? transition : nullptr;
 }
 
 QQuickPopup::QQuickPopup(QObject *parent)

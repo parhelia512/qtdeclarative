@@ -113,20 +113,6 @@ void tst_QQuickContextMenu::initTestCase()
 
     setFastAnimations(true);
 
-    /*
-        FluentWinUI3 animates its height in its enter transition. This causes issues in
-        textEditingContextMenuSelectAll on Ubuntu (X11), because the native resize events
-        caused by the menu's height changes arrive too late, causing clicks to miss the
-        menu item and instead close the menu (which clickButton now warns about).
-
-        There doesn't appear to be a way to reliably detect and hence wait for these events,
-        and we can't disable the enter transition because the menu doesn't exist until the
-        right click event, by which point the transition has also already started. So, we
-        have this environment variable to allow the test to disable them before they start.
-    */
-    if (QQuickStyle::name() == "FluentWinUI3")
-        qputenv("QT_QUICK_CONTROLS_DISABLE_POPUP_TRANSITIONS", "1");
-
     contextMenuTriggeredOnRelease = QGuiApplicationPrivate::platformTheme()->themeHint(
         QPlatformTheme::ContextMenuOnMouseRelease).toBool();
 

@@ -19,6 +19,13 @@
 
 QT_BEGIN_NAMESPACE
 
+struct ContextPropertyInfo
+{
+    QQmlJS::HeuristicContextProperties heuristicContextProperties;
+    QQmlJS::UserContextProperties userContextProperties;
+};
+
+
 class Q_QMLCOMPILER_EXPORT QQmlJSLinterTypePropagator : public QQmlJSTypePropagator
 {
 public:
@@ -38,15 +45,23 @@ private:
     void generate_CallProperty(int nameIndex, int base, int argc, int argv) override;
     void generate_CallPossiblyDirectEval(int argc, int argv) override;
 
+    void handleUnqualifiedAccess(const QString &name, bool isMethod) const override;
+    void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const override;
+    void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const override;
+    bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const override;
+    bool handleImportNamespaceLookup(const QString &propertyName) override;
     void handleLookupError(const QString &propertyName) override;
+    bool checkForEnumProblems(QQmlJSRegisterContent base, const QString &propertyName) override;
     void generate_StoreNameCommon(int nameIndex) override;
     void propagatePropertyLookup(const QString &name,
                                  int lookupIndex = QQmlJSRegisterContent::InvalidLookupIndex) override;
     void propagateCall(const QList<QQmlJSMetaMethod> &methods, int argc, int argv,
                        QQmlJSRegisterContent scope) override;
     void propagateTranslationMethod_SAcheck(const QString &methodName) override;
+    void warnAboutTypeCoercion(int lhs) override;
 
     QQmlSA::PassManager *m_passManager = nullptr;
+    ContextPropertyInfo m_contextPropertyInfo;
 };
 
 QT_END_NAMESPACE

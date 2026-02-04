@@ -27,19 +27,9 @@ namespace QQmlSA {
 class PassManager;
 };
 
-struct ContextPropertyInfo
-{
-    QQmlJS::HeuristicContextProperties heuristicContextProperties;
-    QQmlJS::UserContextProperties userContextProperties;
-};
-
 struct Q_QMLCOMPILER_EXPORT QQmlJSTypePropagator : public QQmlJSCompilePass
 {
-    QQmlJSTypePropagator(const QV4::Compiler::JSUnitGenerator *unitGenerator,
-                         const QQmlJSTypeResolver *typeResolver, QQmlJSLogger *logger,
-                         const BasicBlocks &basicBlocks = {},
-                         const InstructionAnnotations &annotations = {},
-                         const ContextPropertyInfo &contextPropertyInfo = {});
+    using QQmlJSCompilePass::QQmlJSCompilePass;
 
     BlocksAndAnnotations run(const Function *m_function);
 
@@ -178,8 +168,6 @@ struct Q_QMLCOMPILER_EXPORT QQmlJSTypePropagator : public QQmlJSCompilePass
     void generate_ThrowOnNullOrUndefined() override;
     void generate_GetTemplateObject(int index) override;
 
-    bool checkForEnumProblems(QQmlJSRegisterContent base, const QString &propertyName);
-
     Verdict startInstruction(QV4::Moth::Instr::Type instr) override;
     void endInstruction(QV4::Moth::Instr::Type instr) override;
 
@@ -199,10 +187,15 @@ protected:
         bool instructionHasError = false;
     };
 
-    void handleUnqualifiedAccess(const QString &name, bool isMethod) const;
-    void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const;
-    void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const;
-    bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const;
+    // Hooked for linting logic, some are stubs
+    virtual void handleUnqualifiedAccess(const QString &name, bool isMethod) const;
+    virtual void handleUnqualifiedAccessAndContextProperties(const QString &name, bool isMethod) const;
+    virtual void checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name, bool isMethod) const;
+    virtual bool isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const;
+    virtual bool handleImportNamespaceLookup(const QString &propertyName);
+    virtual void handleLookupError(const QString &propertyName);
+    virtual bool checkForEnumProblems(QQmlJSRegisterContent base, const QString &propertyName);
+    virtual void warnAboutTypeCoercion(int lhs);
 
     enum PropertyResolution {
         PropertyMissing,
@@ -277,9 +270,6 @@ protected:
     void generate_Construct_SCDate(const QQmlJSMetaMethod &ctor, int argc, int argv);
     void generate_Construct_SCArray(const QQmlJSMetaMethod &ctor, int argc, int argv);
 
-    bool handleImportNamespaceLookup(const QString &propertyName);
-    virtual void handleLookupError(const QString &propertyName);
-
     static bool isLoggingMethod(const QString &consoleMethod);
 
     void addError(const QString &message)
@@ -293,7 +283,6 @@ protected:
         setAccumulator(m_typeResolver->syntheticType(m_typeResolver->varType()));
         m_state.instructionHasError = true;
     }
-    void warnAboutTypeCoercion(int lhs);
 
     QQmlJSRegisterContent m_returnType;
 
@@ -302,7 +291,6 @@ protected:
 
     InstructionAnnotations m_prevStateAnnotations;
     PassState m_state;
-    ContextPropertyInfo m_contextPropertyInfo;
 };
 
 QT_END_NAMESPACE

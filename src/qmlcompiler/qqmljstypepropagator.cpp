@@ -6,7 +6,6 @@
 #include "qqmljstypepropagator_p.h"
 
 #include "qqmljsutils_p.h"
-#include "qqmlsa_p.h"
 
 #include <private/qv4compilerscanfunctions_p.h>
 
@@ -26,16 +25,6 @@ using namespace Qt::StringLiterals;
  * retrieved. These annotations may be used by further compile passes for
  * refinement or code generation.
  */
-
-QQmlJSTypePropagator::QQmlJSTypePropagator(const QV4::Compiler::JSUnitGenerator *unitGenerator,
-                                           const QQmlJSTypeResolver *typeResolver,
-                                           QQmlJSLogger *logger, const BasicBlocks &basicBlocks,
-                                           const InstructionAnnotations &annotations,
-                                           const ContextPropertyInfo &contextPropertyInfo)
-    : QQmlJSCompilePass(unitGenerator, typeResolver, logger, basicBlocks, annotations),
-      m_contextPropertyInfo(contextPropertyInfo)
-{
-}
 
 QQmlJSCompilePass::BlocksAndAnnotations QQmlJSTypePropagator::run(const Function *function)
 {
@@ -266,190 +255,23 @@ void QQmlJSTypePropagator::generate_LoadGlobalLookup(int index)
 
 void QQmlJSTypePropagator::handleUnqualifiedAccess(const QString &name, bool isMethod) const
 {
-    auto location = currentSourceLocation();
+    Q_UNUSED(name);
+    Q_UNUSED(isMethod);
+}
 
-    const auto qmlScopeContained = m_function->qmlScope.containedType();
-    if (qmlScopeContained->isInCustomParserParent()) {
-        // Only ignore custom parser based elements if it's not Connections.
-        if (qmlScopeContained->baseType().isNull()
-                || qmlScopeContained->baseType()->internalName() != u"QQmlConnections"_s)
-            return;
-    }
-
-    if (isMethod) {
-        if (isCallingProperty(qmlScopeContained, name))
-            return;
-    } else if (propertyResolution(qmlScopeContained, name) != PropertyMissing) {
-        return;
-    }
-
-    std::optional<QQmlJSFixSuggestion> suggestion;
-
-    const auto childScopes = m_function->qmlScope.containedType()->childScopes();
-    for (qsizetype i = 0, end = childScopes.size(); i < end; i++) {
-        auto &scope = childScopes[i];
-        if (location.offset > scope->sourceLocation().offset) {
-            if (i + 1 < end
-                && childScopes.at(i + 1)->sourceLocation().offset < location.offset)
-                continue;
-            if (scope->childScopes().size() == 0)
-                continue;
-
-            const auto jsId = scope->childScopes().first()->jsIdentifier(name);
-
-            if (jsId.has_value() && jsId->kind == QQmlJSScope::JavaScriptIdentifier::Injected) {
-                const QQmlJSScope::JavaScriptIdentifier id = jsId.value();
-
-                QQmlJS::SourceLocation fixLocation = id.location;
-                Q_UNUSED(fixLocation)
-                fixLocation.length = 0;
-
-                const auto handler = m_typeResolver->signalHandlers()[id.location];
-
-                QString fixString = handler.isMultiline ? u"function("_s : u"("_s;
-                const auto parameters = handler.signalParameters;
-                for (int numParams = parameters.size(); numParams > 0; --numParams) {
-                    fixString += parameters.at(parameters.size() - numParams);
-                    if (numParams > 1)
-                        fixString += u", "_s;
-                }
-
-                fixString += handler.isMultiline ? u") "_s : u") => "_s;
-
-                suggestion = QQmlJSFixSuggestion {
-                    name + u" is accessible in this scope because you are handling a signal"
-                           " at %1:%2. Use a function instead.\n"_s
-                        .arg(id.location.startLine)
-                        .arg(id.location.startColumn),
-                    fixLocation,
-                    fixString
-                };
-                suggestion->setAutoApplicable();
-            }
-            break;
-        }
-    }
-
-    // Might be a delegate just missing a required property.
-    // This heuristic does not recognize all instances of this occurring but should be sufficient
-    // protection against wrongly suggesting to add an id to the view to access the model that way
-    // which is very misleading
-    const auto qmlScope = m_function->qmlScope.containedType();
-    if (name == u"model" || name == u"index") {
-        if (const QQmlJSScope::ConstPtr parent = qmlScope->parentScope(); !parent.isNull()) {
-            const auto bindings = parent->ownPropertyBindings(u"delegate"_s);
-
-            for (auto it = bindings.first; it != bindings.second; it++) {
-                if (!it->hasObject())
-                    continue;
-                if (it->objectType() == qmlScope) {
-                    suggestion = QQmlJSFixSuggestion {
-                        name + " is implicitly injected into this delegate."
-                               " Add a required property instead."_L1,
-                        qmlScope->sourceLocation()
-                    };
-                };
-
-                break;
-            }
-        }
-    }
-
-    if (!suggestion.has_value()) {
-        for (QQmlJSScope::ConstPtr scope = qmlScope; !scope.isNull(); scope = scope->parentScope()) {
-            if (scope->hasProperty(name)) {
-                QQmlJSScopesById::MostLikelyCallback<QString> id;
-                m_function->addressableScopes.possibleIds(scope, qmlScope, Default, id);
-
-                QQmlJS::SourceLocation fixLocation = location;
-                fixLocation.length = 0;
-                QString m = "%1 is a member of a parent element.\n      You can qualify the "
-                            "access with its id to avoid this warning%2.\n"_L1.arg(name);
-                m = m.arg(id.result.isEmpty() ? " (You first have to give the element an id)"_L1 : ""_L1);
-
-                suggestion = QQmlJSFixSuggestion{
-                    m, fixLocation, (id.result.isEmpty() ? u"<id>."_s : (id.result + u'.'))
-                };
-
-                if (!id.result.isEmpty())
-                    suggestion->setAutoApplicable();
-            }
-        }
-    }
-
-    if (!suggestion.has_value() && !m_function->addressableScopes.componentsAreBound()
-            && m_function->addressableScopes.existsAnywhereInDocument(name)) {
-        const QLatin1String replacement = "pragma ComponentBehavior: Bound"_L1;
-        QQmlJSFixSuggestion bindComponents {
-            "Set \"%1\" in order to use IDs from outer components in nested components."_L1
-                .arg(replacement),
-            QQmlJS::s_documentOrigin,
-            replacement + '\n'_L1
-        };
-        bindComponents.setAutoApplicable();
-        suggestion = bindComponents;
-    }
-
-    if (!suggestion.has_value()) {
-        if (auto didYouMean =
-                    QQmlJSUtils::didYouMean(
-                            name, qmlScope->properties().keys() + qmlScope->methods().keys(),
-                            location);
-            didYouMean.has_value()) {
-            suggestion = didYouMean;
-        }
-    }
-
-    m_logger->log(QLatin1String("Unqualified access"), qmlUnqualified, location, true, true,
-                  suggestion);
+void QQmlJSTypePropagator::handleUnqualifiedAccessAndContextProperties(
+        const QString &name, bool isMethod) const
+{
+    Q_UNUSED(name);
+    Q_UNUSED(isMethod);
 }
 
 void QQmlJSTypePropagator::checkDeprecated(QQmlJSScope::ConstPtr scope, const QString &name,
                                            bool isMethod) const
 {
-    Q_ASSERT(!scope.isNull());
-    auto qmlScope = QQmlJSScope::findCurrentQMLScope(scope);
-    if (qmlScope.isNull())
-        return;
-
-    QList<QQmlJSAnnotation> annotations;
-
-    QQmlJSMetaMethod method;
-
-    if (isMethod) {
-        const QList<QQmlJSMetaMethod> methods = qmlScope->methods(name);
-        if (methods.isEmpty())
-            return;
-        method = methods.constFirst();
-        annotations = method.annotations();
-    } else {
-        QQmlJSMetaProperty property = qmlScope->property(name);
-        if (!property.isValid())
-            return;
-        annotations = property.annotations();
-    }
-
-    auto deprecationAnn = std::find_if(
-            annotations.constBegin(), annotations.constEnd(),
-            [](const QQmlJSAnnotation &annotation) { return annotation.isDeprecation(); });
-
-    if (deprecationAnn == annotations.constEnd())
-        return;
-
-    QQQmlJSDeprecation deprecation = deprecationAnn->deprecation();
-
-    QString descriptor = name;
-    if (isMethod)
-        descriptor += u'(' + method.parameterNames().join(u", "_s) + u')';
-
-    QString message = QStringLiteral("%1 \"%2\" is deprecated")
-                              .arg(isMethod ? u"Method"_s : u"Property"_s)
-                              .arg(descriptor);
-
-    if (!deprecation.reason.isEmpty())
-        message.append(QStringLiteral(" (Reason: %1)").arg(deprecation.reason));
-
-    m_logger->log(message, qmlDeprecated, currentSourceLocation());
+    Q_UNUSED(scope);
+    Q_UNUSED(name);
+    Q_UNUSED(isMethod);
 }
 
 // Only to be called once a lookup has already failed
@@ -480,82 +302,8 @@ QQmlJSTypePropagator::PropertyResolution QQmlJSTypePropagator::propertyResolutio
 
 bool QQmlJSTypePropagator::isCallingProperty(QQmlJSScope::ConstPtr scope, const QString &name) const
 {
-    auto property = scope->property(name);
-    if (!property.isValid())
-        return false;
-
-    QString propertyType = u"Property"_s;
-
-    QString errorType;
-    if (property.type() == m_typeResolver->varType()) {
-        errorType =
-                u"a var property. It may or may not be a method. Use a regular function instead."_s;
-    } else if (property.type() == m_typeResolver->jsValueType()) {
-        errorType =
-                u"a QJSValue property. It may or may not be a method. Use a regular Q_INVOKABLE instead."_s;
-    } else {
-        errorType = u"not a method"_s;
-    }
-
-    m_logger->log(u"%1 \"%2\" is %3"_s.arg(propertyType, name, errorType), qmlUseProperFunction,
-                  currentSourceLocation(), true, true, {});
-
-    return true;
-}
-
-static bool shouldMentionRequiredProperties(const QQmlJSScope::ConstPtr &qmlScope)
-{
-    if (!qmlScope->isWrappedInImplicitComponent() && !qmlScope->isFileRootComponent()
-        && !qmlScope->isInlineComponent()) {
-        return false;
-    }
-
-    const auto properties = qmlScope->properties();
-    return std::none_of(properties.constBegin(), properties.constEnd(),
-                        [&qmlScope](const QQmlJSMetaProperty &property) {
-                            return qmlScope->isPropertyRequired(property.propertyName());
-                        });
-}
-
-void QQmlJSTypePropagator::handleUnqualifiedAccessAndContextProperties(const QString &name,
-                                                                       bool isMethod) const
-{
-    if (m_contextPropertyInfo.userContextProperties.isUnqualifiedAccessDisabled(name))
-        return;
-
-    const auto warningMessage = [&name, this]() {
-        QString result =
-                "Potential context property access detected."
-                " Context properties are discouraged in QML: use normal, required, or singleton properties instead."_L1;
-
-        if (shouldMentionRequiredProperties(m_function->qmlScope.containedType())) {
-            result.append(
-                    "\nNote: '%1' assumed to be a potential context property because it is not declared as required property."_L1
-                            .arg(name));
-        }
-        return result;
-    };
-
-    if (m_contextPropertyInfo.userContextProperties.isOnUsageWarned(name)) {
-        m_logger->log(warningMessage(), qmlContextProperties, currentSourceLocation());
-        return;
-    }
-
-    // name is not the name of a user context property, so emit the unqualified warning.
-    handleUnqualifiedAccess(name, isMethod);
-
-    const QList<QQmlJS::HeuristicContextProperty> definitions =
-            m_contextPropertyInfo.heuristicContextProperties.definitionsForName(name);
-    if (definitions.isEmpty())
-        return;
-    QString warning = warningMessage();
-    for (const auto &candidate : definitions) {
-        warning.append("\nNote: candidate context property declaration '%1' at %2:%3:%4"_L1.arg(
-                name, QDir::cleanPath(candidate.filename),
-                QString::number(candidate.location.startLine),
-                QString::number(candidate.location.startColumn)));
-    }
-    m_logger->log(warning, qmlContextProperties, currentSourceLocation());
+    const auto property = scope->property(name);
+    return property.isValid();
 }
 
 void QQmlJSTypePropagator::generate_LoadQmlContextPropertyLookup(int index)
@@ -679,14 +427,8 @@ bool QQmlJSTypePropagator::checkForEnumProblems(
     if (base.isEnumeration()) {
         const auto metaEn = base.enumeration();
         if (!metaEn.hasKey(propertyName)) {
-            auto fixSuggestion = QQmlJSUtils::didYouMean(propertyName, metaEn.keys(),
-                                                         currentSourceLocation());
-            const QString error = u"\"%1\" is not an entry of enum \"%2\"."_s
-                                          .arg(propertyName, metaEn.name());
-            addError(error);
-            m_logger->log(
-                    error, qmlMissingEnumEntry, currentSourceLocation(), true, true,
-                    fixSuggestion);
+            addError(u"\"%1\" is not an entry of enum \"%2\"."_s
+                             .arg(propertyName, metaEn.name()));
             return true;
         }
     }
@@ -791,10 +533,6 @@ bool QQmlJSTypePropagator::handleImportNamespaceLookup(const QString &propertyNa
         Q_ASSERT(accumulatorIn.isValid());
 
         if (!accumulatorIn.containedType()->isReferenceType()) {
-            m_logger->log(u"Cannot use non-QObject type %1 to access prefixed import"_s.arg(
-                                  accumulatorIn.containedType()->internalName()),
-                          qmlPrefixedImportType,
-                          currentSourceLocation());
             setVarAccumulatorAndError();
             return true;
         }
@@ -806,11 +544,6 @@ bool QQmlJSTypePropagator::handleImportNamespaceLookup(const QString &propertyNa
                 QQmlJSRegisterContent::ModulePrefix,
                 accumulatorIn));
         return true;
-    }
-
-    if (accumulatorIn.isImportNamespace()) {
-        m_logger->log(u"Type not found in namespace"_s, qmlUnresolvedType,
-                      currentSourceLocation());
     }
 
     return false;
@@ -2381,62 +2114,9 @@ void QQmlJSTypePropagator::recordCompareType(int lhs)
     }
 }
 
-static bool mightContainStringOrNumberOrBoolean(const QQmlJSScope::ConstPtr &scope,
-                                                const QQmlJSTypeResolver *resolver)
-{
-    return scope == resolver->varType() || scope == resolver->jsValueType()
-            || scope == resolver->jsPrimitiveType();
-}
-
-static bool isStringOrNumberOrBoolean(const QQmlJSScope::ConstPtr &scope,
-                                      const QQmlJSTypeResolver *resolver)
-{
-    return scope == resolver->boolType() || scope == resolver->stringType()
-            || resolver->isNumeric(scope);
-}
-
-static bool isVoidOrUndefined(const QQmlJSScope::ConstPtr &scope,
-                              const QQmlJSTypeResolver *resolver)
-{
-    return scope == resolver->nullType() || scope == resolver->voidType();
-}
-
-static bool requiresStrictEquality(const QQmlJSScope::ConstPtr &lhs,
-                                   const QQmlJSScope::ConstPtr &rhs,
-                                   const QQmlJSTypeResolver *resolver)
-{
-    if (lhs == rhs)
-        return false;
-
-    if (resolver->isNumeric(lhs) && resolver->isNumeric(rhs))
-        return false;
-
-    if (isVoidOrUndefined(lhs, resolver) || isVoidOrUndefined(rhs, resolver))
-        return false;
-
-    if (isStringOrNumberOrBoolean(lhs, resolver)
-        && !mightContainStringOrNumberOrBoolean(rhs, resolver)) {
-        return true;
-    }
-
-    if (isStringOrNumberOrBoolean(rhs, resolver)
-        && !mightContainStringOrNumberOrBoolean(lhs, resolver)) {
-        return true;
-    }
-
-    return false;
-}
-
 void QQmlJSTypePropagator::warnAboutTypeCoercion(int lhs)
 {
-    const QQmlJSScope::ConstPtr lhsType = checkedInputRegister(lhs).containedType();
-    const QQmlJSScope::ConstPtr rhsType = m_state.accumulatorIn().containedType();
-
-    if (!requiresStrictEquality(lhsType, rhsType, m_typeResolver))
-        return;
-
-    m_logger->log("== and != may perform type coercion, use === or !== to avoid it."_L1,
-                  qmlEqualityTypeCoercion, currentNonEmptySourceLocation());
+    Q_UNUSED(lhs);
 }
 
 void QQmlJSTypePropagator::generate_CmpEqNull()

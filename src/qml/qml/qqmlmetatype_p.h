@@ -296,6 +296,8 @@ inline const QMetaObject *dynamicQmlMetaObject(const QtPrivate::QMetaTypeInterfa
 struct QQmlMetaTypeInterface : QtPrivate::QMetaTypeInterface
 {
     QByteArray name;
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_CLANG("-Wdangling-field") // for .name
     QQmlMetaTypeInterface(QByteArray name)
         : QMetaTypeInterface {
             /*.revision=*/ QMetaTypeInterface::CurrentRevision,
@@ -323,6 +325,7 @@ struct QQmlMetaTypeInterface : QtPrivate::QMetaTypeInterface
             /*.legacyRegisterOp=*/ nullptr
         }
         , name(std::move(name)) { }
+QT_WARNING_POP
 };
 
 // metatype for qml list types
@@ -331,6 +334,8 @@ struct QQmlListMetaTypeInterface : QtPrivate::QMetaTypeInterface
     QByteArray name;
     // if this interface is for list<type>; valueType stores the interface for type
     const QtPrivate::QMetaTypeInterface *valueType;
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_CLANG("-Wdangling-field") // for .name
     QQmlListMetaTypeInterface(QByteArray name, const QtPrivate::QMetaTypeInterface *valueType)
         : QMetaTypeInterface {
             /*.revision=*/ QMetaTypeInterface::CurrentRevision,
@@ -362,6 +367,7 @@ struct QQmlListMetaTypeInterface : QtPrivate::QMetaTypeInterface
             /*.legacyRegisterOp=*/ nullptr
         }
         , name(std::move(name)), valueType(valueType) { }
+QT_WARNING_POP
 };
 
 QT_END_NAMESPACE

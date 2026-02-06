@@ -74,6 +74,7 @@ private slots:
     void partitionGrowingContainer();
     void findObjectsForCompilationUnit_data();
     void findObjectsForCompilationUnit();
+    void transitionWithExpiredDeadline();
 };
 
 tst_qv4mm::tst_qv4mm()
@@ -1510,6 +1511,34 @@ void tst_qv4mm::findObjectsForCompilationUnit()
         QObject *child = component2Objects.front()->property("child").value<QObject *>();
         QVERIFY(child);
         QVERIFY(contains(recorded2, child));
+    }
+}
+
+void tst_qv4mm::transitionWithExpiredDeadline()
+{
+    QV4::ExecutionEngine engine;
+    auto *mm = engine.memoryManager;
+    auto *sm = mm->gcStateMachine.get();
+
+    for (int i = 0; i < 1000; ++i) {
+        if (sm->state != QV4::GCState::Invalid) {
+            sm->timeLimit = std::chrono::microseconds(0);
+            while (sm->state != QV4::GCState::Invalid)
+                sm->transition();
+        }
+        mm->m_markStack.reset();
+        mm->gcBlocked = QV4::MemoryManager::NormalBlocked;
+        sm->reset();
+
+        QCOMPARE(sm->state, QV4::GCState::MarkStart);
+        QVERIFY(!mm->m_markStack);
+
+        // Minimal timeLimit to maximize chance of deadline expiring before first check.
+        sm->timeLimit = std::chrono::microseconds(1);
+        sm->transition();
+
+        // At least one step must have executed. That creates the mark stack.
+        QVERIFY(mm->m_markStack);
     }
 }
 

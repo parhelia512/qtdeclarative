@@ -480,7 +480,7 @@ void QQuickStarShape::setFillGradient(QQuickShapeGradient *fillGradient)
 {
     Q_D(QQuickStarShape);
     d->path->setFillGradient(fillGradient);
-    emit gradientChanged();
+    emit fillGradientChanged();
 }
 
 void QQuickStarShape::resetFillGradient()

@@ -928,7 +928,7 @@ void QQuickEllipseShape::setFillGradient(QQuickShapeGradient *fillGradient)
     Q_D(QQuickEllipseShape);
     d->path->setFillGradient(fillGradient);
     d->updatePath();
-    emit gradientChanged();
+    emit fillGradientChanged();
 }
 
 void QQuickEllipseShape::resetFillGradient()

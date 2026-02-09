@@ -483,7 +483,7 @@ void QQuickRegularPolygonShape::setFillGradient(QQuickShapeGradient *fillGradien
 {
     Q_D(QQuickRegularPolygonShape);
     d->path->setFillGradient(fillGradient);
-    emit gradientChanged();
+    emit fillGradientChanged();
 }
 
 void QQuickRegularPolygonShape::resetFillGradient()

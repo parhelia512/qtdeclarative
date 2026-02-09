@@ -69,25 +69,41 @@ void tst_qmlls_progress::backgroundBuild_data()
     } };
 }
 
+struct ClientAndServer
+{
+    std::unique_ptr<QLanguageServerProtocol> client;
+    std::unique_ptr<QQmlLanguageServer> server;
+
+    ClientAndServer()
+    {
+        client = std::make_unique<QLanguageServerProtocol>(
+                [this](const QByteArray &data) { server->server()->receiveData(data, true); });
+        server = std::make_unique<QQmlLanguageServer>(
+                [this](const QByteArray &data) { client->receiveData(data); });
+    }
+
+    static ClientAndServer createAndInitialize()
+    {
+        ClientAndServer result;
+
+        bool initializedOk = false;
+        InitializeParams initializeParams;
+        initializeParams.capabilities.window.emplace().insert("workDoneProgress", true);
+        result.client->requestInitialize(
+                initializeParams,
+                [&initializedOk](const InitializeResult &) { initializedOk = true; });
+        [&initializedOk] { QTRY_VERIFY_WITH_TIMEOUT(initializedOk, 3000); }();
+        result.client->notifyInitialized({});
+
+        return result;
+    }
+};
+
 void tst_qmlls_progress::backgroundBuild()
 {
     QFETCH(std::function<void(QLanguageServerProtocol *, bool *)>, registerCheck);
 
-    std::unique_ptr<QLanguageServerProtocol> client;
-    std::unique_ptr<QQmlLanguageServer> server;
-
-    client = std::make_unique<QLanguageServerProtocol>(
-                 [&server](const QByteArray &data) { server->server()->receiveData(data, true); });
-    server = std::make_unique<QQmlLanguageServer>(
-                 [&client](const QByteArray &data) { client->receiveData(data); });
-
-    bool initializedOk = false;
-    InitializeParams initializeParams;
-    initializeParams.capabilities.window.emplace().insert("workDoneProgress", true);
-    client->requestInitialize(initializeParams,
-                              [&initializedOk](const InitializeResult &) { initializedOk = true; });
-    QTRY_VERIFY_WITH_TIMEOUT(initializedOk, 3000);
-    client->notifyInitialized({});
+    auto [client, server] = ClientAndServer::createAndInitialize();
 
     bool ok = false;
     registerCheck(client.get(), &ok);
@@ -101,21 +117,7 @@ void tst_qmlls_progress::backgroundBuild()
 
 void tst_qmlls_progress::cancelBackgroundBuild()
 {
-    std::unique_ptr<QLanguageServerProtocol> client;
-    std::unique_ptr<QQmlLanguageServer> server;
-
-    client = std::make_unique<QLanguageServerProtocol>(
-            [&server](const QByteArray &data) { server->server()->receiveData(data, true); });
-    server = std::make_unique<QQmlLanguageServer>(
-            [&client](const QByteArray &data) { client->receiveData(data); });
-
-    bool initializedOk = false;
-    InitializeParams initializeParams;
-    initializeParams.capabilities.window.emplace().insert("workDoneProgress", true);
-    client->requestInitialize(initializeParams,
-                              [&initializedOk](const InitializeResult &) { initializedOk = true; });
-    QTRY_VERIFY_WITH_TIMEOUT(initializedOk, 3000);
-    client->notifyInitialized({});
+    auto [client, server] = ClientAndServer::createAndInitialize();
 
     client->registerWorkDoneProgressCreateRequestHandler(
             [](const QByteArray &, const Requests::WorkDoneProgressCreateParamsType &,

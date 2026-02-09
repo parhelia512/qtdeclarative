@@ -267,6 +267,7 @@ public:
     int currentIndex = -1;
     QString text;
     QString textRole;
+    QString placeholderText;
     bool live = true;
     bool searchPressed = false;
     bool clearPressed = false;
@@ -1081,6 +1082,29 @@ void QQuickSearchField::setDelegate(QQmlComponent *delegate)
     if (delegateModel)
         delegateModel->setDelegate(d->delegate);
     emit delegateChanged();
+}
+
+/*!
+    \qmlproperty string QtQuick.Controls::SearchField::placeholderText
+    \since 6.12
+
+    This property holds the hint that is displayed in the SearchField before the user
+    enters text.
+*/
+QString QQuickSearchField::placeholderText() const
+{
+    Q_D(const QQuickSearchField);
+    return d->placeholderText;
+}
+
+void QQuickSearchField::setPlaceholderText(const QString &text)
+{
+    Q_D(QQuickSearchField);
+    if (d->placeholderText == text)
+        return;
+
+    d->placeholderText = text;
+    emit placeholderTextChanged();
 }
 
 bool QQuickSearchField::eventFilter(QObject *object, QEvent *event)

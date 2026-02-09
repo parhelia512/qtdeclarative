@@ -144,12 +144,18 @@ void QQmlProgressSupport::onBackgroundBuildCancelRequested(
         const QLspSpecification::Notifications::WorkDoneProgressCancelParamsType &p)
 {
     const auto tokenNumber = std::get_if<int>(&p.token);
-    if (!tokenNumber)
+    if (!tokenNumber) {
+        qCWarning(lspServerLog) << "Ignoring unknown token" << std::get<QByteArray>(p.token)
+                                << "in cancellation request.";
         return;
+    }
 
     const auto token = m_tokens.takeToken(*tokenNumber);
-    if (!token)
+    if (!token) {
+        qCWarning(lspServerLog) << "Ignoring unknown token" << *tokenNumber
+                                << "in cancellation request.";
         return;
+    }
 
     m_codeModelManager->cancelBackgroundBuild(token->uri);
 }

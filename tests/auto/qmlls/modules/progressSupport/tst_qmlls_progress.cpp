@@ -132,7 +132,7 @@ void tst_qmlls_progress::cancelBackgroundBuild()
     QSignalSpy spy(server->codeModelManager(), &QQmlCodeModelManager::backgroundBuildCancelled);
 
     // simulate build trigger
-    server->codeModelManager()->backgroundBuildStarted("");
+    emit server->codeModelManager()->backgroundBuildStarted("");
 
     QCOMPARE(spy.count(), 0);
 
@@ -140,6 +140,46 @@ void tst_qmlls_progress::cancelBackgroundBuild()
     p.token = 0;
     client->notifyWorkDoneProgressCancel(p);
 
+    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 3000);
+}
+
+void tst_qmlls_progress::cancelBackgroundBuildWithInvalidToken()
+{
+    auto [client, server] = ClientAndServer::createAndInitialize();
+
+    client->registerWorkDoneProgressCreateRequestHandler(
+            [](const QByteArray &, const Requests::WorkDoneProgressCreateParamsType &,
+               LSPResponse<Responses::WorkDoneProgressCreateResultType> &&response) {
+                response.sendResponse();
+            });
+    client->registerProgressNotificationHandler(
+            [](const QByteArray &, const ProgressParams &paramsToCheck) {
+                QCOMPARE(std::get<int>(paramsToCheck.token), 0);
+            });
+
+    QSignalSpy spy(server->codeModelManager(), &QQmlCodeModelManager::backgroundBuildCancelled);
+
+    // simulate build trigger
+    emit server->codeModelManager()->backgroundBuildStarted("");
+
+    QCOMPARE(spy.count(), 0);
+
+    QTest::ignoreMessage(QtWarningMsg, "Ignoring unknown token 42 in cancellation request.");
+    QTest::ignoreMessage(QtWarningMsg, "Ignoring unknown token 0 in cancellation request.");
+
+    WorkDoneProgressCancelParams invalid;
+    invalid.token = 42;
+    client->notifyWorkDoneProgressCancel(invalid);
+
+    WorkDoneProgressCancelParams valid;
+    valid.token = 0;
+    client->notifyWorkDoneProgressCancel(valid);
+
+    WorkDoneProgressCancelParams duplicate;
+    duplicate.token = valid.token;
+    client->notifyWorkDoneProgressCancel(duplicate);
+
+    // only the valid id should trigger the backgroundBuildCancelled. The duplicate shouldn't make anything crash.
     QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 3000);
 }
 

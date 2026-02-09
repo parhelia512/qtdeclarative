@@ -47,8 +47,8 @@ void QProcessScheduler::schedule(const QList<Command> &list, const Id &id)
             m_queue.enqueue(queueElement);
     }
     m_queue.enqueue(EndMarker{ id });
-    if (!m_isRunning)
-        processNext();
+    if (!std::exchange(m_isRunning, true))
+        QMetaObject::invokeMethod(this, &QProcessScheduler::processNext, Qt::QueuedConnection);
 }
 QT_WARNING_POP
 
@@ -103,7 +103,8 @@ void QProcessScheduler::cancel(const Id &id)
     }
 
     emit cancelled(id);
-    processNext();
+    if (!std::exchange(m_isRunning, true))
+        QMetaObject::invokeMethod(this, &QProcessScheduler::processNext, Qt::QueuedConnection);
 }
 
 void QProcessScheduler::processNext()

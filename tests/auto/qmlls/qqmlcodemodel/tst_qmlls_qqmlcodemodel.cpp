@@ -927,12 +927,17 @@ void tst_qmlls_qqmlcodemodel::qprocessSchedulerCancel()
     QProcessScheduler scheduler;
     QSignalSpy doneSpy(&scheduler, &QProcessScheduler::done);
     QSignalSpy cancelledSpy(&scheduler, &QProcessScheduler::cancelled);
+    QSignalSpy startedSpy(&scheduler, &QProcessScheduler::started);
     QCOMPARE(doneSpy.count(), 0);
 
     for (const auto &idAndCommand : commands)
         scheduler.schedule(idAndCommand.commands, idAndCommand.id);
 
     scheduler.cancel(cancellationId);
+
+    // note: the scheduled processes should run in another event loop iteration during QTRY_COMPARE_WITH_TIMEOUT
+    QCOMPARE(doneSpy.count(), 0);
+    QCOMPARE(startedSpy.count(), 0);
 
     QTRY_COMPARE_WITH_TIMEOUT(doneSpy.count() + cancelledSpy.count(), commands.size(), 9000);
     QCOMPARE(cancelledSpy.count(), 1);

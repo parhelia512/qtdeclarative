@@ -120,8 +120,6 @@ void QQmlCodeModel::tryEnableCMakeCalls(QProcessScheduler *scheduler)
         }
     }
 
-    QObject::connect(scheduler, &QProcessScheduler::done, this,
-                     &QQmlCodeModel::onCMakeProcessFinished);
     QObject::connect(&m_cppFileWatcher, &QFileSystemWatcher::fileChanged, scheduler,
                      [this, scheduler] { callCMakeBuild(scheduler); });
     setCMakeStatus(HasCMake);
@@ -364,11 +362,8 @@ void QQmlCodeModel::callCMakeBuild(QProcessScheduler *scheduler)
     scheduler->schedule(commands, m_rootUrl);
 }
 
-void QQmlCodeModel::onCMakeProcessFinished(const QByteArray &id)
+void QQmlCodeModel::reloadAllOpenFiles()
 {
-    if (id != m_rootUrl)
-        return;
-
     QMutexLocker guard(&m_mutex);
     for (auto it = m_openDocuments.begin(), end = m_openDocuments.end(); it != end; ++it)
         m_openDocumentsToUpdate[it.key()] = ForceUpdate;

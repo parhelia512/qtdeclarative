@@ -143,4 +143,46 @@ void tst_qmlls_progress::cancelBackgroundBuild()
     QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 3000);
 }
 
+void tst_qmlls_progress::orderOfProgressNotifications()
+{
+    auto [client, server] = ClientAndServer::createAndInitialize();
+
+    int step = 0;
+
+    client->registerWorkDoneProgressCreateRequestHandler(
+            [&step](const QByteArray &, const Requests::WorkDoneProgressCreateParamsType &,
+                    LSPResponse<Responses::WorkDoneProgressCreateResultType> &&response) {
+                QCOMPARE(step, 0);
+                ++step;
+
+                // the server shouldn't send the progress end notification while the WorkDoneProgressCreate request
+                // didn't finish
+                using namespace std::chrono_literals;
+                QTest::qWait(500ms);
+                response.sendResponse();
+            });
+    client->registerProgressNotificationHandler(
+            [&step](const QByteArray &, const ProgressParams &paramsToCheck) {
+                QCOMPARE(std::get<int>(paramsToCheck.token), 0);
+                std::visit(qOverloadedVisitor{ [&step](const WorkDoneProgressBegin &) {
+                                                  QCOMPARE(step, 1);
+                                                  ++step;
+                                              },
+                                               [](const WorkDoneProgressReport &) {
+                                                   QFAIL("No progress reports are supported yet.");
+                                               },
+                                               [&step](const WorkDoneProgressEnd &) {
+                                                   QCOMPARE(step, 2);
+                                                   ++step;
+                                               } },
+                           paramsToCheck.value);
+            });
+
+    // simulate build trigger
+    emit server->codeModelManager()->backgroundBuildStarted("");
+    emit server->codeModelManager()->backgroundBuildFinished("");
+
+    QTRY_COMPARE_WITH_TIMEOUT(step, 3, 3000);
+}
+
 QTEST_MAIN(tst_qmlls_progress)

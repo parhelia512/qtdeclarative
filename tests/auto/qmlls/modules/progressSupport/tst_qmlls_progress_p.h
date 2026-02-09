@@ -19,6 +19,7 @@ private slots:
     void backgroundBuild();
 
     void cancelBackgroundBuild();
+    void orderOfProgressNotifications();
 };
 
 QT_END_NAMESPACE

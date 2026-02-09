@@ -959,16 +959,22 @@ void tst_qmlls_qqmlcodemodel::multipleQProcessScheduler_data()
     QTest::addRow("empty2") << Hash{
         { "url", {} },
     };
-    QTest::addRow("two") << Hash{
+    QTest::addRow("duplicated") << Hash{
         { "url1", { "a"_L1, "b"_L1 } },
         { "url2", { "a"_L1, "b"_L1 } },
     };
+    QTest::addRow("two") << Hash{
+        { "url1", { "a"_L1, "b"_L1 } },
+        { "url2", { "c"_L1, "d"_L1 } },
+    };
     QTest::addRow("five") << Hash{
         { "url1", { "a"_L1, "b"_L1 } },
-        { "url2", { "a"_L1, "b"_L1 } },
-        { "url3", { "a"_L1, "b"_L1, "e"_L1 } },
-        { "url4", { "a"_L1, "b"_L1 } },
-        { "url5", { "e"_L1, "b"_L1, "c"_L1, "d"_L1, "a"_L1 } },
+        { "url2", { "c"_L1, "d"_L1 } },
+        { "url3", { "e"_L1, "f"_L1, "g"_L1 } },
+        { "url1-duplicate1", { "a"_L1, "b"_L1 } }, // duplicates url 1, is empty
+        { "url1and2-duplicate2",
+          { "a"_L1, "b"_L1, "c"_L1, "d"_L1 } }, // duplicates url 1 and 2, is empty
+        { "url5", { "h"_L1 } },
     };
     QTest::addRow("duplicate") << Hash{
         { "url1", { "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1, "a"_L1 } },

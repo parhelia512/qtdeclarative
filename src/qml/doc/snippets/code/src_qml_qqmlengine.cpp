@@ -49,3 +49,34 @@ void wrapper5() {
     MySingleton *singleton = engine.singletonInstance<MySingleton *>("mymodule", "MySingleton");
 //! [5]
 }
+
+class BackendService {};
+
+//! [6]
+class CppSingleton: public QObject {
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    // Q_PROPERTY(...)
+public:
+    explicit CppSingleton(BackendService *service); // constructor taking a reference to something MySingleton needs
+    static CppSingleton *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
+    {
+       return nullptr; // we are not actually using this to create the instance
+    }
+    // members, Q_INVOKABLE functions, etc.
+};
+//! [6]
+
+void wrapper6() {
+//! [7]
+    // create and setup the backend service
+    BackendService service;
+
+    // create your singleton instance
+    CppSingleton singleton(&service);
+    QQmlApplicationEngine engine;
+    engine.setExternalSingletonInstance("com.company.myApp", "MySingleton", &singleton);
+    engine.loadFromModule("com.company.myApp", "Main");
+//! [7]
+}

@@ -376,9 +376,7 @@ QQuickToolTip *QQuickToolTipAttachedPrivate::instance(bool create) const
 
     QQuickToolTip *tip = engine->property(name).value<QQuickToolTip *>();
     if (!tip && create) {
-        // TODO: a cleaner way to create the instance? QQml(Meta)Type?
-        QQmlComponent component(engine);
-        component.setData("import QtQuick.Controls; ToolTip { }", QUrl());
+        QQmlComponent component(engine, "QtQuick.Controls", "ToolTip");
 
         QObject *object = component.create();
         if (object)

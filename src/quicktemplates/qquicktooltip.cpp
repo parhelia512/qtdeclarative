@@ -140,6 +140,9 @@ QQuickToolTipPrivate::QQuickToolTipPrivate()
     windowFlags = Qt::ToolTip;
     if (qt_quicktooltipattachedprivate_delay == -1)
         qt_quicktooltipattachedprivate_delay = qGuiApp->styleHints()->toolTipWakeUpDelay();
+#if QT_CONFIG(wayland)
+    extendedWindowType = QNativeInterface::Private::QWaylandWindow::ToolTip;
+#endif
 }
 
 void QQuickToolTipPrivate::startDelay()

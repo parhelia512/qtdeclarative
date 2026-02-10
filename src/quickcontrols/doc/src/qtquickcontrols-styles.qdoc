@@ -213,6 +213,14 @@
     See \l {Mixing Style Selection} for information about mixing
     run-time and compile-time style selection.
 
+    \section2 Style-specific APIs
+
+    Several styles expose APIs specific to that style, for example the
+    \l{Material Style} attached object or the \l{Universal Style} attached
+    object. These style-specific APIs are only available when their style is
+    actually selected, directly or indirectly, using either compile-time or
+    run-time style selection.
+
     \section2 Mixing Style Selection
 
     It is recommended to only use either compile-time or run-time style

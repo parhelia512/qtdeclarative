@@ -662,7 +662,7 @@ QQuickToolTip *QQuickToolTipAttached::toolTip() const
     \since 6.12
 
     This attached property controls whether the visibility of the
-    \l {shared tool tip instance}{toolTip} is handled automatically.
+    \l {toolTip}{shared tool tip instance} is handled automatically.
     It only has an effect for items on which \c ToolTip.visible \e {has not}
     been set. Only items that set \c ToolTip.text will be made visible. It only
     has an effect for the following items and their derived types: \l Control,

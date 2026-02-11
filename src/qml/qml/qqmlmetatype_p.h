@@ -22,6 +22,8 @@
 #include <private/qqmltype_p.h>
 #include <private/qtqmlglobal_p.h>
 
+#include <QtCore/qset.h>
+
 QT_BEGIN_NAMESPACE
 
 class QQmlTypeModule;
@@ -84,14 +86,14 @@ public:
             const QUrl &url,
             const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit,
             CompositeTypeLookupMode mode = NonSingleton);
-    static QQmlType findInlineComponentType(
+    static QQmlType findOrCreateFactualInlineComponentType(
             const QUrl &url,
             const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit);
-    static QQmlType findInlineComponentType(
+    static QQmlType findOrCreateFactualInlineComponentType(
             const QUrl &baseUrl, const QString &name,
             const QQmlRefPointer<QV4::CompiledData::CompilationUnit> &compilationUnit)
     {
-        return findInlineComponentType(inlineComponentUrl(baseUrl, name), compilationUnit);
+        return findOrCreateFactualInlineComponentType(inlineComponentUrl(baseUrl, name), compilationUnit);
     }
 
     static QQmlType registerType(const QQmlPrivate::RegisterType &type);
@@ -111,11 +113,11 @@ public:
             const QUrl &url, const QHashedStringRef &typeName, CompositeTypeLookupMode mode,
             QList<QQmlError> *errors, QTypeRevision version = QTypeRevision());
 
-    static QQmlType fetchOrCreateInlineComponentTypeForUrl(const QUrl &url);
-    static QQmlType inlineComponentType(const QQmlType &outerType, const QString &name)
+    static QQmlType findOrCreateSpeculativeInlineComponentType(const QUrl &url);
+    static QQmlType findOrCreateSpeculativeInlineComponentType(const QQmlType &outerType, const QString &name)
     {
         return outerType.isComposite()
-                ? fetchOrCreateInlineComponentTypeForUrl(
+                ? findOrCreateSpeculativeInlineComponentType(
                         inlineComponentUrl(outerType.sourceUrl(), name))
                 : QQmlType();
     }
@@ -232,6 +234,18 @@ public:
         const QUrl referenceUrl = QQmlType(reference).sourceUrl();
         for (auto it = container.begin(), end = container.end(); it != end;) {
             if (equalBaseUrls(it.key(), referenceUrl))
+                it = container.erase(it);
+            else
+                ++it;
+        }
+    }
+
+    static void removeFromInlineComponents(
+        QSet<QUrl> &container, const QQmlTypePrivate *reference)
+    {
+        const QUrl referenceUrl = QQmlType(reference).sourceUrl();
+        for (auto it = container.begin(), end = container.end(); it != end;) {
+            if (equalBaseUrls(*it, referenceUrl))
                 it = container.erase(it);
             else
                 ++it;

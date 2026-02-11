@@ -373,7 +373,7 @@ void setupICs(
             // We cannot re-use a previously finalized inline component type here. We need our own.
             // We can and should re-use speculative type references, though.
             InlineComponentData icDatum(
-                    QQmlMetaType::findInlineComponentType(
+                    QQmlMetaType::findOrCreateFactualInlineComponentType(
                             baseUrl, container->stringAt(it->nameIndex), compilationUnit),
                 int(it->objectIndex), int(it->nameIndex));
 

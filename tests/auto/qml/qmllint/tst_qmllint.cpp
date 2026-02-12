@@ -3991,165 +3991,77 @@ void TestQmllint::shadow_data()
                        { { "Signal \"hello\" already exists in base type" } } }
             << defaultOptions;
 
-    QTest::newRow("shadowIdBeforeDeclaration")
-            << u"id: hello;\n"
-               u"property int hello;"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-noUsage") // shadowing but no usage -> don't warn
+            << u"id: i\n"_s
+               u"property int i\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdAfterDeclaration")
-            << u"property int hello;\n"
-               u"id: hello"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from current type. Rename the id"_L1,
-                         2, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-property")
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v: i\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInParent")
-            << u"id: hello;\n"
-               u"Item { property int hello; }"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:1. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         8 },
-               } }
+    QTest::newRow("idShadowsMember-method")
+            << u"id: i\n"_s
+               u"function i() {}\n"_s
+               u"property var v: i\n"_s
+            << Result{ { { "Id for object Item shadows method \"i\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInGrandparent")
-            << u"id: hello;\n"
-               u"Item { Item { Item { property int hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 5 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-signal")
+            << u"id: a\n"_s
+               u"signal a\n"_s
+               u"property var v: a\n"_s
+            << Result{ { { "Id for object Item shadows signal \"a\""_L1, 3, 17 },
+                         { "Note: Id defined here"_L1, 1, 5 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInUnrelated")
-            << u"Item { Item { Item { property int hello; }}}\n"_s
-               u"Item { Item { Item { id: hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:15. Rename the id"_L1
-                                 .arg(fileName),
-                         2, 26 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-baseProperty")
+            << u"id: i\n"_s
+               u"component C : Item { property int i }\n"_s
+               u"C { property var v: i }\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 21 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInInnerContext")
-            << u"component IC: Item { Item { Item { property int hello; }}}\n"_s
-               u"Item { Item { Item { id: hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:3:29. Rename the id or the property"_L1
-                                 .arg(fileName),
-                         2, 26 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 1,
-                         36 },
-               } }
+    QTest::newRow("idShadowsMember-baseMethod")
+            << u"id: i\n"_s
+               u"component C : Item { function i() {} }\n"_s
+               u"C { property var v: i }\n"_s
+            << Result{ { { "Id for object Item shadows method \"i\""_L1, 3, 21 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOuterContext")
-            << u"Component { Item { Item { Item { property int hello; }}}}\n"_s
-               u"Component { Item { Item { Item { id: hello; }}}}"_s
-            << Result::clean() << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBad")
-            << u"Component { id: hello; Item {} }\n"_s
-               u"Item { Item { Item { property int hello; }}}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:15. Rename the id"_L1
-                                 .arg(fileName),
-                         1, 17 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         22 },
-               } }
+    QTest::newRow("idShadowsMember-noDuplicateWarnings") // 1 shadowing, 2 usages -> 1 warning
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v1: i\n"_s
+               u"property var v2: i\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 3, 18 } },
+                       { { "Id for object Item shadows property \"i\""_L1, 4, 18 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBound")
-            << u"pragma ComponentBehavior: Bound\n"
-               u"import QtQuick\n"
-               u"Item {\n"
-               u"    component IC: Item { Item { Item { property int hello; }}}\n"_s
-               u"    Item { Item { Item { id: hello; }}}\n"
-               u"}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:33. Rename the id"_L1
-                                 .arg(fileName),
-                         5, 30 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
-                         40 },
-               } }
+    QTest::newRow("idShadowsMember-componentBoundaries-Bound")
+            << u"pragma ComponentBehavior: Bound\n"_s
+               u"import QtQuick\n"_s
+               u"Item {\n"_s
+               u"    id: i\n"_s
+               u"    component C : Item { property int i; property var v: i }\n"_s
+               u"}\n"_s
+            << Result{ { { "Id for object Item shadows property \"i\""_L1, 5, 58 },
+                         { "Note: Id defined here"_L1, 4, 9 } } }
             << defaultOptions;
-    QTest::newRow("shadowIdInOtherComponentBound2")
-            << u"pragma ComponentBehavior: Bound\n"
-               u"import QtQuick\n"
-               u"Item {\n"
-               u"    Component { Item { Item { Item { property int hello; }}}}\n"_s
-               u"    Item { Item { Item { id: hello; }}}\n"_s
-               u"}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows property \"hello\" from \"Item\" defined at %1:4:31. Rename the id"_L1
-                                 .arg(fileName),
-                         5, 30 },
-                       { "Note: property \"hello\" defined here is shadowed by id \"hello\""_L1, 4,
-                         38 },
-               } }
+    QTest::newRow("idShadowsMember-componentBoundaries-Unbound")
+            << u"pragma ComponentBehavior: Unbound\n"_s
+               u"import QtQuick\n"_s
+               u"Item {\n"_s
+               u"    id: i\n"_s
+               u"    component C : Item { property int i; property var v: i }\n"_s
+               u"}\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdMethod")
-            << u"id: hello;\n"
-               u"function hello() {}"_s
-            << Result{ {
-                       { "Id \"hello\" shadows method \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: method \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
+    QTest::newRow("idShadowsMember-disableDirective")
+            << u"id: i\n"_s
+               u"property int i\n"_s
+               u"property var v: i // qmllint disable id-shadows-member\n"_s
+            << Result::clean()
             << defaultOptions;
-    QTest::newRow("shadowIdSignal")
-            << u"id: hello;\n"
-               u"signal hello;"_s
-            << Result{ {
-                       { "Id \"hello\" shadows signal \"hello\" from current type. Rename the id"_L1,
-                         1, 5 },
-                       { "Note: signal \"hello\" defined here is shadowed by id \"hello\""_L1, 2,
-                         1 },
-               } }
-            << defaultOptions;
-
-    {
-        CallQmllintOptions options = defaultOptions;
-        options.importPaths.append(testFile("ImportPath"));
-        QTest::newRow("shadowIdFromAnotherFile")
-                << u"import ModuleInImportPath\n"
-                   u"A { id: myProperty }"_s
-                << Result{ {
-                           { "Id \"myProperty\" shadows property \"myProperty\" from current type. Rename the id"_L1,
-                             2, 9 },
-                           { "Note: type \"\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
-                             2, 1 },
-                   } }
-                << options;
-        QTest::newRow("shadowIdFromAnotherFile2")
-                << u"import ModuleInImportPath\n"
-                   u"import QtQuick\n"
-                   u"Item {\n"
-                   u"   A {}\n"
-                   u"   Item { Item { Item { id: myProperty } } }\n"
-                   u"}"_s
-                << Result{ {
-                           { "Id \"myProperty\" shadows property \"myProperty\" from \"A\" defined at %1:4:4. Rename the id"_L1
-                                     .arg(fileName),
-                             5, 29 },
-                           { "Note: type \"A\" defined here has a property \"myProperty\" shadowed by id \"myProperty\""_L1,
-                             4, 4 },
-                   } }
-                << options;
-    }
 
     QTest::newRow("shadowMethod")
             << u"component IC: Item { function f() {} }\n"

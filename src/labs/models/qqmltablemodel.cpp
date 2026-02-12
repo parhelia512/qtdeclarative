@@ -140,7 +140,7 @@ QQmlTableModel::~QQmlTableModel()
     = default;
 
 /*!
-    \qmlproperty object TableModel::rows
+    \qmlproperty var TableModel::rows
 
     This property holds the model data in the form of an array of rows:
 
@@ -234,7 +234,7 @@ void QQmlTableModel::setDataPrivate(const QModelIndex &index, const QString &rol
 
 // TODO: Turn this into a snippet that compiles in CI
 /*!
-    \qmlmethod TableModel::appendRow(object row)
+    \qmlmethod void TableModel::appendRow(var row)
 
     Adds a new row to the end of the model, with the
     values (cells) in \a row.
@@ -260,7 +260,7 @@ void QQmlTableModel::appendRow(const QVariant &row)
 }
 
 /*!
-    \qmlmethod TableModel::clear()
+    \qmlmethod void TableModel::clear()
 
     Removes all rows from the model.
 
@@ -274,7 +274,7 @@ void QQmlTableModel::clear()
 }
 
 /*!
-    \qmlmethod object TableModel::getRow(int rowIndex)
+    \qmlmethod var TableModel::getRow(int rowIndex)
 
     Returns the row at \a rowIndex in the model.
 
@@ -302,7 +302,7 @@ QVariant QQmlTableModel::getRow(int rowIndex)
 }
 
 /*!
-    \qmlmethod TableModel::insertRow(int rowIndex, object row)
+    \qmlmethod void TableModel::insertRow(int rowIndex, var row)
 
     Adds a new row to the model at position \a rowIndex, with the
     values (cells) in \a row.
@@ -355,7 +355,7 @@ void QQmlTableModel::doInsert(int rowIndex, const QVariant &row)
 }
 
 /*!
-    \qmlmethod TableModel::moveRow(int fromRowIndex, int toRowIndex, int rows)
+    \qmlmethod void TableModel::moveRow(int fromRowIndex, int toRowIndex, int rows)
 
     Moves \a rows from the index at \a fromRowIndex to the index at
     \a toRowIndex.
@@ -435,7 +435,7 @@ void QQmlTableModel::moveRow(int fromRowIndex, int toRowIndex, int rows)
 }
 
 /*!
-    \qmlmethod TableModel::removeRow(int rowIndex, int rows = 1)
+    \qmlmethod void TableModel::removeRow(int rowIndex, int rows = 1)
 
     Removes a number of \a rows at \a rowIndex from the model.
 
@@ -475,7 +475,7 @@ void QQmlTableModel::removeRow(int rowIndex, int rows)
 }
 
 /*!
-    \qmlmethod TableModel::setRow(int rowIndex, object row)
+    \qmlmethod void TableModel::setRow(int rowIndex, var row)
 
     Changes the row at \a rowIndex in the model with \a row.
 

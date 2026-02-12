@@ -3098,7 +3098,7 @@ void QQuickPopup::setFiltersChildMouseEvents(bool filter)
 }
 
 /*!
-    \qmlmethod QtQuick.Controls::Popup::forceActiveFocus(enumeration reason = Qt.OtherFocusReason)
+    \qmlmethod void QtQuick.Controls::Popup::forceActiveFocus(enumeration reason = Qt.OtherFocusReason)
 
     Forces active focus on the popup with the given \a reason.
 

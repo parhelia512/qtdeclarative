@@ -1904,6 +1904,13 @@ void TestQmllint::dirtyJsSnippet_data()
             << u"return new Math();"_s
             << Result{ { { "Do not use 'Math' as a constructor."_L1, 1, 12 } } }
             << defaultOptions;
+    QTest::newRow("constructorArray")
+            << u"return new Array(1, 2);"_s
+            << Result{ { { "Array has confusing semantics, use an array literal ([]) instead."_L1,
+                           1, 12 } },
+                       {},
+                       { { "[1, 2]"_L1, 1, 8 } } }
+            << defaultOptions;
     QTest::newRow("doubleConst")
             << u"const x = 4; const x = 4;"_s
             << Result{ { { "Identifier 'x' has already been declared"_L1, 1, 20 },
@@ -2167,6 +2174,8 @@ void TestQmllint::cleanJsSnippet_data()
     QTest::newRow("comma") << u"let i, end; for (i = 0, end = 42; i < end; ++i) {}"_s
                            << defaultOptions;
     QTest::newRow("constructor") << u"function F() {}; return new F();"_s << defaultOptions;
+    QTest::newRow("constructorArray") << u"return new Array();"_s << defaultOptions;
+    QTest::newRow("constructorArray2") << u"return new Array(42);"_s << defaultOptions;
     QTest::newRow("doubleInDifferentScopes")
             << u"const a = 42; for (let a = 1; a < 10; ++a) {}"_s << defaultOptions;
     QTest::newRow("doubleVar") << u"var x = 5; var y = 5"_s << defaultOptions;

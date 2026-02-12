@@ -2914,7 +2914,7 @@ QJsonArray TestQmllint::callQmllintOnSnippet(const QString &snippet,
                                              const CallQmllintOptions &options,
                                              CallQmllintChecks checks)
 {
-    return callQmllintImpl(QString(), snippet, options, checks);
+    return callQmllintImpl("Snippet.qml", snippet, options, checks);
 }
 
 void TestQmllint::testFixes(bool shouldSucceed, QStringList importPaths, QStringList qmldirFiles,
@@ -4000,7 +4000,7 @@ void TestQmllint::shadow_data()
     defaultOptions.categorySeverityOverrides[qmlShadow.name().toString()] =
             QQmlJS::WarningSeverity::Warning;
     // filename of the snippet is empty
-    const QString fileName = testFile("");
+    const QString fileName = testFile("Snippet.qml");
 
     QTest::newRow("duplicatedMethod")
             << u"function hello() {}"

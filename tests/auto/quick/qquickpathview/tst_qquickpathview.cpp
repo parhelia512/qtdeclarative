@@ -3041,20 +3041,17 @@ void tst_QQuickPathView::qtbug46487()
     QQuickPathView *pathview = qobject_cast<QQuickPathView*>(window->rootObject());
     QVERIFY(pathview);
 
-    QTest::qWait(500);
-
     // Should create just pathItemCount amount and not destroy any
-    QCOMPARE(pathview->count(), 5);
+    QTRY_COMPARE(pathview->count(), 5);
     QCOMPARE(pathview->property("delegatesCreated").toInt(), 5);
     QCOMPARE(pathview->property("delegatesDestroyed").toInt(), 0);
 
     // Resets the model and removes 2 items.
     model->shrink();
-    QTest::qWait(500);
 
     // Should destroy previous items (begin/endResetModel) and
     // (re)create 3 new items.
-    QCOMPARE(pathview->count(), 3);
+    QTRY_COMPARE(pathview->count(), 3);
     QCOMPARE(pathview->property("delegatesCreated").toInt(), 5 + 3);
     QCOMPARE(pathview->property("delegatesDestroyed").toInt(), 5);
 }

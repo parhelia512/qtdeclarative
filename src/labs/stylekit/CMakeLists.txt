@@ -7,7 +7,11 @@
 
 qt_internal_add_qml_module(LabsStyleKit
     URI Qt.labs.StyleKit
-    IMPORTS QtQuick.Controls.Basic
+    VERSION "${PROJECT_VERSION}"
+    DEPENDENCIES
+        QtQuick/auto
+    IMPORTS
+        QtQuick.Controls.Basic/auto
     SOURCES
         qqstylekit_p.h qqstylekit.cpp
         qqstylekitcontrol_p.h qqstylekitcontrol.cpp

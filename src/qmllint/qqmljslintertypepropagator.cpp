@@ -4,7 +4,7 @@
 
 #include "qqmljslintertypepropagator_p.h"
 
-#include "qqmljsutils_p.h"
+#include <private/qqmljsutils_p.h>
 
 #include <private/qqmljslintercodegen_p.h>
 

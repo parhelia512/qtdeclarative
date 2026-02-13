@@ -3,7 +3,8 @@
 // Qt-Security score:significant
 
 #include "qqmljslintervisitor_p.h"
-#include "qqmljsutils_p.h"
+
+#include <private/qqmljsutils_p.h>
 
 QT_BEGIN_NAMESPACE
 

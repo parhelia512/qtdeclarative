@@ -5,11 +5,14 @@
 #include "qqmljslinter_p.h"
 
 #include "qqmljslintercodegen_p.h"
-#include "qqmljsutils_p.h"
 
-#include <QtQmlCompiler/private/qqmljsimporter_p.h>
-#include <QtQmlCompiler/private/qqmljsimportvisitor_p.h>
-#include <QtQmlCompiler/private/qqmljsliteralbindingcheck_p.h>
+#include <private/qqmljsimporter_p.h>
+#include <private/qqmljsimportvisitor_p.h>
+#include <private/qqmljslintervisitor_p.h>
+#include <private/qqmljsliteralbindingcheck_p.h>
+#include <private/qqmljsloggingutils_p.h>
+#include <private/qqmljsutils_p.h>
+#include <private/qqmlsa_p.h>
 
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qfileinfo.h>
@@ -20,9 +23,6 @@
 #include <QtCore/private/qduplicatetracker_p.h>
 #include <QtCore/qscopedpointer.h>
 
-#include <QtQmlCompiler/private/qqmlsa_p.h>
-#include <QtQmlCompiler/private/qqmljsloggingutils_p.h>
-#include <QtQmlCompiler/private/qqmljslintervisitor_p.h>
 
 #if QT_CONFIG(library)
 #    include <QtCore/qdiriterator.h>

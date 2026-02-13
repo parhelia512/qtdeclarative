@@ -1435,6 +1435,28 @@ void tst_qqmlengine::setExternalSingletonInstance()
         QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
     }
 
+    { // declarative singleton type that engine can't instantiate by itself
+        QScopedPointer<UncreatableDeclarativeSingleton> s(new UncreatableDeclarativeSingleton(42));
+        QPointer<UncreatableDeclarativeSingleton> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("OnlyDeclarative", "ProvidedSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<UncreatableDeclarativeSingleton*>("OnlyDeclarative", "ProvidedSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
+    { // foreign declarative singleton type that engine can't instantiate by itself
+        QScopedPointer<CppObject> s(new CppObject);
+        QPointer<CppObject> s_check(s.get());
+        {
+            QQmlEngine engine;
+            QVERIFY(engine.setExternalSingletonInstance("OnlyDeclarative", "ForeignSingleton", s.get()));
+            QCOMPARE(engine.singletonInstance<CppObject*>("OnlyDeclarative", "ForeignSingleton"), s.get());
+        } //let engine go out of scope
+        QVERIFY(!s_check.isNull()); //engine didn't delete the singleton
+    }
+
     // error conditions
     { // can't set singleton if one was already created
         QScopedPointer<CppSingleton> s(new CppSingleton);

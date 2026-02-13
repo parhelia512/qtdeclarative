@@ -809,6 +809,10 @@ void QQmlEngine::markCurrentFunctionAsTranslationBinding()
   Upon initialization of the application, you can then do:
   \snippet code/src_qml_qqmlengine.cpp 7
 
+  Note instead of providing a default constructor or a static create
+  function, the \l QML_UNCREATABLE() macro was used to indicate this
+  item cannot be created by the qml engine.
+
   Singleton instances can only be set once per type and engine, and must
   be set before any use. Once a singleton instance is created or set,
   it is no longer possible to set it using this function, so you should set

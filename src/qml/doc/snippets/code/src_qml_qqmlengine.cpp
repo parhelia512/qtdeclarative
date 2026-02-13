@@ -57,13 +57,10 @@ class CppSingleton: public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
+    QML_UNCREATABLE("Provided via QQmlEngine::setExternalSingletonInstance")
     // Q_PROPERTY(...)
 public:
     explicit CppSingleton(BackendService *service); // constructor taking a reference to something MySingleton needs
-    static CppSingleton *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
-    {
-       return nullptr; // we are not actually using this to create the instance
-    }
     // members, Q_INVOKABLE functions, etc.
 };
 //! [6]

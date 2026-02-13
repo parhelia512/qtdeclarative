@@ -535,6 +535,11 @@ void QQmlTypeData::done()
             for (const QQmlError &e : encounteredErrors)
                 qCDebug(DBG_DISK_CACHE) << e.toString();
             m_compiledData.reset();
+            // Clear resolved types, scripts, and composite singletons to break
+            // potential circular references (e.g., A depends on B, B depends on A)
+            m_resolvedTypes.clear();
+            m_compositeSingletons.clear();
+            m_scripts.clear();
         }
     });
 

@@ -1349,15 +1349,19 @@ void tst_qqmlengine::singletonInstance()
     {
         // Invalid types
         QJSValue value;
+        QTest::ignoreMessage(QtMsgType::QtWarningMsg, "Singleton instance: type with id -4711 is not valid");
         value = engine.singletonInstance<QJSValue>(-4711);
         QVERIFY(value.isUndefined());
+        QTest::ignoreMessage(QtMsgType::QtWarningMsg, "Singleton instance: type with id 1701 is not valid");
         value = engine.singletonInstance<QJSValue>(1701);
         QVERIFY(value.isUndefined());
     }
 
     {
         // Valid, but non-singleton type
-        int typeId = qmlRegisterType<CppSingleton>("Test", 1, 0, "NotASingleton");
+        const int typeId = qmlRegisterType<CppSingleton>("Test", 1, 0, "NotASingleton");
+        const QString expectedMessage = QString("Singleton instance: type \"NotASingleton\" with id %1 is not declared as a singleton type").arg(typeId);
+        QTest::ignoreMessage(QtWarningMsg, qPrintable(expectedMessage));
         QJSValue value = engine.singletonInstance<QJSValue>(typeId);
         QVERIFY(value.isUndefined());
     }

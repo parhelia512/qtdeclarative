@@ -950,8 +950,15 @@ QJSValue QQmlEngine::singletonInstance<QJSValue>(int qmlTypeId)
     Q_D(QQmlEngine);
     QQmlType type = QQmlMetaType::qmlTypeById(qmlTypeId);
 
-    if (!type.isValid() || !type.isSingleton())
-        return QJSValue();
+    if (!type.isValid()) {
+        qWarning().noquote() << "Singleton instance: type with id" << qmlTypeId << "is not valid";
+        return {};
+    }
+
+    if (!type.isSingleton()) {
+        qWarning() << "Singleton instance: type" << type.elementName() << "with id" << qmlTypeId << "is not declared as a singleton type";
+        return {};
+    }
 
     return d->singletonInstance<QJSValue>(type);
 }
@@ -988,8 +995,15 @@ QJSValue QQmlEngine::singletonInstance<QJSValue>(QAnyStringView uri, QAnyStringV
             QQmlTypeLoader::get(this), uri, typeName, QQmlTypeLoader::Synchronous);
     const QQmlType type = loadHelper->type();
 
-    if (!type.isSingleton())
+    if (!type.isValid()) {
+        qWarning().noquote() << "Singleton instance: type" << typeName << "in module" << uri << "is not valid";
         return {};
+    }
+
+    if (!type.isSingleton()) {
+        qWarning() << "Singleton instance: type" << type.elementName() << "is not declared as a singleton type";
+        return {};
+    }
 
     return d->singletonInstance<QJSValue>(type);
 }

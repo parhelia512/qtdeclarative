@@ -130,10 +130,10 @@ void QSGRhiSupport::adjustToPlatformQuirks()
         QRhiMetalInitParams rhiParams;
         if (!QRhi::probe(m_rhiBackend, &rhiParams)) {
             qCDebug(QSG_LOG_INFO, "Metal does not seem to be supported. Falling back to OpenGL.");
+            m_rhiBackend = QRhi::OpenGLES2;
             auto *platformIntegration = QGuiApplicationPrivate::platformIntegration();
-            if (platformIntegration->hasCapability(QPlatformIntegration::OpenGL)) {
-                m_rhiBackend = QRhi::OpenGLES2;
-            } else {
+            if (platformIntegration
+                && !platformIntegration->hasCapability(QPlatformIntegration::OpenGL)) {
                 qCWarning(QSG_LOG_INFO, "OpenGL not available. Falling back to Null backend.");
                 m_rhiBackend = QRhi::Null;
             }

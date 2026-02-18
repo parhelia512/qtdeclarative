@@ -128,7 +128,8 @@ private:
                                    const QQuickAnimatedProperty &property);
     void generateAnimationBindings();
     void generateItemAnimations(const QString &idString, const NodeInfo &nodeInfo);
-    void generateEasing(const QQuickAnimatedProperty::PropertyAnimation &animation, int time);
+    void generateEasing(const QQuickAnimatedProperty::PropertyAnimation &animation, int time,
+                        int streamFlags = 0);
     void generateAnimatedPropertySetter(const QString &targetName,
                                         const QString &propertyName,
                                         const QVariant &value,
@@ -140,9 +141,25 @@ private:
                                    const QString &targetName,
                                    const QString &propertyName,
                                    AnimationType animationType = AnimationType::Auto);
+
     void generateShaderUse(const NodeInfo &info);
     void generateMarkers(const PathNodeInfo &info);
     qsizetype generateFilterStep(const FilterNodeInfo &info, qsizetype stepIndex);
+
+    bool usingTimelineAnimation() const
+    {
+        return m_flags.testFlag(QQuickVectorImageGenerator::TimelineAnimation);
+    }
+    void generateTimelinePropertySetter(const QString &targetName,
+                                        const QString &propertyName,
+                                        const QQuickAnimatedProperty::PropertyAnimation &animation,
+                                        std::function<QVariant(const QVariant &)> const& extractValue,
+                                        int valueIndex = 0);
+    void generateTransformTimeline(const QString &targetName, const NodeInfo &info);
+    void generatePropertyTimeline(const QQuickAnimatedProperty &property,
+                                  const QString &targetName,
+                                  const QString &propertyName,
+                                  AnimationType animationType = AnimationType::Auto);
 
     QStringView indent();
     enum StreamFlags { NoFlags = 0x0, SameLine = 0x1 };

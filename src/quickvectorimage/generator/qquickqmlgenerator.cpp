@@ -725,7 +725,8 @@ void QQuickQmlGenerator::generateAnimationBindings()
     stream() << "onLoopsChanged: { if (running) { restart() } }";
 }
 
-void QQuickQmlGenerator::generateEasing(const QQuickAnimatedProperty::PropertyAnimation &animation, int time)
+void QQuickQmlGenerator::generateEasing(const QQuickAnimatedProperty::PropertyAnimation &animation,
+                                        int time, int streamFlags)
 {
     if (animation.easingPerFrame.contains(time)) {
         QBezier bezier = animation.easingPerFrame.value(time);
@@ -738,7 +739,9 @@ void QQuickQmlGenerator::generateEasing(const QQuickAnimatedProperty::PropertyAn
             QString &id = m_easings[{c1.x(), c1.y(), c2.x(), c2.y()}];
             if (id.isNull())
                 id = QString(QLatin1String("easing_%1")).arg(nextIdx, 2, 10, QLatin1Char('0'));
-            stream() << "easing: " << m_topLevelIdString << "." << id;
+            if (streamFlags & SameLine)
+                stream(streamFlags) << "; ";
+            stream(streamFlags) << "easing: " << m_topLevelIdString << "." << id;
         }
     }
 }
@@ -757,6 +760,9 @@ void QQuickQmlGenerator::generatePropertyAnimation(const QQuickAnimatedProperty 
 {
     if (!property.isAnimated())
         return;
+
+    if (usingTimelineAnimation())
+        return generatePropertyTimeline(property, targetName, propertyName, animationType);
 
     QString mainAnimationId = targetName
                               + QStringLiteral("_")
@@ -861,6 +867,75 @@ void QQuickQmlGenerator::generatePropertyAnimation(const QQuickAnimatedProperty 
         m_indentLevel--;
         stream() << "}";
     }
+
+    m_indentLevel--;
+    stream() << "}";
+}
+
+void QQuickQmlGenerator::generateTimelinePropertySetter(
+        const QString &targetName,
+        const QString &propertyName,
+        const QQuickAnimatedProperty::PropertyAnimation &animation,
+        std::function<QVariant(const QVariant &)> const& extractValue,
+        int valueIndex)
+{
+    if (animation.repeatCount != 1 || animation.startOffset
+        || animation.flags != QQuickAnimatedProperty::PropertyAnimation::FreezeAtEnd) {
+        qCWarning(lcQuickVectorImage) << "Animation feature not implemented in timeline mode, for"
+                                      << targetName << propertyName;
+    }
+
+    stream() << "KeyframeGroup {";
+    m_indentLevel++;
+    stream() << "target: " << targetName;
+    stream() << "property: \"" << propertyName << "\"";
+
+    for (const auto &[frame, rawValue] : animation.frames.asKeyValueRange()) {
+        QVariant value;
+        if (rawValue.typeId() == QMetaType::QVariantList)
+            value = extractValue(rawValue.toList().value(valueIndex));
+        else
+            value = extractValue(rawValue);
+
+        stream() << "Keyframe { frame: " << frame << "; value: ";
+        if (value.typeId() == QMetaType::QVector3D) {
+            const QVector3D &v = value.value<QVector3D>();
+            stream(SameLine) << "Qt.vector3d(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
+        } else if (value.typeId() == QMetaType::QColor) {
+            stream(SameLine) << "\"" << value.toString() << "\"";
+        } else {
+            stream(SameLine) << value.toReal();
+        }
+        generateEasing(animation, frame, SameLine);
+        stream(SameLine) << " }";
+    }
+
+    m_indentLevel--;
+    stream() << "}";
+}
+
+void QQuickQmlGenerator::generatePropertyTimeline(const QQuickAnimatedProperty &property,
+                                                  const QString &targetName,
+                                                  const QString &propertyName,
+                                                  AnimationType animationType)
+{
+    if (animationType == QQuickQmlGenerator::AnimationType::ColorOpacity) {
+        qCWarning(lcQuickVectorImage) << "ColorOpacity animation not available in timeline mode";
+        return;
+    }
+
+    if (property.animationGroupCount() > 1 || property.animationCount() > 1) {
+        qCWarning(lcQuickVectorImage) << "Property feature not implemented in timeline mode, for"
+                                      << targetName << propertyName;
+    }
+
+    stream() << "Timeline {";
+    m_indentLevel++;
+    stream() << "currentFrame: " << property.timelineReferenceId() << ".frameCounter";
+    stream() << "enabled: true";
+
+    auto extractor = [](const QVariant &value) { return value; };
+    generateTimelinePropertySetter(targetName, propertyName, property.animation(0), extractor);
 
     m_indentLevel--;
     stream() << "}";
@@ -1052,6 +1127,7 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
         stream() << hintStr;
 
     QQuickAnimatedProperty pathFactor(QVariant::fromValue(0));
+    pathFactor.setTimelineReferenceId(info.path.timelineReferenceId());
     QString pathId = shapePathId + "_ip"_L1;
     if (!info.path.isAnimated() || (info.path.animation(0).startOffset == 0 && info.path.animation(0).isConstant())) {
         QString svgPathString = painterPath ? QQuickVectorImageGenerator::Utils::toSvgString(*painterPath) : QQuickVectorImageGenerator::Utils::toSvgString(*quadPath);
@@ -1329,6 +1405,9 @@ void QQuickQmlGenerator::generateAnimateTransform(const QString &targetName, con
     if (!info.transform.isAnimated())
         return;
 
+    if (usingTimelineAnimation())
+        return generateTransformTimeline(targetName, info);
+
     const QString mainAnimationId = targetName
                                     + QStringLiteral("_transform_animation");
 
@@ -1548,6 +1627,72 @@ void QQuickQmlGenerator::generateAnimateTransform(const QString &targetName, con
     stream() << "}";
 }
 
+void QQuickQmlGenerator::generateTransformTimeline(const QString &targetName, const NodeInfo &info)
+{
+    stream() << "Timeline {";
+    m_indentLevel++;
+    stream() << "currentFrame: " << info.transform.timelineReferenceId() << ".frameCounter";
+    stream() << "enabled: true";
+
+    const int groupIndex = 0;
+    for (int i = 0; i < info.transform.animationCount(); ++i) {
+        const QQuickAnimatedProperty::PropertyAnimation &animation = info.transform.animation(i);
+        if (animation.isConstant())
+            continue;
+        if (info.transform.animationGroupCount() > 1
+            || animation.repeatCount != 1 || animation.startOffset
+            || animation.flags != QQuickAnimatedProperty::PropertyAnimation::FreezeAtEnd) {
+            qCWarning(lcQuickVectorImage) << "Feature not implemented in timeline xf animation mode, for"
+                                          << targetName << "subtype" << animation.subtype;
+        }
+
+        bool hasRotationCenter = false;
+        if (animation.subtype == QTransform::TxRotate) {
+            for (auto it = animation.frames.constBegin(); it != animation.frames.constEnd(); ++it) {
+                const QPointF center = it->value<QVariantList>().value(0).value<QPointF>();
+                if (!center.isNull()) {
+                    hasRotationCenter = true;
+                    break;
+                }
+            }
+        }
+
+        auto pointFxExtractor = [](const QVariant &value) { return value.toPointF().x(); };
+        auto pointFyExtractor = [](const QVariant &value) { return value.toPointF().y(); };
+        auto realExtractor = [](const QVariant &value) { return value.toReal(); };
+        auto pointFtoVector3dExtractor = [](const QVariant &v) { return QVector3D(v.toPointF()); };
+
+        const QString propertyTargetName = targetName
+                + QStringLiteral("_transform_")
+                + QString::number(groupIndex)
+                + QStringLiteral("_")
+                + QString::number(i);
+
+        switch (animation.subtype) {
+        case QTransform::TxTranslate:
+            generateTimelinePropertySetter(propertyTargetName, "x"_L1, animation, pointFxExtractor);
+            generateTimelinePropertySetter(propertyTargetName, "y"_L1, animation, pointFyExtractor);
+            break;
+        case QTransform::TxScale:
+            generateTimelinePropertySetter(propertyTargetName, "xScale"_L1, animation, pointFxExtractor);
+            generateTimelinePropertySetter(propertyTargetName, "yScale"_L1, animation, pointFyExtractor);
+            break;
+        case QTransform::TxRotate:
+            if (hasRotationCenter)
+                generateTimelinePropertySetter(propertyTargetName, "origin"_L1, animation, pointFtoVector3dExtractor);
+            generateTimelinePropertySetter(propertyTargetName, "angle"_L1, animation, realExtractor, 1);
+            break;
+        case QTransform::TxShear:
+            generateTimelinePropertySetter(propertyTargetName, "xAngle"_L1, animation, pointFxExtractor);
+            generateTimelinePropertySetter(propertyTargetName, "yAngle"_L1, animation, pointFyExtractor);
+            break;
+        }
+    }
+
+    m_indentLevel--;
+    stream() << "}";
+}
+
 bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
 {
     if (Q_UNLIKELY(errorState() || !isNodeVisible(info)))
@@ -1571,8 +1716,21 @@ bool QQuickQmlGenerator::generateStructureNode(const StructureNodeInfo &info)
         } else {
             stream() << "Item { // Structure node";
         }
-
         m_indentLevel++;
+
+        if (usingTimelineAnimation() && info.timelineInfo) {
+            QString frameCounterRef = info.timelineInfo->frameCounterReference
+                                      + QStringLiteral(".frameCounter");
+            stream() << "visible: " << frameCounterRef << " >= " << info.timelineInfo->startFrame
+                     << " && " << frameCounterRef << " < " << info.timelineInfo->endFrame;
+
+            if (info.timelineInfo->generateFrameCounter) {
+                stream() << "property real frameCounter: " << frameCounterRef;
+                if (info.timelineInfo->frameCounterOffset)
+                    stream(SameLine) << " + " << info.timelineInfo->frameCounterOffset;
+            }
+        }
+
         if (!info.viewBox.isEmpty()) {
             stream() << "transform: [";
             m_indentLevel++;
@@ -2277,6 +2435,8 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
         stream() << "import QtQuick.VectorImage.Helpers";
         stream() << "import QtQuick.Shapes";
         stream() << "import QtQuick.Effects";
+        if (usingTimelineAnimation())
+            stream() << "import QtQuick.Timeline";
 
         for (const auto &import : std::as_const(m_extraImports))
             stream() << "import " << import;
@@ -2340,6 +2500,20 @@ bool QQuickQmlGenerator::generateRootNode(const StructureNodeInfo &info)
             m_topLevelIdString = generateNodeBase(info);
             if (m_topLevelIdString.isEmpty())
                 qCWarning(lcQuickVectorImage) << "No ID specified for top level item";
+        }
+
+        if (usingTimelineAnimation() && info.timelineInfo) {
+            stream() << "property real frameCounter: " << info.timelineInfo->startFrame;
+            stream() << "NumberAnimation on frameCounter {";
+            m_indentLevel++;
+            stream() << "from: " << info.timelineInfo->startFrame;
+            stream() << "to: " << info.timelineInfo->endFrame - 0.01;
+            stream() << "duration: " << processAnimationTime(info.timelineInfo->duration);
+            generateAnimationBindings();
+            m_indentLevel--;
+            stream() << "}";
+            stream() << "visible: frameCounter >= " << info.timelineInfo->startFrame
+                     << " && frameCounter < " << info.timelineInfo->endFrame;
         }
     } else {
         if (m_inShapeItemLevel > 0) {

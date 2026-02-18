@@ -802,13 +802,13 @@ static ModuleSetting *moduleSettingFor(const QString &sourceFolder, ModuleSettin
                                        UpdatePolicy policy)
 {
     if (policy != ForceUpdate)
-        return &moduleSettings->emplaceBack();
+        return &moduleSettings->emplaceBack(ModuleSetting {sourceFolder, {}, {}});
 
     auto it = std::find_if(
             moduleSettings->begin(), moduleSettings->end(),
             [&sourceFolder](const ModuleSetting s) { return s.sourceFolder == sourceFolder; });
     if (it == moduleSettings->end())
-        return &moduleSettings->emplaceBack();
+        return &moduleSettings->emplaceBack(ModuleSetting {sourceFolder, {}, {}});
     return &*it;
 }
 
@@ -833,10 +833,8 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, Upd
             for (int i = 0; i < entries; ++i) {
                 settings.setArrayIndex(i);
 
-                const QString sourceFolder = settings.value("sourcePath").toString();
-                ModuleSetting *moduleSetting =
-                        moduleSettingFor(sourceFolder, &m_moduleSettings, policy);
-                moduleSetting->sourceFolder = sourceFolder;
+                ModuleSetting *moduleSetting = moduleSettingFor(
+                        settings.value("sourcePath").toString(), &m_moduleSettings, policy);
                 moduleSetting->importPaths =
                         settings.value("importPaths"_L1)
                                 .toString()
@@ -854,10 +852,8 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, Upd
             for (const QString &group : settings.childGroups()) {
                 settings.beginGroup(group);
 
-                const QString sourceFolder = QString(group).replace("<SLASH>"_L1, "/"_L1);
-                ModuleSetting *moduleSetting =
-                        moduleSettingFor(sourceFolder, &m_moduleSettings, policy);
-                moduleSetting->sourceFolder = sourceFolder;
+                ModuleSetting *moduleSetting = moduleSettingFor(
+                        QString(group).replace("<SLASH>"_L1, "/"_L1), &m_moduleSettings, policy);
                 moduleSetting->importPaths =
                         settings.value("importPaths"_L1)
                                 .toString()

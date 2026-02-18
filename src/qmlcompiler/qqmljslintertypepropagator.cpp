@@ -97,7 +97,8 @@ void QQmlJSLinterTypePropagator::generate_LoadQmlContextPropertyLookup(int index
         if (scope->hasProperty(name)) {
             log("property"_L1, scope->ownerOfProperty(scope, name).scope);
         } else if (scope->hasMethod(name)) {
-            const auto method = scope->methods(name)[0];
+            const auto methods = scope->methods(name);
+            const auto &method = methods[0];
             if (method.methodType() == QQmlSA::MethodType::Method)
                 log("method"_L1, scope->ownerOfMethod(scope, name).scope);
             else if (method.methodType() == QQmlSA::MethodType::Signal)
@@ -320,16 +321,14 @@ void QQmlJSLinterTypePropagator::handleUnqualifiedAccess(const QString &name, bo
             replacement + '\n'_L1
         };
         bindComponents.setAutoApplicable();
-        suggestion = bindComponents;
+        suggestion = std::move(bindComponents);
     }
 
     if (!suggestion.has_value()) {
-        if (auto didYouMean =
-            QQmlJSUtils::didYouMean(
-                    name, qmlScope->properties().keys() + qmlScope->methods().keys(),
-                    location);
-            didYouMean.has_value()) {
-            suggestion = didYouMean;
+        if (auto didYouMean = QQmlJSUtils::didYouMean(
+                    name, qmlScope->properties().keys() + qmlScope->methods().keys(), location);
+                didYouMean.has_value()) {
+            suggestion = std::move(didYouMean);
         }
     }
 
@@ -510,10 +509,10 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 
     std::optional<QQmlJSFixSuggestion> fixSuggestion;
 
-    if (auto suggestion = QQmlJSUtils::didYouMean(propertyName, baseType->properties().keys(),
-                                                  currentSourceLocation());
-        suggestion.has_value()) {
-        fixSuggestion = suggestion;
+    if (auto suggestion = QQmlJSUtils::didYouMean(
+                propertyName, baseType->properties().keys(), currentSourceLocation());
+            suggestion.has_value()) {
+        fixSuggestion = std::move(suggestion);
     }
 
     if (!fixSuggestion.has_value()
@@ -531,8 +530,8 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 
         if (auto suggestion = QQmlJSUtils::didYouMean(
                     propertyName, enumKeys, currentSourceLocation());
-            suggestion.has_value()) {
-            fixSuggestion = suggestion;
+                suggestion.has_value()) {
+            fixSuggestion = std::move(suggestion);
         }
     }
 

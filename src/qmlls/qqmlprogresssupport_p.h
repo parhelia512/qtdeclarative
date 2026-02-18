@@ -37,7 +37,7 @@ private:
     struct UriWithToken
     {
         QByteArray uri;
-        int token;
+        int token = -1;
         WorkDoneProgressStatus status = InCreation;
     };
 
@@ -56,8 +56,8 @@ private:
     };
 
     Tokens m_tokens;
-    QmlLsp::QQmlCodeModelManager *m_codeModelManager;
-    QLanguageServerProtocol *m_protocol;
+    QmlLsp::QQmlCodeModelManager *m_codeModelManager = nullptr;
+    QLanguageServerProtocol *m_protocol = nullptr;
 
 private slots:
     void onBackgroundBuildStarted(const QByteArray &uri);

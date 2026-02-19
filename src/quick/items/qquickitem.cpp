@@ -3168,6 +3168,12 @@ void QQuickItemPrivate::derefWindow()
     if (!parentItem)
         c->parentlessItems.remove(q);
 
+    if (auto *da = deliveryAgentPrivate()) {
+        if (da->activeFocusItem == q) {
+            qCDebug(lcFocus) << "Removing active focus item from window's delivery agent";
+            da->activeFocusItem = nullptr;
+        }
+    }
     window = nullptr;
 
     itemNodeInstance = nullptr;

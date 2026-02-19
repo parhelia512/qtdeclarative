@@ -105,6 +105,7 @@ private:
             const QQmlJS::AST::UiPublicMember *associatedPropertyDefinition = nullptr) override;
     void handleLiteralBinding(const QQmlJSMetaPropertyBinding &binding,
                               const AST::UiPublicMember *associatedPropertyDefinition) override;
+    void handleUselessExpressionStatement(const AST::ExpressionStatement *ast);
 };
 
 } // namespace QQmlJS

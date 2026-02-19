@@ -158,6 +158,9 @@ private Q_SLOTS:
     void shadow_data();
     void shadow();
 
+    void uselessExpressionStatements_data();
+    void uselessExpressionStatements();
+
     void crashes();
 
     void useProperFunction_data();
@@ -1662,10 +1665,6 @@ void TestQmllint::dirtyQmlSnippet_data()
     QTest::newRow("upperCaseId")
             << u"id: Root"_s
             << Result{ { { "Id must start with a lower case letter or an '_'"_L1, 1, 5 } } }
-            << defaultOptions;
-    QTest::newRow("uselessExpressionStatement")
-            << u"property int i: { let x = 0; 0 + 1; return i + 3; }"_s
-            << Result{ { { "Expression statement has no obvious effect."_L1, 1, 30 } } }
             << defaultOptions;
 }
 
@@ -4199,6 +4198,210 @@ void TestQmllint::shadow_data()
 
 void TestQmllint::shadow()
 {
+    // reuse testing logic from dirtyQmlSnippet
+    dirtyQmlSnippet();
+}
+
+void TestQmllint::uselessExpressionStatements_data()
+{
+    QTest::addColumn<QString>("code");
+    QTest::addColumn<Result>("result");
+    QTest::addColumn<CallQmllintOptions>("options");
+
+    const CallQmllintOptions defaultOptions;
+    const auto warning = "Expression statement has no obvious effect."_L1;
+
+    QTest::newRow("uselessExpressionStatement")
+            << u"property int i: { let x = 0; 0 + 1; return i + 3; }"_s
+            << Result{ { { "Expression statement has no obvious effect."_L1, 1, 30 } } }
+            << defaultOptions;
+
+    QTest::newRow("propertyDef-last-simple")
+            << u"property int i: 1"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-block")
+            << u"property int i: { 1 }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-nested")
+            << u"property int i: (1)"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-blockNested")
+            << u"property int i: { (1) }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyDef-last-complex")
+            << u"property int i: { 1 + i < 0 ? ~i : i**i }"_s
+            << Result::clean()
+            << defaultOptions;
+
+    QTest::newRow("propertyBinding-last-simple")
+            << u"x: 1"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-block")
+            << u"x: { 1 }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-nested")
+            << u"x: (1)"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-blockNested")
+            << u"x: { (1) }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("propertyBinding-last-complex")
+            << u"x: { 1 + x < 0 ? ~x : x**x }"_s
+            << Result::clean()
+            << defaultOptions;
+
+    QTest::newRow("propertyDef-dirty1")
+            << u"property int i: { 1; 1 }"_s
+            << Result{ { { warning, 1, 19 } } }
+            << defaultOptions;
+    QTest::newRow("propertyDef-dirty2")
+            << u"property int i: { if (true) 1; 1 }"_s
+            << Result{ { { warning, 1, 29 } } }
+            << defaultOptions;
+    QTest::newRow("propertyBinding-dirty1")
+            << u"x: { 1; 1 }"_s
+            << Result{ { { warning, 1, 6 } } }
+            << defaultOptions;
+    QTest::newRow("propertyBinding-dirty2")
+            << u"x: { if (true) 1; 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+
+    QTest::newRow("signalHandler1")
+            << u"onXChanged: 1"_s
+            << Result{ { { warning, 1, 13 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler2")
+            << u"onXChanged: { 1 }"_s
+            << Result{ { { warning, 1, 15 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler3")
+            << u"onXChanged: 9 / 8"_s
+            << Result{ { { warning, 1, 13 } } }
+            << defaultOptions;
+    QTest::newRow("signalHandler4")
+            << u"id: item; onXChanged: item.dumpItemTree()"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("attachedSignalHandler")
+            << u"Component.onCompleted: 1"_s
+            << Result{ { { warning, 1, 24 } } }
+            << defaultOptions;
+
+    QTest::newRow("function1")
+            << u"function f() { 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+    QTest::newRow("function2")
+            << u"function f() { 1; return 1 }"_s
+            << Result{ { { warning, 1, 16 } } }
+            << defaultOptions;
+    QTest::newRow("function3")
+            << u"function f() { { x + 1 } }"_s
+            << Result{ { { warning, 1, 18 } } }
+            << defaultOptions;
+
+    QTest::newRow("id")
+            << u"id: a"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty1")
+            << u"anchors { right: anchors.right }"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty2")
+            << u"anchors.right: anchors.right"_s
+            << Result::clean()
+            << defaultOptions;
+    QTest::newRow("groupedProperty3")
+            << u"Text { font.bold: { 1; true } }"_s
+            << Result{ { { warning, 1, 19 } } }
+            << defaultOptions;
+
+    QTest::newRow("recursive")
+            << uR"( function f() {
+                        let i = 0
+                        {
+                            1;
+                            (2)
+                        }
+
+                        try {
+                            3
+                        } catch(e) {
+                            4
+                        }
+
+                        for (;;)
+                            5
+                        for (let i in ii) // qmllint disable unqualified
+                            6
+                        for (let i of ii) // qmllint disable unqualified
+                            7
+
+                        while (true)
+                            8
+
+                        if (true)
+                            9
+                        else
+                            10
+
+                        switch (i) {
+                        case 0:
+                            11
+                            break
+                        default:
+                            12
+                            break;
+                        case 2:
+                            13
+                        }
+
+                        with (1) // qmllint disable with
+                            14
+
+                    label: 15
+
+                        16
+                    })"_s
+            << Result{ { { warning, 4, 29 },    // block
+                         { warning, 5, 29 },    // nested
+                         { warning, 9, 29 },    // try
+                         { warning, 11, 29 },   // catch
+                         { warning, 15, 29 },   // for
+                         { warning, 17, 29 },   // for-in
+                         { warning, 19, 29 },   // for-of
+                         { warning, 22, 29 },   // while
+                         { warning, 25, 29 },   // if
+                         { warning, 27, 29 },   // else
+                         { warning, 31, 29 },   // case 0
+                         { warning, 34, 29 },   // default
+                         { warning, 37, 29 },   // case 2
+                         { warning, 41, 29 },   // with
+                         { warning, 43, 28 },   // label
+                         { warning, 45, 25 },   // bare
+                       } }
+            << defaultOptions;
+}
+
+void TestQmllint::uselessExpressionStatements()
+{
+    QEXPECT_FAIL("attachedSignalHandler", "", Abort);
+    QEXPECT_FAIL("groupedProperty3", "", Abort);
+    if (QTest::currentDataTag() == "attachedSignalHandler"_L1
+            || QTest::currentDataTag() == "groupedProperty3"_L1) {
+        QFAIL("Incomplete attached and grouped properties support");
+    }
+
     // reuse testing logic from dirtyQmlSnippet
     dirtyQmlSnippet();
 }

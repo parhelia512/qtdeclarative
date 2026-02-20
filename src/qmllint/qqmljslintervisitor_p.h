@@ -114,6 +114,7 @@ private:
     void handleLiteralBinding(const QQmlJSMetaPropertyBinding &binding,
                               const AST::UiPublicMember *associatedPropertyDefinition) override;
     void handleUselessExpressionStatement(const AST::ExpressionStatement *ast);
+    void handleRecursivelyInstantiatedType(AST::UiQualifiedId *qualifiedId);
     void handleRenamedType(QQmlJS::AST::UiQualifiedId *id);
 };
 

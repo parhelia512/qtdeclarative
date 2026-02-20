@@ -871,9 +871,35 @@ bool LinterVisitor::visit(Type *type)
     return result;
 }
 
+void LinterVisitor::handleRecursivelyInstantiatedType(UiQualifiedId *qualifiedId)
+{
+    // It should be ok to reference inline components or enums inside of the current file
+    if (qualifiedId->next)
+        return;
+
+    auto logWarning = [&qualifiedId, this]() {
+        m_logger->log("Type \"%1\" can't be instantiated recursively"_L1.arg(qualifiedId->name),
+                      qmlTypeInstantiatedRecursively, qualifiedId->identifierToken);
+    };
+
+    const QString name = qualifiedId->name.toString();
+    if (m_rootScopeImports.names().contains(m_exportedRootScope, name))
+        logWarning();
+
+    if (const auto inlineComponentName = std::get_if<InlineComponentNameType>(&m_currentRootName)) {
+        if (name == *inlineComponentName
+            || m_renamedComponents.isTypeRenamedTo(
+                    m_rootScopeImports.type(*inlineComponentName).scope, name)) {
+            logWarning();
+        }
+    }
+}
+
 bool LinterVisitor::visit(QQmlJS::AST::UiObjectDefinition *objectDefinition)
 {
     handleRenamedType(objectDefinition->qualifiedTypeNameId);
+    handleRecursivelyInstantiatedType(objectDefinition->qualifiedTypeNameId);
+
     return QQmlJSImportVisitor::visit(objectDefinition);
 }
 

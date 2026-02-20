@@ -138,6 +138,10 @@ private Q_SLOTS:
 
     void multiDirectory();
 
+    void typeInstantiatedRecursively_data();
+    void typeInstantiatedRecursively();
+    void typeInstantiatedRecursivelyInBuildFolder();
+
     void requiredProperty();
 
     void settingsFile();
@@ -565,6 +569,51 @@ void TestQmllint::multiDirectory()
 
     callQmllint(testFile("MultiDirectory/qml/Inner.qml"), options);
     callQmllint(testFile("MultiDirectory/qml/pages/Page.qml"), options);
+}
+
+void TestQmllint::typeInstantiatedRecursively_data()
+{
+    QTest::addColumn<QString>("filename");
+    QTest::addColumn<Result>("result");
+
+    QTest::newRow("withQmldirAlias")
+            << u"qmldirs/renameSnippetToCustomName/Snippet.qml"_s
+            << Result{ { { "Type \"Snippet\" can't be instantiated recursively"_L1, 4, 5 } } };
+
+    constexpr QLatin1String warningForRecursiveMain =
+            "Type \"%1\" can't be instantiated recursively"_L1;
+    QTest::newRow("withMultipleQmldirAliases")
+            << u"qmldirs/renameFileToMultipleNames/Main.qml"_s
+            << Result{ {
+                       { warningForRecursiveMain.arg("Main"_L1), 4, 5 },
+                       { warningForRecursiveMain.arg("Name1"_L1), 5, 5 },
+                       { warningForRecursiveMain.arg("Name2"_L1), 6, 5 },
+                       { warningForRecursiveMain.arg("Name3"_L1), 7, 5 },
+                       { warningForRecursiveMain.arg("Name4"_L1), 8, 5 },
+               } };
+}
+
+void TestQmllint::typeInstantiatedRecursively()
+{
+    m_linter.clearCache(); // note: clearing the cache in dirtyQmlCode() slows down the test suite considerably.
+    dirtyQmlCode();
+}
+
+void TestQmllint::typeInstantiatedRecursivelyInBuildFolder()
+{
+    CallQmllintOptions options;
+    options.resources.append(testFile("mymodule-build/.qt/rcc/qmake_app.qrc"));
+    options.resources.append(testFile("mymodule-build/.qt/rcc/app_raw_qml_0.qrc"));
+
+    checkResult(
+            callQmllint(testFile("mymodule-source/MyModule/Main.qml"), options,
+                        CallQmllintCheck::ShouldFail),
+            Result{ {
+                    { "Type \"Main\" can't be instantiated recursively"_L1, 4, 5 },
+                    { "\"Main\" is explicitly renamed to \"NewName\" via a qmldir entry or QT_QML_SOURCE_TYPENAME CMake property, use \"NewName\" instead."_L1,
+                      4, 5 },
+                    { "Type \"NewName\" can't be instantiated recursively"_L1, 5, 5 },
+            } });
 }
 
 void TestQmllint::dirtyQmlCode_data()
@@ -1208,6 +1257,7 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
             << Result{ { { "i is a member of a parent element"_L1, } },
                        {},
                        { { "stringy."_L1 } } };
+
     QTest::newRow("unboundComponents")
             << QStringLiteral("unboundComponents.qml")
             << Result{ { { "Unqualified access"_L1, 10, 25 },
@@ -1693,6 +1743,18 @@ void TestQmllint::dirtyQmlSnippet_data()
     QTest::newRow("testSnippet")
             << u"property int qwer: \"Hello\""_s
             << Result{ { { "Cannot assign literal of type string to int"_L1 } } }
+            << defaultOptions;
+    QTest::newRow("typeInstantiatedRecursively")
+            << u"Snippet {}"_s
+            << Result{ { { "Type \"Snippet\" can't be instantiated recursively"_L1, 1, 1 } } }
+            << defaultOptions;
+    QTest::newRow("typeInstantiatedRecursivelyInlineComponent")
+            << u"component MyIC: Item { MyIC {} }"_s
+            << Result{ { { "Type \"MyIC\" can't be instantiated recursively"_L1, 1, 24 } } }
+            << defaultOptions;
+    QTest::newRow("typeInstantiatedRecursivelyInlineComponent2")
+            << u"component MyIC: Item { Snippet {} }"_s
+            << Result{ { { "Type \"Snippet\" can't be instantiated recursively"_L1, 1, 24 } } }
             << defaultOptions;
     QTest::newRow("unintentionalEmptyBlock-dirty")
             << u"property var v: {}"_s

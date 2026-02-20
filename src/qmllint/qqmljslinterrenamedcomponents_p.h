@@ -32,6 +32,8 @@ class LinterRenamedComponents
 public:
     void handleRenamedType(const QQmlJSScope::ConstPtr &scope, const QStringView name,
                            const QQmlJS::SourceLocation &location, QQmlJSLogger *logger) const;
+
+    bool isTypeRenamedTo(const QQmlJSScope::ConstPtr &scope, const QString &alias) const;
     void setScopeToName(const QMultiHash<QQmlJSScope::ConstPtr, QString> *scopeToName)
     {
         m_scopeToName = scopeToName;

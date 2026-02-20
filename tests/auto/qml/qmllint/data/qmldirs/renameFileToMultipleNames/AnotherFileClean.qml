@@ -13,4 +13,7 @@ Item {
 
     function g(a: Name1.MyComponent): Name1.MyComponent {
     } // good: new name
+
+    component Main: Item {}
+    Main {} // should not complain
 }

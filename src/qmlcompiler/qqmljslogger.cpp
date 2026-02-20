@@ -155,6 +155,9 @@ warning levels.
     X(qmlSyntax, "syntax", "Syntax", "Syntax errors", Warning, Essential)                          \
     X(qmlSyntaxDuplicateIds, "syntax.duplicate-ids", "", "ID duplication", Error, NonEssential)    \
     X(qmlSyntaxIdQuotation, "syntax.id-quotation", "", "ID quotation", Warning, NonEssential)      \
+    X(qmlTypeInstantiatedRecursively, "type-instantiated-recursively",                             \
+      "TypeInstantiatedRecursively", "Warn when types are instantiated recursively", Warning,      \
+      NonEssential)                                                                                \
     X(qmlTopLevelComponent, "top-level-component", "TopLevelComponent",                            \
       "Warn if a top level Component is encountered", Warning, NonEssential)                       \
     X(qmlUncreatableType, "uncreatable-type", "UncreatableType",                                   \

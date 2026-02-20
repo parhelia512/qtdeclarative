@@ -1112,7 +1112,7 @@ QQmlError QQmlTypeData::buildTypeResolutionCaches(
             } else {
                 ref->setTypePropertyCache(compilationUnit->rootPropertyCache());
             }
-            if (!resolvedType->selfReference && resolvedType->needsCreation)
+            if (!resolvedType->selfReference)
                 ref->setCompilationUnit(compilationUnit);
         } else if (qmlType.isInlineComponentType()) {
             // Inline component.

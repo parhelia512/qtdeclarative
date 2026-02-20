@@ -9,6 +9,7 @@ qt_internal_add_module(QmlLintPrivate
         qqmljscontextproperties_p.h qqmljscontextproperties.cpp
         qqmljslinter_p.h qqmljslinter.cpp
         qqmljslintercodegen_p.h qqmljslintercodegen.cpp
+        qqmljslinterpasses.cpp qqmljslinterpasses_p.h
         qqmljslintertypepropagator_p.h qqmljslintertypepropagator.cpp
         qqmljslintervisitor_p.h qqmljslintervisitor.cpp
         qqmljsliteralbindingcheck_p.h qqmljsliteralbindingcheck.cpp

@@ -140,6 +140,9 @@ warning levels.
     X(qmlRecursionDepthErrors, "recursion-depth-errors", "", "", Warning, NonEssential)            \
     X(qmlRedundantOptionalChaining, "redundant-optional-chaining", "RedundantOptionalChaining",    \
       "Warn about optional chaining on non-voidable and non-nullable base", Warning, NonEssential) \
+    X(qmlRenamedType, "renamed-type", "RenamedType",                                               \
+      "Warn when renamed types refer to themselves using their unrenamed name", Warning,           \
+      NonEssential)                                                                                \
     X(qmlRequired, "required", "RequiredProperty", "Warn about required properties", Warning,      \
       NonEssential)                                                                                \
     X(qmlShadow, "shadow", "Shadow", "Warn about shadowing attributes from a base class", Disable, \

@@ -75,6 +75,15 @@ void QQmlJSLinterTypePropagator::generate_LoadQmlContextPropertyLookup(int index
     if (!accumulatorOut.isValid())
         return;
 
+    // complain about renamed types in enums like MyType.Enum.EnumValue
+    if (accumulatorOut.variant() == QQmlJSRegisterContent::Attachment
+        || accumulatorOut.variant() == QQmlJSRegisterContent::MetaType) {
+        if (m_renamedComponents) {
+            m_renamedComponents->handleRenamedType(accumulatorOut.scopeType(), name,
+                                                   currentNonEmptySourceLocation(), m_logger);
+        }
+    }
+
     const QQmlJSScope::ConstPtr scope = accumulatorOut.scopeType();
     const QQmlJSScope::ConstPtr idScope = m_scopesById.scope(name, scope);
     if (!idScope.isNull()) {

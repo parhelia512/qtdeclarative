@@ -117,6 +117,7 @@ extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlPropertyOverride;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlReadOnlyProperty;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRecursionDepthErrors;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRedundantOptionalChaining;
+extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRenamedType;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlRequired;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlShadow;
 extern const Q_QMLCOMPILER_EXPORT QQmlSA::LoggerWarningId qmlSignalParameters;

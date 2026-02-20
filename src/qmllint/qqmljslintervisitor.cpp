@@ -747,6 +747,15 @@ void LinterVisitor::handleLiteralBinding(const QQmlJSMetaPropertyBinding &bindin
     }
 }
 
+bool LinterVisitor::visit(UiProgram *ast)
+{
+    const bool result = QQmlJSImportVisitor::visit(ast);
+
+    m_renamedComponents.setScopeToName(&m_rootScopeImports.names());
+
+    return result;
+}
+
 static constexpr QLatin1String s_method = "method"_L1;
 static constexpr QLatin1String s_signal = "signal"_L1;
 static constexpr QLatin1String s_property = "property"_L1;
@@ -846,6 +855,28 @@ static void warnForDuplicates(const QQmlJSScope::ConstPtr &scope, const QString 
     warnForPropertyShadowingInBase(base, name, location, overrideFlags, logger);
 }
 
+void LinterVisitor::handleRenamedType(UiQualifiedId *qualifiedId)
+{
+    m_renamedComponents.handleRenamedType(
+            m_rootScopeImports.type(qualifiedId->name.toString()).scope, qualifiedId->name,
+            qualifiedId->identifierToken, m_logger);
+}
+
+bool LinterVisitor::visit(Type *type)
+{
+    const bool result = QQmlJSImportVisitor::visit(type);
+
+    handleRenamedType(type->typeId);
+
+    return result;
+}
+
+bool LinterVisitor::visit(QQmlJS::AST::UiObjectDefinition *objectDefinition)
+{
+    handleRenamedType(objectDefinition->qualifiedTypeNameId);
+    return QQmlJSImportVisitor::visit(objectDefinition);
+}
+
 bool LinterVisitor::visit(UiPublicMember *publicMember)
 {
     switch (publicMember->type) {
@@ -862,6 +893,7 @@ bool LinterVisitor::visit(UiPublicMember *publicMember)
         flags.setFlag(WithFinal, publicMember->isFinal());
         warnForDuplicates(m_currentScope, propertyName, s_property, publicMember->identifierToken,
                           flags, m_logger);
+        handleRenamedType(publicMember->memberType);
         break;
     }
     }

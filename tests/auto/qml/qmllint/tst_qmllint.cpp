@@ -1165,6 +1165,26 @@ expression: \${expr} \${expr} \\\${expr} \\\${expr}`)"_L1, 16, 27 } },
             << QStringLiteral("RedundantOptionalChainingEnums.qml")
             << Result{ { { "Redundant optional chaining for enum lookup"_L1, 5, 54 },
                          { "Redundant optional chaining for enum lookup"_L1, 6, 26 } } };
+    QTest::newRow("renamedType")
+            << u"qmldirs/renameSnippetToCustomName/UseOldName.qml"_s
+            << Result{ {
+                       { "\"UseOldName\" is explicitly renamed to \"NewName\" via a qmldir entry or QT_QML_SOURCE_TYPENAME CMake property, use \"NewName\" instead."_L1,
+                         4, 14 },
+                       { "\"UseOldName\" is explicitly renamed to \"NewName\" via a qmldir entry or QT_QML_SOURCE_TYPENAME CMake property, use \"NewName\" instead."_L1,
+                         5, 19 },
+                       { "\"UseOldName\" is explicitly renamed to \"NewName\" via a qmldir entry or QT_QML_SOURCE_TYPENAME CMake property, use \"NewName\" instead."_L1,
+                         5, 32 },
+               } };
+    constexpr QLatin1String renameTypeWarning =
+            "\"Main\" is explicitly renamed to \"Name1\", \"Name2\", \"Name3\", \"Name4\" via a qmldir entry or QT_QML_SOURCE_TYPENAME CMake property, use \"Name1\", \"Name2\", \"Name3\", \"Name4\" instead."_L1;
+    QTest::newRow("renamedTypeUsage")
+            << u"qmldirs/renameFileToMultipleNames/AnotherFile.qml"_s
+            << Result{ {
+                       { renameTypeWarning, 4, 5 },
+                       { renameTypeWarning, 10, 26 },
+                       { renameTypeWarning, 16, 19 },
+                       { renameTypeWarning, 16, 38 },
+               } };
     QTest::newRow("segFault (bad)")
             << QStringLiteral("SegFault.bad.qml")
             << Result{ { { "Member \"foobar\" not found on type \"QQuickScreenAttached\""_L1 } } };
@@ -2590,6 +2610,8 @@ void TestQmllint::cleanQmlCode_data()
     QTest::newRow("qtquickdialog") << QStringLiteral("qtquickdialog.qml");
     QTest::newRow("qualifiedAttached")         << QStringLiteral("Drawer.qml");
     QTest::addRow("regExp") << u"regExp.qml"_s;
+    QTest::newRow("renamedTypeUsageFromOtherFile")
+            << u"qmldirs/renameFileToMultipleNames/AnotherFileClean.qml"_s;
     QTest::newRow("requiredPropertyInGroupedPropertyScope") << QStringLiteral("requiredPropertyInGroupedPropertyScope.qml");
     QTest::newRow("requiredPropertySetViaOnBinding") << QStringLiteral("requiredPropertySetViaOnBinding.qml");
     QTest::newRow("RequiredPropertyBaseWithAlias") << QStringLiteral("RequiredPropertyBaseWithAlias.qml");

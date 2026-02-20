@@ -18,6 +18,7 @@
 #include <private/qqmljstypepropagator_p.h>
 #include <private/qqmljscontextproperties_p.h>
 #include <private/qqmljsusercontextproperties_p.h>
+#include <private/qqmljslinterrenamedcomponents_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -49,6 +50,11 @@ public:
         m_idMemberShadows = idMemberShadows;
     }
 
+    void setRenamedComponents(const QQmlJS::LinterRenamedComponents *renamedComponents)
+    {
+        m_renamedComponents = renamedComponents;
+    }
+
 private:
 
     void generate_Ret() override;
@@ -77,6 +83,7 @@ private:
     ContextPropertyInfo m_contextPropertyInfo;
     QQmlJSScopesById m_scopesById;
     QSet<IdMemberShadow> *m_idMemberShadows = nullptr;
+    const QQmlJS::LinterRenamedComponents *m_renamedComponents = nullptr;
 };
 
 QT_END_NAMESPACE

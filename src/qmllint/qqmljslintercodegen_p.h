@@ -74,6 +74,11 @@ public:
         m_scopesById = scopesByid;
     }
 
+    void setRenamedComponents(const QQmlJS::LinterRenamedComponents *renamedComponents)
+    {
+        m_renamedComponents = renamedComponents;
+    }
+
     QQmlJSTypeResolver *typeResolver() { return &m_typeResolver; }
 
     void setPassManager(QQmlSA::PassManager *passManager);
@@ -88,6 +93,7 @@ private:
     ContextPropertyInfo m_contextPropertyInfo;
     QQmlJSScopesById m_scopesById;
     QSet<IdMemberShadow> m_idMemberShadows;
+    const QQmlJS::LinterRenamedComponents *m_renamedComponents = nullptr;
 };
 
 QT_END_NAMESPACE

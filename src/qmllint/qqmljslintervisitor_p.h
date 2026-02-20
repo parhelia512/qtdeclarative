@@ -16,6 +16,7 @@
 // We mean it.
 
 #include <private/qqmljsimportvisitor_p.h>
+#include <private/qqmljslinterrenamedcomponents_p.h>
 
 #include <private/qqmljsengine_p.h>
 
@@ -35,6 +36,8 @@ public:
     LinterVisitor(QQmlJSImporter *importer, QQmlJSLogger *logger,
                   const QString &implicitImportDirectory,
                   const QStringList &qmldirFiles = QStringList(), QQmlJS::Engine *engine = nullptr);
+
+    const LinterRenamedComponents &renamedComponents() const { return m_renamedComponents; }
 
 protected:
     using QQmlJSImportVisitor::endVisit;
@@ -58,6 +61,10 @@ protected:
     bool visit(QQmlJS::AST::FunctionDeclaration *fdecl) override;
     bool visit(QQmlJS::AST::FunctionExpression *fexpr) override;
     bool visit(QQmlJS::AST::UiPublicMember *publicMember) override;
+    bool visit(QQmlJS::AST::UiObjectDefinition *objectDefinition) override;
+    bool visit(QQmlJS::AST::Type *typeAnnotation) override;
+
+    bool visit(QQmlJS::AST::UiProgram *ast) override;
 
     bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
                                 const QQmlJSScope::JavaScriptIdentifier &identifier) override;
@@ -94,6 +101,7 @@ private:
     QSet<SeenImport> m_seenImports;
     QSet<std::pair<const QQmlJSScope *, QString>> misplacedJSIdentifiers;
     std::vector<QQmlJS::AST::Node *> m_ancestryIncludingCurrentNode;
+    QQmlJS::LinterRenamedComponents m_renamedComponents;
 
     void handleDuplicateEnums(QQmlJS::AST::UiEnumMemberList *members, QStringView key,
                               const QQmlJS::SourceLocation &location);
@@ -106,6 +114,7 @@ private:
     void handleLiteralBinding(const QQmlJSMetaPropertyBinding &binding,
                               const AST::UiPublicMember *associatedPropertyDefinition) override;
     void handleUselessExpressionStatement(const AST::ExpressionStatement *ast);
+    void handleRenamedType(QQmlJS::AST::UiQualifiedId *id);
 };
 
 } // namespace QQmlJS

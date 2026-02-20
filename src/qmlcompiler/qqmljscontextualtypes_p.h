@@ -51,8 +51,10 @@ struct ContextualTypes
 
     void setType(const QString &name, const ImportedScope<QQmlJSScope::ConstPtr> &type)
     {
-        if (!name.startsWith(u'$'))
-            m_names.insert(type.scope, name);
+        if (!name.startsWith(u'$')) {
+            if (!m_names.contains(type.scope, name))
+                m_names.insert(type.scope, name);
+        }
         m_types.insert(name, type);
     }
     void clearType(const QString &name)
@@ -98,8 +100,10 @@ private:
         for (auto it = types.m_types.constBegin(), end = types.m_types.constEnd();
              it != end; ++it) {
             const QString &name = it.key();
-            if (!name.startsWith(u'$'))
-                m_names.insert(it->scope, name);
+            if (!name.startsWith(u'$')) {
+                if (!m_names.contains(it->scope, name))
+                    m_names.insert(it->scope, name);
+            }
         }
     }
 

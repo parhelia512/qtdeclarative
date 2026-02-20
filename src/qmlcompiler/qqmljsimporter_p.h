@@ -110,6 +110,7 @@ public:
         {
             return m_types.types();
         }
+        const auto &names() const { return m_types.names(); }
 
         void add(ImportedTypes &&other)
         {

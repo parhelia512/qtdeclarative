@@ -836,11 +836,13 @@ void QQmlComponentAndAliasResolver<QQmlTypeCompiler>::resolveGeneralizedGroupPro
     \internal
 
     Attempts to resolve a "deep alias" — an alias whose sub-property path
-    goes through an inline component binding or through another alias.
-    For example: \c{alias foo: target.groupProp.innerProp}
+    goes through a QObject property, an inline component binding, or another
+    alias. For example: \c{alias foo: target.groupProp.innerProp}
 
-    Searches the target object's bindings and aliases for \a property, then
-    looks up \a subProperty on the bound/aliased object's property cache.
+    First searches the target object's bindings and aliases for \a property,
+    then looks up \a subProperty on the bound/aliased object's property cache.
+    If no binding or alias matches, falls back to looking up \a subProperty
+    on the declared type's property cache.
 
     On success, updates \a propIdx with the resolved value-type index and
     returns \c true.
@@ -848,7 +850,8 @@ void QQmlComponentAndAliasResolver<QQmlTypeCompiler>::resolveGeneralizedGroupPro
 static bool resolveDeepAlias(
         QQmlTypeCompiler *compiler, const QmlIR::Object *targetObject,
         QStringView property, QStringView subProperty,
-        QQmlPropertyIndex &propIdx, const QQmlPropertyCacheVector *propertyCaches,
+        QQmlPropertyIndex &propIdx, QMetaType targetPropertyType,
+        const QQmlPropertyCacheVector *propertyCaches,
         const QMap<int, int> &idToObjectIndex)
 {
     for (auto it = targetObject->bindingsBegin(), end = targetObject->bindingsEnd();
@@ -884,6 +887,17 @@ static bool resolveDeepAlias(
             continue;
         propIdx = QQmlPropertyIndex(propIdx.coreIndex(), pd->coreIndex());
         return true;
+    }
+
+    const QQmlPropertyCache::ConstPtr typeCache
+            = QQmlMetaType::propertyCacheForType(targetPropertyType);
+    if (typeCache) {
+        const QQmlPropertyResolver resolver(typeCache);
+        const QQmlPropertyData *pd = resolver.property(subProperty.toString());
+        if (pd) {
+            propIdx = QQmlPropertyIndex(propIdx.coreIndex(), pd->coreIndex());
+            return true;
+        }
     }
 
     return false;
@@ -1015,7 +1029,7 @@ QQmlComponentAndAliasResolver<QQmlTypeCompiler>::resolveAliasesInObject(
                     if (isDeepAlias) {
                         isDeepAlias = resolveDeepAlias(
                                 m_compiler, targetObject, property, subProperty, propIdx,
-                                m_propertyCaches, m_idToObjectIndex);
+                                targetProperty->propType(), m_propertyCaches, m_idToObjectIndex);
                     }
                     if (!isDeepAlias) {
                         *error = qQmlCompileError(

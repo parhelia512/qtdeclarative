@@ -524,6 +524,7 @@ private slots:
 
     void aliasToLargeRevision();
     void aliasToPropertyOfAlias();
+    void aliasToGroupedProperty();
     void propertyCycle();
 
     void urlWithFragment();
@@ -9943,6 +9944,27 @@ void tst_qqmllanguage::aliasToPropertyOfAlias()
 
     QCOMPARE(o->property("bar").toString(), "bar"_L1);
 
+}
+
+void tst_qqmllanguage::aliasToGroupedProperty()
+{
+    QQmlEngine engine;
+    QQmlComponent c(&engine, testFileUrl("aliasToGroupedProperty.qml"));
+
+    QVERIFY2(c.isReady(), qPrintable(c.errorString()));
+    QScopedPointer<QObject> o(c.create());
+    QVERIFY(!o.isNull());
+
+    // Direct alias into C++ grouped property
+    o->setProperty("groupedValue", 42);
+    QCOMPARE(o->property("groupedValue").toInt(), 42);
+
+    // Alias through another alias (QTBUG-130605 pattern)
+    o->setProperty("throughAliasValue", 99);
+    QCOMPARE(o->property("throughAliasValue").toInt(), 99);
+
+    // Both aliases point to the same grouped.value
+    QCOMPARE(o->property("groupedValue").toInt(), 99);
 }
 
 void tst_qqmllanguage::urlWithFragment()

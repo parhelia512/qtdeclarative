@@ -776,9 +776,11 @@ void QQuickSearchField::setSuggestionModel(const QVariant &model)
 {
     Q_D(QQuickSearchField);
 
-    QVariant suggestionModel = model;
-    if (suggestionModel.userType() == qMetaTypeId<QJSValue>())
-        suggestionModel = get<QJSValue>(std::move(suggestionModel)).toVariant();
+    QVariant suggestionModel;
+    if (QJSValue *value = get_if<QJSValue>(&suggestionModel))
+        suggestionModel = value->toVariant();
+    else
+        suggestionModel = model;
 
     if (d->suggestionModel == suggestionModel)
         return;

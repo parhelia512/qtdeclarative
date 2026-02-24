@@ -43,7 +43,8 @@ public:
         DirtyFillGradient = 0x08,
         DirtyFillTransform = 0x10,
         DirtyFillTexture = 0x20,
-        DirtyList = 0x40 // only for accDirty
+        DirtyList = 0x40, // only for accDirty
+        DirtyStrokeGradient = 0x80,
     };
 
     QQuickShapeGenericRenderer(QQuickItem *item)
@@ -68,6 +69,7 @@ public:
     void setStrokeStyle(int index, QQuickShapePath::StrokeStyle strokeStyle,
                         qreal dashOffset, const QList<qreal> &dashPattern) override;
     void setFillGradient(int index, QQuickShapeGradient *gradient) override;
+    void setStrokeGradient(int index, QQuickShapeGradient *gradient) override;
     void setFillTextureProvider(int index, QQuickItem *textureProviderItem) override;
     void setFillTransform(int index, const QSGTransform &transform) override;
     void setTriangulationScale(int index, qreal scale) override;
@@ -111,7 +113,9 @@ private:
         Qt::FillRule fillRule;
         QPainterPath path;
         FillGradientType fillGradientActive;
+        FillGradientType strokeGradientActive;
         QSGGradientCache::GradientDesc fillGradient;
+        QSGGradientCache::GradientDesc strokeGradient;
         QQuickItem *fillTextureProviderItem = nullptr;
         QSGTransform fillTransform;
         VertexContainerType fillVertices;
@@ -201,7 +205,7 @@ public:
     void activateMaterial(QQuickWindow *window, Material m);
 
     // shadow data for custom materials
-    QSGGradientCache::GradientDesc m_fillGradient;
+    QSGGradientCache::GradientDesc m_gradient;
     QSGTextureProvider *m_fillTextureProvider = nullptr;
     QSGTransform m_fillTransform;
     void preprocess() override;

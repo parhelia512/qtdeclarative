@@ -49,6 +49,7 @@ public:
     void setStrokeStyle(int index, QQuickShapePath::StrokeStyle strokeStyle,
                         qreal dashOffset, const QList<qreal> &dashPattern) override;
     void setFillGradient(int index, QQuickShapeGradient *gradient) override;
+    void setStrokeGradient(int index, QQuickShapeGradient *gradient) override;
     void setFillTextureProvider(int index, QQuickItem *textureProviderItem) override;
     void setFillTransform(int index, const QSGTransform &transform) override;
     void setTriangulationScale(int index, qreal scale) override;

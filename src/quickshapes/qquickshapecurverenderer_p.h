@@ -56,6 +56,7 @@ public:
     void setStrokeStyle(int index, QQuickShapePath::StrokeStyle strokeStyle,
                         qreal dashOffset, const QList<qreal> &dashPattern) override;
     void setFillGradient(int index, QQuickShapeGradient *gradient) override;
+    void setStrokeGradient(int index, QQuickShapeGradient *gradient) override;
     void setFillTextureProvider(int index, QQuickItem *textureProviderItem) override;
     void setFillTransform(int index, const QSGTransform &transform) override;
     void endSync(bool async) override;
@@ -99,11 +100,16 @@ private:
 
         bool isStrokeVisible() const
         {
-            return validPenWidth && pen.color().alpha() > 0 && pen.style() != Qt::NoPen;
+            return validPenWidth && pen.style() != Qt::NoPen
+                   && (pen.color().alpha() > 0 || strokeGradientType != QGradient::NoGradient);
         }
 
         QGradient::Type gradientType = QGradient::NoGradient;
         QSGGradientCache::GradientDesc gradient;
+
+        QGradient::Type strokeGradientType = QGradient::NoGradient;
+        QSGGradientCache::GradientDesc strokeGradient;
+
         QSGTransform fillTransform;
         QColor fillColor;
         Qt::FillRule fillRule = Qt::OddEvenFill;

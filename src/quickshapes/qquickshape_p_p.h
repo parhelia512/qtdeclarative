@@ -62,6 +62,7 @@ public:
     virtual void setFillColor(int index, const QColor &color) = 0;
     virtual void setFillRule(int index, QQuickShapePath::FillRule fillRule) = 0;
     virtual void setFillGradient(int index, QQuickShapeGradient *gradient) = 0;
+    virtual void setStrokeGradient(int index, QQuickShapeGradient *gradient) = 0;
     virtual void setFillTextureProvider(int index, QQuickItem *textureProviderItem) = 0;
     virtual void setFillTransform(int index, const QSGTransform &transform) = 0;
     virtual void setTriangulationScale(int, qreal) { }
@@ -103,6 +104,7 @@ struct QQuickShapeStrokeFillParams
     qreal dashOffset;
     QList<qreal> dashPattern;
     QQuickShapeGradient *fillGradient;
+    QQuickShapeGradient *strokeGradient;
     QSGTransform fillTransform;
     QQuickItem *fillItem;
     QQuickShapeTrim *trim;
@@ -125,14 +127,16 @@ public:
         DirtyFillTransform = 0x100,
         DirtyFillItem = 0x200,
         DirtyTrim = 0x400,
+        DirtyStrokeGradient = 0x800,
 
-        DirtyAll = 0x7FF
+        DirtyAll = 0xFFF
     };
 
     QQuickShapePathPrivate();
 
     void _q_pathChanged();
     void _q_fillGradientChanged();
+    void _q_strokeGradientChanged();
     void _q_fillItemDestroyed();
 
     void handleSceneChange();

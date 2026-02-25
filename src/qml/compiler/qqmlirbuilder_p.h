@@ -341,6 +341,7 @@ public:
     const RequiredPropertyExtraData *requiredPropertyExtraData() const {return requiredPropertyExtraDatas->first; }
     int requiredPropertyExtraDataCount() const { return requiredPropertyExtraDatas->count; }
     void simplifyRequiredProperties();
+    void sortAliasDependencies(const Document *doc, QList<QQmlJS::DiagnosticMessage> *errors);
 
     PoolList<Binding>::Iterator bindingsBegin() const { return bindings->begin(); }
     PoolList<Binding>::Iterator bindingsEnd() const { return bindings->end(); }

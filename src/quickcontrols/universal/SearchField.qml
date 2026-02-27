@@ -97,6 +97,9 @@ T.SearchField {
     }
 
     contentItem: T.TextField {
+        implicitHeight: Math.max(contentHeight + topPadding + bottomPadding,
+                                 placeholder.implicitHeight + topPadding + bottomPadding)
+
         leftPadding: !control.mirrored ? 6 : 0
         rightPadding: !control.mirrored ? 6 : 0
 
@@ -104,6 +107,7 @@ T.SearchField {
         placeholderText: control.placeholderText
 
         PlaceholderText {
+            id: placeholder
             x: parent.leftPadding
             y: parent.topPadding
             width: parent.width - parent.leftPadding - parent.rightPadding
@@ -115,7 +119,7 @@ T.SearchField {
                               parent.activeFocus ? Universal.chromeBlackMediumLowColor :
                                             Universal.baseMediumColor
             visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: parent.verticalAlignment
             elide: Text.ElideRight
             renderType: parent.renderType
         }

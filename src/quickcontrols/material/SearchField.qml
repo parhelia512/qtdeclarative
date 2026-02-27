@@ -69,15 +69,23 @@ T.SearchField {
     }
 
     contentItem: T.TextField {
+        // implicitWidth: Math.max(contentWidth, placeholder.implicitWidth) + leftPadding + rightPadding
+        implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                 contentHeight + topPadding + bottomPadding)
+
         leftPadding: Material.textFieldHorizontalPadding
         rightPadding: Material.textFieldHorizontalPadding
         topPadding: Material.textFieldVerticalPadding
         bottomPadding: Material.textFieldVerticalPadding
 
+        // If we're clipped, set topInset to half the height of the placeholder text to avoid it being clipped.
+        topInset: clip ? placeholder.height / 2 : 0
+
         text: control.text
         placeholderText: control.placeholderText
 
         PlaceholderText {
+            id: placeholder
             x: parent.leftPadding
             y: parent.topPadding
             width: parent.width - parent.leftPadding - parent.rightPadding
@@ -87,7 +95,7 @@ T.SearchField {
             font: parent.font
             color: parent.enabled && parent.activeFocus ? Material.accentColor : Material.hintTextColor
             visible: !parent.length && !parent.preeditText && (!parent.activeFocus || parent.horizontalAlignment !== Qt.AlignHCenter)
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: parent.verticalAlignment
             elide: Text.ElideRight
             renderType: parent.renderType
         }

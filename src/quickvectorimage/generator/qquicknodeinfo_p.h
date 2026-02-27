@@ -111,6 +111,7 @@ struct PathNodeInfo : NodeInfo
     QQuickAnimatedProperty fillOpacity = QQuickAnimatedProperty(QVariant::fromValue(qreal(1.0)));
     StrokeStyle strokeStyle;
     QGradient grad;
+    QGradient strokeGrad;
     QTransform fillTransform;
     PathTrimInfo trim;
 

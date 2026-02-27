@@ -675,40 +675,57 @@ void QQuickQmlGenerator::generatePath(const PathNodeInfo &info, const QRectF &ov
     }
 }
 
-void QQuickQmlGenerator::generateGradient(const QGradient *grad)
+void QQuickQmlGenerator::generateGradient(const QGradient *grad,
+                                          const QString &propertyName,
+                                          const QRectF &coordinateConversion)
 {
+    const QSizeF &scale = coordinateConversion.size();
+    const QPointF &translation = coordinateConversion.topLeft();
+
     if (grad->type() == QGradient::LinearGradient) {
         auto *linGrad = static_cast<const QLinearGradient *>(grad);
-        stream() << "fillGradient: LinearGradient {";
+        stream() << propertyName << ": LinearGradient {";
         m_indentLevel++;
 
         QRectF gradRect(linGrad->start(), linGrad->finalStop());
 
-        stream() << "x1: " << gradRect.left();
-        stream() << "y1: " << gradRect.top();
-        stream() << "x2: " << gradRect.right();
-        stream() << "y2: " << gradRect.bottom();
+        stream() << "x1: " << (gradRect.left() * scale.width()) + translation.x();
+        stream() << "y1: " << (gradRect.top() * scale.height()) + translation.y();
+        stream() << "x2: " << (gradRect.right() * scale.width()) + translation.x();
+        stream() << "y2: " << (gradRect.bottom() * scale.height()) + translation.y();
         for (auto &stop : linGrad->stops())
             stream() << "GradientStop { position: " << QString::number(stop.first, 'g', 7)
                      << "; color: \"" << stop.second.name(QColor::HexArgb) << "\" }";
-        m_indentLevel--;
-        stream() << "}";
     } else if (grad->type() == QGradient::RadialGradient) {
         auto *radGrad = static_cast<const QRadialGradient*>(grad);
-        stream() << "fillGradient: RadialGradient {";
+        stream() << propertyName << ": RadialGradient {";
         m_indentLevel++;
 
-        stream() << "centerX: " << radGrad->center().x();
-        stream() << "centerY: " << radGrad->center().y();
-        stream() << "centerRadius: " << radGrad->radius();
-        stream() << "focalX:" << radGrad->focalPoint().x();
-        stream() << "focalY:" << radGrad->focalPoint().y();
+        stream() << "centerX: " << (radGrad->center().x() * scale.width()) + translation.x();
+        stream() << "centerY: " << (radGrad->center().y() * scale.height()) + translation.y();
+        stream() << "centerRadius: " << (radGrad->radius() * scale.width()); // ### ?
+        stream() << "focalX:" << (radGrad->focalPoint().x() * scale.width()) + translation.x();
+        stream() << "focalY:" << (radGrad->focalPoint().y() * scale.height()) + translation.y();
         for (auto &stop : radGrad->stops())
             stream() << "GradientStop { position: " << QString::number(stop.first, 'g', 7)
                      << "; color: \"" << stop.second.name(QColor::HexArgb) << "\" }";
-        m_indentLevel--;
-        stream() << "}";
     }
+
+    stream() << "spread: ShapeGradient.";
+    switch (grad->spread()) {
+    case QGradient::PadSpread:
+        stream(SameLine) << "PadSpread";
+        break;
+    case QGradient::ReflectSpread:
+        stream(SameLine) << "ReflectSpread";
+        break;
+    case QGradient::RepeatSpread:
+        stream(SameLine) << "RepeatSpread";
+        break;
+    }
+
+    m_indentLevel--;
+    stream() << "}";
 }
 
 void QQuickQmlGenerator::generateAnimationBindings()
@@ -971,10 +988,16 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
     if (Q_UNLIKELY(errorState()))
         return;
 
+    const bool invalidGradientBounds = info.strokeGrad.coordinateMode() == QGradient::ObjectMode
+                                       && (qFuzzyIsNull(boundingRect.width()) ||
+                                           qFuzzyIsNull(boundingRect.height()));
+
     const QColor strokeColor = info.strokeStyle.color.defaultValue().value<QColor>();
-    const bool noPen = strokeColor == QColorConstants::Transparent
+    const bool noPen = (strokeColor == QColorConstants::Transparent || !strokeColor.isValid())
                        && !info.strokeStyle.color.isAnimated()
-                       && !info.strokeStyle.opacity.isAnimated();
+                       && !info.strokeStyle.opacity.isAnimated()
+                       && (info.strokeGrad.type() == QGradient::NoGradient
+                           || invalidGradientBounds);
     if (pathSelector == QQuickVectorImageGenerator::StrokePath && noPen)
         return;
 
@@ -1017,7 +1040,12 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
     if (noPen || !(pathSelector & QQuickVectorImageGenerator::StrokePath)) {
         stream() << "strokeColor: \"transparent\"";
     } else {
-        if (info.strokeStyle.opacity.isAnimated()) {
+        if (info.strokeGrad.type() != QGradient::NoGradient && !invalidGradientBounds) {
+            QRectF coordinateSys = info.strokeGrad.coordinateMode() == QGradient::ObjectMode
+                                       ? boundingRect
+                                       : QRectF(0.0, 0.0, 1.0, 1.0);
+            generateGradient(&info.strokeGrad, QStringLiteral("strokeGradient"), coordinateSys);
+        } else if (info.strokeStyle.opacity.isAnimated()) {
             stream() << "property color strokeBase: \"" << strokeColor.name(QColor::HexArgb) << "\"";
             stream() << "property real strokeOpacity: " << info.strokeStyle.opacity.defaultValue().toReal();
             stream() << "strokeColor: Qt.rgba(strokeBase.r, strokeBase.g, strokeBase.b, strokeOpacity)";
@@ -1041,7 +1069,9 @@ void QQuickQmlGenerator::outputShapePath(const PathNodeInfo &info, const QPainte
     if (!(pathSelector & QQuickVectorImageGenerator::FillPath)) {
         stream() << "fillColor: \"transparent\"";
     } else if (info.grad.type() != QGradient::NoGradient) {
-        generateGradient(&info.grad);
+        generateGradient(&info.grad, QStringLiteral("fillGradient"));
+
+        // Scaling done via fillTransform to get correct order of operations
         if (info.grad.coordinateMode() == QGradient::ObjectMode) {
             QTransform objectToUserSpace;
             objectToUserSpace.translate(boundingRect.x(), boundingRect.y());

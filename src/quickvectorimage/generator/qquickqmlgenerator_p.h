@@ -120,7 +120,9 @@ private:
     };
 
     QString generateNodeId(const NodeInfo &info);
-    void generateGradient(const QGradient *grad);
+    void generateGradient(const QGradient *grad,
+                          const QString &propertyName,
+                          const QRectF &coordinateConversion = QRectF(0.0, 0.0, 1.0, 1.0));
     void generateTransform(const QTransform &xf);
     void generatePathContainer(const StructureNodeInfo &info);
     void generateAnimateTransform(const QString &targetName, const NodeInfo &info);

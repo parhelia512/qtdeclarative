@@ -1731,7 +1731,6 @@ void QSvgVisitorImpl::applyAnimationsToProperty(const QList<AnimationPair> &anim
                                          << ", freeze:" << freeze
                                          << ", replace:" << replace;
 
-        QBezier easing = easingForAnimation(animation);
         QList<qreal> propertyKeyFrames = property->keyFrames();
         QList<QQuickAnimatedProperty::PropertyAnimation> outAnimations;
 
@@ -1792,6 +1791,7 @@ void QSvgVisitorImpl::applyAnimationsToProperty(const QList<AnimationPair> &anim
         }
 
         outProperty->beginAnimationGroup();
+        QBezier easing = easingForAnimation(animation->easing(), animation->animationType());
         for (int i = 0; i < outAnimations.size(); ++i) {
             QQuickAnimatedProperty::PropertyAnimation outAnimation = outAnimations.at(i);
 
@@ -1800,6 +1800,11 @@ void QSvgVisitorImpl::applyAnimationsToProperty(const QList<AnimationPair> &anim
 
                 const QVariant value = calculateValue(property, j, i);
                 outAnimation.frames[time] = value;
+
+                const QSvgEasingInterface *easingInterface = property->easingAt(j);
+                if (easingInterface)
+                    easing = easingForAnimation(easingInterface, animation->animationType());
+
                 outAnimation.easingPerFrame[time] = easing;
                 qCDebug(lcVectorImageAnimations) << "        -> Frame " << time << " is " << value;
             }
@@ -1809,7 +1814,8 @@ void QSvgVisitorImpl::applyAnimationsToProperty(const QList<AnimationPair> &anim
     }
 }
 
-QBezier QSvgVisitorImpl::easingForAnimation(const QSvgAbstractAnimation *animation)
+QBezier QSvgVisitorImpl::easingForAnimation(const QSvgEasingInterface *easingInterface,
+                                            QSvgAbstractAnimation::AnimationType type)
 {
     constexpr QPointF startControlPoint(0, 0);
     constexpr QPointF endControlPoint(1, 1);
@@ -1819,9 +1825,8 @@ QBezier QSvgVisitorImpl::easingForAnimation(const QSvgAbstractAnimation *animati
     QBezier easing = QBezier::fromPoints(startControlPoint, startControlPoint, endControlPoint, endControlPoint);
 
 #if QT_CONFIG(cssparser)
-    if (animation->animationType() == QSvgAbstractAnimation::CSS) {
-        QSvgEasingInterface *easingInterface = animation->easing();
-        QSvgCssEasing *cssEasing = static_cast<QSvgCssEasing *>(easingInterface);
+    if (type == QSvgAbstractAnimation::CSS) {
+        const QSvgCssEasing *cssEasing = static_cast<const QSvgCssEasing *>(easingInterface);
         switch (cssEasing->easingFunction()) {
         case QSvgCssValues::EasingFunction::Ease:
         case QSvgCssValues::EasingFunction::EaseIn:

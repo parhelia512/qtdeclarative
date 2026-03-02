@@ -349,15 +349,6 @@ QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::resolveAliase
     return AllAliasesResolved;
 }
 
-template<>
-bool QQmlComponentAndAliasResolver<QV4::CompiledData::CompilationUnit>::wrapImplicitComponent(
-        const QV4::CompiledData::Binding *binding)
-{
-    // This should have been done when creating the CU.
-    Q_UNUSED(binding);
-    return false;
-}
-
 QQmlError QQmlTypeData::createTypeAndPropertyCaches(
         const QQmlRefPointer<QQmlTypeNameCache> &typeNameCache,
         const QV4::CompiledData::ResolvedTypeReferenceMap &resolvedTypeCache)
@@ -979,7 +970,7 @@ void QQmlTypeData::compile(const QQmlRefPointer<QQmlTypeNameCache> &typeNameCach
     m_compiledData->resolvedTypes = *resolvedTypeCache;
     m_compiledData->propertyCaches = std::move(*compiler.propertyCaches());
     Q_ASSERT(m_compiledData->propertyCaches.count()
-             == static_cast<int>(m_compiledData->objectCount()));
+             >= static_cast<int>(m_compiledData->objectCount()));
 }
 
 bool QQmlTypeData::resolveTypes()

@@ -184,6 +184,26 @@ int QQmlTypeCompiler::registerString(const QString &str)
     return document->jsGenerator.registerString(str);
 }
 
+int QQmlTypeCompiler::resolvedIndex(int index) const
+{
+    if (index < objectCount())
+        return index;
+    const auto *p = m_propertyCaches.at(index)->defaultProperty();
+    Q_ASSERT(p && p->isComponentWrapper());
+    return p->wrappedObjectIndex();
+}
+
+int QQmlTypeCompiler::implicitComponentForObject(int childIndex) const
+{
+    for (int i = objectCount(), end = m_propertyCaches.count(); i < end; ++i) {
+        const auto *p = m_propertyCaches.at(i)->defaultProperty();
+        Q_ASSERT(p && p->isComponentWrapper());
+        if (p->wrappedObjectIndex() == childIndex)
+            return i;
+    }
+    return -1;
+}
+
 int QQmlTypeCompiler::registerConstant(QV4::ReturnedValue v)
 {
     return document->jsGenerator.registerConstant(v);
@@ -768,60 +788,6 @@ void QQmlComponentAndAliasResolver<QQmlTypeCompiler>::setObjectId(int index) con
 }
 
 template<>
-bool QQmlComponentAndAliasResolver<QQmlTypeCompiler>::wrapImplicitComponent(QmlIR::Binding *binding)
-{
-    QQmlJS::MemoryPool *pool = m_compiler->memoryPool();
-    QList<QmlIR::Object *> *qmlObjects = m_compiler->qmlObjects();
-
-    // emulate "import QML 1.0" and then wrap the component in "QML.Component {}"
-    QQmlType componentType = QQmlMetaType::qmlType(
-                &QQmlComponent::staticMetaObject, QStringLiteral("QML"),
-                QTypeRevision::fromVersion(1, 0));
-    Q_ASSERT(componentType.isValid());
-    const QString qualifier = QStringLiteral("QML");
-
-    m_compiler->addImport(componentType.module(), qualifier, componentType.version());
-
-    QmlIR::Object *syntheticComponent = pool->New<QmlIR::Object>();
-    syntheticComponent->init(
-                pool,
-                m_compiler->registerString(
-                    qualifier + QLatin1Char('.') + componentType.elementName()),
-                m_compiler->registerString(QString()), binding->valueLocation);
-    syntheticComponent->flags |= QV4::CompiledData::Object::IsComponent;
-
-    if (!m_compiler->resolvedTypes->contains(syntheticComponent->inheritedTypeNameIndex)) {
-        auto typeRef = new QV4::ResolvedTypeReference;
-        typeRef->setType(componentType);
-        typeRef->setVersion(componentType.version());
-        m_compiler->resolvedTypes->insert(syntheticComponent->inheritedTypeNameIndex, typeRef);
-    }
-
-    qmlObjects->append(syntheticComponent);
-    const int componentIndex = qmlObjects->size() - 1;
-    // Keep property caches symmetric
-    QQmlPropertyCache::ConstPtr componentCache
-            = QQmlMetaType::propertyCache(&QQmlComponent::staticMetaObject);
-    m_propertyCaches->append(componentCache);
-
-    QmlIR::Binding *syntheticBinding = pool->New<QmlIR::Binding>();
-    *syntheticBinding = *binding;
-
-    // The synthetic binding inside Component has no name. It's just "Component { Foo {} }".
-    syntheticBinding->propertyNameIndex = 0;
-
-    syntheticBinding->setType(QV4::CompiledData::Binding::Type_Object);
-    QString error = syntheticComponent->appendBinding(syntheticBinding, /*isListBinding*/false);
-    Q_ASSERT(error.isEmpty());
-    Q_UNUSED(error);
-
-    binding->value.objectIndex = componentIndex;
-
-    m_componentRoots.append(componentIndex);
-    return true;
-}
-
-template<>
 void QQmlComponentAndAliasResolver<QQmlTypeCompiler>::resolveGeneralizedGroupProperty(
         const CompiledObject &component, CompiledBinding *binding)
 {
@@ -1213,11 +1179,16 @@ bool QQmlDeferredAndCustomParserBindingScanner::scanObject(
             isExternal = !isOwnProperty && binding->isGroupProperty();
             if (isOwnProperty || isExternal) {
                 qSwap(_seenObjectWithId, seenSubObjectWithId);
-                const bool subObjectValid = scanObject(
-                            binding->value.objectIndex,
-                            (isExternal || scopeDeferred == ScopeDeferred::True)
-                                ? ScopeDeferred::True
-                                : ScopeDeferred::False);
+
+                // Implicit component wrappers are scope boundaries.
+                const bool isImplicitComponent
+                        = compiler->implicitComponentForObject(binding->value.objectIndex) != -1;
+
+                const ScopeDeferred objectScope =
+                        !isImplicitComponent && (isExternal || scopeDeferred == ScopeDeferred::True)
+                            ? ScopeDeferred::True
+                            : ScopeDeferred::False;
+                const bool subObjectValid = scanObject(binding->value.objectIndex, objectScope);
                 qSwap(_seenObjectWithId, seenSubObjectWithId);
                 if (!subObjectValid)
                     return false;

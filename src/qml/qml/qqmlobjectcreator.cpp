@@ -171,8 +171,15 @@ QObject *QQmlObjectCreator::create(int subComponentIndex, QObject *parent, QQmlI
                 phase = ObjectsCreated;
                 return nullptr;
             }
-            const QV4::CompiledData::Object *compObj = compilationUnit->objectAt(subComponentIndex);
-            objectToCreate = compObj->bindingTable()->value.objectIndex;
+            if (subComponentIndex < compilationUnit->objectCount()) {
+                const QV4::CompiledData::Object *compObj
+                        = compilationUnit->objectAt(subComponentIndex);
+                objectToCreate = compObj->bindingTable()->value.objectIndex;
+            } else {
+                // Implicit component wrappers have index >= objectCount().
+                // Read child index from the property cache instead of the CU object.
+                objectToCreate = compilationUnit->resolvedIndex(subComponentIndex);
+            }
         }
     }
 
@@ -909,7 +916,13 @@ bool QQmlObjectCreator::setPropertyBinding(const QQmlPropertyData *bindingProper
         // This is not a top level object. Its required properties don't count towards the
         // top level required properties.
         QScopedValueRollback topLevelRequired(sharedState->hadTopLevelRequiredProperties);
-        createdSubObject = createInstance(binding->value.objectIndex, _bindingTarget);
+        int objectIndex = binding->value.objectIndex;
+        if (const int wrapperIdx = compilationUnit->implicitComponentForObject(objectIndex);
+                wrapperIdx != -1) {
+            // If the child has an implicit component wrapper, redirect to it.
+            objectIndex = wrapperIdx;
+        }
+        createdSubObject = createInstance(objectIndex, _bindingTarget);
         if (!createdSubObject)
             return false;
     }
@@ -1318,11 +1331,12 @@ QObject *QQmlObjectCreator::createInstance(int index, QObject *parent, bool isCo
     Q_TRACE(QQmlObjectCreator_createInstance_entry, compilationUnit.data(), obj, context->url());
     QQmlObjectCreationProfiler profiler(sharedState->profiler.profiler, obj);
 
-
+    const bool isImplicitComponent = index >= compilationUnit->objectCount();
     const InitFlags flags = (isContextObject ? InitFlag::IsContextObject : InitFlag::None)
-            | (index == 0 ? InitFlag::IsDocumentRoot : InitFlag::None);
+            | (index == 0 ? InitFlag::IsDocumentRoot : InitFlag::None)
+            | (isImplicitComponent ? InitFlag::IsImplicitComponent : InitFlag::None);
 
-    if (obj->hasFlag(QV4::CompiledData::Object::IsComponent)) {
+    if (obj->hasFlag(QV4::CompiledData::Object::IsComponent) || isImplicitComponent) {
         Q_TRACE_EXIT(QQmlObjectCreator_createInstance_exit, QStringLiteral("<component>"));
         Q_QML_OC_PROFILE(
                 sharedState->profiler,
@@ -1403,8 +1417,10 @@ void QQmlObjectCreator::initializeDData(
 
     // Register the context object in the context early on in order for pending binding
     // initialization to find it available.
-    if (flags & InitFlag::IsContextObject)
+    if ((flags & (InitFlag::IsContextObject | InitFlag::IsImplicitComponent))
+            == InitFlag::IsContextObject) {
         context->setContextObject(instance);
+    }
 }
 
 void QQmlObjectCreator::initializePropertyCache(
@@ -1482,7 +1498,6 @@ QObject *QQmlObjectCreator::initializeComponent(
 {
     Q_ASSERT(instance);
     Q_ASSERT(obj);
-    Q_ASSERT(obj->hasFlag(QV4::CompiledData::Object::IsComponent));
 
     QScopedValueRollback<QQmlObjectCreator*> ocRestore(
             QQmlEnginePrivate::get(engine)->activeObjectCreator, this);
@@ -1490,7 +1505,8 @@ QObject *QQmlObjectCreator::initializeComponent(
     // we just created it inside createComponent; so QQmlData::get() without create = true;
     initializeDData(obj, instance, QQmlData::get(instance), flags);
 
-    registerObjectWithContextById(obj, instance);
+    if (!flags.testFlag(InitFlag::IsImplicitComponent))
+        registerObjectWithContextById(obj, instance);
     return instance;
 }
 

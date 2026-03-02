@@ -136,6 +136,11 @@ public:
     bool isESModule() const { return m_compilationUnit->isESModule(); }
 
     int objectCount() const { return m_compilationUnit->objectCount(); }
+    int resolvedIndex(int index) const { return m_compilationUnit->resolvedIndex(index); }
+    int implicitComponentForObject(int index) const
+    {
+        return m_compilationUnit->implicitComponentForObject(index);
+    }
     const CompiledObject *objectAt(int index) const
     {
         return m_compilationUnit->objectAt(index);

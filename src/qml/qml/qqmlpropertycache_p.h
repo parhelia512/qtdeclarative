@@ -329,6 +329,7 @@ private:
     AppendResult appendAlias(const QString &, QQmlPropertyData::Flags flags, int coreIndex,
                              QMetaType propType, QTypeRevision version, int notifyIndex,
                              int encodedTargetIndex, int targetObjectId);
+    AppendResult appendComponentWrapper(int coreIndex, int wrappedObjectIndex);
     void appendSignal(const QString &, QQmlPropertyData::Flags, int coreIndex,
                       const QMetaType *types = nullptr,
                       const QList<QByteArray> &names = QList<QByteArray>());

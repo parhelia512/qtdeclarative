@@ -42,3 +42,7 @@ if(TARGET Qt::QuickVectorImage)
     endif()
 endif()
 add_subdirectory(e2e)
+if(QT_FEATURE_qml_designsupport)
+    add_subdirectory(objectregistry)
+endif()
+

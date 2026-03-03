@@ -128,4 +128,8 @@ if(TARGET Qt::Gui AND TARGET Qt::qsb AND QT_FEATURE_qml_animation)
     endif()
 endif()
 
+if(QT_FEATURE_qml_designsupport)
+    add_subdirectory(qmldesignsupport)
+endif()
+
 # special case end

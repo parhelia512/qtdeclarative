@@ -390,7 +390,7 @@ QString Object::appendBinding(Binding *b, bool isListBinding)
         }
     }
     if (bindingToDefaultProperty)
-        insertSorted(b);
+        bindings->append(b);
     else
         bindings->prepend(b);
     return QString(); // no error

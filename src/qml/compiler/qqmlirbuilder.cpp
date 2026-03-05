@@ -404,12 +404,6 @@ Binding *Object::findBinding(quint32 nameIndex) const
     return nullptr;
 }
 
-void Object::insertSorted(Binding *b)
-{
-    Binding *insertionPoint = bindings->findSortedInsertionPoint<quint32, Binding, &Binding::offset>(b);
-    bindings->insertAfter(insertionPoint, b);
-}
-
 QString Object::bindingAsString(Document *doc, int scriptIndex) const
 {
     CompiledFunctionOrExpression *foe = functionsAndExpressions->slowAt(scriptIndex);

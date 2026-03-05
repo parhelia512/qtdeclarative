@@ -270,20 +270,6 @@ private:
     bool _seenObjectWithId;
 };
 
-class QQmlDefaultPropertyMerger : public QQmlCompilePass
-{
-public:
-    QQmlDefaultPropertyMerger(QQmlTypeCompiler *typeCompiler);
-
-    void mergeDefaultProperties();
-
-private:
-    void mergeDefaultProperties(int objectIndex);
-
-    const QList<QmlIR::Object*> &qmlObjects;
-    const QQmlPropertyCacheVector * const propertyCaches;
-};
-
 QT_END_NAMESPACE
 
 #endif // QQMLTYPECOMPILER_P_H

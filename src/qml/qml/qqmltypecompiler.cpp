@@ -82,11 +82,6 @@ QQmlRefPointer<QV4::CompiledData::CompilationUnit> QQmlTypeCompiler::compile()
     }
 
     {
-        QQmlDefaultPropertyMerger merger(this);
-        merger.mergeDefaultProperties();
-    }
-
-    {
         SignalHandlerResolver converter(this);
         if (!converter.resolveSignalHandlerExpressions())
             return nullptr;
@@ -1225,62 +1220,6 @@ bool QQmlDeferredAndCustomParserBindingScanner::scanObject(
     }
 
     return true;
-}
-
-QQmlDefaultPropertyMerger::QQmlDefaultPropertyMerger(QQmlTypeCompiler *typeCompiler)
-    : QQmlCompilePass(typeCompiler)
-    , qmlObjects(*typeCompiler->qmlObjects())
-    , propertyCaches(typeCompiler->propertyCaches())
-{
-
-}
-
-void QQmlDefaultPropertyMerger::mergeDefaultProperties()
-{
-    for (int i = 0; i < qmlObjects.size(); ++i)
-        mergeDefaultProperties(i);
-}
-
-void QQmlDefaultPropertyMerger::mergeDefaultProperties(int objectIndex)
-{
-    QQmlPropertyCache::ConstPtr propertyCache = propertyCaches->at(objectIndex);
-    if (!propertyCache)
-        return;
-
-    QmlIR::Object *object = qmlObjects.at(objectIndex);
-
-    QString defaultProperty = object->indexOfDefaultPropertyOrAlias != -1 ? propertyCache->parent()->defaultPropertyName() : propertyCache->defaultPropertyName();
-    QmlIR::Binding *bindingsToReinsert = nullptr;
-    QmlIR::Binding *tail = nullptr;
-
-    QmlIR::Binding *previousBinding = nullptr;
-    QmlIR::Binding *binding = object->firstBinding();
-    while (binding) {
-        if (binding->propertyNameIndex == quint32(0) || stringAt(binding->propertyNameIndex) != defaultProperty) {
-            previousBinding = binding;
-            binding = binding->next;
-            continue;
-        }
-
-        QmlIR::Binding *toReinsert = binding;
-        binding = object->unlinkBinding(previousBinding, binding);
-
-        if (!tail) {
-            bindingsToReinsert = toReinsert;
-            tail = toReinsert;
-        } else {
-            tail->next = toReinsert;
-            tail = tail->next;
-        }
-        tail->next = nullptr;
-    }
-
-    binding = bindingsToReinsert;
-    while (binding) {
-        QmlIR::Binding *toReinsert = binding;
-        binding = binding->next;
-        object->insertSorted(toReinsert);
-    }
 }
 
 QT_END_NAMESPACE

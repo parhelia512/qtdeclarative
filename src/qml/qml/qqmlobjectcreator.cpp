@@ -760,36 +760,15 @@ void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
         }
     }
 
+    const QQmlPropertyData *defaultProperty = _compiledObject->indexOfDefaultPropertyOrAlias != -1
+            ? _propertyCache->parent()->defaultProperty()
+            : _propertyCache->defaultProperty();
+
     int currentListPropertyIndex = -1;
 
-    const QV4::CompiledData::Binding *binding = _compiledObject->bindingTable();
-    for (quint32 i = 0; i < _compiledObject->nBindings; ++i, ++binding) {
-        const QQmlPropertyData *const property = propertyData->at(i);
-        if (property) {
-            const QQmlPropertyData *targetProperty = property;
-            if (targetProperty->isAlias()) {
-                // follow alias
-                QQmlPropertyIndex originalIndex(targetProperty->coreIndex(), _valueTypeProperty ? _valueTypeProperty->coreIndex() : -1);
-                auto [targetObject, targetIndex] = QQmlPropertyPrivate::findAliasTarget(_bindingTarget, originalIndex);
-                QQmlData *data = QQmlData::get(targetObject);
-                Q_ASSERT(data && data->propertyCache);
-                targetProperty = data->propertyCache->property(targetIndex.coreIndex());
-                sharedState->requiredProperties.remove({targetObject, targetProperty});
-            }
-            sharedState->requiredProperties.remove({_bindingTarget, property});
-        }
-
-
-        if (binding->hasFlag(QV4::CompiledData::Binding::IsCustomParserBinding))
-            continue;
-
-        if (binding->hasFlag(QV4::CompiledData::Binding::IsDeferredBinding)) {
-            if (!(mode & ApplyDeferred))
-                continue;
-        } else if (!(mode & ApplyImmediate)) {
-            continue;
-        }
-
+    // Prepare list property state and call setPropertyBinding for one binding.
+    const auto applyBinding = [&](const QQmlPropertyData *property,
+                                  const QV4::CompiledData::Binding *binding) -> bool {
         if (property && property->propType().flags().testFlag(QMetaType::IsQmlList)) {
             if (property->coreIndex() != currentListPropertyIndex) {
                 void *argv[1] = { (void*)&_currentList };
@@ -830,10 +809,81 @@ void QQmlObjectCreator::setupBindings(BindingSetupFlags mode)
             currentListPropertyIndex = -1;
         }
 
-        if (!setPropertyBinding(property, binding))
+        return setPropertyBinding(property, binding);
+    };
+
+    // Explicit default property bindings (propertyNameIndex != 0 but resolving
+    // to the default property) are deferred during iteration over the prepended
+    // section of the binding list and applied in file-offset order once we reach
+    // the appended implicit default bindings (propertyNameIndex == 0).
+    // NB: They have to be contiguous, so we can flush them all in a row.
+    const QV4::CompiledData::Binding *explicitDefaultPropertyBindings = nullptr;
+    quint32 numExplicitDefaultPropertyBindings = 0;
+
+    const auto applyExplicitDefaultPropertyBindings = [&]() -> bool {
+        for (; numExplicitDefaultPropertyBindings > 0; --numExplicitDefaultPropertyBindings) {
+            if (!applyBinding(defaultProperty, explicitDefaultPropertyBindings++))
+                return false;
+        }
+        return true;
+    };
+
+    const QV4::CompiledData::Binding *binding = _compiledObject->bindingTable();
+    for (quint32 i = 0; i < _compiledObject->nBindings; ++i, ++binding) {
+        const QQmlPropertyData *const property = propertyData->at(i);
+        if (property) {
+            const QQmlPropertyData *targetProperty = property;
+            if (targetProperty->isAlias()) {
+                // follow alias
+                QQmlPropertyIndex originalIndex(targetProperty->coreIndex(),
+                                                _valueTypeProperty ? _valueTypeProperty->coreIndex()
+                                                                   : -1);
+                auto [targetObject, targetIndex] =
+                        QQmlPropertyPrivate::findAliasTarget(_bindingTarget, originalIndex);
+                QQmlData *data = QQmlData::get(targetObject);
+                Q_ASSERT(data && data->propertyCache);
+                targetProperty = data->propertyCache->property(targetIndex.coreIndex());
+                sharedState->requiredProperties.remove({ targetObject, targetProperty });
+            }
+            sharedState->requiredProperties.remove({ _bindingTarget, property });
+        }
+
+        if (binding->hasFlag(QV4::CompiledData::Binding::IsCustomParserBinding))
+            continue;
+
+        if (binding->hasFlag(QV4::CompiledData::Binding::IsDeferredBinding)) {
+            if (!(mode & ApplyDeferred))
+                continue;
+        } else if (!(mode & ApplyImmediate)) {
+            continue;
+        }
+
+        // Defer explicit bindings to the default property until we reach the
+        // implicit default bindings, where they will be interleaved by offset.
+        if (binding->propertyNameIndex != quint32(0)
+                && defaultProperty
+                && property == defaultProperty) {
+            if (++numExplicitDefaultPropertyBindings == 1)
+                explicitDefaultPropertyBindings = binding;
+            continue;
+        }
+
+        // Flush deferred explicit default bindings if file offset is <= the
+        // current implicit default binding's offset.
+        if (binding->propertyNameIndex == quint32(0)
+                && numExplicitDefaultPropertyBindings > 0
+                && !(binding->location < explicitDefaultPropertyBindings->location)) {
+            if (!applyExplicitDefaultPropertyBindings())
+                return;
+        }
+
+        if (!applyBinding(property, binding))
             return;
     }
 
+    // Flush any remaining deferred explicit default bindings.
+    if (!applyExplicitDefaultPropertyBindings())
+        return;
     qSwap(_currentList, savedList);
 }
 

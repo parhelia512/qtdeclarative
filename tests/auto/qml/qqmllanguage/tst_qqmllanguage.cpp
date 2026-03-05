@@ -526,6 +526,7 @@ private slots:
     void aliasToPropertyOfAlias();
     void aliasToGroupedProperty();
     void aliasesAndDefaultProperty();
+    void removeBindingFromAliasToObject();
     void propertyCycle();
 
     void urlWithFragment();
@@ -9981,6 +9982,18 @@ void tst_qqmllanguage::aliasesAndDefaultProperty()
     QVERIFY(!o.isNull());
 
     QCOMPARE(o->property("label"), "should not change"_L1);
+}
+
+void tst_qqmllanguage::removeBindingFromAliasToObject()
+{
+    QQmlEngine engine;
+
+    QQmlComponent c(&engine, testFileUrl("aliasCrash.qml"));
+    QVERIFY2(c.isReady(), qPrintable(c.errorString()));
+    std::unique_ptr<QObject> o(c.create());
+    QVERIFY(o);
+
+    QCOMPARE(o->objectName(), "boom"_L1);
 }
 
 void tst_qqmllanguage::urlWithFragment()

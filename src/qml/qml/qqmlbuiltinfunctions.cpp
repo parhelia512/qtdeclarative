@@ -702,7 +702,7 @@ QVariant QtObject::darker(const QJSValue &color, double factor) const
 
     \a value is a real ranging from 0 (completely transparent) to 1 (completely opaque).
 
-    \note Prefer using the typed \l{Color::alpha}
+    \note Prefer using the typed \l{Color::transparent}
 */
 QVariant QtObject::alpha(const QJSValue &baseColor, double value) const
 {

@@ -47,6 +47,7 @@ qt_add_qml_module(
     [NO_GENERATE_QMLTYPES]
     [NO_GENERATE_QMLDIR]
     [NO_GENERATE_EXTRA_QMLDIRS]
+    [NO_GENERATE_QTCONF]
     [NO_LINT]
     [NO_CACHEGEN]
     [NO_RESOURCE_TARGET_PATH]
@@ -701,6 +702,21 @@ explicitly.
 \note Adding the module to \c DEPENDENCIES is not necessary if the module
 is already imported via the \c IMPORTS option. The recommended way is to
 use the lighter alternative \c DEPENDENCIES over \c IMPORTS.
+
+\target NO_GENERATE_QTCONF
+When the backing target is an executable and \c{TARGET} dependencies are used
+(requires \l{QTP0005}), \c{qt_add_qml_module()} automatically generates a
+\c{qt.conf} file next to the executable in the build tree. This file configures
+the \l{QML Import Path} so that the QML engine can locate the module's
+dependencies at run time without requiring manual \c IMPORT_PATH entries. The
+\c NO_GENERATE_QTCONF option suppresses this behavior, which may be necessary
+if the generated file conflicts with a \c qt.conf already present in the build
+directory. This option was introduced in Qt 6.12.
+
+\warning When using \c NO_GENERATE_QTCONF, the application may fail to find its
+QML module dependencies at run time. You must manually configure the
+\l{QML Import Path} — for example, by adding the appropriate import paths to
+the existing \c qt.conf file.
 
 The module version of the
 dependencies must be specified along with the module name, in the same form as

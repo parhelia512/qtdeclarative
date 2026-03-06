@@ -307,6 +307,7 @@ function(qt6_add_qml_module target)
         NO_GENERATE_QMLTYPES
         NO_GENERATE_QMLDIR
         NO_GENERATE_EXTRA_QMLDIRS
+        NO_GENERATE_QTCONF
         NO_LINT
         NO_CACHEGEN
         NO_RESOURCE_TARGET_PATH
@@ -1201,7 +1202,8 @@ Check https://doc.qt.io/qt-6/qt-cmake-policy-qtp0001.html for policy details."
     # write out extra qtconf files for executables to automatically set up import paths;
     # but avoid needless warnings and work if there are no relevant dependencies specified
     if((backing_target_type STREQUAL "EXECUTABLE")
-        AND all_dependency_targets)
+        AND all_dependency_targets
+        AND NOT arg_NO_GENERATE_QTCONF)
         if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.19.0")
             # The general logic is that every target writes out a "partial" file,
             # containing its needed imports.

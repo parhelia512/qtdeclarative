@@ -281,7 +281,7 @@ public:
     inline int signalCount() const;
     inline int ownSignalCount() const { return int(signalHandlerIndexCache.count()); }
     inline int signalOffset() const;
-    inline int qmlEnumCount() const;
+    inline int ownEnumCount() const;
 
     void toMetaObjectBuilder(QMetaObjectBuilder &) const;
 
@@ -594,7 +594,7 @@ int QQmlPropertyCache::signalOffset() const
     return signalHandlerIndexCacheStart;
 }
 
-int QQmlPropertyCache::qmlEnumCount() const
+int QQmlPropertyCache::ownEnumCount() const
 {
     return int(enumCache.size());
 }

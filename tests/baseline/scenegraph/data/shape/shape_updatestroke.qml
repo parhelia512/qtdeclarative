@@ -3,7 +3,7 @@ import QtQuick.Shapes
 
 Rectangle {
     width: 320
-    height: 240
+    height: 320
     color: "lightgray"
 
     ListModel {
@@ -102,7 +102,7 @@ Rectangle {
                     strokeGradient: grad1
 
                     PathRectangle {
-                        id: rg3                    
+                        id: rg3
                         y: 2 * 80
                         width: 60; height: 60
                     }
@@ -123,6 +123,34 @@ Rectangle {
                     }
                 }
 
+                ShapePath {
+                    id: g5
+                    strokeWidth: 10
+                    strokeColor: "cyan"
+                    fillColor: "transparent"
+                    strokeGradient: grad1
+
+                    PathRectangle {
+                        id: rg5
+                        y: 3 * 80
+                        width: 76; height: 60
+                    }
+                }
+
+                ShapePath {
+                    id: g6
+                    strokeWidth: 10
+                    strokeColor: "cyan"
+                    fillColor: "transparent"
+
+                    PathRectangle {
+                        id: rg6
+                        x: 80
+                        y: 3 * 80
+                        width: 76; height: 60
+                    }
+                }
+
                 Timer {
                     running: true
                     interval: 150 // <200ms needed for scenegrabber; disable for manual testing
@@ -131,6 +159,9 @@ Rectangle {
                         g1.strokeGradient = null
                         g2.strokeGradient = null
                         g3.strokeGradient = grad2
+                        rg5.width -= 16
+                        rg6.width -= 16
+                        g6.strokeGradient = grad2
                     }
                 }
             }

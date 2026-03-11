@@ -64,6 +64,7 @@ private slots:
     void openUrlExternally_pragmaLibrary();
 #endif
     void md5();
+    void escapeHtml();
     void createComponent();
     void createComponent_pragmaLibrary();
     void createQmlObject();
@@ -690,6 +691,22 @@ void tst_qqmlqt::md5()
     QVERIFY(object != nullptr);
 
     QCOMPARE(object->property("test2").toString(), QLatin1String(QCryptographicHash::hash("Hello World", QCryptographicHash::Md5).toHex()));
+}
+
+void tst_qqmlqt::escapeHtml()
+{
+    QQmlComponent component(&engine, testFileUrl("escapeHtml.qml"));
+
+    QString warning1 = component.url().toString() + ":4: Error: Insufficient arguments";
+    QTest::ignoreMessage(QtWarningMsg, qPrintable(warning1));
+
+    QScopedPointer<QObject> object(component.create());
+    QVERIFY(object != nullptr);
+
+    QCOMPARE(object->property("test2").toString(), QString("<>&\"").toHtmlEscaped());
+    QCOMPARE(object->property("test3").toString(), QString("<script>alert('XSS')</script>").toHtmlEscaped());
+    QCOMPARE(object->property("test4").toString(), QString("Normal text").toHtmlEscaped());
+    QCOMPARE(object->property("test5").toString(), QString("").toHtmlEscaped());
 }
 
 void tst_qqmlqt::createComponent()

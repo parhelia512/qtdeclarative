@@ -1245,6 +1245,29 @@ QString QtObject::md5(const QString &data) const
 }
 
 /*!
+\qmlmethod string Qt::escapeHtml(string data)
+\since 6.12
+
+Returns \a data with HTML special characters escaped.
+
+This function converts the plain text string \a data to an HTML string with
+HTML metacharacters \c{<}, \c{>}, \c{&}, and \c{"} replaced by HTML entities.
+
+Example:
+\qml
+var plain = "<script>alert('XSS')</script>";
+var escaped = Qt.escapeHtml(plain);
+// escaped is now "&lt;script&gt;alert('XSS')&lt;/script&gt;"
+\endqml
+
+\sa QString::toHtmlEscaped()
+*/
+QString QtObject::escapeHtml(const QString &data) const
+{
+    return data.toHtmlEscaped();
+}
+
+/*!
 \qmlmethod string Qt::btoa(string data)
 \deprecated [6.11] This method performs a UTF-8 conversion of the string before encoding it.
 

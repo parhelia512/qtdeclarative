@@ -175,7 +175,7 @@ public:
         \internal
         Removes the binding from \a prop if there is any.
      */
-    static void removeBindingFrom(QQmlProperty &prop)
+    static void removeBindingFrom(const QQmlProperty &prop)
     {
         if (prop.isBindable())
             prop.property().bindable(prop.object()).takeBinding();

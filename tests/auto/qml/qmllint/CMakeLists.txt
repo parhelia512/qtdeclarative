@@ -61,6 +61,14 @@ if (TARGET QuickControls2Basic)
     )
 endif()
 
+if (TARGET quicklintplugin)
+    add_dependencies(tst_qmllint quicklintplugin)
+endif()
+
+if (TARGET qdslintplugin)
+    add_dependencies(tst_qmllint qdslintplugin)
+endif()
+
 if(QT_FEATURE_process)
     add_subdirectory(importRelScript)
     add_dependencies(tst_qmllint tst_qmllint_import_rel_script)

@@ -2039,13 +2039,7 @@ QSGNode *QQuickTextInput::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData 
             node->setViewport(QRectF{});
 
         QPointF offset(leftPadding(), topPadding());
-        if (d->autoScroll && d->m_textLayout.lineCount() > 0) {
-            QFontMetricsF fm(d->font);
-            // the y offset is there to keep the baseline constant in case we have script changes in the text.
-            offset += -QPointF(d->hscroll, d->vscroll + d->m_textLayout.lineAt(0).ascent() - fm.ascent());
-        } else {
-            offset += -QPointF(d->hscroll, d->vscroll);
-        }
+        offset -= QPointF(d->hscroll, d->vscroll);
 
         if (!d->m_textLayout.text().isEmpty()
 #if QT_CONFIG(im)
@@ -3340,7 +3334,14 @@ void QQuickTextInputPrivate::updateBaselineOffset()
         else if (vAlign == QQuickTextInput::AlignVCenter)
             yoff = surplusHeight/2;
     }
-    q->setBaselineOffset(fm.ascent() + yoff + q->topPadding());
+    qreal ascent;
+    if (m_textLayout.lineCount() > 0) {
+        QTextLine line = m_textLayout.lineAt(0);
+        ascent = line.y() + line.ascent();
+    } else {
+        ascent = fm.ascent();
+    }
+    q->setBaselineOffset(ascent + yoff + q->topPadding());
 }
 
 #if QT_CONFIG(clipboard)

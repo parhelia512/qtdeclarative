@@ -126,6 +126,8 @@ T.SearchField {
             renderType: parent.renderType
         }
 
+        selectByMouse: control.selectTextByMouse
+
         color: !control.enabled ? control.Universal.chromeDisabledLowColor :
                                   control.activeFocus ? control.Universal.chromeBlackHighColor : control.Universal.foreground
         selectionColor: control.Universal.accent

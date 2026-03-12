@@ -36,6 +36,8 @@ NativeStyle.DefaultSearchField {
             renderType: parent.renderType
         }
 
+        selectByMouse: control.selectTextByMouse
+
         color: control.palette.text
         selectionColor: control.palette.highlight
         selectedTextColor: control.palette.highlightedText

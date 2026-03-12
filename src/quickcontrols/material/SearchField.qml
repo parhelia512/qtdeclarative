@@ -100,6 +100,8 @@ T.SearchField {
             renderType: parent.renderType
         }
 
+        selectByMouse: control.selectTextByMouse
+
         color: control.enabled ? control.Material.foreground : control.Material.hintTextColor
         selectionColor: control.Material.accentColor
         selectedTextColor: control.Material.primaryHighlightedTextColor

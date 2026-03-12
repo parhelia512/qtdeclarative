@@ -237,6 +237,8 @@ public:
     void updateHighlightedIndex();
     void setHighlightedIndex(int index, Highlighting highlight);
 
+    void updateCursorPosition();
+
     void createDelegateModel();
 
     QString currentTextRole() const;
@@ -261,12 +263,13 @@ public:
     static inline QString popupName() { return QStringLiteral("popup"); }
 
     QVariant suggestionModel;
-    bool hasCurrentIndex = false;
     int highlightedIndex = -1;
     int currentIndex = -1;
+    int cursorPosition = 0;
     QString text;
     QString textRole;
     QString placeholderText;
+    bool hasCurrentIndex = false;
     bool live = true;
     bool searchPressed = false;
     bool clearPressed = false;
@@ -277,6 +280,7 @@ public:
     bool hasSearchDown = false;
     bool hasClearDown = false;
     bool ownModel = false;
+    bool selectTextByMouse = true;
     QQmlInstanceModel *delegateModel = nullptr;
     QQmlComponent *delegate = nullptr;
     QQuickIndicatorButton *searchIndicator = nullptr;
@@ -496,6 +500,25 @@ void QQuickSearchFieldPrivate::setHighlightedIndex(int index, Highlighting highl
 
     if (highlight)
         emit q->highlighted(index);
+}
+
+void QQuickSearchFieldPrivate::updateCursorPosition()
+{
+    Q_Q(QQuickSearchField);
+
+    if (!contentItem)
+        return;
+
+    const QQuickTextInput *input = qobject_cast<QQuickTextInput *>(contentItem);
+    if (!input)
+        return;
+
+    const int pos = input->cursorPosition();
+    if (cursorPosition == pos)
+        return;
+
+    cursorPosition = pos;
+    emit q->cursorPositionChanged();
 }
 
 void QQuickSearchFieldPrivate::createDelegateModel()
@@ -1101,12 +1124,129 @@ void QQuickSearchField::setPlaceholderText(const QString &text)
 }
 
 /*!
+    \qmlproperty bool QtQuick.Controls::SearchField::selectTextByMouse
+    \since 6.12
+
+    This property holds whether the text can be selected with the mouse.
+
+    The default value is \c true.
+*/
+bool QQuickSearchField::selectTextByMouse() const
+{
+    Q_D(const QQuickSearchField);
+    return d->selectTextByMouse;
+}
+
+void QQuickSearchField::setSelectTextByMouse(const bool selectable)
+{
+    Q_D(QQuickSearchField);
+    if (d->selectTextByMouse == selectable)
+        return;
+
+    d->selectTextByMouse = selectable;
+    emit selectTextByMouseChanged();
+}
+
+/*!
+    \readonly
+    \qmlproperty string QtQuick.Controls::SearchField::selectedText
+    \since 6.12
+
+    This read-only property holds the currently selected text.
+*/
+QString QQuickSearchField::selectedText() const
+{
+    Q_D(const QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return QString();
+    return input->selectedText();
+}
+
+/*!
+    \readonly
+    \qmlproperty int QtQuick.Controls::SearchField::selectionStart
+    \since 6.12
+
+    The cursor position before the first character in the current selection.
+
+    This property is read-only. To change the selection, use select(start, end),
+    selectAll(), or selectWord().
+
+    \sa selectionEnd, cursorPosition, selectedText
+*/
+int QQuickSearchField::selectionStart() const
+{
+    Q_D(const QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return 0;
+    return input->selectionStart();
+}
+
+/*!
+    \readonly
+    \qmlproperty int QtQuick.Controls::SearchField::selectionEnd
+    \since 6.12
+
+    The cursor position after the last character in the current selection.
+
+    This property is read-only. To change the selection, use select(start, end),
+    selectAll(), or selectWord().
+
+    \sa selectionStart, cursorPosition, selectedText
+*/
+int QQuickSearchField::selectionEnd() const
+{
+    Q_D(const QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return 0;
+    return input->selectionEnd();
+}
+
+/*!
+    \qmlproperty int QtQuick.Controls::SearchField::cursorPosition
+    \since 6.12
+
+    The position of the cursor in the text field. The cursor is positioned between
+    characters.
+
+    \note The \e characters in this case refer to the string of \l QChar objects,
+    therefore 16-bit Unicode characters, and the position is considered an index
+    into this string. This does not necessarily correspond to individual graphemes
+    in the writing system, as a single grapheme may be represented by multiple
+    Unicode characters, such as in the case of surrogate pairs, linguistic
+    ligatures or diacritics.
+*/
+int QQuickSearchField::cursorPosition() const
+{
+    Q_D(const QQuickSearchField);
+    return d->cursorPosition;
+}
+
+void QQuickSearchField::setCursorPosition(int position)
+{
+    Q_D(QQuickSearchField);
+    if (d->cursorPosition == position)
+        return;
+
+    d->cursorPosition = position;
+
+    if (QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem)) {
+        if (input->cursorPosition() != position)
+            input->setCursorPosition(position);
+    }
+
+    emit cursorPositionChanged();
+}
+
+/*!
     \qmlmethod void QtQuick.Controls::SearchField::selectAll()
     \since 6.12
 
     Selects all text in the text field of the control.
 */
-
 void QQuickSearchField::selectAll()
 {
     Q_D(QQuickSearchField);
@@ -1114,6 +1254,63 @@ void QQuickSearchField::selectAll()
     if (!input)
         return;
     input->selectAll();
+}
+
+/*!
+    \qmlmethod void QtQuick.Controls::SearchField::select(int start, int end)
+    \since 6.12
+
+    Causes the text from \a start to \a end to be selected.
+
+    If either \a start or \a end is out of range, the selection is not changed.
+
+    After calling this, selectionStart will become the lesser
+    and selectionEnd will become the greater (regardless of the order passed
+    to this method).
+
+    \sa selectionStart, selectionEnd
+*/
+void QQuickSearchField::select(int start, int end)
+{
+    Q_D(QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return;
+    input->select(start, end);
+}
+
+/*!
+    \qmlmethod void QtQuick.Controls::SearchField::selectWord()
+    \since 6.12
+
+    Causes the word closest to the current cursor position to be selected.
+
+    \sa cursorPosition, selectedText
+*/
+void QQuickSearchField::selectWord()
+{
+    Q_D(QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return;
+    input->selectWord();
+}
+
+/*!
+    \qmlmethod void QtQuick.Controls::SearchField::deselect()
+    \since 6.12
+
+    Removes the active text selection.
+
+    \sa selectedText, selectionStart, selectionEnd
+*/
+void QQuickSearchField::deselect()
+{
+    Q_D(QQuickSearchField);
+    QQuickTextInput *input = qobject_cast<QQuickTextInput *>(d->contentItem);
+    if (!input)
+        return;
+    input->deselect();
 }
 
 bool QQuickSearchField::eventFilter(QObject *object, QEvent *event)
@@ -1300,6 +1497,8 @@ void QQuickSearchField::contentItemChange(QQuickItem *newItem, QQuickItem *oldIt
         if (QQuickTextInput *oldInput = qobject_cast<QQuickTextInput *>(oldItem)) {
             QObjectPrivate::disconnect(oldInput, &QQuickTextInput::textChanged, d,
                                        &QQuickSearchFieldPrivate::updateText);
+            QObjectPrivate::disconnect(oldInput, &QQuickTextInput::cursorPositionChanged,
+                                       d, &QQuickSearchFieldPrivate::updateCursorPosition);
         }
     }
 
@@ -1308,6 +1507,8 @@ void QQuickSearchField::contentItemChange(QQuickItem *newItem, QQuickItem *oldIt
         if (QQuickTextInput *newInput = qobject_cast<QQuickTextInput *>(newItem)) {
             QObjectPrivate::connect(newInput, &QQuickTextInput::textChanged, d,
                                     &QQuickSearchFieldPrivate::updateText);
+            QObjectPrivate::connect(newInput, &QQuickTextInput::cursorPositionChanged,
+                                    d, &QQuickSearchFieldPrivate::updateCursorPosition);
         }
         #if QT_CONFIG(cursor)
                 newItem->setCursor(Qt::IBeamCursor);

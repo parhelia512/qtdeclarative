@@ -65,6 +65,8 @@ T.SearchField {
             renderType: parent.renderType
         }
 
+        selectByMouse: control.selectTextByMouse
+
         font: control.font
         color: control.palette.text
         selectionColor: control.palette.highlight

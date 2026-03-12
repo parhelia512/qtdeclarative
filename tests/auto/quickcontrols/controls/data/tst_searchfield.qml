@@ -48,6 +48,11 @@ TestCase {
         compare(control.placeholderText, "")
         compare(control.textRole, "")
         compare(control.live, true)
+        compare(control.selectTextByMouse, true)
+        compare(control.selectedText, "")
+        compare(control.selectionStart, 0)
+        compare(control.selectionEnd, 0)
+        compare(control.cursorPosition, 0)
         verify(control.delegate)
         if (StyleInfo.styleName !== "iOS")
             verify(control.popup)
@@ -407,5 +412,61 @@ TestCase {
         compare(shortcutActivatedSpy.count, 1)
         verify(control.contentItem.activeFocus)
         compare(control.contentItem.selectedText, "hello")
+    }
+
+    function test_selectTextByMouse() {
+        let control = createTemporaryObject(searchField, testCase,
+                { text: "Some text", selectTextByMouse: true, width: parent.width })
+        verify(control)
+        waitForRendering(control)
+        control.forceActiveFocus()
+
+        mouseClick(control, control.leftPadding, control.height / 2)
+        mousePress(control, control.leftPadding, control.height / 2)
+        mouseMove(control, control.leftPadding + control.contentItem.width, control.height / 2)
+        mouseRelease(control, control.leftPadding + control.contentItem.width, control.height / 2)
+
+        compare(control.selectedText, "Some text")
+        verify(control.selectionStart >= 0)
+        verify(control.selectionEnd >= 0)
+        verify(control.selectionStart < control.selectionEnd)
+    }
+
+    function test_select_and_deselect() {
+        let control = createTemporaryObject(searchField, testCase,
+                { text: "Some text", selectTextByMouse: true, width: parent.width })
+        verify(control)
+        waitForRendering(control)
+        control.forceActiveFocus()
+
+        control.select(0, 4)
+
+        compare(control.selectionStart, 0)
+        compare(control.selectionEnd, 4)
+        compare(control.selectedText, "Some")
+
+        control.deselect()
+
+        compare(control.selectionStart, 4)
+        compare(control.selectionEnd, 4)
+        compare(control.selectedText, "")
+    }
+
+    function test_selectWord_withCursorPosition() {
+        let control = createTemporaryObject(searchField, testCase,
+                { text: "Some text", selectTextByMouse: true, width: parent.width })
+        verify(control)
+        waitForRendering(control)
+        control.forceActiveFocus()
+
+        control.cursorPosition = 6
+        control.selectWord()
+        compare(control.selectedText, "text")
+        compare(control.cursorPosition, 9)
+
+        control.cursorPosition = 1
+        control.selectWord()
+        compare(control.selectedText, "Some")
+        compare(control.cursorPosition, 4)
     }
 }

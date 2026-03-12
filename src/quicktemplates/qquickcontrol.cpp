@@ -888,7 +888,6 @@ void QQuickControlPrivate::itemImplicitHeightChanged(QQuickItem *item)
 
 void QQuickControlPrivate::itemGeometryChanged(QQuickItem *item, QQuickGeometryChange change, const QRectF &diff)
 {
-    Q_Q(QQuickControl);
     Q_UNUSED(diff);
     if (resizingBackground || item != background || !change.sizeChange())
         return;
@@ -900,8 +899,7 @@ void QQuickControlPrivate::itemGeometryChanged(QQuickItem *item, QQuickGeometryC
         extra.value().hasBackgroundWidth = p->widthValid();
     if (change.heightChange())
         extra.value().hasBackgroundHeight = p->heightValid();
-    if (q->isComponentComplete())
-        resizeBackground();
+    resizeBackground();
 }
 
 void QQuickControlPrivate::itemDestroyed(QQuickItem *item)
@@ -2141,8 +2139,7 @@ void QQuickControl::geometryChange(const QRectF &newGeometry, const QRectF &oldG
 {
     Q_D(QQuickControl);
     QQuickItem::geometryChange(newGeometry, oldGeometry);
-    if (isComponentComplete())
-        d->resizeBackground();
+    d->resizeBackground();
     d->resizeContent();
     if (!qFuzzyCompare(newGeometry.width(), oldGeometry.width()))
         emit availableWidthChanged();

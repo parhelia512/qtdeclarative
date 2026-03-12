@@ -38,9 +38,6 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                          }
                          m_codeModelManager->addRootUrls(toAdd);
                      });
-
-    QObject::connect(server, &QLanguageServer::clientInitialized, this,
-                     &WorkspaceHandlers::clientInitialized);
 }
 
 QString WorkspaceHandlers::name() const
@@ -97,62 +94,6 @@ void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)
             });
             return;
         }
-    }
-}
-
-void WorkspaceHandlers::clientInitialized(QLanguageServer *server)
-{
-    QLanguageServerProtocol *protocol = server->protocol();
-    const auto clientInfo = server->clientInfo();
-    QList<Registration> registrations;
-    if (clientInfo.capabilities.workspace
-        && clientInfo.capabilities.workspace
-                   ->value(u"didChangeWatchedFiles"_s)[u"dynamicRegistration"_s]
-                   .toBool(false)) {
-        const int watchAll =
-                int(WatchKind::Create) | int(WatchKind::Change) | int(WatchKind::Delete);
-        DidChangeWatchedFilesRegistrationOptions watchedFilesParams;
-        FileSystemWatcher qmlWatcher;
-        qmlWatcher.globPattern = QByteArray("*.{qml,js,mjs}");
-        qmlWatcher.kind = watchAll;
-        FileSystemWatcher qmldirWatcher;
-        qmldirWatcher.globPattern = "qmldir";
-        qmldirWatcher.kind = watchAll;
-        FileSystemWatcher qmltypesWatcher;
-        qmltypesWatcher.globPattern = QByteArray("*.qmltypes");
-        qmltypesWatcher.kind = watchAll;
-        watchedFilesParams.watchers = QList<FileSystemWatcher>({
-            std::move(qmlWatcher),
-            std::move(qmldirWatcher),
-            std::move(qmltypesWatcher)
-        });
-        registrations.append(Registration {
-                // use ClientCapabilitiesInfo::WorkspaceDidChangeWatchedFiles as id too
-                ClientCapabilitiesInfo::WorkspaceDidChangeWatchedFiles,
-                ClientCapabilitiesInfo::WorkspaceDidChangeWatchedFiles,
-                QTypedJson::toJsonValue(watchedFilesParams) });
-    }
-
-    if (!registrations.isEmpty()) {
-        RegistrationParams params;
-        params.registrations = registrations;
-        protocol->requestRegistration(
-                params,
-                []() {
-                    // successful registration
-                },
-                [protocol](const ResponseError &err) {
-                    LogMessageParams msg;
-                    msg.message = QByteArray("Registration of file updates failed, will miss file "
-                                             "changes from outside the editor.");
-                    msg.message.append(QString::number(err.code).toUtf8());
-                    if (!err.message.isEmpty())
-                        msg.message.append(" ");
-                    msg.message.append(err.message);
-                    msg.type = MessageType::Warning;
-                    qCWarning(lspServerLog) << QString::fromUtf8(msg.message);
-                    protocol->notifyLogMessage(msg);
-                });
     }
 }
 

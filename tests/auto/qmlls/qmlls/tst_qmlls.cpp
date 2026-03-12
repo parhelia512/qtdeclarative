@@ -82,7 +82,6 @@ private:
     QLanguageServerProtocol m_protocol;
     DiagnosticsHandler m_diagnosticsHandler;
     QString m_qmllsPath;
-    QList<RegistrationParams> m_registrations;
 };
 
 tst_Qmlls::tst_Qmlls()
@@ -138,12 +137,6 @@ void tst_Qmlls::initTestCase()
                               QJsonObject({ { u"dynamicRegistration"_s, true } }) } });
     clientInfo.capabilities.workspace = workspace;
     bool didInit = false;
-    m_protocol.registerRegistrationRequestHandler([this](const QByteArray &,
-                                                         const RegistrationParams &params,
-                                                         LSPResponse<std::nullptr_t> &&response) {
-        m_registrations.append(params);
-        response.sendResponse();
-    });
     m_protocol.requestInitialize(clientInfo, [this, &didInit](const InitializeResult &serverInfo) {
         Q_UNUSED(serverInfo);
         m_protocol.notifyInitialized(InitializedParams());
@@ -274,14 +267,7 @@ void tst_Qmlls::didOpenTextDocument()
 
 void tst_Qmlls::testWorkspace()
 {
-    QTRY_VERIFY_WITH_TIMEOUT(!m_registrations.isEmpty(), 10000);
     QByteArray uri = testFileUrl("default/Zzz.qml").toString().toUtf8();
-    DidChangeWatchedFilesParams fChanges;
-    FileEvent fEvent;
-    fEvent.uri = uri;
-    fEvent.type = int(FileChangeType::Changed);
-    fChanges.changes.append(fEvent);
-    m_protocol.notifyDidChangeWatchedFiles(fChanges);
     DidChangeWorkspaceFoldersParams dChanges;
     WorkspaceFolder dir;
     dir.name = "default";

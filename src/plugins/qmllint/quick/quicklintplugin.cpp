@@ -92,9 +92,6 @@ QString AttachedPropertyTypeValidatorPass::addWarning(TypeDescription attachType
 
     const QQmlSA::Element attachedType = resolveAttached(attachType.module, attachType.name);
     if (!attachedType) {
-        emitWarning(
-                "Cannot find attached type for %1/%2"_L1.arg(attachType.module, attachType.name),
-                quickAttachedPropertyType);
         return QString();
     }
 

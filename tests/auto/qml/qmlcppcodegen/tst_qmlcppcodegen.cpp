@@ -197,6 +197,7 @@ private slots:
     void listIndices();
     void listLength();
     void listOfInvisible();
+    void listOfInlineComponent();
     void listPropertyAsModel();
     void listToString();
     void lotsOfRegisters();
@@ -3836,6 +3837,19 @@ void tst_QmlCppCodegen::listOfInvisible()
     std::unique_ptr<QObject> object(component.create());
     QVERIFY(object);
     QCOMPARE(object->property("width").toDouble(), 27.0);
+}
+
+void tst_QmlCppCodegen::listOfInlineComponent()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine, QUrl(u"qrc:/qt/qml/TestTypes/listOfInlineComponent.qml"_s));
+    QVERIFY2(component.isReady(), component.errorString().toUtf8());
+    QScopedPointer<QObject> object(component.create());
+    QVERIFY(!object.isNull());
+    const QVariant model = object->property("model");
+    QCOMPARE(model.metaType(), QMetaType::fromType<QQmlListReference>());
+    QQmlListReference ref = model.value<QQmlListReference>();
+    QCOMPARE(ref.count(), 0);
 }
 
 void tst_QmlCppCodegen::listPropertyAsModel()

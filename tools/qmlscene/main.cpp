@@ -102,9 +102,9 @@ void RenderStatistics::printTotalStats()
 
     puts(" ");
     puts("----- Statistics -----");
-    printf("Average time per frame: %f ms (%i fps)\n", avg, qRound(1000. / avg));
-    printf("Best time per frame: %f ms (%i fps)\n", minTime, int(1000 / minTime));
-    printf("Worst time per frame: %f ms (%i fps)\n", maxTime, int(1000 / maxTime));
+    printf("Average time per frame: %f ms (%i fps)\n", avg, qRound(1000. / qMax(avg, 1.)));
+    printf("Best time per frame: %f ms (%i fps)\n", minTime, int(1000 / qMax(minTime, 1.)));
+    printf("Worst time per frame: %f ms (%i fps)\n", maxTime, int(1000 / qMax(maxTime, 1.)));
     puts("----------------------");
     puts(" ");
 }

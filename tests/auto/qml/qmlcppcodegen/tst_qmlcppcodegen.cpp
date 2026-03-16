@@ -101,6 +101,7 @@ private slots:
     void convertToOriginalReadAcumulatorForUnaryOperators();
     void cppMethodListReturnType();
     void cppValueTypeList();
+    void ctorArgumentConversion();
     void dateConstruction();
     void dateConversions();
     void deadContext_data();
@@ -1665,6 +1666,16 @@ void tst_QmlCppCodegen::cppValueTypeList()
     QCOMPARE(object->property("b").toDouble(), 0.25);
     QMetaObject::invokeMethod(object.get(), "incB");
     QCOMPARE(object->property("b").toDouble(), 13.5);
+}
+
+void tst_QmlCppCodegen::ctorArgumentConversion()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine, QUrl(u"qrc:/qt/qml/TestTypes/ctorArgumentConversion.qml"_s));
+    std::unique_ptr<QObject> object(component.create());
+    QVERIFY2(object, component.errorString().toUtf8().constData());
+    LocalWithLength w = object->property("w").value<LocalWithLength>();
+    QCOMPARE(w.length(), 4);
 }
 
 void tst_QmlCppCodegen::dateConstruction()

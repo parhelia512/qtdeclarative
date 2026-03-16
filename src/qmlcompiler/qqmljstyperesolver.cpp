@@ -1305,10 +1305,10 @@ QQmlJSMetaMethod QQmlJSTypeResolver::selectConstructor(
         return QQmlJSMetaMethod();
     }
 
-    auto doSelectConstructor = [&](const QQmlJSScope::ConstPtr &type) {
+    auto doSelectConstructor = [&](const QQmlJSScope::ConstPtr &ctorProvider) {
         QQmlJSMetaMethod candidate;
 
-        const auto ownMethods = type->ownMethods();
+        const auto ownMethods = ctorProvider->ownMethods();
         for (const QQmlJSMetaMethod &method : ownMethods) {
             if (!method.isConstructor())
                 continue;
@@ -1321,6 +1321,10 @@ QQmlJSMetaMethod QQmlJSTypeResolver::selectConstructor(
                 continue;
 
             const QQmlJSScope::ConstPtr methodArgumentType = methodArguments[0].type();
+
+            // Do not select the copy constructor (also not if disguised via the extension).
+            if (methodArgumentType == type)
+                continue;
 
             if (passedArgumentType == methodArgumentType)
                 return method;

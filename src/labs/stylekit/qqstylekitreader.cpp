@@ -260,7 +260,7 @@ static quint64 textFontOverridesSignature(const QQStyleKitTextProperties *t)
 }
 
 QList<QQStyleKitReader *> QQStyleKitReader::s_allReaders;
-QMap<QString, QQmlComponent *> QQStyleKitReader::s_propertyChangesComponents;
+QMap<QPair<QQmlEngine *, QString>, QQmlComponent *> QQStyleKitReader::s_propertyChangesComponents;
 
 
 
@@ -310,8 +310,10 @@ QQuickStateGroup *QQStyleKitReader::stateGroup()
 QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
 {
     static const QLatin1String propertyName("control"_L1);
-    if (s_propertyChangesComponents.contains(propertyName))
-        return s_propertyChangesComponents.value(propertyName);
+    QQmlEngine *engine = qmlEngine(style());
+    auto key = qMakePair(engine, propertyName);
+    if (s_propertyChangesComponents.contains(key))
+        return s_propertyChangesComponents.value(key);
 
     const QString qmlControlCode = QString::fromUtf8(R"(
     import QtQuick
@@ -336,17 +338,22 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
     )");
 
     // TODO: cache propertyName to component!
-    QQmlComponent *component = new QQmlComponent(qmlEngine(style()));
+    QQmlComponent *component = new QQmlComponent(engine);
     component->setData(qmlControlCode.toUtf8(), QUrl());
     Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
-    s_propertyChangesComponents.insert(propertyName, component);
+    s_propertyChangesComponents.insert(key, component);
+    QObject::connect(engine, &QObject::destroyed, [key](){
+        s_propertyChangesComponents.remove(key);
+    });
     return component;
 }
 
 QQmlComponent *QQStyleKitReader::createDelegateChangesComponent(const QString &delegateName) const
 {
-    if (s_propertyChangesComponents.contains(delegateName))
-        return s_propertyChangesComponents.value(delegateName);
+    QQmlEngine *engine = qmlEngine(style());
+    auto key = qMakePair(engine, delegateName);
+    if (s_propertyChangesComponents.contains(key))
+        return s_propertyChangesComponents.value(key);
 
     static const QString qmlTemplateCode = QString::fromUtf8(R"(
     import QtQuick
@@ -390,10 +397,13 @@ QQmlComponent *QQStyleKitReader::createDelegateChangesComponent(const QString &d
 
     QString substitutedCode = qmlTemplateCode;
     substitutedCode.replace('$'_L1, delegateName);
-    QQmlComponent *component = new QQmlComponent(qmlEngine(style()));
+    QQmlComponent *component = new QQmlComponent(engine);
     component->setData(substitutedCode.toUtf8(), QUrl());
     Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
-    s_propertyChangesComponents.insert(delegateName, component);
+    s_propertyChangesComponents.insert(key, component);
+    QObject::connect(engine, &QObject::destroyed, [key](){
+        s_propertyChangesComponents.remove(key);
+    });
     return component;
 }
 

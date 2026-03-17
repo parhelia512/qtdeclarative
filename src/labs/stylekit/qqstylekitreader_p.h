@@ -206,7 +206,7 @@ private:
 
     QQStyleKitControlProperties m_global;
 
-    static QMap<QString, QQmlComponent *> s_propertyChangesComponents;
+    static QMap<QPair<QQmlEngine *, QString>, QQmlComponent *> s_propertyChangesComponents;
 
     friend class QQStyleKitControlProperties;
     friend class QQStyleKitPropertyResolver;

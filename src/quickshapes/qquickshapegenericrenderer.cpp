@@ -211,8 +211,8 @@ void QQuickShapeGenericRenderer::setStrokeStyle(int index, QQuickShapePath::Stro
     d.syncDirty |= DirtyStrokeGeom;
 }
 
-static QQuickAbstractPathRenderer::FillGradientType copyGradient(const QQuickShapeGradient *gradient,
-                                                                 QSGGradientCache::GradientDesc *dst)
+static QQuickAbstractPathRenderer::FillGradientType
+    copyGenericGradient(const QQuickShapeGradient *gradient, QSGGradientCache::GradientDesc *dst)
 {
     Q_ASSERT(dst != nullptr);
     if (gradient == nullptr)
@@ -245,14 +245,14 @@ static QQuickAbstractPathRenderer::FillGradientType copyGradient(const QQuickSha
 void QQuickShapeGenericRenderer::setFillGradient(int index, QQuickShapeGradient *gradient)
 {
     ShapePathData &d(m_sp[index]);
-    d.fillGradientActive = copyGradient(gradient, &d.fillGradient);
+    d.fillGradientActive = copyGenericGradient(gradient, &d.fillGradient);
     d.syncDirty |= DirtyFillGradient;
 }
 
 void QQuickShapeGenericRenderer::setStrokeGradient(int index, QQuickShapeGradient *gradient)
 {
     ShapePathData &d(m_sp[index]);
-    d.strokeGradientActive = copyGradient(gradient, &d.strokeGradient);
+    d.strokeGradientActive = copyGenericGradient(gradient, &d.strokeGradient);
     d.syncDirty |= DirtyStrokeGradient;
 }
 

@@ -302,8 +302,8 @@ void QQuickShapeCurveRenderer::setStrokeStyle(int index,
     pathData.m_dirty |= StrokeDirty;
 }
 
-static QGradient::Type copyGradient(const QQuickShapeGradient *gradient,
-                                    QSGGradientCache::GradientDesc *dst)
+static QGradient::Type copyCurveGradient(const QQuickShapeGradient *gradient,
+                                         QSGGradientCache::GradientDesc *dst)
 {
     QGradient::Type gradientType = QGradient::NoGradient;
     if (const QQuickShapeLinearGradient *g  = qobject_cast<const QQuickShapeLinearGradient *>(gradient)) {
@@ -340,7 +340,7 @@ void QQuickShapeCurveRenderer::setFillGradient(int index, QQuickShapeGradient *g
 {
     PathData &pd(m_paths[index]);
     const bool wasVisible = pd.isFillVisible();
-    pd.gradientType = copyGradient(gradient, &pd.gradient);
+    pd.gradientType = copyCurveGradient(gradient, &pd.gradient);
     pd.m_dirty |= (pd.isFillVisible() != wasVisible) ? FillDirty : UniformsDirty;
 }
 
@@ -348,7 +348,7 @@ void QQuickShapeCurveRenderer::setStrokeGradient(int index, QQuickShapeGradient 
 {
     PathData &pd(m_paths[index]);
     const bool wasVisible = pd.isStrokeVisible();
-    pd.strokeGradientType = copyGradient(gradient, &pd.strokeGradient);
+    pd.strokeGradientType = copyCurveGradient(gradient, &pd.strokeGradient);
     pd.m_dirty |= (pd.isStrokeVisible() != wasVisible) ? StrokeDirty : UniformsDirty;
 }
 

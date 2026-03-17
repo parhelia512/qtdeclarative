@@ -115,13 +115,6 @@ void QLanguageServer::addServerModule(QLanguageServerModule *serverModule)
     }
 }
 
-QLanguageServerModule *QLanguageServer::moduleByName(const QString &n) const
-{
-    const Q_D(QLanguageServer);
-    QMutexLocker l(&d->mutex);
-    return d->modules.value(n);
-}
-
 QLspNotifySignals *QLanguageServer::notifySignals()
 {
     Q_D(QLanguageServer);

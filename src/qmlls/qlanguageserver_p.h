@@ -64,7 +64,6 @@ public:
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &serverInfo);
     void addServerModule(QLanguageServerModule *serverModule);
-    QLanguageServerModule *moduleByName(const QString &n) const;
     QLspNotifySignals *notifySignals();
 
     // API

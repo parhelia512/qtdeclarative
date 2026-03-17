@@ -109,29 +109,11 @@ void QQmlLanguageServer::registerHandlers(QLanguageServer *server,
     QObject::connect(
             server, &QLanguageServer::runStatusChanged, this,
             [](QLanguageServer::RunStatus r) { qCDebug(lspServerLog) << "runStatus" << int(r); });
-    protocol->typedRpc()->registerNotificationHandler<Notifications::AddBuildDirsParams>(
-            QByteArray(Notifications::AddBuildDirsMethod),
-            [this](const QByteArray &, const Notifications::AddBuildDirsParams &params) {
-                for (const auto &buildDirs : params.buildDirsToSet) {
-                    QStringList dirPaths;
-                    dirPaths.resize(buildDirs.buildDirs.size());
-                    std::transform(buildDirs.buildDirs.begin(), buildDirs.buildDirs.end(),
-                                   dirPaths.begin(), [](const QByteArray &utf8Str) {
-                                       return QString::fromUtf8(utf8Str);
-                                   });
-                    m_codeModelManager.setBuildPathsForRootUrl(buildDirs.baseUri, dirPaths);
-                }
-            });
 }
 
 void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                           QLspSpecification::InitializeResult &serverInfo)
+                                           QLspSpecification::InitializeResult &)
 {
-    QJsonObject expCap;
-    if (serverInfo.capabilities.experimental.has_value() && serverInfo.capabilities.experimental->isObject())
-        expCap = serverInfo.capabilities.experimental->toObject();
-    expCap.insert(u"addBuildDirs"_s, QJsonObject({ { u"supported"_s, true } }));
-    serverInfo.capabilities.experimental = expCap;
 }
 
 void QQmlLanguageServer::errorExit()

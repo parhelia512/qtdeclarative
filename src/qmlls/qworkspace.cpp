@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
+#include "qlspcustomtypes_p.h"
 #include "qworkspace_p.h"
 #include "qqmllanguageserver_p.h"
 #include "qqmllsutils_p.h"
@@ -16,7 +17,7 @@ QT_BEGIN_NAMESPACE
 using namespace Qt::StringLiterals;
 using namespace QLspSpecification;
 
-void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServerProtocol *)
+void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol)
 {
     QObject::connect(server->notifySignals(),
                      &QLspNotifySignals::receivedDidChangeWorkspaceFoldersNotification, this,
@@ -41,6 +42,20 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
 
     QObject::connect(server, &QLanguageServer::clientInitialized, this,
                      &WorkspaceHandlers::clientInitialized, Qt::SingleShotConnection);
+
+    protocol->typedRpc()->registerNotificationHandler<Notifications::AddBuildDirsParams>(
+            QByteArray(Notifications::AddBuildDirsMethod),
+            [this](const QByteArray &, const Notifications::AddBuildDirsParams &params) {
+                for (const auto &buildDirs : params.buildDirsToSet) {
+                    QStringList dirPaths;
+                    dirPaths.resize(buildDirs.buildDirs.size());
+                    std::transform(buildDirs.buildDirs.begin(), buildDirs.buildDirs.end(),
+                                   dirPaths.begin(), [](const QByteArray &utf8Str) {
+                                       return QString::fromUtf8(utf8Str);
+                                   });
+                    m_codeModelManager->setBuildPathsForRootUrl(buildDirs.baseUri, dirPaths);
+                }
+            });
 }
 
 void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializeParams &,
@@ -53,6 +68,13 @@ void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializePar
         serverInfo.capabilities.workspace = QJsonObject();
     serverInfo.capabilities.workspace->insert(u"workspaceFolders"_s,
                                               QTypedJson::toJsonValue(folders));
+
+    QJsonObject expCap;
+    if (serverInfo.capabilities.experimental.has_value()
+        && serverInfo.capabilities.experimental->isObject())
+        expCap = serverInfo.capabilities.experimental->toObject();
+    expCap.insert(u"addBuildDirs"_s, QJsonObject({ { u"supported"_s, true } }));
+    serverInfo.capabilities.experimental = expCap;
 }
 
 void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)

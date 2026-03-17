@@ -172,6 +172,10 @@ public:
     bool finalize(QQmlInstantiationInterrupt &interrupt);
     void clear();
 
+    QObject *createObjectInContext(
+            int objectIndex, QObject *parent,
+            const QQmlRefPointer<QQmlContextData> &existingContext);
+
     QQmlRefPointer<QQmlContextData> rootContext() const { return sharedState->rootContext; }
     QQmlComponentAttached **componentAttachment() { return &sharedState->componentAttached; }
 

@@ -203,8 +203,7 @@ private:
 
     QPointer<QQStyleKitStyle> m_explicitStyle;
     QPointer<QQStyleKitReader> m_parentReader;
-    QList<QPointer<QQStyleKitVariation>> m_effectiveInAppVariations;
-    QList<QPointer<QQStyleKitVariation>> m_effectiveInStyleVariations;
+    QList<QPointer<QQStyleKitVariation>> m_effectiveVariations;
 
     QQStyleKitControlProperties m_global;
 

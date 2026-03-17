@@ -35,6 +35,7 @@ struct NodeInfo
     QString id;
     QString nodeId;
     QString typeName;
+    QString defsId;
     QString maskId;
     QString filterId;
     QString transformReferenceId;
@@ -56,9 +57,8 @@ struct NodeInfo
     bool isDisplayed = true; // TODO: Map to display enum in QtSvg
     bool isMaskAlpha = false;
     bool isMaskInverted = false;
-    QQuickAnimatedProperty visibility = QQuickAnimatedProperty(QVariant::fromValue(true));
-    int visibilityEndTime = -1;
     QRectF bounds;
+    QString boundsReferenceId;
 };
 
 struct ImageNodeInfo : NodeInfo
@@ -157,6 +157,7 @@ struct TimelineInfo {
     int duration = 0;
     int frameCounterOffset = 0;
     QString frameCounterReference;
+    bool generateVisibility = false;
     bool generateFrameCounter = false;
 };
 

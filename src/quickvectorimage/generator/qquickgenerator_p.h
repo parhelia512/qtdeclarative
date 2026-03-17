@@ -62,6 +62,7 @@ public:
 
     virtual QString generateNodeBase(const NodeInfo &info, const QString &idSuffix = QString{}) = 0;
     virtual bool generateDefsNode(const StructureNodeInfo &info) = 0;
+    virtual void generateDefsInstantiationNode(const StructureNodeInfo &info) = 0;
     virtual void generateImageNode(const ImageNodeInfo &info) = 0;
     virtual void generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect = QRectF{}) = 0;
     virtual void generateNode(const NodeInfo &info) = 0;

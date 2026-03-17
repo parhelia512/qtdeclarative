@@ -100,6 +100,7 @@ protected:
     QString generateNodeBase(const NodeInfo &info, const QString &idSuffix = QString{}) override;
     void generateNodeEnd(const NodeInfo &info);
     bool generateDefsNode(const StructureNodeInfo &info) override;
+    void generateDefsInstantiationNode(const StructureNodeInfo &info) override;
     void generateImageNode(const ImageNodeInfo &info) override;
     void generatePath(const PathNodeInfo &info, const QRectF &overrideBoundingRect) override;
     void generateNode(const NodeInfo &info) override;
@@ -152,6 +153,7 @@ private:
     {
         return m_flags.testFlag(QQuickVectorImageGenerator::TimelineAnimation);
     }
+    void generateTimelineFields(const StructureNodeInfo &info);
     void generateTimelinePropertySetter(const QString &targetName,
                                         const QString &propertyName,
                                         const QQuickAnimatedProperty::PropertyAnimation &animation,
@@ -176,7 +178,7 @@ protected:
 
 private:
     int m_indentLevel = 0;
-    int m_oldIndentLevel = 0;
+    QStack<int> m_oldIndentLevels;
     QTextStream m_stream;
     QString outputFileName;
     int m_inShapeItemLevel = 0;

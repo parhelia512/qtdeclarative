@@ -77,7 +77,7 @@ struct ClientAndServer
     ClientAndServer()
     {
         client = std::make_unique<QLanguageServerProtocol>(
-                [this](const QByteArray &data) { server->server()->receiveData(data, true); });
+                [this](const QByteArray &data) { server->receiveData(data, true); });
         server = std::make_unique<QQmlLanguageServer>(
                 [this](const QByteArray &data) { client->receiveData(data); });
     }

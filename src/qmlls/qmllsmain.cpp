@@ -493,9 +493,9 @@ int qmllsMain(int argv, char *argc[])
             : std::unique_ptr<AbstractReader>(std::make_unique<StdinReader>());
     QThread workerThread;
     r->moveToThread(&workerThread);
-    QObject::connect(r.get(), &AbstractReader::receivedData, qmlServer.server(),
+    QObject::connect(r.get(), &AbstractReader::receivedData, &qmlServer,
                      &QLanguageServer::receiveData);
-    QObject::connect(qmlServer.server(), &QLanguageServer::readNextMessage, r.get(),
+    QObject::connect(&qmlServer, &QLanguageServer::readNextMessage, r.get(),
                      &AbstractReader::readNextMessage);
     auto exit = [&app, &workerThread]() {
         workerThread.quit();
@@ -506,7 +506,7 @@ int qmllsMain(int argv, char *argc[])
         });
     };
     QObject::connect(r.get(), &StdinReader::eof, &app, exit);
-    QObject::connect(qmlServer.server(), &QLanguageServer::exit, &workerThread, exit);
+    QObject::connect(&qmlServer, &QLanguageServer::exit, &workerThread, exit);
 
     emit r->readNextMessage();
     workerThread.start();

@@ -39,7 +39,7 @@ class QQmlToolingSettings;
 
 namespace QmlLsp {
 
-class QQmlLanguageServer : public QLanguageServerModule
+class QQmlLanguageServer : public QLanguageServer
 {
     Q_OBJECT
 public:
@@ -47,17 +47,9 @@ public:
                        QQmlToolingSharedSettings *settings = nullptr);
     ~QQmlLanguageServer();
 
-    void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) final;
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &serverInfo) final;
-
     int returnValue() const;
 
     QQmlCodeModelManager *codeModelManager();
-    QLanguageServer *server();
-    TextSynchronization *textSynchronization();
-    QmlLintSuggestions *lint();
-    WorkspaceHandlers *worspace();
 
 public Q_SLOTS:
     void exit();
@@ -65,7 +57,6 @@ public Q_SLOTS:
 
 private:
     QQmlCodeModelManager m_codeModelManager;
-    QLanguageServer m_server;
 
     TextSynchronization m_textSynchronization;
     WorkspaceHandlers m_workspace;

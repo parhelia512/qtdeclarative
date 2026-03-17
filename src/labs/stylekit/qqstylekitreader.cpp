@@ -451,8 +451,8 @@ void QQStyleKitReader::maybeTrackDelegates()
 
 void QQStyleKitReader::updateControl()
 {
-    const QQStyleKitStyle *style = QQStyleKitStyle::current();
-    if (!style || !style->loaded())
+    const QQStyleKitStyle *currentStyle = style();
+    if (!currentStyle || !currentStyle->loaded())
         return;
 
     /* Alternate between two states to trigger a state change. The state group
@@ -502,15 +502,17 @@ void QQStyleKitReader::updateControl()
     rebuildEffectiveFont();
 }
 
-void QQStyleKitReader::resetAll()
+void QQStyleKitReader::resetReadersForStyle(const QQStyleKitStyle *style)
 {
     for (QQStyleKitReader *reader : s_allReaders) {
-        reader->m_effectiveVariationsDirty = true;
-        reader->m_fontDirty = true;
-        reader->clearLocalStorage();
-        reader->rebuildEffectivePalette();
-        reader->rebuildEffectiveFont();
-        reader->emitChangedForAllStyleProperties(EmitFlag::AllProperties);
+        if (reader->style() == style) {
+            reader->m_effectiveVariationsDirty = true;
+            reader->m_fontDirty = true;
+            reader->clearLocalStorage();
+            reader->rebuildEffectivePalette();
+            reader->rebuildEffectiveFont();
+            reader->emitChangedForAllStyleProperties(EmitFlag::AllProperties);
+        }
     }
 }
 
@@ -722,6 +724,30 @@ void QQStyleKitReader::setHighlighted(bool highlighted)
     updateControl();
 }
 
+QQStyleKitStyle *QQStyleKitReader::explicitStyle() const
+{
+    return m_explicitStyle.data();
+}
+
+void QQStyleKitReader::setExplicitStyle(QQStyleKitStyle *style)
+{
+    if (m_explicitStyle == style)
+        return;
+    m_explicitStyle = style;
+
+    if (!m_explicitStyle || !m_explicitStyle->loaded()) {
+        clearLocalStorage();
+        return;
+    }
+
+    m_effectiveVariationsDirty = true;
+    m_fontDirty = true;
+    clearLocalStorage();
+    rebuildEffectivePalette();
+    rebuildEffectiveFont();
+    emitChangedForAllStyleProperties(EmitFlag::AllProperties);
+}
+
 QQuickPalette *QQStyleKitReader::palette() const
 {
     return m_palette.data();
@@ -754,8 +780,8 @@ QPalette QQStyleKitReader::effectivePalette() const
 
 void QQStyleKitReader::onPaletteChanged()
 {
-    const QQStyleKitStyle *style = QQStyleKitStyle::current();
-    if (!style || !style->loaded())
+    const QQStyleKitStyle *currentStyle = style();
+    if (!currentStyle || !currentStyle->loaded())
         return;
 
     if (rebuildEffectivePalette()) {
@@ -790,14 +816,14 @@ QFont QQStyleKitReader::font() const
 
 bool QQStyleKitReader::rebuildEffectiveFont()
 {
-    const QQStyleKitStyle *style = QQStyleKitStyle::current();
-    if (!style || !style->loaded())
+    const QQStyleKitStyle *currentStyle = style();
+    if (!currentStyle || !currentStyle->loaded())
         return false;
 
     if (!m_fontDirty)
         return false;
 
-    QFont font = style->fontForControlType(controlType());
+    QFont font = currentStyle->fontForControlType(controlType());
     const QQStyleKitTextProperties *textProps = global()->text();
     if (textProps) {
         if (textProps->isDefined(QQSK::Property::Bold))

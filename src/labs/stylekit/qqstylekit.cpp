@@ -138,7 +138,7 @@ void QQStyleKitAttached::setStyle(QQStyleKitStyle *style)
         m_style->m_theme->updateThemeFonts();
     }
     if (m_style->loaded())
-        QQStyleKitReader::resetAll();
+        QQStyleKitReader::resetReadersForStyle(m_style);
 
     emit styleChanged();
 }

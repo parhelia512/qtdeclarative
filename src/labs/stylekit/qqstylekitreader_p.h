@@ -125,6 +125,9 @@ public:
     bool highlighted() const;
     void setHighlighted(bool highlighted);
 
+    QQStyleKitStyle *explicitStyle() const;
+    void setExplicitStyle(QQStyleKitStyle *style);
+
     QFont font() const;
 
     QQStyleKitControlProperties *global() const;
@@ -137,7 +140,7 @@ public:
 
     static void setTransitionEnabled(bool enabled);
     static bool transitionEnabled();
-    static void resetAll();
+    static void resetReadersForStyle(const QQStyleKitStyle *style);
 
     static QList<QQStyleKitReader *> s_allReaders;
 
@@ -196,6 +199,7 @@ private:
     QQuickStateGroup *m_stateGroup = nullptr;
     QQSK::Delegates m_trackedDelegates = QQSK::Delegate::NoDelegate;
 
+    QPointer<QQStyleKitStyle> m_explicitStyle;
     QPointer<QQStyleKitReader> m_parentReader;
     QList<QPointer<QQStyleKitVariation>> m_effectiveInAppVariations;
     QList<QPointer<QQStyleKitVariation>> m_effectiveInStyleVariations;

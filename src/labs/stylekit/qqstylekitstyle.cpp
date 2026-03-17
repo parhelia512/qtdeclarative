@@ -426,11 +426,11 @@ void QQStyleKitStyle::recreateTheme()
         m_theme->fonts()->setFallbackFont(fonts());
     if (m_theme->palettes())
         m_theme->palettes()->setFallbackPalette(palettes());
-    if (this == current()) {
-        m_theme->updateThemePalettes();
-        m_theme->updateThemeFonts();
-        QQStyleKitReader::resetAll();
-    }
+
+    m_theme->updateThemePalettes();
+    m_theme->updateThemeFonts();
+
+    QQStyleKitReader::resetReadersForStyle(this);
 
     emit themeChanged();
 }

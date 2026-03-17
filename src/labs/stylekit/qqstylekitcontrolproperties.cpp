@@ -1844,11 +1844,13 @@ QQStyleKitStyle *QQStyleKitControlProperties::style() const
         return obj ? static_cast<QQStyleKitStyle *>(obj) : nullptr;
     }
 
-    /* A style reader belongs to the currently active application style. We could in theory
-     * support being able to point a QQStyleKitReader to any style, which would basically
-     * mean that you could mix controls from several styles inside the same application. But
-     * there is currently no API (or use-case?) in Controls that lets you to do that, so its
-     * disabled for now. */
+    if (subclass() == QQSK::Subclass::QQStyleKitReader) {
+        const auto *reader = static_cast<const QQStyleKitReader *>(this);
+        if (reader->m_explicitStyle)
+            return reader->m_explicitStyle;
+    }
+
+    // For a QQStyleKitReader without an explicit style, we return the currently active style for now
     return QQStyleKitStyle::current();
 }
 

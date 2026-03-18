@@ -18,14 +18,12 @@ QQmlFindUsagesSupport::QQmlFindUsagesSupport(QmlLsp::QQmlCodeModelManager *codeM
 {
 }
 
-void QQmlFindUsagesSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlFindUsagesSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    // just assume serverCapabilities.capabilities.typeDefinitionProvider is a bool for now
+    // just assume caps.typeDefinitionProvider is a bool for now
     // handle the ReferenceOptions later if needed (it adds the possibility to communicate the
     // current progress).
-    serverCapabilities.capabilities.referencesProvider = true;
+    caps.referencesProvider = true;
 }
 
 void QQmlFindUsagesSupport::registerHandlers(QLanguageServer *, QLanguageServerProtocol *protocol)

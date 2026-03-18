@@ -228,9 +228,7 @@ void QQmlHighlightSupport::clientInitialized(QLanguageServer *server)
     }
 }
 
-void QQmlHighlightSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlHighlightSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     QLspSpecification::SemanticTokensOptions options;
     options.range = true;
@@ -238,7 +236,7 @@ void QQmlHighlightSupport::setupCapabilities(
 
     options.legend.tokenTypes = extendedTokenTypesList();
     options.legend.tokenModifiers = defaultTokenModifiersList();
-    serverCapabilities.capabilities.semanticTokensProvider = options;
+    caps.semanticTokensProvider = options;
 }
 
 QT_END_NAMESPACE

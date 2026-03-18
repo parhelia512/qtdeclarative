@@ -25,12 +25,10 @@ void QQmlDocumentFormatting::registerHandlers(QLanguageServer *, QLanguageServer
     protocol->registerDocumentFormattingRequestHandler(getRequestHandler());
 }
 
-void QQmlDocumentFormatting::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlDocumentFormatting::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     // TODO: Allow customized formatting in future
-    serverCapabilities.capabilities.documentFormattingProvider = true;
+    caps.documentFormattingProvider = true;
 }
 
 void QQmlDocumentFormatting::process(RequestPointerArgument request)

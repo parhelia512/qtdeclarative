@@ -21,11 +21,9 @@ void QQmlHover::registerHandlers(QLanguageServer *, QLanguageServerProtocol *pro
     protocol->registerHoverRequestHandler(getRequestHandler());
 }
 
-void QQmlHover::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlHover::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    serverCapabilities.capabilities.hoverProvider = true;
+    caps.hoverProvider = true;
 }
 
 void QQmlHover::process(RequestPointerArgument request)

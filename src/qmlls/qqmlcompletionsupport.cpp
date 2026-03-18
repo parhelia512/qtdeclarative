@@ -53,16 +53,14 @@ void QmlCompletionSupport::registerHandlers(QLanguageServer *, QLanguageServerPr
                LSPResponse<CompletionItem> &&response) { response.sendResponse(cParams); });
 }
 
-void QmlCompletionSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QmlCompletionSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     QLspSpecification::CompletionOptions cOptions;
-    if (serverCapabilities.capabilities.completionProvider)
-        cOptions = *serverCapabilities.capabilities.completionProvider;
+    if (caps.completionProvider)
+        cOptions = *caps.completionProvider;
     cOptions.resolveProvider = false;
     cOptions.triggerCharacters = QList<QByteArray>({ QByteArray(".") });
-    serverCapabilities.capabilities.completionProvider = cOptions;
+    caps.completionProvider = cOptions;
 }
 
 void QmlCompletionSupport::process(RequestPointerArgument req)

@@ -33,8 +33,7 @@ class QLanguageServerModule : public QObject
 public:
     QLanguageServerModule(QObject *parent = nullptr) : QObject(parent) { }
     virtual void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) = 0;
-    virtual void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                                   QLspSpecification::InitializeResult &) = 0;
+    virtual void setupCapabilities(QLspSpecification::ServerCapabilities &) = 0;
 };
 
 class QLanguageServer : public QObject
@@ -60,8 +59,7 @@ public:
     QLanguageServerProtocol *protocol();
     void finishSetup();
     void registerHandlers(QLanguageServerProtocol *protocol);
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &serverInfo);
+    void setupCapabilities(QLspSpecification::ServerCapabilities &caps);
     void addServerModule(QLanguageServerModule *serverModule);
     QLspNotifySignals *notifySignals();
 

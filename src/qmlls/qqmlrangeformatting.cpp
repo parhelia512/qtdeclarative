@@ -25,10 +25,9 @@ void QQmlRangeFormatting::registerHandlers(QLanguageServer *, QLanguageServerPro
     protocol->registerDocumentRangeFormattingRequestHandler(getRequestHandler());
 }
 
-void QQmlRangeFormatting::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                            QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlRangeFormatting::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    serverCapabilities.capabilities.documentRangeFormattingProvider = true;
+    caps.documentRangeFormattingProvider = true;
 }
 
 void QQmlRangeFormatting::process(RequestPointerArgument request)

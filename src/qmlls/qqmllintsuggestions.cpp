@@ -100,10 +100,9 @@ void QmlLintSuggestions::registerHandlers(QLanguageServer *, QLanguageServerProt
     protocol->registerCodeActionRequestHandler(&codeActionHandler);
 }
 
-void QmlLintSuggestions::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                           QLspSpecification::InitializeResult &serverInfo)
+void QmlLintSuggestions::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    serverInfo.capabilities.codeActionProvider = true;
+    caps.codeActionProvider = true;
 }
 
 QmlLintSuggestions::QmlLintSuggestions(QLanguageServer *server,

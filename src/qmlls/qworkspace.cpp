@@ -58,23 +58,20 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
             });
 }
 
-void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                          QLspSpecification::InitializeResult &serverInfo)
+void WorkspaceHandlers::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     WorkspaceFoldersServerCapabilities folders;
     folders.supported = true;
     folders.changeNotifications = true;
-    if (!serverInfo.capabilities.workspace)
-        serverInfo.capabilities.workspace = QJsonObject();
-    serverInfo.capabilities.workspace->insert(u"workspaceFolders"_s,
-                                              QTypedJson::toJsonValue(folders));
+    if (!caps.workspace)
+        caps.workspace = QJsonObject();
+    caps.workspace->insert(u"workspaceFolders"_s, QTypedJson::toJsonValue(folders));
 
     QJsonObject expCap;
-    if (serverInfo.capabilities.experimental.has_value()
-        && serverInfo.capabilities.experimental->isObject())
-        expCap = serverInfo.capabilities.experimental->toObject();
+    if (caps.experimental.has_value() && caps.experimental->isObject())
+        expCap = caps.experimental->toObject();
     expCap.insert(u"addBuildDirs"_s, QJsonObject({ { u"supported"_s, true } }));
-    serverInfo.capabilities.experimental = expCap;
+    caps.experimental = expCap;
 }
 
 void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)

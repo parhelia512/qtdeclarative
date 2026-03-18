@@ -33,8 +33,7 @@ class QQmlRangeFormatting : public QQmlBaseModule<RangeFormattingRequest>
 public:
     QQmlRangeFormatting(QmlLsp::QQmlCodeModelManager *codeModelManager);
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &) override;
+    void setupCapabilities(QLspSpecification::ServerCapabilities &caps) override;
     void process(RequestPointerArgument req) override;
 };
 

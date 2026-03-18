@@ -39,8 +39,7 @@ public:
 public Q_SLOTS:
     void diagnose(const QByteArray &uri, UpdatePolicy policy);
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &) override;
+    void setupCapabilities(QLspSpecification::ServerCapabilities &caps) override;
 
 private:
     struct VersionedDocument

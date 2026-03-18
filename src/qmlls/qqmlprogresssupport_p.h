@@ -28,8 +28,7 @@ public:
     QQmlProgressSupport(QmlLsp::QQmlCodeModelManager *manager);
 
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) final;
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &) final;
+    void setupCapabilities(QLspSpecification::ServerCapabilities &caps) final;
 
 private:
     enum WorkDoneProgressStatus { InCreation, Created, Finished };

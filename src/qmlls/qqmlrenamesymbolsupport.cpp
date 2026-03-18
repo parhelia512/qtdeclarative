@@ -13,14 +13,12 @@ QQmlRenameSymbolSupport::QQmlRenameSymbolSupport(QmlLsp::QQmlCodeModelManager *m
 {
 }
 
-void QQmlRenameSymbolSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlRenameSymbolSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     // use a bool for now. Alternatively, if the client supports "prepareSupport", one could
     // use a RenameOptions here. See following page for more information about prepareSupport:
     // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_prepareRename
-    serverCapabilities.capabilities.renameProvider = true;
+    caps.renameProvider = true;
 }
 
 void QQmlRenameSymbolSupport::registerHandlers(QLanguageServer *, QLanguageServerProtocol *protocol)

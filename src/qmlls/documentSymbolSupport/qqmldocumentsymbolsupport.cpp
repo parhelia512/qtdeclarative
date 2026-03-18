@@ -12,11 +12,9 @@ QQmlDocumentSymbolSupport::QQmlDocumentSymbolSupport(QmlLsp::QQmlCodeModelManage
 {
 }
 
-void QQmlDocumentSymbolSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlDocumentSymbolSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    serverCapabilities.capabilities.documentSymbolProvider = true;
+    caps.documentSymbolProvider = true;
 }
 
 void QQmlDocumentSymbolSupport::registerHandlers(QLanguageServer *,

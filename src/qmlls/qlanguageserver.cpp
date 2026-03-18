@@ -189,12 +189,11 @@ void QLanguageServer::registerMethods(QJsonRpc::TypedRpc &typedRpc)
     });
 }
 
-void QLanguageServer::setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                                        QLspSpecification::InitializeResult &serverInfo)
+void QLanguageServer::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     Q_D(QLanguageServer);
     for (auto module : std::as_const(d->modules))
-        module->setupCapabilities(clientInfo, serverInfo);
+        module->setupCapabilities(caps);
 }
 
 const QLspSpecification::InitializeParams &QLanguageServer::clientInfo() const
@@ -267,7 +266,7 @@ void QLanguageServer::registerHandlers(QLanguageServerProtocol *protocol)
                 }
                 emit runStatusChanged(RunStatus::Initializing);
                 d->clientInfo = params;
-                setupCapabilities(d->clientInfo, d->serverInfo);
+                setupCapabilities(d->serverInfo.capabilities);
                 {
                     QMutexLocker l(&d->mutex);
                     d->runStatus = RunStatus::DidInitialize;

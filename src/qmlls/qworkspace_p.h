@@ -31,8 +31,7 @@ public:
     {
     }
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
-    void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
-                           QLspSpecification::InitializeResult &) override;
+    void setupCapabilities(QLspSpecification::ServerCapabilities &caps) override;
 public Q_SLOTS:
     void clientInitialized(QLanguageServer *);
 

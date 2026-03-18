@@ -155,9 +155,6 @@ void QQmlProgressSupport::onBackgroundBuildCancelRequested(
     m_codeModelManager->cancelBackgroundBuild(token->uri);
 }
 
-void QQmlProgressSupport::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                            QLspSpecification::InitializeResult &)
-{
-}
+void QQmlProgressSupport::setupCapabilities(QLspSpecification::ServerCapabilities &) { }
 
 QT_END_NAMESPACE

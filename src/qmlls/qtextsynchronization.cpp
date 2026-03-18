@@ -82,13 +82,12 @@ void TextSynchronization::registerHandlers(QLanguageServer *server, QLanguageSer
                      &TextSynchronization::didCloseTextDocument);
 }
 
-void TextSynchronization::setupCapabilities(const QLspSpecification::InitializeParams &,
-                                            QLspSpecification::InitializeResult &serverInfo)
+void TextSynchronization::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
     TextDocumentSyncOptions syncOptions;
     syncOptions.openClose = true;
     syncOptions.change = TextDocumentSyncKind::Incremental;
-    serverInfo.capabilities.textDocumentSync = syncOptions;
+    caps.textDocumentSync = syncOptions;
 }
 
 QT_END_NAMESPACE

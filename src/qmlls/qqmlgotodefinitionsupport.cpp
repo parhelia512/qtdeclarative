@@ -17,14 +17,12 @@ QmlGoToDefinitionSupport::QmlGoToDefinitionSupport(QmlLsp::QQmlCodeModelManager 
 {
 }
 
-void QmlGoToDefinitionSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QmlGoToDefinitionSupport::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
 {
-    // just assume serverCapabilities.capabilities.typeDefinitionProvider is a bool for now
+    // just assume caps.typeDefinitionProvider is a bool for now
     // handle the TypeDefinitionOptions and TypeDefinitionRegistrationOptions cases later on, if
     // needed (as they just allow more fancy go-to-type-definition action).
-    serverCapabilities.capabilities.definitionProvider = true;
+    caps.definitionProvider = true;
 }
 
 void QmlGoToDefinitionSupport::registerHandlers(QLanguageServer *,

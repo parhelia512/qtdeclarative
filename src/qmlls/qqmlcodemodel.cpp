@@ -812,6 +812,42 @@ static ModuleSetting *moduleSettingFor(const QString &sourceFolder, ModuleSettin
     return &*it;
 }
 
+static QStringList asStringList(const QVariant &variant)
+{
+    return variant.toString().split(QDir::listSeparator(), Qt::SkipEmptyParts);
+}
+
+// hotfix for projects targeting Qt 6.11, where the .ini array starts at 0 instead of 1
+static void handleArrayStartingAt0(QSettings *settings, ModuleSettings *moduleSettings,
+                                   UpdatePolicy policy)
+{
+    static constexpr QLatin1String sourcePathKey = "workspaces/0/sourcePath"_L1;
+    if (!settings->contains(sourcePathKey))
+        return;
+
+    ModuleSetting *moduleSetting =
+            moduleSettingFor(settings->value(sourcePathKey).toString(), moduleSettings, policy);
+    moduleSetting->importPaths = asStringList(settings->value("workspaces/0/importPaths"_L1));
+    moduleSetting->resourceFiles = asStringList(settings->value("workspaces/0/resourceFiles"_L1));
+}
+
+static void loadWorkspacesV2(QSettings *settings, ModuleSettings *moduleSettings,
+                             UpdatePolicy policy)
+{
+    handleArrayStartingAt0(settings, moduleSettings, policy);
+
+    const int entries = settings->beginReadArray("workspaces"_L1);
+    for (int i = 0; i < entries; ++i) {
+        settings->setArrayIndex(i);
+
+        ModuleSetting *moduleSetting =
+                moduleSettingFor(settings->value("sourcePath").toString(), moduleSettings, policy);
+        moduleSetting->importPaths = asStringList(settings->value("importPaths"_L1));
+        moduleSetting->resourceFiles = asStringList(settings->value("resourceFiles"_L1));
+    }
+    settings->endArray();
+}
+
 void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, UpdatePolicy policy)
 {
 #if QT_CONFIG(settings)
@@ -829,22 +865,7 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, Upd
         const qsizetype version = settings.value("version"_L1, "1"_L1).toString().toInt();
         switch (version) {
         case 2: {
-            const int entries = settings.beginReadArray("workspaces"_L1);
-            for (int i = 0; i < entries; ++i) {
-                settings.setArrayIndex(i);
-
-                ModuleSetting *moduleSetting = moduleSettingFor(
-                        settings.value("sourcePath").toString(), &m_moduleSettings, policy);
-                moduleSetting->importPaths =
-                        settings.value("importPaths"_L1)
-                                .toString()
-                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-                moduleSetting->resourceFiles =
-                        settings.value("resourceFiles"_L1)
-                                .toString()
-                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-            }
-            settings.endArray();
+            loadWorkspacesV2(&settings, &m_moduleSettings, policy);
             break;
         }
         case 1:
@@ -854,14 +875,8 @@ void QQmllsBuildInformation::loadSettingsFrom(const QStringList &buildPaths, Upd
 
                 ModuleSetting *moduleSetting = moduleSettingFor(
                         QString(group).replace("<SLASH>"_L1, "/"_L1), &m_moduleSettings, policy);
-                moduleSetting->importPaths =
-                        settings.value("importPaths"_L1)
-                                .toString()
-                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
-                moduleSetting->resourceFiles =
-                        settings.value("resourceFiles"_L1)
-                                .toString()
-                                .split(QDir::listSeparator(), Qt::SkipEmptyParts);
+                moduleSetting->importPaths = asStringList(settings.value("importPaths"_L1));
+                moduleSetting->resourceFiles = asStringList(settings.value("resourceFiles"_L1));
                 settings.endGroup();
             }
             break;

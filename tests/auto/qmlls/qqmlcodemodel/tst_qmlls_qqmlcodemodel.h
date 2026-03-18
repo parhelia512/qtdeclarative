@@ -62,6 +62,7 @@ private slots:
     void multipleQProcessScheduler();
     void reloadQmllsBuildIniV1AfterBuild();
     void reloadQmllsBuildIniV2AfterBuild();
+    void brokenQmllsBuildIniV2();
 };
 
 #endif // TST_QMLLS_QQMLCODEMODEL_H

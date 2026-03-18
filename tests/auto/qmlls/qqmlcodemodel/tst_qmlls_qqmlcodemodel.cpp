@@ -1119,4 +1119,18 @@ void tst_qmlls_qqmlcodemodel::reloadQmllsBuildIniV1AfterBuild()
     QCOMPARE(manager.importPathsForUrl(fallbackUrl), QStringList{ fallbackImportPath });
 }
 
+void tst_qmlls_qqmlcodemodel::brokenQmllsBuildIniV2()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+    QDir dir(temporaryDir.path());
+
+    dir.mkdir(".qt"_L1);
+    QmlLsp::QQmllsBuildInformation buildIni;
+    buildIni.loadSettingsFrom({ testFile("BrokenQmllsBuildIni") });
+
+    QCOMPARE_EQ(buildIni.importPathsFor("/hello/src/File.qml"), { "/world/qml"_L1 });
+    QCOMPARE_EQ(buildIni.resourceFilesFor("/hello/src/File.qml"), { "/123/a.qrc"_L1 });
+}
+
 QTEST_MAIN(tst_qmlls_qqmlcodemodel)

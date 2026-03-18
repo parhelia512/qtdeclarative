@@ -1906,6 +1906,8 @@ const QQmlPrivate::CachedQmlUnit *QQmlMetaType::findCachedCompilationUnit(
         }
     }
 
+    qCDebug(DBG_DISK_CACHE) << "No pre-compiled unit found for" << uri;
+
     if (status)
         *status = CachedUnitLookupError::NoUnitFound;
 

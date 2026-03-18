@@ -99,13 +99,7 @@ void QLanguageServer::addServerModule(QLanguageServerModule *serverModule)
         QMutexLocker l(&d->mutex);
         rStatus = d->runStatus;
         if (rStatus == RunStatus::NotSetup) {
-            if (d->modules.contains(serverModule->name())) {
-                d->modules.insert(serverModule->name(), serverModule);
-                qCWarning(lspServerLog) << "Duplicate add of QLanguageServerModule named"
-                                        << serverModule->name() << ", overwriting.";
-            } else {
-                d->modules.insert(serverModule->name(), serverModule);
-            }
+            d->modules.append(serverModule);
         }
     }
     if (rStatus != RunStatus::NotSetup) {

@@ -52,7 +52,7 @@ public:
     QLspSpecification::InitializeParams clientInfo; // immutable after runStatus > DidInitialize
     QLspSpecification::InitializeResult serverInfo; // immutable after runStatus > DidInitialize
     QLspSpecification::Responses::ShutdownResponseType shutdownResponse;
-    QHash<QString, QLanguageServerModule *> modules;
+    QList<QLanguageServerModule *> modules;
     QLspNotifySignals notifySignals;
 };
 

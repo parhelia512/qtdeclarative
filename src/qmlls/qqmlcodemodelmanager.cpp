@@ -66,13 +66,14 @@ QQmlCodeModelManager::QQmlCodeModelManager(QObject *parent, QQmlToolingSharedSet
 void QQmlCodeModelManager::onBuildFinished(const QByteArray &url)
 {
     auto it = findWorkspace(url);
-    if (it == m_workspaces.end())
+    // note: fallback workspaces have no build folder information
+    if (it == fallbackWorkspace() || it == m_workspaces.end())
         return;
 
     // refresh information obtained from build folder, like .qmlls.build.ini or resource files
     const QStringList buildPaths = it->codeModel->buildPaths();
     m_buildInformation.loadSettingsFrom(buildPaths, ForceUpdate);
-    setBuildPathsOn(&*it, buildPaths, DontAppendPathsFromFallback);
+    setBuildPathsOn(&*it, buildPaths, AppendPathsFromFallback);
     it->codeModel->reloadAllOpenFiles();
     emit backgroundBuildFinished(url);
 }

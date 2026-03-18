@@ -1410,6 +1410,7 @@ function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targe
     set(content_to_append "")
     set(index 0)
     foreach(current_target IN LISTS qmlls_build_ini_targets)
+        MATH(EXPR index "${index}+1") # QSettings starts arrays at 1 in .ini files!
         # prepare import paths
         _qt_internal_collect_qml_import_paths(_import_paths ${current_target})
 
@@ -1425,7 +1426,6 @@ function(_qt_internal_collect_qmlls_build_ini_part out_var qmlls_build_ini_targe
         set(content_to_append "${content_to_append}${prefix}sourcePath=\"${source_path}\"\n")
         set(content_to_append "${content_to_append}${prefix}importPaths=\"${_import_paths}\"\n")
         set(content_to_append "${content_to_append}${prefix}resourceFiles=\"${_qrc_files}\"\n")
-        MATH(EXPR index "${index}+1")
     endforeach()
     set(content_to_append "${content_to_append}size=${index}\n")
     set(${out_var} "${content_to_append}" PARENT_SCOPE)

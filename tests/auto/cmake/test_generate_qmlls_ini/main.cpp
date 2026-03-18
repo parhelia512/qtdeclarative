@@ -18,6 +18,8 @@ private slots:
 
     void qmllsBuildIni_data();
     void qmllsBuildIni();
+
+    void qsettingsArrayStartAt1();
 };
 
 using namespace Qt::StringLiterals;
@@ -218,6 +220,19 @@ void tst_generate_qmlls_ini::qmllsBuildIni()
           expectedResourceFiles.join(QDir::listSeparator()), QString::number(index));
 
     QVERIFY(content.contains(expectedContent));
+}
+
+void tst_generate_qmlls_ini::qsettingsArrayStartAt1()
+{
+    static constexpr QLatin1String qmllsBuildIniPath = ".qt/.qmlls.build.ini"_L1;
+    QDir build(BUILD_DIRECTORY);
+    QVERIFY(build.exists());
+    const QString content = contentOf(build.filePath(qmllsBuildIniPath));
+
+
+    for (const auto& line: QStringTokenizer{content, "\n"_L1})
+        QVERIFY2(!line.startsWith("0"_L1), "QSettings arrays in .ini files start at 1, not 0!");
+
 }
 
 QTEST_MAIN(tst_generate_qmlls_ini)

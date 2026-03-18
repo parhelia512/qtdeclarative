@@ -840,6 +840,9 @@ static void loadWorkspacesV2(QSettings *settings, ModuleSettings *moduleSettings
     for (int i = 0; i < entries; ++i) {
         settings->setArrayIndex(i);
 
+        if (!settings->contains("sourcePath"_L1))
+            continue;
+
         ModuleSetting *moduleSetting =
                 moduleSettingFor(settings->value("sourcePath").toString(), moduleSettings, policy);
         moduleSetting->importPaths = asStringList(settings->value("importPaths"_L1));

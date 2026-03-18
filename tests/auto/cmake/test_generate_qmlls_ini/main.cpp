@@ -9,6 +9,8 @@
 #include <QtQml/qqml.h>
 #include <QtTest/qtest.h>
 
+#include <private/qqmlcodemodel_p.h>
+
 class tst_generate_qmlls_ini : public QObject
 {
     Q_OBJECT
@@ -19,7 +21,7 @@ private slots:
     void qmllsBuildIni_data();
     void qmllsBuildIni();
 
-    void qsettingsArrayStartAt1();
+    void readAndWriteQmllsBuildIni();
 };
 
 using namespace Qt::StringLiterals;
@@ -222,7 +224,15 @@ void tst_generate_qmlls_ini::qmllsBuildIni()
     QVERIFY(content.contains(expectedContent));
 }
 
-void tst_generate_qmlls_ini::qsettingsArrayStartAt1()
+using namespace QmlLsp;
+
+class TestBuildInformation : public QQmllsBuildInformation
+{
+public:
+    ModuleSettings &moduleSettings() { return m_moduleSettings; }
+};
+
+void tst_generate_qmlls_ini::readAndWriteQmllsBuildIni()
 {
     static constexpr QLatin1String qmllsBuildIniPath = ".qt/.qmlls.build.ini"_L1;
     QDir build(BUILD_DIRECTORY);
@@ -233,6 +243,36 @@ void tst_generate_qmlls_ini::qsettingsArrayStartAt1()
     for (const auto& line: QStringTokenizer{content, "\n"_L1})
         QVERIFY2(!line.startsWith("0"_L1), "QSettings arrays in .ini files start at 1, not 0!");
 
+    TestBuildInformation iniFromCMake;
+    iniFromCMake.loadSettingsFrom({ build.path() });
+
+    ModuleSettings fromCMake = iniFromCMake.moduleSettings();
+    // verify that we didn't create an empty ModuleSetting, for example due to an array starting at 0.
+    for (const auto &entry : fromCMake) {
+        QCOMPARE_NE(entry.sourceFolder, QString());
+    }
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QVERIFY(QDir(dir.path()).mkdir(".qt"));
+    iniFromCMake.writeQmllsBuildIniContent(dir.filePath(".qt/.qmlls.build.ini"));
+
+    TestBuildInformation iniFromQSettings;
+    iniFromQSettings.loadSettingsFrom({ dir.path() });
+
+    std::sort(fromCMake.begin(), fromCMake.end());
+    ModuleSettings fromQSettings = iniFromQSettings.moduleSettings();
+    std::sort(fromQSettings.begin(), fromQSettings.end());
+
+    qDebug() << "Read via QSettings:";
+    if (fromCMake != fromQSettings) {
+        for (const auto &entry : fromCMake)
+            qDebug() << entry.asTuple();
+        qDebug() << "Read via CMake:";
+        for (const auto &entry : fromQSettings)
+            qDebug() << entry.asTuple();
+        QFAIL("Settings read via CMake and QSettings should be identical!");
+    }
 }
 
 QTEST_MAIN(tst_generate_qmlls_ini)

@@ -76,6 +76,22 @@ struct RegisteredSemanticTokens
 
 struct ModuleSetting
 {
+    auto asTuple() const { return std::make_tuple(sourceFolder, importPaths, resourceFiles); }
+    friend Qt::strong_ordering compareThreeWay(const ModuleSetting &a,
+                                               const ModuleSetting &b) noexcept
+    {
+        if (auto result = compareThreeWay(a.sourceFolder, b.sourceFolder); is_neq(result))
+            return result;
+        if (auto result = compareThreeWay(a.importPaths, b.importPaths); is_neq(result))
+            return result;
+        return compareThreeWay(a.resourceFiles, b.resourceFiles);
+    }
+    friend bool comparesEqual(const ModuleSetting &a, const ModuleSetting &b) noexcept
+    {
+        return a.asTuple() == b.asTuple();
+    }
+    Q_DECLARE_STRONGLY_ORDERED(ModuleSetting);
+
     QString sourceFolder;
     QStringList importPaths;
     QStringList resourceFiles;
@@ -96,7 +112,7 @@ public:
     void addModuleSetting(const ModuleSetting &moduleSetting);
     void writeQmllsBuildIniContent(const QString &file) const;
 
-private:
+protected:
     QString m_docDir;
     ModuleSettings m_moduleSettings;
     QSet<QString> m_seenSettings;

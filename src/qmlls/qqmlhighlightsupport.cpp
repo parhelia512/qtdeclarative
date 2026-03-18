@@ -211,17 +211,14 @@ void QQmlHighlightSupport::registerHandlers(QLanguageServer *server, QLanguageSe
     m_full.registerHandlers(server, protocol);
     m_delta.registerHandlers(server, protocol);
     m_range.registerHandlers(server, protocol);
+
+    QObject::connect(server, &QLanguageServer::clientInitialized, this,
+                     &QQmlHighlightSupport::clientInitialized, Qt::SingleShotConnection);
 }
 
-void QQmlHighlightSupport::setupCapabilities(
-        const QLspSpecification::InitializeParams &clientCapabilities,
-        QLspSpecification::InitializeResult &serverCapabilities)
+void QQmlHighlightSupport::clientInitialized(QLanguageServer *server)
 {
-    QLspSpecification::SemanticTokensOptions options;
-    options.range = true;
-    options.full = QJsonObject({ { u"delta"_s, true } });
-
-    if (auto clientInitOptions = clientCapabilities.initializationOptions) {
+    if (auto clientInitOptions = server->clientInfo().initializationOptions) {
         if ((*clientInitOptions)[u"qtCreatorHighlighting"_s].toBool(false)) {
             const auto mode = HighlightingMode::QtCHighlighting;
             m_delta.setHighlightingMode(mode);
@@ -229,6 +226,16 @@ void QQmlHighlightSupport::setupCapabilities(
             m_range.setHighlightingMode(mode);
         }
     }
+}
+
+void QQmlHighlightSupport::setupCapabilities(
+        const QLspSpecification::InitializeParams &,
+        QLspSpecification::InitializeResult &serverCapabilities)
+{
+    QLspSpecification::SemanticTokensOptions options;
+    options.range = true;
+    options.full = QJsonObject({ { u"delta"_s, true } });
+
     options.legend.tokenTypes = extendedTokenTypesList();
     options.legend.tokenModifiers = defaultTokenModifiersList();
     serverCapabilities.capabilities.semanticTokensProvider = options;

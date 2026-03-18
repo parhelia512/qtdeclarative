@@ -82,11 +82,6 @@ void TextSynchronization::registerHandlers(QLanguageServer *server, QLanguageSer
                      &TextSynchronization::didCloseTextDocument);
 }
 
-QString TextSynchronization::name() const
-{
-    return u"TextSynchonization"_s;
-}
-
 void TextSynchronization::setupCapabilities(const QLspSpecification::InitializeParams &,
                                             QLspSpecification::InitializeResult &serverInfo)
 {

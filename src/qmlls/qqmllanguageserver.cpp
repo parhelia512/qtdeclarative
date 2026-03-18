@@ -134,11 +134,6 @@ void QQmlLanguageServer::setupCapabilities(const QLspSpecification::InitializePa
     serverInfo.capabilities.experimental = expCap;
 }
 
-QString QQmlLanguageServer::name() const
-{
-    return u"QQmlLanguageServer"_s;
-}
-
 void QQmlLanguageServer::errorExit()
 {
     qCWarning(lspServerLog) << "Error exit";

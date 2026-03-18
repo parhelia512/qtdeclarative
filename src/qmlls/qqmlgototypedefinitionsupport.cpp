@@ -17,11 +17,6 @@ QmlGoToTypeDefinitionSupport::QmlGoToTypeDefinitionSupport(QmlLsp::QQmlCodeModel
 {
 }
 
-QString QmlGoToTypeDefinitionSupport::name() const
-{
-    return u"QmlNavigationSupport"_s;
-}
-
 void QmlGoToTypeDefinitionSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

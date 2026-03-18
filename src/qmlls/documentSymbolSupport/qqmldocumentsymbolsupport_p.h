@@ -31,7 +31,6 @@ class QQmlDocumentSymbolSupport : public QQmlBaseModule<DocumentSymbolsRequest>
 {
 public:
     QQmlDocumentSymbolSupport(QmlLsp::QQmlCodeModelManager *codeModel);
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

@@ -18,11 +18,6 @@ QQmlFindUsagesSupport::QQmlFindUsagesSupport(QmlLsp::QQmlCodeModelManager *codeM
 {
 }
 
-QString QQmlFindUsagesSupport::name() const
-{
-    return u"QmlFindUsagesSupport"_s;
-}
-
 void QQmlFindUsagesSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

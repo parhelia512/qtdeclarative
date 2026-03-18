@@ -20,11 +20,6 @@ QQmlDocumentFormatting::QQmlDocumentFormatting(QmlLsp::QQmlCodeModelManager *cod
 {
 }
 
-QString QQmlDocumentFormatting::name() const
-{
-    return u"QQmlDocumentFormatting"_s;
-}
-
 void QQmlDocumentFormatting::registerHandlers(QLanguageServer *, QLanguageServerProtocol *protocol)
 {
     protocol->registerDocumentFormattingRequestHandler(getRequestHandler());

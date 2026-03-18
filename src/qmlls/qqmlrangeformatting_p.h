@@ -32,7 +32,6 @@ class QQmlRangeFormatting : public QQmlBaseModule<RangeFormattingRequest>
     Q_OBJECT
 public:
     QQmlRangeFormatting(QmlLsp::QQmlCodeModelManager *codeModelManager);
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

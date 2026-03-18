@@ -13,11 +13,6 @@ QQmlRenameSymbolSupport::QQmlRenameSymbolSupport(QmlLsp::QQmlCodeModelManager *m
 {
 }
 
-QString QQmlRenameSymbolSupport::name() const
-{
-    return u"QmlRenameSymbolSupport"_s;
-}
-
 void QQmlRenameSymbolSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

@@ -20,11 +20,6 @@ QQmlRangeFormatting::QQmlRangeFormatting(QmlLsp::QQmlCodeModelManager *codeModel
 {
 }
 
-QString QQmlRangeFormatting::name() const
-{
-    return u"QQmlRangeFormatting"_s;
-}
-
 void QQmlRangeFormatting::registerHandlers(QLanguageServer *, QLanguageServerProtocol *protocol)
 {
     protocol->registerDocumentRangeFormattingRequestHandler(getRequestHandler());

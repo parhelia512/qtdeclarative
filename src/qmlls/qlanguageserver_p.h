@@ -32,7 +32,6 @@ class QLanguageServerModule : public QObject
     Q_OBJECT
 public:
     QLanguageServerModule(QObject *parent = nullptr) : QObject(parent) { }
-    virtual QString name() const = 0;
     virtual void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) = 0;
     virtual void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                                    QLspSpecification::InitializeResult &) = 0;

@@ -17,11 +17,6 @@ QmlGoToDefinitionSupport::QmlGoToDefinitionSupport(QmlLsp::QQmlCodeModelManager 
 {
 }
 
-QString QmlGoToDefinitionSupport::name() const
-{
-    return u"QmlDefinitionSupport"_s;
-}
-
 void QmlGoToDefinitionSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

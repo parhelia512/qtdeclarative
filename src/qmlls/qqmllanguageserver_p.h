@@ -47,7 +47,6 @@ public:
                        QQmlToolingSharedSettings *settings = nullptr);
     ~QQmlLanguageServer();
 
-    QString name() const final;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) final;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &serverInfo) final;

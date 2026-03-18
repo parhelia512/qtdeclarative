@@ -15,11 +15,6 @@ QQmlProgressSupport::QQmlProgressSupport(QmlLsp::QQmlCodeModelManager *manager)
 {
 }
 
-QString QQmlProgressSupport::name() const
-{
-    return "QQmlProgress"_L1;
-}
-
 void QQmlProgressSupport::registerHandlers(QLanguageServer *server,
                                            QLanguageServerProtocol *protocol)
 {

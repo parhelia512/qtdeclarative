@@ -53,11 +53,6 @@ void QmlCompletionSupport::registerHandlers(QLanguageServer *, QLanguageServerPr
                LSPResponse<CompletionItem> &&response) { response.sendResponse(cParams); });
 }
 
-QString QmlCompletionSupport::name() const
-{
-    return u"QmlCompletionSupport"_s;
-}
-
 void QmlCompletionSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

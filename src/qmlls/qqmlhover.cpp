@@ -16,11 +16,6 @@ QQmlHover::QQmlHover(QmlLsp::QQmlCodeModelManager *codeModelManager)
 
 QQmlHover::~QQmlHover() = default;
 
-QString QQmlHover::name() const
-{
-    return u"QQmlHover"_s;
-}
-
 void QQmlHover::registerHandlers(QLanguageServer *, QLanguageServerProtocol *protocol)
 {
     protocol->registerHoverRequestHandler(getRequestHandler());

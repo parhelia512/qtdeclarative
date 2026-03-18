@@ -40,11 +40,6 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                      });
 }
 
-QString WorkspaceHandlers::name() const
-{
-    return u"Workspace"_s;
-}
-
 void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                                           QLspSpecification::InitializeResult &serverInfo)
 {

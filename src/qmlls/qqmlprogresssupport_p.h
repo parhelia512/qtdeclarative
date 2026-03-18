@@ -27,7 +27,6 @@ class QQmlProgressSupport final : public QLanguageServerModule
 public:
     QQmlProgressSupport(QmlLsp::QQmlCodeModelManager *manager);
 
-    QString name() const final;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) final;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) final;

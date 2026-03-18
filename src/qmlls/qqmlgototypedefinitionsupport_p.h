@@ -33,7 +33,6 @@ class QmlGoToTypeDefinitionSupport : public QQmlBaseModule<TypeDefinitionRequest
 public:
     QmlGoToTypeDefinitionSupport(QmlLsp::QQmlCodeModelManager *codeModel);
 
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

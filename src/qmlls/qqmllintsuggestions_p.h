@@ -36,7 +36,6 @@ class QmlLintSuggestions : public QLanguageServerModule
 public:
     QmlLintSuggestions(QLanguageServer *server, QmlLsp::QQmlCodeModelManager *codeModelManager);
 
-    QString name() const override { return QLatin1StringView("QmlLint Suggestions"); }
 public Q_SLOTS:
     void diagnose(const QByteArray &uri, UpdatePolicy policy);
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;

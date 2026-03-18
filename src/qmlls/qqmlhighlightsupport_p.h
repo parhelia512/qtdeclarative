@@ -27,16 +27,12 @@ QT_BEGIN_NAMESPACE
 // and QLanguageServerModule abstractions are designed to handle a single module
 // which has a single request handlers. That is not the case for the semanticTokens
 // module which has a one server module but also has three different handlers.
-#define HIDE_UNUSED_OVERRIDES                                                      \
-  private:                                                                         \
-  QString name() const override                                                    \
-  {                                                                                \
-    return {};                                                                     \
-  }                                                                                \
-  void setupCapabilities(const QLspSpecification::InitializeParams &,              \
-                         QLspSpecification::InitializeResult &) override           \
-  {                                                                                \
-  }
+#define HIDE_UNUSED_OVERRIDES                                              \
+private:                                                                   \
+    void setupCapabilities(const QLspSpecification::InitializeParams &,    \
+                           QLspSpecification::InitializeResult &) override \
+    {                                                                      \
+    }
 
 using SemanticTokensRequest = BaseRequest<QLspSpecification::SemanticTokensParams,
                                           QLspSpecification::Responses::SemanticTokensResponseType>;
@@ -86,7 +82,6 @@ class QQmlHighlightSupport : public QLanguageServerModule
 {
 public:
     QQmlHighlightSupport(QmlLsp::QQmlCodeModelManager *codeModel);
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

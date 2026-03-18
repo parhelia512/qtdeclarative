@@ -206,11 +206,6 @@ QQmlHighlightSupport::QQmlHighlightSupport(QmlLsp::QQmlCodeModelManager *codeMod
 {
 }
 
-QString QQmlHighlightSupport::name() const
-{
-    return "QQmlHighlightSupport"_L1;
-}
-
 void QQmlHighlightSupport::registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol)
 {
     m_full.registerHandlers(server, protocol);

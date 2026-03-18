@@ -12,11 +12,6 @@ QQmlDocumentSymbolSupport::QQmlDocumentSymbolSupport(QmlLsp::QQmlCodeModelManage
 {
 }
 
-QString QQmlDocumentSymbolSupport::name() const
-{
-    return u"QQmlDocumentSymbolSupport"_s;
-}
-
 void QQmlDocumentSymbolSupport::setupCapabilities(
         const QLspSpecification::InitializeParams &,
         QLspSpecification::InitializeResult &serverCapabilities)

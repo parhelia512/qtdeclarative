@@ -48,7 +48,6 @@ class QmlCompletionSupport : public QQmlBaseModule<CompletionRequest>
     Q_OBJECT
 public:
     QmlCompletionSupport(QmlLsp::QQmlCodeModelManager *codeModel);
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

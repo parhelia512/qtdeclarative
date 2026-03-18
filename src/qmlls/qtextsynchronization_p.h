@@ -26,7 +26,6 @@ class TextSynchronization : public QLanguageServerModule
     Q_OBJECT
 public:
     TextSynchronization(QmlLsp::QQmlCodeModelManager *codeModelManager, QObject *parent = nullptr);
-    QString name() const override;
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;

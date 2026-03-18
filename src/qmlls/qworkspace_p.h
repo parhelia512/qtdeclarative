@@ -33,6 +33,8 @@ public:
     void registerHandlers(QLanguageServer *server, QLanguageServerProtocol *protocol) override;
     void setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
                            QLspSpecification::InitializeResult &) override;
+public Q_SLOTS:
+    void clientInitialized(QLanguageServer *);
 
 private:
     void openInitialWorkspace(const QLspSpecification::InitializeParams &);

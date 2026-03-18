@@ -38,14 +38,14 @@ void WorkspaceHandlers::registerHandlers(QLanguageServer *server, QLanguageServe
                          }
                          m_codeModelManager->addRootUrls(toAdd);
                      });
+
+    QObject::connect(server, &QLanguageServer::clientInitialized, this,
+                     &WorkspaceHandlers::clientInitialized, Qt::SingleShotConnection);
 }
 
-void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializeParams &clientInfo,
+void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializeParams &,
                                           QLspSpecification::InitializeResult &serverInfo)
 {
-    if (!clientInfo.capabilities.workspace
-        || !clientInfo.capabilities.workspace->value(u"workspaceFolders"_s).toBool(false))
-        return;
     WorkspaceFoldersServerCapabilities folders;
     folders.supported = true;
     folders.changeNotifications = true;
@@ -53,8 +53,6 @@ void WorkspaceHandlers::setupCapabilities(const QLspSpecification::InitializePar
         serverInfo.capabilities.workspace = QJsonObject();
     serverInfo.capabilities.workspace->insert(u"workspaceFolders"_s,
                                               QTypedJson::toJsonValue(folders));
-
-    openInitialWorkspace(clientInfo);
 }
 
 void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)
@@ -89,6 +87,16 @@ void WorkspaceHandlers::openInitialWorkspace(const InitializeParams &clientInfo)
             });
             return;
         }
+    }
+}
+
+void WorkspaceHandlers::clientInitialized(QLanguageServer *server)
+{
+    const auto &clientInfo = server->clientInfo();
+
+    if (clientInfo.capabilities.workspace
+        && clientInfo.capabilities.workspace->value(u"workspaceFolders"_s).toBool(false)) {
+        openInitialWorkspace(clientInfo);
     }
 }
 

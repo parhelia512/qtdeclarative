@@ -52,7 +52,6 @@ public:
     QLspSpecification::InitializeParams clientInfo; // immutable after runStatus > DidInitialize
     QLspSpecification::InitializeResult serverInfo; // immutable after runStatus > DidInitialize
     QLspSpecification::Responses::ShutdownResponseType shutdownResponse;
-    QList<QLanguageServerModule *> modules;
     QLspNotifySignals notifySignals;
 };
 

@@ -59,8 +59,7 @@ public:
     QLanguageServerProtocol *protocol();
     void finishSetup();
     void registerHandlers(QLanguageServerProtocol *protocol);
-    void setupCapabilities(QLspSpecification::ServerCapabilities &caps);
-    void addServerModule(QLanguageServerModule *serverModule);
+    void registerModule(QLanguageServerModule *serverModule);
     QLspNotifySignals *notifySignals();
 
     // API

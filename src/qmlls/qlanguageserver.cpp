@@ -74,9 +74,6 @@ void QLanguageServer::finishSetup()
     emit runStatusChanged(RunStatus::SettingUp);
 
     registerHandlers(&d->protocol);
-    for (auto module : d->modules)
-        module->registerHandlers(this, &d->protocol);
-
     {
         QMutexLocker l(&d->mutex);
         rStatus = d->runStatus;
@@ -90,23 +87,12 @@ void QLanguageServer::finishSetup()
     emit runStatusChanged(RunStatus::DidSetup);
 }
 
-void QLanguageServer::addServerModule(QLanguageServerModule *serverModule)
+void QLanguageServer::registerModule(QLanguageServerModule *serverModule)
 {
     Q_D(QLanguageServer);
     Q_ASSERT(serverModule);
-    RunStatus rStatus;
-    {
-        QMutexLocker l(&d->mutex);
-        rStatus = d->runStatus;
-        if (rStatus == RunStatus::NotSetup) {
-            d->modules.append(serverModule);
-        }
-    }
-    if (rStatus != RunStatus::NotSetup) {
-        qCWarning(lspServerLog) << "Called QLanguageServer::addServerModule after setup";
-        emit lifecycleError();
-        return;
-    }
+    serverModule->registerHandlers(this, &d->protocol);
+    serverModule->setupCapabilities(d->serverInfo.capabilities);
 }
 
 QLspNotifySignals *QLanguageServer::notifySignals()
@@ -189,13 +175,6 @@ void QLanguageServer::registerMethods(QJsonRpc::TypedRpc &typedRpc)
     });
 }
 
-void QLanguageServer::setupCapabilities(QLspSpecification::ServerCapabilities &caps)
-{
-    Q_D(QLanguageServer);
-    for (auto module : std::as_const(d->modules))
-        module->setupCapabilities(caps);
-}
-
 const QLspSpecification::InitializeParams &QLanguageServer::clientInfo() const
 {
     const Q_D(QLanguageServer);
@@ -266,7 +245,6 @@ void QLanguageServer::registerHandlers(QLanguageServerProtocol *protocol)
                 }
                 emit runStatusChanged(RunStatus::Initializing);
                 d->clientInfo = params;
-                setupCapabilities(d->serverInfo.capabilities);
                 {
                     QMutexLocker l(&d->mutex);
                     d->runStatus = RunStatus::DidInitialize;

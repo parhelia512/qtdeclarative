@@ -79,20 +79,20 @@ QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> s
             this, &QLanguageServer::runStatusChanged, this,
             [](QLanguageServer::RunStatus r) { qCDebug(lspServerLog) << "runStatus" << int(r); });
 
-    addServerModule(&m_textSynchronization);
-    addServerModule(&m_lint);
-    addServerModule(&m_workspace);
-    addServerModule(&m_completionSupport);
-    addServerModule(&m_navigationSupport);
-    addServerModule(&m_definitionSupport);
-    addServerModule(&m_referencesSupport);
-    addServerModule(&m_documentFormatting);
-    addServerModule(&m_renameSupport);
-    addServerModule(&m_rangeFormatting);
-    addServerModule(&m_hover);
-    addServerModule(&m_documentSymbolSupport);
-    addServerModule(&m_progressSupport);
-    addServerModule(&m_highlightSupport);
+    registerModule(&m_textSynchronization);
+    registerModule(&m_lint);
+    registerModule(&m_workspace);
+    registerModule(&m_completionSupport);
+    registerModule(&m_navigationSupport);
+    registerModule(&m_definitionSupport);
+    registerModule(&m_referencesSupport);
+    registerModule(&m_documentFormatting);
+    registerModule(&m_renameSupport);
+    registerModule(&m_rangeFormatting);
+    registerModule(&m_hover);
+    registerModule(&m_documentSymbolSupport);
+    registerModule(&m_progressSupport);
+    registerModule(&m_highlightSupport);
     finishSetup();
     qCWarning(lspServerLog) << "Did Setup";
 }

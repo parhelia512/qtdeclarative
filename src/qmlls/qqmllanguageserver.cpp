@@ -75,9 +75,6 @@ QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> s
 {
     QObject::connect(this, &QLanguageServer::lifecycleError, this, &QQmlLanguageServer::errorExit);
     QObject::connect(this, &QLanguageServer::exit, this, &QQmlLanguageServer::exit);
-    QObject::connect(
-            this, &QLanguageServer::runStatusChanged, this,
-            [](QLanguageServer::RunStatus r) { qCDebug(lspServerLog) << "runStatus" << int(r); });
 
     registerModule(&m_textSynchronization);
     registerModule(&m_lint);
@@ -93,7 +90,7 @@ QQmlLanguageServer::QQmlLanguageServer(std::function<void(const QByteArray &)> s
     registerModule(&m_documentSymbolSupport);
     registerModule(&m_progressSupport);
     registerModule(&m_highlightSupport);
-    finishSetup();
+
     qCWarning(lspServerLog) << "Did Setup";
 }
 

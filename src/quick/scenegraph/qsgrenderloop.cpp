@@ -385,13 +385,15 @@ void QSGGuiThreadRenderLoop::teardownGraphics()
 {
     for (auto it = m_windows.begin(), itEnd = m_windows.end(); it != itEnd; ++it) {
         if (it->rhi) {
-            QQuickWindowPrivate::get(it.key())->cleanupNodesOnShutdown();
+            QQuickWindowPrivate *wd = QQuickWindowPrivate::get(it.key());
+            wd->cleanupNodesOnShutdown();
             if (it->rc)
                 it->rc->invalidate();
             releaseSwapchain(it.key());
             if (it->ownRhi)
                 QSGRhiSupport::instance()->destroyRhi(it->rhi, {});
             it->rhi = nullptr;
+            wd->rhi = nullptr;
         }
     }
 }
@@ -404,7 +406,8 @@ void QSGGuiThreadRenderLoop::handleDeviceLoss()
         if (!it->rhi || !it->rhi->isDeviceLost())
             continue;
 
-        QQuickWindowPrivate::get(it.key())->cleanupNodesOnShutdown();
+        QQuickWindowPrivate *wd = QQuickWindowPrivate::get(it.key());
+        wd->cleanupNodesOnShutdown();
 
         if (it->rc)
             it->rc->invalidate();
@@ -415,6 +418,7 @@ void QSGGuiThreadRenderLoop::handleDeviceLoss()
         if (it->ownRhi)
             QSGRhiSupport::instance()->destroyRhi(it->rhi, {});
         it->rhi = nullptr;
+        wd->rhi = nullptr;
     }
 }
 

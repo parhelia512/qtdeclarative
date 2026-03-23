@@ -309,8 +309,8 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
 {
     QQmlEngine *engine = qmlEngine(style());
     auto key = PropertyChangesComponents::key_type{engine, u"control"_s};
-    if (s_propertyChangesComponents.contains(key))
-        return s_propertyChangesComponents.value(key);
+    if (auto r = s_propertyChangesComponents.value(key, nullptr))
+        return r;
 
     const QString qmlControlCode = QString::fromUtf8(R"(
     import QtQuick
@@ -349,8 +349,8 @@ QQmlComponent *QQStyleKitReader::createDelegateChangesComponent(const QString &d
 {
     QQmlEngine *engine = qmlEngine(style());
     auto key = PropertyChangesComponents::key_type{engine, delegateName};
-    if (s_propertyChangesComponents.contains(key))
-        return s_propertyChangesComponents.value(key);
+    if (auto r = s_propertyChangesComponents.value(key, nullptr))
+        return r;
 
     static const QString qmlTemplateCode = QString::fromUtf8(R"(
     import QtQuick

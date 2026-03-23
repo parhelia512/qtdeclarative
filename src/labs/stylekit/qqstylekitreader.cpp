@@ -260,9 +260,7 @@ static quint64 textFontOverridesSignature(const QQStyleKitTextProperties *t)
 }
 
 QList<QQStyleKitReader *> QQStyleKitReader::s_allReaders;
-QMap<QPair<QQmlEngine *, QString>, QQmlComponent *> QQStyleKitReader::s_propertyChangesComponents;
-
-
+QQStyleKitReader::PropertyChangesComponents QQStyleKitReader::s_propertyChangesComponents;
 
 QQStyleKitReader::QQStyleKitReader(QObject *parent)
     : QQStyleKitControlProperties(QQSK::PropertyGroup::Control, parent)
@@ -309,9 +307,8 @@ QQuickStateGroup *QQStyleKitReader::stateGroup()
 
 QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
 {
-    static const QLatin1String propertyName("control"_L1);
     QQmlEngine *engine = qmlEngine(style());
-    auto key = qMakePair(engine, propertyName);
+    auto key = PropertyChangesComponents::key_type{engine, u"control"_s};
     if (s_propertyChangesComponents.contains(key))
         return s_propertyChangesComponents.value(key);
 
@@ -351,7 +348,7 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
 QQmlComponent *QQStyleKitReader::createDelegateChangesComponent(const QString &delegateName) const
 {
     QQmlEngine *engine = qmlEngine(style());
-    auto key = qMakePair(engine, delegateName);
+    auto key = PropertyChangesComponents::key_type{engine, delegateName};
     if (s_propertyChangesComponents.contains(key))
         return s_propertyChangesComponents.value(key);
 

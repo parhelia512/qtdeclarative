@@ -23,6 +23,8 @@
 #include "qqstylekitcontrolproperties_p.h"
 #include "qqstylekitfont_p.h"
 
+#include <QtCore/qcompare.h>
+
 QT_BEGIN_NAMESPACE
 
 class QQuickPalette;
@@ -206,7 +208,8 @@ private:
 
     QQStyleKitControlProperties m_global;
 
-    static QMap<QPair<QQmlEngine *, QString>, QQmlComponent *> s_propertyChangesComponents;
+    using PropertyChangesComponents = QMap<std::pair<Qt::totally_ordered_wrapper<QQmlEngine*>, QString>, QQmlComponent *>;
+    static PropertyChangesComponents s_propertyChangesComponents;
 
     friend class QQStyleKitControlProperties;
     friend class QQStyleKitPropertyResolver;

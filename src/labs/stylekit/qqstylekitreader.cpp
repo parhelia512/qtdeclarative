@@ -339,7 +339,7 @@ QQmlComponent *QQStyleKitReader::createControlChangesComponent() const
     component->setData(qmlControlCode.toUtf8(), QUrl());
     Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
     s_propertyChangesComponents.insert(key, component);
-    QObject::connect(engine, &QObject::destroyed, [key](){
+    QObject::connect(engine, &QObject::destroyed, [key = std::move(key)] {
         s_propertyChangesComponents.remove(key);
     });
     return component;
@@ -398,7 +398,7 @@ QQmlComponent *QQStyleKitReader::createDelegateChangesComponent(const QString &d
     component->setData(substitutedCode.toUtf8(), QUrl());
     Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
     s_propertyChangesComponents.insert(key, component);
-    QObject::connect(engine, &QObject::destroyed, [key](){
+    QObject::connect(engine, &QObject::destroyed, [key = std::move(key)] {
         s_propertyChangesComponents.remove(key);
     });
     return component;

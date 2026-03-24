@@ -65,6 +65,7 @@ protected:
     bool visit(QQmlJS::AST::Type *typeAnnotation) override;
 
     bool visit(QQmlJS::AST::UiProgram *ast) override;
+    void endVisit(QQmlJS::AST::UiProgram *ast) override;
 
     bool safeInsertJSIdentifier(QQmlJSScope::Ptr &scope, const QString &name,
                                 const QQmlJSScope::JavaScriptIdentifier &identifier) override;
@@ -116,6 +117,7 @@ private:
     void handleUselessExpressionStatement(const AST::ExpressionStatement *ast);
     void handleRecursivelyInstantiatedType(AST::UiQualifiedId *qualifiedId);
     void handleRenamedType(QQmlJS::AST::UiQualifiedId *id);
+    void checkFileSelections();
 };
 
 } // namespace QQmlJS

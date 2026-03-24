@@ -155,7 +155,7 @@ QString buildName(const Node *node)
 void QQmlJSImportVisitor::registerTargetIntoImporter(const QQmlJSScope::Ptr &target)
 {
     target->setScopeType(QQmlSA::ScopeType::QMLScope);
-    target->setBaseTypeName("$InProcess$"_L1);
+    target->setBaseTypeName(QQmlJSImporter::s_inProcessMarker);
     target->setFilePath(m_logger->filePath());
     target->setIsComposite(true);
     if (!m_importer->registerScope(target)) {

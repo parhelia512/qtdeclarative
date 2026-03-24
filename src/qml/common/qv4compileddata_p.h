@@ -432,11 +432,10 @@ struct Function
     const char *code() const { return reinterpret_cast<const char *>(this) + codeOffset; }
 
     static int calculateSize(
-            int nFormals, int nLocals, int nLinesAndStatements, int nInnerfunctions,
-            int labelInfoSize, int codeSize)
+            int nFormals, int nLocals, int nLinesAndStatements, int labelInfoSize, int codeSize)
     {
-        int trailingData = nFormals * sizeof(Parameter)
-                + (nLocals + nInnerfunctions  + labelInfoSize) * sizeof (quint32)
+        const size_t trailingData = nFormals * sizeof(Parameter)
+                + (nLocals + labelInfoSize) * sizeof (quint32)
                 + nLinesAndStatements * sizeof(CodeOffsetToLineAndStatement);
         size_t size = align(align(sizeof(Function)) + size_t(trailingData)) + align(codeSize);
         Q_ASSERT(size < INT_MAX);

@@ -281,7 +281,7 @@ QQuickStateGroup *QQStyleKitReader::stateGroup()
     if (m_stateGroup)
         return m_stateGroup;
 
-    /* Lazy create a StyleKitReaderStateGroup as soon as we have delegates
+    /* Lazy create a QQuickStateGroup as soon as we have delegates
      * that needs to be "tracked". That is, the user of this StyleKitReader
      * has read one or more properties, so we need to check and emit changes for
      * those properties whenever our state changes. */

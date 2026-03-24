@@ -19,8 +19,16 @@ T.SearchField {
                              searchIndicator.implicitIndicatorHeight + topPadding + bottomPadding,
                              clearIndicator.implicitIndicatorHeight + topPadding + bottomPadding)
 
-    leftPadding: padding + (control.mirrored || !searchIndicator.indicator || !searchIndicator.indicator.visible ? 0 : searchIndicator.indicator.width + spacing)
-    rightPadding: padding + (control.mirrored || !clearIndicator.indicator || !clearIndicator.indicator.visible ? 0 : clearIndicator.indicator.width + spacing)
+    readonly property bool __searchIndicatorVisible: control.searchIndicator.indicator && control.searchIndicator.indicator.visible
+    readonly property bool __clearIndicatorVisible: control.clearIndicator.indicator && control.clearIndicator.indicator.visible
+
+    leftPadding: padding + (control.mirrored
+                            ? (control.__clearIndicatorVisible ? control.clearIndicator.indicator.width + spacing : 0)
+                            : (control.__searchIndicatorVisible ? control.searchIndicator.indicator.width + spacing : 0))
+
+    rightPadding: padding + (control.mirrored
+                             ? (control.__searchIndicatorVisible ? control.searchIndicator.indicator.width + spacing : 0)
+                             : (control.__clearIndicatorVisible ? control.clearIndicator.indicator.width + spacing : 0))
 
     delegate: ItemDelegate {
         width: ListView.view.width
@@ -77,8 +85,10 @@ T.SearchField {
     contentItem: T.TextField {
         implicitHeight: Math.max(contentHeight + topPadding + bottomPadding,
                                  placeholder.implicitHeight + topPadding + bottomPadding)
-        leftPadding: control.searchIndicator.indicator && !control.mirrored ? 6 : 0
-        rightPadding: control.clearIndicator.indicator && !control.mirrored ? 6 : 0
+        leftPadding: control.mirrored ? (control.__clearIndicatorVisible ? 6 : 3)
+                                      : (control.__searchIndicatorVisible ? 6 : 3)
+        rightPadding: control.mirrored ? (control.__searchIndicatorVisible ? 6 : 3)
+                                       : (control.__clearIndicatorVisible ? 6 : 3)
         topPadding: 6 - control.padding
         bottomPadding: 6 - control.padding
 

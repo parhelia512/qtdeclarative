@@ -73,6 +73,7 @@ public:
     void setThemeName(const QString &themeName);
     QString themeName() const;
     QQStyleKitTheme *theme() const;
+    void recreateTheme();
 
     bool loaded() const;
 
@@ -99,7 +100,6 @@ protected:
 
 private:
     void parseThemes();
-    void recreateTheme();
     void executeFallbackStyle(bool complete = false);
     void syncFromQPalette(const QPalette &palette);
     QPalette effectivePalette() const;

@@ -2231,10 +2231,25 @@ void QQuickQmlGenerator::generateTimelineFields(const StructureNodeInfo &info)
         }
 
         if (info.timelineInfo->generateFrameCounter) {
-            stream() << "property real frameCounter: " << frameCounterRef;
-            auto offset = info.timelineInfo->frameCounterOffset;
-            if (offset)
-                stream(SameLine) << (offset > 0 ? " + " : " - ") << qAbs(offset);
+            stream() << "property real frameCounter: ";
+            if (info.timelineInfo->frameCounterMapper.isAnimated()) {
+                // Animated frame counter remapping; overrides offset / multiplier
+                stream(SameLine) << "0";
+                generatePropertyTimeline(info.timelineInfo->frameCounterMapper, info.id, "frameCounter"_L1);
+            } else {
+                const auto offset = info.timelineInfo->frameCounterOffset;
+                const auto multiplier = info.timelineInfo->frameCounterMultiplier;
+                const bool needsParens = (offset && multiplier);
+                if (needsParens)
+                    stream(SameLine) << "(";
+                stream(SameLine) << frameCounterRef;
+                if (offset)
+                    stream(SameLine) << (offset > 0 ? " + " : " - ") << qAbs(offset);
+                if (needsParens)
+                    stream(SameLine) << ")";
+                if (multiplier)
+                    stream(SameLine) << " * " << multiplier;
+            }
         }
     }
 }

@@ -1069,8 +1069,6 @@ bool IRBuilder::visit(QQmlJS::AST::UiEnumDeclaration *node)
         if (e->value > std::numeric_limits<qint32>::max() || e->value < std::numeric_limits<qint32>::min())
             COMPILE_EXCEPTION(e->valueToken, tr("Enum value out of range"));
         enumValue->value = e->value;
-
-        enumValue->location.set(e->memberToken.startLine, e->memberToken.startColumn);
         enumeration->enumValues->append(enumValue);
 
         e = e->next;

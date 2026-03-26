@@ -133,10 +133,11 @@ struct Location
         return QT_PREPEND_NAMESPACE(qHash)(location.m_data.data(), seed);
     }
 
-    friend bool operator==(const Location &a, const Location &b)
+    friend bool comparesEqual(const Location &a, const Location &b) noexcept
     {
         return a.m_data.data()== b.m_data.data();
     }
+    Q_DECLARE_EQUALITY_COMPARABLE(Location)
 
     void set(quint32 line, quint32 column)
     {

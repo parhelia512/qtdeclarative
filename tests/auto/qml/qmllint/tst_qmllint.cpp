@@ -3746,6 +3746,20 @@ void TestQmllint::lintModule_data()
                                testFile("hidden/moduleWithQrc_raw_qml_0.qrc")
                            })
             << Result::clean();
+    QTest::newRow(("ImportFileSelector"))
+            << QStringLiteral("FileSelector") << QStringList() << QStringList()
+            << Result{
+                   { { "Ambiguous type detected. ToolBar 1.0 is defined multiple times."_L1 } }
+               }.withFlags(Result::Flags(Result::UseSettings));
+    QTest::newRow(("ImportFileSelector2"))
+            << QStringLiteral("FileSelector2") << QStringList() << QStringList()
+            << Result{
+                   { { "Ambiguous type detected. ToolBar 1.0 is defined multiple times."_L1 },
+                     { "Ambiguous type detected. Broken 1.0 is defined multiple times."_L1 } },
+                   { { "Type ToolBar is ambiguous due to file selector usage, ignoring %1"_L1.arg(
+                               testFile("FileSelector2/+Material/ToolBar.qml")),
+                       1, 1, QtMsgType::QtWarningMsg } }
+               }.withFlags(Result::Flags(Result::UseSettings));
 }
 
 void TestQmllint::lintModule()

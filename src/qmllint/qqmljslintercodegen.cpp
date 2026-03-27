@@ -121,6 +121,7 @@ void QQmlJSLinterCodegen::analyzeFunction(const QV4::Compiler::Context *context,
     lintTypePropgator.setScopesById(m_scopesById);
     lintTypePropgator.setIdMemberShadows(&m_idMemberShadows);
     lintTypePropgator.setRenamedComponents(m_renamedComponents);
+    lintTypePropgator.setKnownUnresolvedTypes(m_knownUnresolvedTypes);
     blocksAndAnnotations = lintTypePropgator.run(function);
 
     if (m_logger->categorySeverity(qmlCompiler) == QQmlJS::WarningSeverity::Disable)

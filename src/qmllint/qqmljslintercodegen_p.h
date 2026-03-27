@@ -21,6 +21,7 @@
 
 #include <variant>
 
+#include <private/qduplicatetracker_p.h>
 #include <private/qqmlirbuilder_p.h>
 #include <private/qqmljscompilepass_p.h>
 #include <private/qqmljscompiler_p.h>
@@ -79,6 +80,11 @@ public:
         m_renamedComponents = renamedComponents;
     }
 
+    void setKnownUnresolvedTypes(QDuplicateTracker<QQmlJSScope::ConstPtr> *tracker)
+    {
+        m_knownUnresolvedTypes = tracker;
+    }
+
     QQmlJSTypeResolver *typeResolver() { return &m_typeResolver; }
 
     void setPassManager(QQmlSA::PassManager *passManager);
@@ -93,6 +99,7 @@ private:
     ContextPropertyInfo m_contextPropertyInfo;
     QQmlJSScopesById m_scopesById;
     QSet<IdMemberShadow> m_idMemberShadows;
+    QDuplicateTracker<QQmlJSScope::ConstPtr> *m_knownUnresolvedTypes = nullptr;
     const QQmlJS::LinterRenamedComponents *m_renamedComponents = nullptr;
 };
 

@@ -924,9 +924,11 @@ void QQmlJSTypePropagator::generate_CallProperty(int nameIndex, int base, int ar
             fixSuggestion = suggestion;
         }
 
-        m_logger->log(u"Member \"%1\" not found on type \"%2\""_s.arg(
-                              propertyName, callBase.containedTypeName()),
-                      qmlMissingProperty, currentSourceLocation(), true, true, fixSuggestion);
+        if (baseType->isFullyResolved() || baseType->isScript()) {
+            m_logger->log(u"Member \"%1\" not found on type \"%2\""_s.arg(
+                                  propertyName, callBase.containedTypeName()),
+                          qmlMissingProperty, currentSourceLocation(), true, true, fixSuggestion);
+        }
         return;
     }
 

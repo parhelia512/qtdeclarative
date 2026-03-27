@@ -721,6 +721,9 @@ void QQmlJSImportVisitor::processDefaultProperties()
         if (checkCustomParser(parentScope))
             continue;
 
+        if (!checkTypeResolved(parentScope))
+            continue;
+
         /* consider:
          *
          *      QtObject { // <- parentScope
@@ -748,7 +751,7 @@ void QQmlJSImportVisitor::processDefaultProperties()
                 }
             }
 
-            if (!isComponent) {
+            if (!isComponent && checkTypeResolved(parentScope)) {
                 m_logger->log(QStringLiteral("Cannot assign to non-existent default property"),
                               qmlMissingProperty, it.value().constFirst()->sourceLocation());
             }
@@ -1314,7 +1317,8 @@ void QQmlJSImportVisitor::processPropertyBindings()
                     }
                 }
 
-                warnMissingPropertyForBinding(name, location, fixSuggestion);
+                if (checkTypeResolved(scope))
+                    warnMissingPropertyForBinding(name, location, fixSuggestion);
                 continue;
             }
 

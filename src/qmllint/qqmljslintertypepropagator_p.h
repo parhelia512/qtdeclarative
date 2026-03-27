@@ -15,6 +15,7 @@
 //
 // We mean it.
 
+#include <private/qduplicatetracker_p.h>
 #include <private/qqmljstypepropagator_p.h>
 #include <private/qqmljscontextproperties_p.h>
 #include <private/qqmljsusercontextproperties_p.h>
@@ -54,6 +55,10 @@ public:
     {
         m_renamedComponents = renamedComponents;
     }
+    void setKnownUnresolvedTypes(QDuplicateTracker<QQmlJSScope::ConstPtr> *knownUnresolvedTypes)
+    {
+        m_knownUnresolvedTypes = knownUnresolvedTypes;
+    }
 
 private:
 
@@ -79,11 +84,14 @@ private:
     void propagateTranslationMethod_SAcheck(const QString &methodName) override;
     void warnAboutTypeCoercion(int lhs) override;
 
+    bool checkTypeResolved(const QQmlJSScope::ConstPtr &type);
+
     QQmlSA::PassManager *m_passManager = nullptr;
     ContextPropertyInfo m_contextPropertyInfo;
     QQmlJSScopesById m_scopesById;
     QSet<IdMemberShadow> *m_idMemberShadows = nullptr;
     const QQmlJS::LinterRenamedComponents *m_renamedComponents = nullptr;
+    QDuplicateTracker<QQmlJSScope::ConstPtr> *m_knownUnresolvedTypes = nullptr;
 };
 
 QT_END_NAMESPACE

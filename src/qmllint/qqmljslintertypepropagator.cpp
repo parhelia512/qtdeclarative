@@ -493,6 +493,21 @@ bool QQmlJSLinterTypePropagator::handleImportNamespaceLookup(const QString &prop
     return res;
 }
 
+bool QQmlJSLinterTypePropagator::checkTypeResolved(const QQmlJSScope::ConstPtr &type)
+{
+    if (type->isFullyResolved() || type->isScript())
+        return true;
+
+    if (!m_knownUnresolvedTypes->hasSeen(type)) {
+
+        m_logger->log(QStringLiteral("Type %1 is used but it is not resolved")
+                              .arg(QQmlJSUtils::getScopeName(type, type->scopeType())),
+                      qmlUnresolvedType, currentSourceLocation());
+    }
+
+    return false;
+}
+
 void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
 {
     QQmlJSTypePropagator::handleLookupError(propertyName);
@@ -542,8 +557,10 @@ void QQmlJSLinterTypePropagator::handleLookupError(const QString &propertyName)
         }
     }
 
-    m_logger->log(u"Member \"%1\" not found on type \"%2\""_s.arg(propertyName, typeName),
-                  qmlMissingProperty, currentSourceLocation(), true, true, fixSuggestion);
+    if (checkTypeResolved(baseType)) {
+        m_logger->log(u"Member \"%1\" not found on type \"%2\""_s.arg(propertyName, typeName),
+                      qmlMissingProperty, currentSourceLocation(), true, true, fixSuggestion);
+    }
 }
 
 bool QQmlJSLinterTypePropagator::checkForEnumProblems(QQmlJSRegisterContent base,

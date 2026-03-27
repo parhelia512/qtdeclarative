@@ -692,6 +692,7 @@ QQmlJSLinter::lintFileImpl(const QString &filename, const QString *fileContents,
     codegen.setTypeResolver(std::move(typeResolver));
     codegen.setScopesById(v.addressableScopes());
     codegen.setRenamedComponents(&v.renamedComponents());
+    codegen.setKnownUnresolvedTypes(v.knownUnresolvedTypes());
 
     using PassManagerPtr =
             std::unique_ptr<QQmlSA::PassManager,

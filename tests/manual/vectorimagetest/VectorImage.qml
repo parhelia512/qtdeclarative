@@ -12,11 +12,14 @@ Item {
 
 
     Image {
-        anchors.fill: vectorImage
         source: "background.png"
         fillMode: Image.Tile
         horizontalAlignment: Image.AlignLeft
         verticalAlignment: Image.AlignTop
+        scale: 1.0 / parent.scale
+        width: parent.width
+        height: parent.height
+        transformOrigin: Item.TopLeft
     }
 
     VectorImage {

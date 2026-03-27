@@ -6,6 +6,7 @@ import QtQuick.Window
 import QtTest
 import QtQuick.Controls
 import Qt.test.controls
+import Qt.labs.qmlmodels
 
 TestCase {
     id: testCase
@@ -60,49 +61,85 @@ TestCase {
             compare(StyleInfo.styleName, "iOS")
     }
 
-    // TO-DO: Implement SFPM logic after 6.10
-    // ListModel {
-    //     id: specialCharModels
-    //     ListElement { text: "こんにちは" }
-    //     ListElement { text: "Pi: π (3.14)"; }
-    //     ListElement { text: "Math: ∑ ∞ ≈"; }
-    //     ListElement { text: "Emoji: 😃🎉🔥"; }
-    //     ListElement { text: "Currency: € ¥ ₹ $"; }
-    //     ListElement { text: "α β γ"; }
-    //     ListElement { text: "Привет"; }
-    //     ListElement { text: "مرحبًا"; }
-    //     ListElement { text: "你好"; }
-    //     ListElement { text: "שלום"; }
-    //     ListElement { text: "Brackets: { [ ( < > ) ] }"; }
-    // }
+    Component {
+        id: sfpmComponent
 
-    // function test_specialCharacters() {
-    //     let control = createTemporaryObject(searchField, testCase)
-    //     verify(control)
+        Item {
+            width: 400
+            height: 400
 
-    //     control.suggestionModel = specialCharModels
-    //     let textItem = control.contentItem
-    //     textItem.text = "e"
+            property alias sfpmSearchField: sfpmSearchField
 
-    //     compare(control.text, "e")
-    //     compare(control.suggestionCount, 3)
-    //     compare(control.currentIndex, 0)
-    //     compare(control.popup.visible, true)
+            ListModel {
+                id: countryModels
+                ListElement { text: "Norway" }
+                ListElement { text: "Turkey" }
+                ListElement { text: "Albania" }
+                ListElement { text: "India" }
+                ListElement { text: "Iran" }
+                ListElement { text: "Australia" }
+                ListElement { text: "United States" }
+            }
 
-    //     textItem.text = "П"
+            SortFilterProxyModel {
+                id: countryFilter
+                model: countryModels
+                sorters: RoleSorter { roleName: "text" }
 
-    //     compare(control.text, "П")
-    //     compare(control.suggestionCount, 1)
-    //     compare(control.currentIndex, 0)
-    //     compare(control.popup.visible, true)
+                filters: FunctionFilter {
+                    component CustomData: QtObject { property string text }
+                    property var regExp: sfpmSearchField.text.length > 0
+                                         ? new RegExp(sfpmSearchField.text, "i")
+                                         : null
+                    onRegExpChanged: invalidate()
 
-    //     textItem.text = "🎉"
+                    function filter(data: CustomData): bool {
+                        return regExp ? regExp.test(data.text) : false
+                    }
+                }
+            }
 
-    //     compare(control.text, "🎉")
-    //     compare(control.suggestionCount, 1)
-    //     compare(control.currentIndex, 0)
-    //     compare(control.popup.visible, true)
-    // }
+            SearchField {
+                id: sfpmSearchField
+                suggestionModel: countryFilter
+                textRole: "text"
+            }
+        }
+    }
+
+    function test_sortFilterProxyModel() {
+        if (StyleInfo.styleName === "iOS")
+            skip("iOS style does not provide a popup for SearchField.")
+
+        let component = createTemporaryObject(sfpmComponent, testCase)
+        verify(component)
+
+        let control = component.sfpmSearchField
+        verify(control)
+
+        control.forceActiveFocus()
+        verify(control.activeFocus)
+
+        let textItem = control.contentItem
+
+        textItem.text = "e"
+        compare(control.text, "e")
+        compare(control.suggestionCount, 2)
+        compare(control.currentIndex, -1)
+        compare(control.popup.visible, true)
+
+        textItem.text = "i"
+        compare(control.text, "i")
+        compare(control.suggestionCount, 5)
+        compare(control.currentIndex, -1)
+        compare(control.popup.visible, true)
+
+        textItem.text = ""
+        compare(control.text, "")
+        compare(control.suggestionCount, 0)
+        compare(control.currentIndex, -1)
+        compare(control.popup.visible, false)
+    }
 
     ListModel {
         id : fruitModel

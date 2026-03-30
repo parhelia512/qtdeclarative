@@ -2738,11 +2738,14 @@ void TestQmllint::cleanQmlCode_data()
     QTest::newRow("v4SequenceMethods") << QStringLiteral("v4SequenceMethods.qml");
     QTest::newRow("valueSource") << QStringLiteral("valueSource.qml");
     QTest::newRow("var") << QStringLiteral("var.qml");
+    QTest::newRow("recognizeComponentWithinItself1") << u"recognizeComponentWithinItself/A.qml"_s;
+    QTest::newRow("recognizeComponentWithinItself2") << u"recognizeComponentWithinItself/B.qml"_s;
 }
 
 void TestQmllint::cleanQmlCode()
 {
     QFETCH(QString, filename);
+    QEXPECT_FAIL("recognizeComponentWithinItself2", "QTBUG-117786", Abort);
     runTest(filename, Result::clean());
 }
 

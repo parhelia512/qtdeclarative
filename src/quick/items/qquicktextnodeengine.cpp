@@ -22,7 +22,40 @@
 #include <private/qquickitem_p.h>
 #include <private/qsgdistancefieldglyphnode_p.h>
 
+#include <QtGui/private/qguiapplication_p.h>
+#include <qpa/qplatformtheme.h>
+
 QT_BEGIN_NAMESPACE
+
+// Resolves SpellCheckUnderline to the platform-specific style and normalizes
+// unknown styles to SingleUnderline.
+static QTextCharFormat::UnderlineStyle resolveUnderlineStyle(QTextCharFormat::UnderlineStyle style)
+{
+    if (style == QTextCharFormat::SpellCheckUnderline) {
+        QPlatformTheme *theme = QGuiApplicationPrivate::platformTheme();
+        if (theme) {
+            style = QTextCharFormat::UnderlineStyle(
+                    theme->themeHint(QPlatformTheme::SpellCheckUnderlineStyle).toInt());
+        }
+        if (style == QTextCharFormat::SpellCheckUnderline)
+            style = QTextCharFormat::WaveUnderline;
+    }
+
+    switch (style) {
+    case QTextCharFormat::NoUnderline:
+    case QTextCharFormat::SingleUnderline:
+    case QTextCharFormat::DashUnderline:
+    case QTextCharFormat::DotLine:
+    case QTextCharFormat::DashDotLine:
+    case QTextCharFormat::DashDotDotLine:
+    case QTextCharFormat::WaveUnderline:
+        return style;
+    default:
+        qWarning("QQuickTextNodeEngine: unknown underline style %d, falling back to SingleUnderline",
+                 int(style));
+        return QTextCharFormat::SingleUnderline;
+    }
+}
 
 QQuickTextNodeEngine::BinaryTreeNodeKey::BinaryTreeNodeKey(BinaryTreeNode *node)
     : fontEngine(QRawFontPrivate::get(node->glyphRun.rawFont())->fontEngine)
@@ -36,6 +69,7 @@ QQuickTextNodeEngine::BinaryTreeNode::BinaryTreeNode(const QGlyphRun &g,
                                                      SelectionState selState,
                                                      const QRectF &brect,
                                                      const Decorations &decs,
+                                                     QTextCharFormat::UnderlineStyle us,
                                                      const QColor &c,
                                                      const QColor &bc, const QColor &dc,
                                                      const QPointF &pos, qreal a)
@@ -44,6 +78,7 @@ QQuickTextNodeEngine::BinaryTreeNode::BinaryTreeNode(const QGlyphRun &g,
     , selectionState(selState)
     , clipNode(nullptr)
     , decorations(decs)
+    , underlineStyle(us)
     , color(c)
     , backgroundColor(bc)
     , decorationColor(dc)
@@ -56,9 +91,8 @@ QQuickTextNodeEngine::BinaryTreeNode::BinaryTreeNode(const QGlyphRun &g,
     ranges.append(std::make_pair(d->textRangeStart, d->textRangeEnd));
 }
 
-
 void QQuickTextNodeEngine::BinaryTreeNode::insert(QVarLengthArray<BinaryTreeNode, 16> *binaryTree, const QGlyphRun &glyphRun, SelectionState selectionState,
-                                             Decorations decorations, const QColor &textColor,
+                                             Decorations decorations, QTextCharFormat::UnderlineStyle underlineStyle, const QColor &textColor,
                                              const QColor &backgroundColor, const QColor &decorationColor, const QPointF &position)
 {
     QRectF searchRect = glyphRun.boundingRect();
@@ -67,7 +101,8 @@ void QQuickTextNodeEngine::BinaryTreeNode::insert(QVarLengthArray<BinaryTreeNode
     if (qFuzzyIsNull(searchRect.width()) || qFuzzyIsNull(searchRect.height()))
         return;
 
-    decorations |= (glyphRun.underline() ? Decoration::Underline : Decoration::NoDecoration);
+    if (glyphRun.underline() || underlineStyle != QTextCharFormat::NoUnderline)
+        decorations |= Decoration::Underline;
     decorations |= (glyphRun.overline()  ? Decoration::Overline  : Decoration::NoDecoration);
     decorations |= (glyphRun.strikeOut() ? Decoration::StrikeOut : Decoration::NoDecoration);
     decorations |= (backgroundColor.isValid() ? Decoration::Background : Decoration::NoDecoration);
@@ -77,6 +112,7 @@ void QQuickTextNodeEngine::BinaryTreeNode::insert(QVarLengthArray<BinaryTreeNode
                                       selectionState,
                                       searchRect,
                                       decorations,
+                                      underlineStyle,
                                       textColor,
                                       backgroundColor,
                                       decorationColor,
@@ -216,6 +252,7 @@ void QQuickTextNodeEngine::processCurrentLine()
     QColor lastColor;
     QColor lastBackgroundColor;
     QColor lastDecorationColor;
+    QTextCharFormat::UnderlineStyle lastUnderlineStyle = QTextCharFormat::NoUnderline;
 
     QVarLengthArray<TextDecoration> pendingUnderlines;
     QVarLengthArray<TextDecoration> pendingOverlines;
@@ -249,8 +286,26 @@ void QQuickTextNodeEngine::processCurrentLine()
                          currentDecorations.testFlag(Decoration::StrikeOut)))
                     textDecoration.color = lastDecorationColor;
 
-                if (currentDecorations & Decoration::Underline)
-                    pendingUnderlines.append(textDecoration);
+                if (currentDecorations & Decoration::Underline) {
+                    textDecoration.underlineStyle = lastUnderlineStyle;
+                    // Try to merge with previous underline if style, color, and selection match
+                    if (!pendingUnderlines.isEmpty()) {
+                        TextDecoration &last = pendingUnderlines.last();
+                        // Half-pixel threshold accounts for floating-point gaps between adjacent glyph runs
+                        constexpr qreal mergeThreshold = 0.5;
+                        if (last.underlineStyle == lastUnderlineStyle
+                            && last.color == textDecoration.color
+                            && last.selectionState == textDecoration.selectionState
+                            && qAbs(last.rect.right() - textDecoration.rect.left()) < mergeThreshold) {
+                            // Extend previous range instead of creating a new one
+                            last.rect.setRight(textDecoration.rect.right());
+                        } else {
+                            pendingUnderlines.append(textDecoration);
+                        }
+                    } else {
+                        pendingUnderlines.append(textDecoration);
+                    }
+                }
 
                 if (currentDecorations & Decoration::Overline)
                     pendingOverlines.append(textDecoration);
@@ -368,6 +423,7 @@ void QQuickTextNodeEngine::processCurrentLine()
                 lastColor = node->color;
                 lastBackgroundColor = node->backgroundColor;
                 lastDecorationColor = node->decorationColor;
+                lastUnderlineStyle = node->underlineStyle;
                 m_processedNodes.append(*node);
             }
         }
@@ -480,6 +536,7 @@ void QQuickTextNodeEngine::addUnselectedGlyphs(const QGlyphRun &glyphRun)
                            glyphRun,
                            Unselected,
                            Decoration::NoDecoration,
+                           m_underlineStyle,
                            m_textColor,
                            m_backgroundColor,
                            m_decorationColor,
@@ -493,6 +550,7 @@ void QQuickTextNodeEngine::addSelectedGlyphs(const QGlyphRun &glyphRun)
                            glyphRun,
                            Selected,
                            Decoration::NoDecoration,
+                           m_underlineStyle,
                            m_textColor,
                            m_backgroundColor,
                            m_decorationColor,
@@ -512,6 +570,7 @@ void QQuickTextNodeEngine::addGlyphsForRanges(const QVarLengthArray<QTextLayout:
 
             if (range.start > currentPosition) {
                 addGlyphsInRange(currentPosition, range.start - currentPosition,
+                                 QTextCharFormat::NoUnderline,
                                  QColor(), QColor(), QColor(), selectionStart, selectionEnd);
             }
             int rangeEnd = qMin(range.start + range.length, currentPosition + remainingLength);
@@ -528,9 +587,13 @@ void QQuickTextNodeEngine::addGlyphsForRanges(const QVarLengthArray<QTextLayout:
                     ? range.format.underlineColor()
                     : QColor();
 
-            addGlyphsInRange(range.start, rangeEnd - range.start,
-                             rangeColor, rangeBackgroundColor, rangeDecorationColor,
-                             selectionStart, selectionEnd);
+            QTextCharFormat::UnderlineStyle rangeUnderlineStyle = QTextCharFormat::NoUnderline;
+            if (range.format.hasProperty(QTextFormat::TextUnderlineStyle))
+                rangeUnderlineStyle = range.format.underlineStyle();
+
+            addGlyphsInRange(range.start, rangeEnd - range.start, rangeUnderlineStyle,
+                             rangeColor, rangeBackgroundColor,
+                             rangeDecorationColor, selectionStart, selectionEnd);
 
             currentPosition = range.start + range.length;
             remainingLength = end - currentPosition;
@@ -541,13 +604,15 @@ void QQuickTextNodeEngine::addGlyphsForRanges(const QVarLengthArray<QTextLayout:
     }
 
     if (remainingLength > 0) {
-        addGlyphsInRange(currentPosition, remainingLength, QColor(), QColor(), QColor(),
+        addGlyphsInRange(currentPosition, remainingLength, QTextCharFormat::NoUnderline,
+                         QColor(), QColor(), QColor(),
                          selectionStart, selectionEnd);
     }
 
 }
 
 void QQuickTextNodeEngine::addGlyphsInRange(int rangeStart, int rangeLength,
+                                            QTextCharFormat::UnderlineStyle underlineStyle,
                                             const QColor &color, const QColor &backgroundColor, const QColor &decorationColor,
                                             int selectionStart, int selectionEnd)
 {
@@ -568,6 +633,9 @@ void QQuickTextNodeEngine::addGlyphsInRange(int rangeStart, int rangeLength,
         oldDecorationColor = m_decorationColor;
         m_decorationColor = decorationColor;
     }
+
+    QTextCharFormat::UnderlineStyle oldUnderlineStyle = m_underlineStyle;
+    m_underlineStyle = underlineStyle;
 
     bool hasSelection = selectionEnd >= 0
             && selectionStart <= selectionEnd;
@@ -611,6 +679,8 @@ void QQuickTextNodeEngine::addGlyphsInRange(int rangeStart, int rangeLength,
 
     if (oldColor.isValid())
         m_textColor = oldColor;
+
+    m_underlineStyle = oldUnderlineStyle;
 }
 
 void QQuickTextNodeEngine::addBorder(const QRectF &rect, qreal border,
@@ -797,7 +867,8 @@ void QQuickTextNodeEngine::addToSceneGraph(QSGInternalTextNode *parentNode,
                 ? m_selectedTextColor
                 : textDecoration.color;
 
-        parentNode->addDecorationNode(textDecoration.rect, color);
+        parentNode->addDecorationNode(textDecoration.rect, color,
+                                      resolveUnderlineStyle(textDecoration.underlineStyle));
     }
 
     // Finally add the selected text on top of everything
@@ -896,6 +967,8 @@ void QQuickTextNodeEngine::mergeFormats(QTextLayout *textLayout, QVarLengthArray
     for (QTextLayout::FormatRange additionalFormat : additionalFormats) {
         if (additionalFormat.format.hasProperty(QTextFormat::ForegroundBrush)
          || additionalFormat.format.hasProperty(QTextFormat::BackgroundBrush)
+         || additionalFormat.format.hasProperty(QTextFormat::TextUnderlineStyle)
+         || additionalFormat.format.hasProperty(QTextFormat::TextUnderlineColor)
          || additionalFormat.format.isAnchor()) {
             // Merge overlapping formats
             if (!mergedFormats->isEmpty()) {
@@ -1103,7 +1176,9 @@ void QQuickTextNodeEngine::addTextBlock(QTextDocument *textDocument, const QText
                 fragmentEnd += preeditLength;
             }
 #endif
-            if (charFormat.background().style() != Qt::NoBrush || charFormat.hasProperty(QTextFormat::TextUnderlineColor)) {
+            if (charFormat.background().style() != Qt::NoBrush
+                || charFormat.hasProperty(QTextFormat::TextUnderlineColor)
+                || charFormat.hasProperty(QTextFormat::TextUnderlineStyle)) {
                 QTextLayout::FormatRange additionalFormat;
                 additionalFormat.start = textPos - block.position();
                 additionalFormat.length = fragmentEnd - textPos;

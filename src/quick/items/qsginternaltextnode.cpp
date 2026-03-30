@@ -130,8 +130,10 @@ void QSGInternalTextNode::clearCursor()
     m_cursorNode = nullptr;
 }
 
-void QSGInternalTextNode::addDecorationNode(const QRectF &rect, const QColor &color)
+void QSGInternalTextNode::addDecorationNode(const QRectF &rect, const QColor &color,
+                                            QTextCharFormat::UnderlineStyle style)
 {
+    Q_UNUSED(style); // Software renderer does not support styled underlines
     addRectangleNode(rect, color);
 }
 

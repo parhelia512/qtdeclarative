@@ -63,7 +63,8 @@ public:
         }
 
         BinaryTreeNode(const QGlyphRun &g, SelectionState selState, const QRectF &brect,
-                       const Decorations &decs, const QColor &c, const QColor &bc, const QColor &dc,
+                       const Decorations &decs, QTextCharFormat::UnderlineStyle us,
+                       const QColor &c, const QColor &bc, const QColor &dc,
                        const QPointF &pos, qreal a);
 
         QGlyphRun glyphRun;
@@ -71,6 +72,7 @@ public:
         SelectionState selectionState;
         QQuickDefaultClipNode *clipNode;
         Decorations decorations;
+        QTextCharFormat::UnderlineStyle underlineStyle = QTextCharFormat::NoUnderline;
         QColor color;
         QColor backgroundColor;
         QColor decorationColor;
@@ -86,8 +88,11 @@ public:
         static void insert(QVarLengthArray<BinaryTreeNode, 16> *binaryTree, const QRectF &rect, const QImage &image, qreal ascent, SelectionState selectionState)
         { insert(binaryTree, BinaryTreeNode(rect, image, selectionState, ascent)); }
 
-        static void insert(QVarLengthArray<BinaryTreeNode, 16> *binaryTree, const QGlyphRun &glyphRun, SelectionState selectionState,
-                           Decorations decorations, const QColor &textColor, const QColor &backgroundColor, const QColor &underlineColor, const QPointF &position);
+        static void insert(QVarLengthArray<BinaryTreeNode, 16> *binaryTree,
+                           const QGlyphRun &glyphRun, SelectionState selectionState,
+                           Decorations decorations, QTextCharFormat::UnderlineStyle underlineStyle,
+                           const QColor &textColor, const QColor &backgroundColor,
+                           const QColor &underlineColor, const QPointF &position);
         static void insert(QVarLengthArray<BinaryTreeNode, 16> *binaryTree, const BinaryTreeNode &binaryTreeNode);
         static void inOrder(const QVarLengthArray<BinaryTreeNode, 16> &binaryTree, QVarLengthArray<int> *sortedIndexes, int currentIndex = 0);
     };
@@ -153,8 +158,9 @@ public:
     void addSelectedGlyphs(const QGlyphRun &glyphRun);
     void addUnselectedGlyphs(const QGlyphRun &glyphRun);
     void addGlyphsInRange(int rangeStart, int rangeEnd,
-                          const QColor &color, const QColor &backgroundColor, const QColor &underlineColor,
-                          int selectionStart, int selectionEnd);
+                          QTextCharFormat::UnderlineStyle underlineStyle,
+                          const QColor &color, const QColor &backgroundColor,
+                          const QColor &underlineColor, int selectionStart, int selectionEnd);
     void addGlyphsForRanges(const QVarLengthArray<QTextLayout::FormatRange> &ranges,
                             int start, int end,
                             int selectionStart, int selectionEnd);
@@ -199,16 +205,14 @@ private:
     struct TextDecoration
     {
         TextDecoration() : selectionState(Unselected) {}
-        TextDecoration(const SelectionState &s,
-                       const QRectF &r,
-                       const QColor &c)
-            : selectionState(s)
-            , rect(r)
-            , color(c)
+        TextDecoration(const SelectionState &s, const QRectF &r, const QColor &c,
+                       QTextCharFormat::UnderlineStyle us = QTextCharFormat::NoUnderline)
+            : selectionState(s), underlineStyle(us), rect(r), color(c)
         {
         }
 
         SelectionState selectionState;
+        QTextCharFormat::UnderlineStyle underlineStyle = QTextCharFormat::NoUnderline;
         QRectF rect;
         QColor color;
     };
@@ -224,6 +228,7 @@ private:
     QColor m_selectedTextColor;
     QColor m_anchorColor;
     QPointF m_position;
+    QTextCharFormat::UnderlineStyle m_underlineStyle = QTextCharFormat::NoUnderline;
 
     QTextLine m_currentLine;
     Qt::LayoutDirection m_currentTextDirection;

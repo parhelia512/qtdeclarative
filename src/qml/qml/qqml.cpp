@@ -2280,9 +2280,7 @@ bool AOTCompiledContext::callQmlContextPropertyLookup(uint index, void **args, i
     return false;
 }
 
-enum MatchScore { NoMatch, ExactMatch, };
-
-static MatchScore resolveQObjectMethodOverload(
+static void resolveQObjectMethodOverload(
         QV4::QObjectMethod *method, QV4::Lookup *lookup, int relativeMethodIndex)
 {
     Q_ASSERT(lookup->qobjectMethodLookup.method.get() == method->d());
@@ -2290,13 +2288,17 @@ static MatchScore resolveQObjectMethodOverload(
     const auto *d = method->d();
     const int methodCount = d->methodCount;
 
-    if (relativeMethodIndex == -1 && methodCount == 1) {
-        // QML-declared signals do not have a meaningful method index and cannot be overloaded.
-        // They still show up as QObjectMethod rather than ArrowFunction. If they didn't, we
-        // wouldn't have to care.
-        Q_ASSERT(d->methods[0].metaMethod().methodType() == QMetaMethod::Signal);
+    if (methodCount == 1) {
+        // No need to resolve the overload if there's only one method.
+        // This can be:
+        // 1. A QML-declared signal where the relativeMethodIndex is -1.
+        // 2. A QML-declared function in an object compiled via qmltc where the
+        //    relativeMethodIndex isn't actually the metaobject index.
+        //    NB: QML-declared functions can't be overloaded, so there is no
+        //        ambiguity here.
+        // 3. A C++-declared invokable. In that case this is an optimization.
         lookup->qobjectMethodLookup.propertyData = d->methods;
-        return ExactMatch;
+        return;
     }
 
     for (int i = 0, end = d->methodCount; i != end; ++i) {
@@ -2305,10 +2307,10 @@ static MatchScore resolveQObjectMethodOverload(
             continue;
 
         lookup->qobjectMethodLookup.propertyData = d->methods + i;
-        return ExactMatch;
+        return;
     }
 
-    return NoMatch;
+    Q_UNREACHABLE();
 }
 
 static bool tryEnsureMethodsCache(QV4::QObjectMethod *method, QObject *object)
@@ -2340,10 +2342,8 @@ void AOTCompiledContext::initCallQmlContextPropertyLookup(uint index, int relati
                 scope, lookup->contextGetter(scope.engine, thisObject));
     if (auto *method = function->as<QV4::QObjectMethod>()) {
         Q_ASSERT(lookup->call == QV4::Lookup::Call::ContextGetterScopeObjectMethod);
-        if (tryEnsureMethodsCache(method, qmlScopeObject)) {
-            const auto match = resolveQObjectMethodOverload(method, lookup, relativeMethodIndex);
-            Q_ASSERT(match == ExactMatch);
-        }
+        if (tryEnsureMethodsCache(method, qmlScopeObject))
+            resolveQObjectMethodOverload(method, lookup, relativeMethodIndex);
         return;
     }
 
@@ -2519,10 +2519,8 @@ void AOTCompiledContext::initCallObjectPropertyLookup(
     QV4::ScopedValue thisObject(scope, QV4::QObjectWrapper::wrap(scope.engine, object));
     QV4::ScopedFunctionObject function(scope, lookup->getter(scope.engine, thisObject));
     if (auto *method = function->as<QV4::QObjectMethod>()) {
-        if (tryEnsureMethodsCache(method, object)) {
-            const auto match = resolveQObjectMethodOverload(method, lookup, relativeMethodIndex);
-            Q_ASSERT(match == ExactMatch);
-        }
+        if (tryEnsureMethodsCache(method, object))
+            resolveQObjectMethodOverload(method, lookup, relativeMethodIndex);
         return;
     }
 

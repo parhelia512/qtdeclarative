@@ -2357,8 +2357,8 @@ void emitWarningWithOptionalFix(GenericPass &pass, QAnyStringView diagnostic,
         return;
     }
 
-    auto saFix = FixSuggestionPrivate::createQQmlSAFixSuggestion(fix.value());
-    pass.emitWarning(diagnostic, id, srcLocation, std::move(saFix));
+    const auto saFix = FixSuggestionPrivate::createQQmlSAFixSuggestion(fix.value());
+    pass.emitWarning(diagnostic, id, srcLocation, saFix);
 }
 
 bool isRegularBindingType(BindingType type)

@@ -1013,7 +1013,10 @@ public:
 
     PatternElementList(Elision *elision, PatternElement *element)
         : elision(elision), element(element), next(this)
-    { kind = K; }
+    {
+        Q_ASSERT(elision || element);
+        kind = K;
+    }
 
     PatternElementList *append(PatternElementList *n) {
         n->next = next;

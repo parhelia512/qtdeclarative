@@ -9,10 +9,8 @@
 #include "qqmldompath_p.h"
 #include "qqmldomscriptelements_p.h"
 #include "qqmldomtop_p.h"
-#include "qqmldomerrormessage_p.h"
 #include "qqmldomastdumper_p.h"
 #include "qqmldomastcreator_p.h"
-#include "qqmldom_utils_p.h"
 
 #include <QtQml/private/qqmljsast_p.h>
 #include <QtQmlCompiler/private/qqmljsutils_p.h>

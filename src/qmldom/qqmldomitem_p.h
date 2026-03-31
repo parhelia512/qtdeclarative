@@ -853,7 +853,7 @@ private:
 class QMLDOM_EXPORT DomItem {
     Q_DECLARE_TR_FUNCTIONS(DomItem);
 public:
-    using Callback = function<void(const Path &, const DomItem &, const DomItem &)>;
+    using Callback = std::function<void(const Path &, const DomItem &, const DomItem &)>;
 
     using InternalKind = DomType;
     using Visitor = function_ref<bool(const Path &, const DomItem &)>;

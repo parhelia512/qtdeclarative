@@ -1989,9 +1989,7 @@ DomEnvironment::TypeReader::operator()(QQmlJSImporter *importer, const QString &
         qCDebug(domLog) << "Import visitor tried to lazily load file \"" << filePath
                         << "\", but that file was not found in the DomEnvironment. Was this "
                            "file not discovered by the Dom's dependency loading mechanism?";
-        return { QQmlJS::DiagnosticMessage{
-                u"Could not find file \"%1\" in the Dom."_s.arg(filePath), QtMsgType::QtWarningMsg,
-                SourceLocation{} } };
+        return { };
     }
     const DomItem qmlFile = it.value()->currentItem(DomItem(envPtr));
 

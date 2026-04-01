@@ -1210,17 +1210,10 @@ QDeferredFactory<QQmlJSScope>::QDeferredFactory(QQmlJSImporter *importer, const 
 void QDeferredFactory<QQmlJSScope>::populate(const QSharedPointer<QQmlJSScope> &scope) const
 {
     scope->setOwnModuleName(m_moduleName);
-    scope->setFilePath(m_filePath);
     scope->setIsSingleton(m_isSingleton);
 
     QList<QQmlJS::DiagnosticMessage> errors = m_typeReader(m_importer, m_filePath, scope);
     m_importer->m_globalWarnings.append(errors);
-
-    scope->setInternalName(internalName());
-    QQmlJSScope::resolveEnums(
-            scope, m_importer->builtinInternalNames().contextualTypes());
-    QQmlJSScope::resolveList(
-            scope, m_importer->builtinInternalNames().contextualTypes().arrayType());
 }
 
 /*!

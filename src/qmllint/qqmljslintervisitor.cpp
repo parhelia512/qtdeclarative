@@ -902,10 +902,43 @@ void LinterVisitor::handleRecursivelyInstantiatedType(UiQualifiedId *qualifiedId
     }
 }
 
+bool LinterVisitor::visit(QQmlJS::AST::UiPragma *pragma)
+{
+    const bool result = QQmlJSImportVisitor::visit(pragma);
+
+    // The QML Engine ignores this pragma, so __don't__ set m_exportedRootScope's singleton flag with its value.
+    if (pragma->name == u"Singleton")
+        m_rootIsSingleton = true;
+
+    return result;
+}
+
+void LinterVisitor::checkSingletonRoot()
+{
+    const bool hasQmldirSingletonEntry = m_exportedRootScope->isSingleton(); // set by importer
+    const bool hasSingletonPragma = m_rootIsSingleton;
+
+    if (hasQmldirSingletonEntry == hasSingletonPragma)
+        return;
+
+    if (hasQmldirSingletonEntry && !hasSingletonPragma) {
+        m_logger->log("Type %1 declared as singleton in qmldir but missing pragma Singleton"_L1.arg(
+                              m_exportedRootScope->internalName()),
+                      qmlImport, QQmlJS::SourceLocation());
+        return;
+    }
+    Q_ASSERT(!hasQmldirSingletonEntry && hasSingletonPragma);
+    m_logger->log("Type %1 not declared as singleton in qmldir but using pragma Singleton"_L1.arg(
+                          m_exportedRootScope->internalName()),
+                  qmlImport, QQmlJS::SourceLocation());
+}
+
 bool LinterVisitor::visit(QQmlJS::AST::UiObjectDefinition *objectDefinition)
 {
     handleRenamedType(objectDefinition->qualifiedTypeNameId);
     handleRecursivelyInstantiatedType(objectDefinition->qualifiedTypeNameId);
+    if (!rootScopeIsValid() && !objectDefinition->qualifiedTypeNameId->name.front().isLower())
+        checkSingletonRoot();
 
     return QQmlJSImportVisitor::visit(objectDefinition);
 }

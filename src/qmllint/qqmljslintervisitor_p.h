@@ -65,6 +65,7 @@ protected:
     bool visit(QQmlJS::AST::UiPublicMember *publicMember) override;
     bool visit(QQmlJS::AST::UiObjectDefinition *objectDefinition) override;
     bool visit(QQmlJS::AST::Type *typeAnnotation) override;
+    bool visit(QQmlJS::AST::UiPragma *pragma) override;
 
     bool visit(QQmlJS::AST::UiProgram *ast) override;
     void endVisit(QQmlJS::AST::UiProgram *ast) override;
@@ -119,7 +120,10 @@ private:
     void handleUselessExpressionStatement(const AST::ExpressionStatement *ast);
     void handleRecursivelyInstantiatedType(AST::UiQualifiedId *qualifiedId);
     void handleRenamedType(QQmlJS::AST::UiQualifiedId *id);
+    void checkSingletonRoot();
     void checkFileSelections();
+
+    bool m_rootIsSingleton = false;
 };
 
 } // namespace QQmlJS

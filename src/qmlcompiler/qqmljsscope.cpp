@@ -68,16 +68,20 @@ QQmlJSScope::Ptr QQmlJSScope::resetForReparse(Ptr &&scope)
     auto *factory = scope.factory();
     if (!factory) {
         const QString moduleName = scope->moduleName();
+        const bool isSingleton = scope->isSingleton();
         *scope = QQmlJSScope{ scope->internalName() };
         scope->setOwnModuleName(moduleName);
+        scope->setIsSingleton(isSingleton);
         return std::move(scope);
     }
 
     const QString moduleName = factory->moduleName();
     const QString internalName = factory->internalName();
+    const bool isSingleton = factory->isSingleton();
     *scope.factory() = QQmlJSScope::ConstPtr::Factory{ };
     scope->setOwnModuleName(moduleName);
     scope->setInternalName(internalName);
+    scope->setIsSingleton(isSingleton);
     return std::move(scope);
 }
 
@@ -1207,6 +1211,7 @@ void QDeferredFactory<QQmlJSScope>::populate(const QSharedPointer<QQmlJSScope> &
 {
     scope->setOwnModuleName(m_moduleName);
     scope->setFilePath(m_filePath);
+    scope->setIsSingleton(m_isSingleton);
 
     QList<QQmlJS::DiagnosticMessage> errors = m_typeReader(m_importer, m_filePath, scope);
     m_importer->m_globalWarnings.append(errors);
@@ -1216,22 +1221,6 @@ void QDeferredFactory<QQmlJSScope>::populate(const QSharedPointer<QQmlJSScope> &
             scope, m_importer->builtinInternalNames().contextualTypes());
     QQmlJSScope::resolveList(
             scope, m_importer->builtinInternalNames().contextualTypes().arrayType());
-
-    if (m_isSingleton && !scope->isSingleton()) {
-        m_importer->m_globalWarnings.append(
-                { QStringLiteral(
-                          "Type %1 declared as singleton in qmldir but missing pragma Singleton")
-                          .arg(scope->internalName()),
-                  QtCriticalMsg, QQmlJS::SourceLocation() });
-        scope->setIsSingleton(true);
-    } else if (!m_isSingleton && scope->isSingleton()) {
-        m_importer->m_globalWarnings.append(
-                { QStringLiteral("Type %1 not declared as singleton in qmldir "
-                                 "but using pragma Singleton")
-                          .arg(scope->internalName()),
-                  QtCriticalMsg, QQmlJS::SourceLocation() });
-        scope->setIsSingleton(false);
-    }
 }
 
 /*!

@@ -1814,7 +1814,6 @@ bool QQmlJSImportVisitor::visit(UiObjectDefinition *definition)
             enterRootScope(QQmlSA::ScopeType::QMLScope, superType,
                            definition->firstSourceLocation());
             m_currentScope->setIsRootFileComponentFlag(true);
-            m_currentScope->setIsSingleton(m_rootIsSingleton);
         }
 
         const QTypeRevision revision = m_currentScope->baseTypeRevision();
@@ -2856,8 +2855,6 @@ bool QQmlJSImportVisitor::visit(QQmlJS::AST::UiPragma *pragma)
 
         if (!m_logger->wasCategoryChanged(qmlCompiler))
             m_logger->setCategorySeverity(qmlCompiler, QQmlJS::WarningSeverity::Warning);
-    } else if (pragma->name == u"Singleton") {
-        m_rootIsSingleton = true;
     } else if (pragma->name == u"ComponentBehavior") {
         handlePragmaValues(pragma, [this, pragma](QStringView value) {
             if (value == u"Bound") {

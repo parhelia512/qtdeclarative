@@ -1314,12 +1314,12 @@ void TestQmllint::dirtyQmlCode_data()
                            26 } } }
             << defaultOptions;
     QTest::newRow("missingSingletonPragma")
-            << QStringLiteral("missingSingletonPragma.qml")
+            << QStringLiteral("Singletons/MissingPragma.qml")
             << Result{ { { "Type MissingPragma declared as singleton in qmldir but missing pragma "
                            "Singleton"_L1 } } }
             << defaultOptions;
     QTest::newRow("missingSingletonQmldir")
-            << QStringLiteral("missingSingletonQmldir.qml")
+            << QStringLiteral("Singletons/MissingQmldirSingleton.qml")
             << Result{ { { "Type MissingQmldirSingleton not declared as singleton in qmldir but "
                            "using pragma Singleton"_L1 } } }
             << defaultOptions;

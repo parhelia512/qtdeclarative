@@ -295,11 +295,10 @@ QQmlJSImporter::Import QQmlJSImporter::readQmldir(const QString &modulePath)
         auto mo = qmlComponents.find(it->fileName);
         if (mo == qmlComponents.end()) {
             QQmlJSScope::Ptr imported = localFile2QQmlJSScope(filePath);
-            if (auto *factory = imported.factory()) {
-                if (it->singleton) {
-                    factory->setIsSingleton(true);
-                }
-            }
+            if (auto factory = imported.factory())
+                factory->setIsSingleton(it->singleton);
+            else
+                imported->setIsSingleton(it->singleton);
             mo = qmlComponents.insert(it->fileName, {imported, QList<QQmlJSScope::Export>() });
         }
 

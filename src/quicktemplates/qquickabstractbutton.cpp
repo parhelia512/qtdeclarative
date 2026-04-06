@@ -14,6 +14,7 @@
 #include "qquicktooltip_p.h"
 #include "qquicktooltip_p_p.h"
 
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qstylehints.h>
 #include <QtGui/qguiapplication.h>
 #if QT_CONFIG(shortcut)
@@ -30,6 +31,8 @@
 #include <QtQml/qqmllist.h>
 
 QT_BEGIN_NAMESPACE
+
+Q_STATIC_LOGGING_CATEGORY(lcAction, "qt.quick.controls.abstractbutton.action")
 
 /*!
     \qmltype AbstractButton
@@ -933,6 +936,7 @@ QQuickAction *QQuickAbstractButton::action() const
 void QQuickAbstractButton::setAction(QQuickAction *action)
 {
     Q_D(QQuickAbstractButton);
+    qCDebug(lcAction) << this << "setAction called with" << action;
     if (d->action == action)
         return;
 

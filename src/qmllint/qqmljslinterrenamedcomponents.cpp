@@ -49,20 +49,6 @@ void LinterRenamedComponents::handleRenamedType(const QQmlJSScope::ConstPtr &sco
                     .arg(names.join("\", \""_L1), name),
             qmlRenamedType, location);
 }
-
-bool LinterRenamedComponents::isTypeRenamedTo(const QQmlJSScope::ConstPtr &scope,
-                                              const QString &alias) const
-{
-    const auto [start, end] = m_scopeToName->equal_range(scope);
-    if (start == end || std::next(start) == end)
-        return false;
-
-    const QString filePath = scope->filePath();
-    const QStringView oldName = baseNameOf(filePath);
-    if (oldName == alias)
-        return false;
-    return std::find(start, end, alias) != end;
-}
 } // namespace QQmlJS
 
 QT_END_NAMESPACE

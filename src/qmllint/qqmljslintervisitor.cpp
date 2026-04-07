@@ -895,12 +895,10 @@ void LinterVisitor::handleRecursivelyInstantiatedType(UiQualifiedId *qualifiedId
     if (m_rootScopeImports.names().contains(m_exportedRootScope, name))
         logWarning();
 
-    if (const auto inlineComponentName = std::get_if<InlineComponentNameType>(&m_currentRootName)) {
-        if (name == *inlineComponentName
-            || m_renamedComponents.isTypeRenamedTo(
-                    m_rootScopeImports.type(*inlineComponentName).scope, name)) {
-            logWarning();
-        }
+    // note: inline components can't be renamed via qmldir entries
+    if (const auto inlineComponentName = std::get_if<InlineComponentNameType>(&m_currentRootName);
+        inlineComponentName && name == *inlineComponentName) {
+        logWarning();
     }
 }
 

@@ -1882,6 +1882,11 @@ void TestQmllint::dirtyQmlSnippet_data()
                          { "Prefer more specific type string over var", 3, 1 },
                          { "Prefer more specific type bool over var", 4, 1 } } }
             << defaultOptions;
+    QTest::newRow("renamedDoesntCrash")
+            << u"import QML\n"
+               u"import QtQuick as QQ\n"
+               u"QQ.Item { component Yo: MissingType {} }"_s
+            << Result{ { { "MissingType was not found."_L1, 3, 25 } } } << defaultOptions;
     QTest::newRow("reservedIdentifier")
             << u"property int interface"_s
             << Result { { {"Reserved keyword \"interface\" cannot be used as a QML identifier.", 1, 14} } }

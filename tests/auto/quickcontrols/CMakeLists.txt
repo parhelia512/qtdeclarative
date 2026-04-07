@@ -30,7 +30,6 @@ if(NOT ANDROID) # Not supported on Android: QTBUG-134798
 add_subdirectory(qquickcontextmenu)
 endif()
 add_subdirectory(qquickcontrol)
-add_subdirectory(qquickcolor)
 add_subdirectory(qquickcontainer)
 add_subdirectory(qquickdrawer)
 if (QT_FEATURE_quickcontrols2_fusion)

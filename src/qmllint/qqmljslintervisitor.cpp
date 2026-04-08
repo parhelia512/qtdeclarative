@@ -84,7 +84,7 @@ bool LinterVisitor::visit(StringLiteral *sl)
         }
 
         QQmlJSDocumentEdit documentEdit{
-            m_logger->filePath(), sl->literalToken, "`" % templateString % u"`"
+            m_logger->filePath(), sl->literalToken, u"`" % templateString % u"`"
         };
         QQmlJSFixSuggestion suggestion = { "Use a template literal instead."_L1, sl->literalToken,
                                            documentEdit };

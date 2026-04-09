@@ -1148,9 +1148,9 @@ void QQmlLSCompletion::suggestJSStatementCompletion(const DomItem &itemAtPositio
             "try {\n\t$1\n} catch($2) {\n\t$3\n} finally {\n\t$0\n}");
 
     // one can always assume that JS code in QML is inside a function, so always propose `return`
-    for (auto &&view : { "return"_ba, "throw"_ba }) {
+    for (const QByteArray &view : { "return"_ba, "throw"_ba }) {
         CompletionItem item;
-        item.label = std::move(view);
+        item.label = view;
         item.kind = int(CompletionItemKind::Keyword);
         result = item;
     }

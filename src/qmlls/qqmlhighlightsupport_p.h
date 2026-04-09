@@ -28,7 +28,6 @@ QT_BEGIN_NAMESPACE
 // which has a single request handlers. That is not the case for the semanticTokens
 // module which has a one server module but also has three different handlers.
 #define HIDE_UNUSED_OVERRIDES \
-private:                      \
     void setupCapabilities(QLspSpecification::ServerCapabilities &) override { }
 
 using SemanticTokensRequest = BaseRequest<QLspSpecification::SemanticTokensParams,
@@ -50,6 +49,7 @@ public:
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
+private:
     QmlHighlighting::HighlightingMode m_mode;
 };
 
@@ -61,6 +61,7 @@ public:
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
+private:
     QmlHighlighting::HighlightingMode m_mode;
 };
 
@@ -72,6 +73,7 @@ public:
     void registerHandlers(QLanguageServer *, QLanguageServerProtocol *) override;
     void setHighlightingMode(QmlHighlighting::HighlightingMode mode) { m_mode = mode; }
     HIDE_UNUSED_OVERRIDES
+private:
     QmlHighlighting::HighlightingMode m_mode;;
 };
 

@@ -95,7 +95,7 @@ void SemanticTokenFullHandler::process(
     const QByteArray uri = QQmlLSUtils::lspUriToQmlUrl(request->m_parameters.textDocument.uri);
     const auto doc = m_codeModelManager->openDocumentByUrl(uri);
     auto &cached = m_codeModelManager->registeredTokens(uri);
-    const auto encoded = generateHighlights(cached, doc, std::nullopt, m_mode);
+    auto encoded = generateHighlights(cached, doc, std::nullopt, m_mode);
 
     if (encoded.isEmpty()) {
         result = nullptr;
@@ -184,7 +184,7 @@ void SemanticTokenRangeHandler::process(
             int(QQmlLSUtils::textOffsetFrom(code, range.start.line, range.end.character));
     int endOffset = int(QQmlLSUtils::textOffsetFrom(code, range.end.line, range.end.character));
     auto &cached = m_codeModelManager->registeredTokens(uri);
-    const auto encodedTokens = generateHighlights(
+    auto encodedTokens = generateHighlights(
             cached,
             doc,
             QmlHighlighting::HighlightsRange{ startOffset, endOffset },

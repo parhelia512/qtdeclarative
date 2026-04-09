@@ -3812,9 +3812,9 @@ void tst_QQuickPopup::blockEventsBehindModal_data()
     QTest::addColumn<QQuickPopup::PopupType>("popupType");
     QTest::addColumn<const QPointingDevice *>("device");
 
-    // QTest::newRow("window: primary") // TODO QTBUG-131786 QTBUG-145585 QTBUG-141362 etc.
-    //         << QQuickPopup::Window
-    //         << QPointingDevice::primaryPointingDevice();
+    QTest::newRow("window: primary") // QTBUG-131786 etc.
+            << QQuickPopup::Window
+            << QPointingDevice::primaryPointingDevice();
     QTest::newRow("item: primary")
             << QQuickPopup::Item
             << QPointingDevice::primaryPointingDevice();

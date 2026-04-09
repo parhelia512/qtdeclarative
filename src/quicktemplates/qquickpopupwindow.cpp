@@ -266,14 +266,23 @@ bool QQuickPopupWindowPrivate::filterPopupSpecialCases(QEvent *event)
             // undermine that we want to close all popups.
             closePopupAndParentMenus();
             return true;
-        } else if (!targetPopup && closePolicy.testAnyFlags(QQuickPopup::CloseOnPressOutside | QQuickPopup::CloseOnPressOutsideParent)) {
+        } else if (!targetPopup) {
             // Pressed outside either a popup window, or a menu or menubar that owns a menu using popup windows.
             // Note that A QQuickPopupWindow can be bigger than the
             // menu itself, to make room for a drop-shadow. But if the press was on top
             // of the shadow, targetMenu will still be nullptr.
             // On WASM in particular, it's possible for dialogs to receive the event, when clicking in the non-client area. Don't close in those cases.
-            if (event->type() != QEvent::NonClientAreaMouseButtonPress && event->type() != QEvent::NonClientAreaMouseButtonDblClick)
-                closePopupAndParentMenus();
+            if (event->type() != QEvent::NonClientAreaMouseButtonPress && event->type() != QEvent::NonClientAreaMouseButtonDblClick) {
+                if (closePolicy.testAnyFlags(QQuickPopup::CloseOnPressOutside | QQuickPopup::CloseOnPressOutsideParent))
+                    closePopupAndParentMenus();
+                // A modal popup must consume the press event so that forwardToPopup() sees the event as handled
+                // so that it doesn't propagate to items behind the popup window (QTBUG-131786 etc.)
+                // A QTabletEvent in particular is not accepted by default
+                if (popup->isModal()) {
+                    pe->accept();
+                    return true;
+                }
+            }
             return false;
         }
     } else if (pe->isUpdateEvent()){

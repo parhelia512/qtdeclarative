@@ -3129,7 +3129,7 @@ void QQmlDelegateModelGroup::setDefaultInclude(bool include)
 }
 
 /*!
-    \qmlmethod object QtQml.Models::DelegateModelGroup::get(int index)
+    \qmlmethod var QtQml.Models::DelegateModelGroup::get(int index)
 
     Returns a javascript object describing the item at \a index in the group.
 

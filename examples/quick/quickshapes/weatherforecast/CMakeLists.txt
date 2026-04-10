@@ -49,6 +49,7 @@ qt_add_qml_module(weatherforecastexample
 
 qt_target_qml_from_svg(weatherforecastexample
     OPTIMIZE_PATHS
+    ASYNCHRONOUS_SHAPES
     TYPE_NAME "DemoShape"
     COPYRIGHT_STATEMENT
         "Copyright © 2024 The Qt Company Ltd. Copyright © 2010 Kolja21\\nSPDX-License-Identifier: CC-BY-3.0"
@@ -61,6 +62,7 @@ qt_target_qml_from_svg(weatherforecastexample
 #![svgtoqml]
 qt_target_qml_from_svg(weatherforecastexample
     OPTIMIZE_PATHS
+    ASYNCHRONOUS_SHAPES
     TYPE_NAME "DemoShape"
     COPYRIGHT_STATEMENT "Copyright © 2023 Framework7\\nSPDX-License-Identifier: MIT"
     FILES
@@ -72,6 +74,7 @@ qt_target_qml_from_svg(weatherforecastexample
 
 qt_target_qml_from_svg(weatherforecastexample
     OPTIMIZE_PATHS
+    ASYNCHRONOUS_SHAPES
     TYPE_NAME "DemoShape"
     COPYRIGHT_STATEMENT "Copyright © 2023 Googlefonts\\nSPDX-License-Identifier: Apache-2.0"
     FILES

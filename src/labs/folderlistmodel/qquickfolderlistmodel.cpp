@@ -35,6 +35,8 @@ public:
     bool showDirs = true;
     bool showDirsFirst = false;
     bool showDotAndDotDot = false;
+    bool showDot = false;
+    bool showDotDot = false;
     bool showOnlyReadable = false;
     bool showHidden = false;
     bool caseSensitive = true;
@@ -747,7 +749,7 @@ void  QQuickFolderListModel::setShowDirsFirst(bool on)
 
     By default, this property is false.
 
-    \sa showDirs
+    \sa showDirs, showDot, showDotDot
 */
 bool QQuickFolderListModel::showDotAndDotDot() const
 {
@@ -763,6 +765,62 @@ void  QQuickFolderListModel::setShowDotAndDotDot(bool on)
         d->fileInfoThread.setShowDotAndDotDot(on);
         d->showDotAndDotDot = on;
         emit showDotAndDotDotChanged();
+    }
+}
+
+
+/*!
+    \qmlproperty bool FolderListModel::showDot
+    \since 6.12
+
+    If true, the current "." directory will be included in the model.
+
+    By default, this property is false.
+
+    \sa showDotAndDotDot, showDotDot
+*/
+bool QQuickFolderListModel::showDot() const
+{
+    Q_D(const QQuickFolderListModel);
+    return d->showDot;
+}
+
+void QQuickFolderListModel::setShowDot(bool on)
+{
+    Q_D(QQuickFolderListModel);
+
+    if (on != d->showDot) {
+        d->fileInfoThread.setShowDot(on);
+        d->showDot = on;
+        emit showDotChanged();
+    }
+}
+
+
+/*!
+    \qmlproperty bool FolderListModel::showDotDot
+    \since 6.12
+
+    If true, the ".." (parent) directory will be included in the model.
+
+    By default, this property is false.
+
+    \sa showDotAndDotDot, showDot
+*/
+bool QQuickFolderListModel::showDotDot() const
+{
+    Q_D(const QQuickFolderListModel);
+    return d->showDotDot;
+}
+
+void QQuickFolderListModel::setShowDotDot(bool on)
+{
+    Q_D(QQuickFolderListModel);
+
+    if (on != d->showDotDot) {
+        d->fileInfoThread.setShowDotDot(on);
+        d->showDotDot = on;
+        emit showDotDotChanged();
     }
 }
 

@@ -898,42 +898,36 @@ void QQuickTextNodeEngine::addToSceneGraph(QSGInternalTextNode *parentNode,
             // this node
             bool drawCurrent = false;
             if (previousNode != nullptr || nextNode != nullptr) {
+                // Return |rangeLength| minus the overlap between |range| and the
+                // ranges of |otherNode|. Only considers nodes from the same text position;
+                // nodes from different positions (e.g. list bullets from a separate
+                // QTextLayout) have coincidental range overlaps that don't represent
+                // actual glyph coverage.
+                auto subtractOverlap = [](int rangeLength, const std::pair<int, int> &range,
+                                          const BinaryTreeNode *otherNode, const QPointF &nodePos) {
+                    if (otherNode->position != nodePos)
+                        return rangeLength;
+                    for (int j = 0; j < otherNode->ranges.size(); ++j) {
+                        const std::pair<int, int> &otherRange = otherNode->ranges.at(j);
+                        if (range.first < otherRange.second && range.second > otherRange.first) {
+                            int start = qMax(range.first, otherRange.first);
+                            int end = qMin(range.second, otherRange.second);
+                            rangeLength -= end - start + 1;
+                            if (rangeLength == 0)
+                                break;
+                        }
+                    }
+                    return rangeLength;
+                };
+
                 for (int i = 0; i < node->ranges.size(); ++i) {
                     const std::pair<int, int> &range = node->ranges.at(i);
 
                     int rangeLength = range.second - range.first + 1;
-                    // Only check overlap with nodes from the same text position.
-                    // Nodes from different positions (e.g. list bullets from a
-                    // separate QTextLayout) have coincidental range overlaps that
-                    // don't represent actual glyph coverage.
-                    if (previousNode != nullptr && previousNode->position == node->position) {
-                        for (int j = 0; j < previousNode->ranges.size(); ++j) {
-                            const std::pair<int, int> &otherRange = previousNode->ranges.at(j);
-
-                            if (range.first < otherRange.second && range.second > otherRange.first) {
-                                int start = qMax(range.first, otherRange.first);
-                                int end = qMin(range.second, otherRange.second);
-                                rangeLength -= end - start + 1;
-                                if (rangeLength == 0)
-                                    break;
-                            }
-                        }
-                    }
-
-                    if (nextNode != nullptr && nextNode->position == node->position
-                        && rangeLength > 0) {
-                        for (int j = 0; j < nextNode->ranges.size(); ++j) {
-                            const std::pair<int, int> &otherRange = nextNode->ranges.at(j);
-
-                            if (range.first < otherRange.second && range.second > otherRange.first) {
-                                int start = qMax(range.first, otherRange.first);
-                                int end = qMin(range.second, otherRange.second);
-                                rangeLength -= end - start + 1;
-                                if (rangeLength == 0)
-                                    break;
-                            }
-                        }
-                    }
+                    if (previousNode != nullptr)
+                        rangeLength = subtractOverlap(rangeLength, range, previousNode, node->position);
+                    if (nextNode != nullptr && rangeLength > 0)
+                        rangeLength = subtractOverlap(rangeLength, range, nextNode, node->position);
 
                     if (rangeLength > 0) {
                         drawCurrent = true;

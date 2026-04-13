@@ -936,10 +936,9 @@ QQmlComponentAndAliasResolver<QQmlTypeCompiler>::resolveAliasesInObject(
             // If it's an alias that we haven't resolved yet, try again later.
             if (!targetProperty) {
                 bool aliasPointsToOtherAlias = false;
-                int localAliasIndex = 0;
                 auto targetAlias = targetObject->aliasesBegin();
                 for (const auto end = targetObject->aliasesEnd(); targetAlias != end;
-                        ++targetAlias, ++localAliasIndex) {
+                        ++targetAlias) {
                     if (stringAt(targetAlias->nameIndex()) == property) {
                         aliasPointsToOtherAlias = true;
                         break;

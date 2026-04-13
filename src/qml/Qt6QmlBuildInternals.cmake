@@ -227,10 +227,7 @@ function(qt_internal_add_qml_module target)
             # the plugin's Dependencies.cmake -> _qt_internal_find_qt_dependencies() call.
             # For static builds, we need the backing target to be available for transitive
             # linkage. For shared builds, we need it for (Android) deployment reasons.
-            list(APPEND plugin_args
-                LIBRARIES
-                    ${QT_CMAKE_EXPORT_NAMESPACE}::${target}
-            )
+            list(APPEND plugin_args LIBRARIES Qt::${target})
         endif()
 
         qt_internal_add_plugin(${arg_PLUGIN_TARGET} ${plugin_args})

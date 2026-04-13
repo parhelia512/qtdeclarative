@@ -403,16 +403,14 @@ const QList<QObject *> QQStyleKitControls::children() const
 }
 
 /* Lazy-create the controls that the style is actually using, when accessed
- * them from the style/application (e.g from Style or Theme). We don't lazy
+ * from the style/application (e.g from Style or Theme). We don't lazy
  * create any controls while resolving style properties, as undefined controls would
  * anyway not contain any property overrides. The properties have setters too, to
  * allow the style/application to share custom ControlStyle the classical
  * way, e.g button: ControlStyle { id: button }. */
 QQStyleKitControl* QQStyleKitControls::getControl(QQStyleKitExtendableControlType controlType) const
 {
-    if (!m_controls.contains(controlType))
-        return nullptr;
-    return m_controls[controlType];
+    return m_controls.value(controlType, nullptr);
 }
 
 #define IMPLEMENT_ACCESSORS(NAME, TYPE) \

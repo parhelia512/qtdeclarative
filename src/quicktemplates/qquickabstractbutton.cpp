@@ -196,7 +196,7 @@ bool QQuickAbstractButtonPrivate::handleRelease(const QPointF &point, ulong time
         && QQuickDeliveryAgentPrivate::isWithinDoubleClickInterval(timestamp - lastTouchReleaseTimestamp)
         && isDoubleClickConnected();
 
-    if (!wasHeld && (keepPressed || q->contains(point)))
+    if (!wasHeld && wasPressed && (keepPressed || q->contains(point)))
         q->nextCheckState();
 
     if (wasPressed) {

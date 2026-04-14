@@ -9,6 +9,8 @@
 #include <private/qqmlboundsignal_p.h>
 #include <private/qqmlcontextdata_p.h>
 #include <private/qqmlnotifier_p.h>
+
+#include <QtCore/qtyperevision.h>
 #include <private/qthread_p.h>
 
 QT_BEGIN_NAMESPACE

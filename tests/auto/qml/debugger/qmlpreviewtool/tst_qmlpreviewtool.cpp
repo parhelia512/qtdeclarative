@@ -1,0 +1,190 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
+
+#include <QtTest/qtest.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qdir.h>
+#include <QtCore/qfile.h>
+#include <QtCore/qlibraryinfo.h>
+#include <QtCore/qprocess.h>
+#include <QtCore/qtemporarydir.h>
+
+#include <memory>
+
+class tst_QmlPreviewTool : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void initTestCase();
+    void cleanup();
+
+    void helpOption();
+    void missingExecutable();
+    void basicLaunch();
+    void verboseOutput();
+    void fileUpdate();
+
+private:
+    QString m_qmlPreviewPath;
+    QString m_qmlRuntimePath;
+    QString m_testHelperPath;
+
+    QString m_output;
+    QProcess m_process;
+    std::unique_ptr<QTemporaryDir> m_tempDir;
+
+    void startPreview(const QStringList &args);
+    void readProcessOutput();
+    bool waitForOutput(const QString &needle, int timeout = 30000);
+};
+
+static bool writeFile(const QString &path, const QByteArray &content)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        return false;
+    file.write(content);
+    file.close();
+    return true;
+}
+
+static QByteArray makeQmlContent(const QString &marker)
+{
+    return QLatin1String(R"(
+        import QtQml
+        Timer {
+           interval: 10
+           running: true
+           repeat: true
+           onTriggered: console.log("%1")
+        })").arg(marker).toUtf8();
+}
+
+void tst_QmlPreviewTool::initTestCase()
+{
+    const QString binDir = QLibraryInfo::path(QLibraryInfo::BinariesPath);
+    m_qmlPreviewPath = binDir + QLatin1String("/qmlpreview");
+    m_qmlRuntimePath = binDir + QLatin1String("/qml");
+}
+
+void tst_QmlPreviewTool::cleanup()
+{
+    if (m_process.state() != QProcess::NotRunning) {
+        m_process.closeWriteChannel();
+        if (!m_process.waitForFinished()) {
+            m_process.terminate();
+            if (!m_process.waitForFinished()) {
+                m_process.kill();
+                QVERIFY(m_process.waitForFinished());
+            }
+        }
+    }
+
+    if (QTest::currentTestFailed())
+        qDebug().noquote() << "Process output:" << m_output;
+
+    m_tempDir.reset();
+    m_output.clear();
+}
+
+void tst_QmlPreviewTool::startPreview(const QStringList &args)
+{
+    m_process.setProcessChannelMode(QProcess::MergedChannels);
+    connect(&m_process, &QProcess::readyReadStandardOutput,
+            this, &tst_QmlPreviewTool::readProcessOutput);
+    m_process.start(m_qmlPreviewPath, args);
+    QVERIFY2(m_process.waitForStarted(5000),
+             qPrintable(QLatin1String("Failed to start qmlpreview: ") + m_process.errorString()));
+}
+
+void tst_QmlPreviewTool::readProcessOutput()
+{
+    m_output += QString::fromUtf8(m_process.readAll());
+}
+
+bool tst_QmlPreviewTool::waitForOutput(const QString &needle, int timeout)
+{
+    return QTest::qWaitFor([this, &needle]() {
+        readProcessOutput();
+        return m_output.contains(needle);
+    }, timeout);
+}
+
+void tst_QmlPreviewTool::helpOption()
+{
+    QProcess proc;
+    proc.setProcessChannelMode(QProcess::MergedChannels);
+    proc.start(m_qmlPreviewPath, {QLatin1String("--help")});
+    QVERIFY(proc.waitForFinished(5000));
+    const QString output = QString::fromUtf8(proc.readAll());
+    QVERIFY2(output.contains(QLatin1String("Preview")), qPrintable(output));
+    QCOMPARE(proc.exitCode(), 0);
+}
+
+void tst_QmlPreviewTool::missingExecutable()
+{
+    QProcess proc;
+    proc.setProcessChannelMode(QProcess::MergedChannels);
+    proc.start(m_qmlPreviewPath,
+               {QLatin1String("--verbose"),
+                QLatin1String("/nonexistent/path/to/executable")});
+    QVERIFY(proc.waitForFinished(15000));
+    const QString output = QString::fromUtf8(proc.readAll());
+    QVERIFY2(output.contains(QLatin1String("Could not run")), qPrintable(output));
+    QVERIFY(proc.exitCode() != 0);
+}
+
+void tst_QmlPreviewTool::basicLaunch()
+{
+    m_tempDir = std::make_unique<QTemporaryDir>();
+    QVERIFY(m_tempDir->isValid());
+
+    const QString qmlFile = m_tempDir->filePath(QLatin1String("test.qml"));
+    QVERIFY(writeFile(qmlFile, makeQmlContent(QLatin1String("BASIC_LAUNCH_OK"))));
+
+    startPreview({QLatin1String("--verbose"), m_qmlRuntimePath, qmlFile});
+    QVERIFY2(waitForOutput(QLatin1String("BASIC_LAUNCH_OK")),
+             qPrintable(QLatin1String("Timed out waiting for app output. Got:\n")
+                        + m_output));
+}
+
+void tst_QmlPreviewTool::verboseOutput()
+{
+    m_tempDir = std::make_unique<QTemporaryDir>();
+    QVERIFY(m_tempDir->isValid());
+
+    const QString qmlFile = m_tempDir->filePath(QLatin1String("test.qml"));
+    QVERIFY(writeFile(qmlFile, makeQmlContent(QLatin1String("VERBOSE_TEST_OK"))));
+
+    startPreview({QLatin1String("--verbose"), m_qmlRuntimePath, qmlFile});
+    QVERIFY2(waitForOutput(QLatin1String("VERBOSE_TEST_OK")),
+             qPrintable(QLatin1String("Timed out. Output:\n") + m_output));
+
+    QVERIFY2(m_output.contains(QLatin1String("Listening on")),
+             qPrintable(QLatin1String("Missing 'Listening on'. Output:\n") + m_output));
+    QVERIFY2(m_output.contains(QLatin1String("Starting '")),
+             qPrintable(QLatin1String("Missing 'Starting'. Output:\n") + m_output));
+}
+
+void tst_QmlPreviewTool::fileUpdate()
+{
+    m_tempDir = std::make_unique<QTemporaryDir>();
+    QVERIFY(m_tempDir->isValid());
+
+    const QString qmlFile = m_tempDir->filePath(QLatin1String("test.qml"));
+    QVERIFY(writeFile(qmlFile, makeQmlContent(QLatin1String("FILE_UPDATE_INITIAL"))));
+
+    startPreview({QLatin1String("--verbose"), m_qmlRuntimePath, qmlFile});
+    QVERIFY2(waitForOutput(QLatin1String("FILE_UPDATE_INITIAL")),
+             qPrintable(QLatin1String("Initial load failed. Output:\n") + m_output));
+
+    QVERIFY(writeFile(qmlFile, makeQmlContent(QLatin1String("FILE_UPDATE_MODIFIED"))));
+
+    QVERIFY2(waitForOutput(QLatin1String("FILE_UPDATE_MODIFIED")),
+             qPrintable(QLatin1String("File update not detected. Output:\n") + m_output));
+}
+
+QTEST_MAIN(tst_QmlPreviewTool)
+
+#include "tst_qmlpreviewtool.moc"

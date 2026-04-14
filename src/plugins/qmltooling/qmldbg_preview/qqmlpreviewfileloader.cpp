@@ -52,6 +52,14 @@ QQmlPreviewFileLoader::QQmlPreviewFileLoader(QQmlPreviewServiceImpl *service)
 
     m_blacklist.whitelist(QLibraryInfo::path(QLibraryInfo::TestsPath));
 
+    // On Windows, GenericDataLocation (AppData/Local) is a parent of the temp directory
+    // (AppData/Local/Temp). Whitelist the temp path since we commonly want to preview
+    // files in the temp location.
+    const QStringList tempLocations
+            = QStandardPaths::standardLocations(QStandardPaths::TempLocation);
+    for (const QString &tempLocation : tempLocations)
+        m_blacklist.whitelist(tempLocation);
+
     // We absolutely want those signals to be connected directly. The service's (directly connected)
     // load() signal should not be able to sneak in between a file() signal submission and its
     // arrival. All the file loader's methods are protected by the contentMutex. So we can connect

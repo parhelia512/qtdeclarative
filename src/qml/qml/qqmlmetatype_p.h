@@ -23,6 +23,7 @@
 #include <private/qtqmlglobal_p.h>
 
 #include <QtCore/qset.h>
+#include <QtCore/qtyperevision.h>
 
 QT_BEGIN_NAMESPACE
 

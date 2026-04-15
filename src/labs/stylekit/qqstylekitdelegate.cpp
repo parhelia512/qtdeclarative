@@ -149,7 +149,7 @@ void QQStyleKitDelegate::maybeCreateColor()
     if (!component || component->engine() != engine) {
         delete component;
         component = new QQmlComponent(engine);
-        const QString qmlCode = QString::fromUtf8(R"(
+        const auto qmlCode = R"(
             import QtQuick
             Rectangle {
                 z: -3
@@ -164,8 +164,8 @@ void QQStyleKitDelegate::maybeCreateColor()
                 border.width: delegateStyle.border.width
                 border.color: delegateStyle.border.color
             }
-        )");
-        component->setData(qmlCode.toUtf8(), QUrl());
+        )"_ba;
+        component->setData(qmlCode, QUrl());
         Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
     }
 
@@ -203,7 +203,7 @@ void QQStyleKitDelegate::maybeCreateGradient()
     if (!component || component->engine() != engine) {
         delete component;
         component = new QQmlComponent(engine);
-        const QString qmlCode = QString::fromUtf8(R"(
+        const auto qmlCode = R"(
             import QtQuick
             Rectangle {
                 z: -2
@@ -218,8 +218,8 @@ void QQStyleKitDelegate::maybeCreateGradient()
                 border.width: delegateStyle.border.width
                 border.color: delegateStyle.border.color
             }
-        )");
-        component->setData(qmlCode.toUtf8(), QUrl());
+        )"_ba;
+        component->setData(qmlCode, QUrl());
         Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
     }
 
@@ -257,7 +257,7 @@ void QQStyleKitDelegate::maybeCreateImage()
     if (!component || component->engine() != engine) {
         delete component;
         component = new QQmlComponent(engine);
-        const QString qmlCode = QString::fromUtf8(R"(
+        const auto qmlCode = R"(
             import QtQuick.Controls.impl
             ColorImage {
                 z: -1
@@ -267,8 +267,8 @@ void QQStyleKitDelegate::maybeCreateImage()
                 source: delegateStyle.image.source
                 fillMode: delegateStyle.image.fillMode
             }
-        )");
-        component->setData(qmlCode.toUtf8(), QUrl());
+        )"_ba;
+        component->setData(qmlCode, QUrl());
         Q_ASSERT_X(!component->isError(), __FUNCTION__, component->errorString().toUtf8().constData());
     }
 

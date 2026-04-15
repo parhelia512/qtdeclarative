@@ -1349,11 +1349,9 @@ NSView *QMacStylePrivate::cocoaControl(CocoaControl cocoaControl) const
         return nil;
 
     if (cocoaControl.type == Box) {
-        if (__builtin_available(macOS 10.14, *)) {
-            if (isDarkMode()) {
-                // See render code in drawPrimitive(PE_FrameTabWidget)
-                cocoaControl.type = Box_Dark;
-            }
+        if (isDarkMode()) {
+            // See render code in drawPrimitive(PE_FrameTabWidget)
+            cocoaControl.type = Box_Dark;
         }
     }
 
@@ -2502,8 +2500,7 @@ void QMacStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPai
         // we can use this for now.
         auto adjustedRect = opt->rect;
         bool needTranslation = false;
-        if (QOperatingSystemVersion::current() >= QOperatingSystemVersion::MacOSMojave
-            && !isDarkMode()) {
+        if (!isDarkMode()) {
             // In Aqua theme we have to use the 'default' NSBox (as opposite
             // to the 'custom' QDarkNSBox we use in dark theme). Since -drawRect:
             // does nothing in default NSBox, we call -displayRectIgnoringOpaticty:.
@@ -2526,8 +2523,7 @@ void QMacStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPai
             QMacAutoReleasePool pool;
             CGContextTranslateCTM(ctx, 0, rect.origin.y + rect.size.height);
             CGContextScaleCTM(ctx, 1, -1);
-            if (QOperatingSystemVersion::current() < QOperatingSystemVersion::MacOSMojave
-                || [box isMemberOfClass:QDarkNSBox.class]) {
+            if ([box isMemberOfClass:QDarkNSBox.class]) {
                 [box drawRect:rect];
             } else {
                 if (needTranslation)

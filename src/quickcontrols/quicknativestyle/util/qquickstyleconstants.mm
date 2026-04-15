@@ -39,19 +39,15 @@ static QColor systemColor(std::function<NSColor *()> block)
 
 QColor QQuickStyleConstants::secondarySystemFillColor() const
 {
-#if QT_MACOS_PLATFORM_SDK_EQUAL_OR_ABOVE(140000)
     if (@available(macOS 14.0, *))
-        return systemColor([]{ return NSColor.secondarySystemFillColor; });
-#endif
+        return systemColor([] { return NSColor.secondarySystemFillColor; });
     return Qt::black;
 }
 
 QColor QQuickStyleConstants::tertiarySystemFillColor() const
 {
-#if QT_MACOS_PLATFORM_SDK_EQUAL_OR_ABOVE(140000)
     if (@available(macOS 14.0, *))
-        return systemColor([]{ return NSColor.tertiarySystemFillColor; });
-#endif
+        return systemColor([] { return NSColor.tertiarySystemFillColor; });
     return Qt::black;
 }
 

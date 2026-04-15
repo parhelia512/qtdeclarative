@@ -981,6 +981,7 @@ template<typename T>
 static QQmlPropertyData qQmlPropertyCacheCreate(const QMetaObject *metaObject, const T& propertyName)
 {
     Q_ASSERT(metaObject);
+    static_assert(std::is_same_v<T, QByteArray>);
 
     QQmlPropertyData rv;
 
@@ -1012,7 +1013,7 @@ static QQmlPropertyData qQmlPropertyCacheCreate(const QMetaObject *metaObject, c
     {
         const QMetaObject *cmo = metaObject;
         while (cmo) {
-            int idx = cmo->indexOfProperty(propertyName);
+            int idx = cmo->indexOfProperty(propertyName.data());
             if (idx != -1) {
                 QMetaProperty p = cmo->property(idx);
                 if (p.isScriptable()) {
@@ -1036,9 +1037,9 @@ static QQmlPropertyData qQmlPropertyCacheCreate(const QMetaObject *metaObject, c
     return rv;
 }
 
-static inline const char *qQmlPropertyCacheToString(QLatin1String string)
+static inline QByteArray qQmlPropertyCacheToString(QLatin1String string)
 {
-    return string.data();
+    return string.toUtf8();
 }
 
 static inline QByteArray qQmlPropertyCacheToString(QStringView string)
